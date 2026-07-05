@@ -1,0 +1,186 @@
+import { useState } from 'react'
+import { Modal } from '@/components/ui/Modal'
+import { Button, Field, Input, Select, Textarea } from '@/components/ui/primitives'
+import type {
+  Team,
+  Tournament,
+  TournamentFormat,
+  TournamentStatus,
+} from '@/types'
+import type { TournamentInput } from '@/services/tournaments.service'
+
+function toDateInput(ms?: number | null): string {
+  if (!ms) return ''
+  return new Date(ms).toISOString().slice(0, 10)
+}
+
+export function TournamentFormModal({
+  tournament,
+  teams,
+  onClose,
+  onSave,
+}: {
+  tournament: Tournament | null
+  teams: Team[]
+  onClose: () => void
+  onSave: (input: TournamentInput, id?: string) => void | Promise<void>
+}) {
+  const [name, setName] = useState(tournament?.name ?? '')
+  const [shortName, setShortName] = useState(tournament?.shortName ?? '')
+  const [format, setFormat] = useState<TournamentFormat>(
+    tournament?.format ?? 'league',
+  )
+  const [status, setStatus] = useState<TournamentStatus>(
+    tournament?.status ?? 'upcoming',
+  )
+  const [oversPerInnings, setOvers] = useState(tournament?.oversPerInnings ?? 20)
+  const [venue, setVenue] = useState(tournament?.venue ?? '')
+  const [startDate, setStartDate] = useState(toDateInput(tournament?.startDate))
+  const [endDate, setEndDate] = useState(toDateInput(tournament?.endDate))
+  const [description, setDescription] = useState(tournament?.description ?? '')
+  const [teamIds, setTeamIds] = useState<string[]>(tournament?.teamIds ?? [])
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  function toggle(id: string) {
+    setTeamIds((prev) =>
+      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
+    )
+  }
+
+  async function submit() {
+    if (!name.trim()) return setError('Tournament name is required.')
+    setSaving(true)
+    setError(null)
+    const input: TournamentInput = {
+      name: name.trim(),
+      shortName: shortName.trim() || undefined,
+      format,
+      status,
+      oversPerInnings: Number(oversPerInnings) || 20,
+      venue: venue.trim() || undefined,
+      startDate: startDate ? new Date(startDate).getTime() : null,
+      endDate: endDate ? new Date(endDate).getTime() : null,
+      description: description.trim() || undefined,
+      teamIds,
+    }
+    try {
+      await onSave(input, tournament?.id)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={tournament ? 'Edit tournament' : 'New tournament'}
+      size="lg"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={submit} loading={saving}>
+            {tournament ? 'Save changes' : 'Create tournament'}
+          </Button>
+        </>
+      }
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Name" required>
+          <Input value={name} onChange={(e) => setName(e.target.value)} />
+        </Field>
+        <Field label="Short name">
+          <Input value={shortName} onChange={(e) => setShortName(e.target.value)} />
+        </Field>
+        <Field label="Format">
+          <Select
+            value={format}
+            onChange={(e) => setFormat(e.target.value as TournamentFormat)}
+          >
+            <option value="league">League (round robin)</option>
+            <option value="knockout">Knockout</option>
+            <option value="group_knockout">Group + Knockout</option>
+          </Select>
+        </Field>
+        <Field label="Status">
+          <Select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as TournamentStatus)}
+          >
+            <option value="upcoming">Upcoming</option>
+            <option value="ongoing">Ongoing</option>
+            <option value="completed">Completed</option>
+          </Select>
+        </Field>
+        <Field label="Overs per innings">
+          <Input
+            type="number"
+            min={1}
+            value={oversPerInnings}
+            onChange={(e) => setOvers(Number(e.target.value))}
+          />
+        </Field>
+        <Field label="Venue">
+          <Input value={venue} onChange={(e) => setVenue(e.target.value)} />
+        </Field>
+        <Field label="Start date">
+          <Input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+        </Field>
+        <Field label="End date">
+          <Input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
+        </Field>
+      </div>
+
+      <div className="mt-4">
+        <Field label="Description">
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Optional notes about the tournament…"
+          />
+        </Field>
+      </div>
+
+      <div className="mt-4">
+        <div className="mb-1.5 text-sm font-medium text-ink-700">
+          Participating teams ({teamIds.length})
+        </div>
+        {teams.length === 0 ? (
+          <p className="rounded-lg bg-ink-50 px-3 py-2 text-sm text-ink-500">
+            No teams available. Create teams first.
+          </p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {teams.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => toggle(t.id)}
+                className={`rounded-full border px-3 py-1 text-sm ${
+                  teamIds.includes(t.id)
+                    ? 'border-brand-500 bg-brand-50 text-brand-700'
+                    : 'border-ink-300 text-ink-600 hover:bg-ink-50'
+                }`}
+              >
+                {t.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+    </Modal>
+  )
+}

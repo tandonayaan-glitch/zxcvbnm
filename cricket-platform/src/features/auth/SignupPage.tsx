@@ -1,0 +1,104 @@
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { AuthLayout, homeForRole } from './AuthLayout'
+import { Button, Field, Input } from '@/components/ui/primitives'
+import { useAuthStore } from '@/store/authStore'
+import { authErrorMessage, validateUsername } from '@/services/auth.service'
+
+/**
+ * Ordinary signup. New accounts get the VIEWER role by default; an admin can
+ * later promote them to SCORER / manager from User Management.
+ */
+export function SignupPage() {
+  const navigate = useNavigate()
+  const signup = useAuthStore((s) => s.signup)
+
+  const [displayName, setDisplayName] = useState('')
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    const uErr = validateUsername(username)
+    if (uErr) return setError(uErr)
+    if (password.length < 6)
+      return setError('Password must be at least 6 characters.')
+    if (password !== confirm) return setError('Passwords do not match.')
+
+    setLoading(true)
+    try {
+      const p = await signup({
+        username,
+        password,
+        displayName,
+        role: 'VIEWER',
+      })
+      navigate(homeForRole(p.role), { replace: true })
+    } catch (err) {
+      setError(authErrorMessage(err))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <AuthLayout
+      title="Create your account"
+      subtitle="Follow your teams and matches. Ask an admin for scoring access."
+      footer={
+        <>
+          Already have an account?{' '}
+          <Link to="/login" className="font-semibold text-white underline">
+            Sign in
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={onSubmit} className="space-y-4">
+        <Field label="Display name">
+          <Input
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="e.g. Rohit S"
+          />
+        </Field>
+        <Field label="Username" hint="lowercase letters, numbers, underscore">
+          <Input
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="yourname"
+            autoComplete="username"
+          />
+        </Field>
+        <Field label="Password">
+          <Input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="new-password"
+          />
+        </Field>
+        <Field label="Confirm password">
+          <Input
+            type="password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            autoComplete="new-password"
+          />
+        </Field>
+        {error && (
+          <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+        <Button type="submit" block size="lg" loading={loading}>
+          Create account
+        </Button>
+      </form>
+    </AuthLayout>
+  )
+}

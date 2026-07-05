@@ -1,0 +1,177 @@
+import { useState } from 'react'
+import { Modal } from '@/components/ui/Modal'
+import { Button, Field, Input, Select } from '@/components/ui/primitives'
+import { PLAYER_ROLE_LABELS, BOWLING_STYLE_LABELS } from '@/lib/format'
+import type {
+  BattingStyle,
+  BowlingStyle,
+  Player,
+  PlayerRole,
+  Team,
+} from '@/types'
+import type { PlayerInput } from '@/services/players.service'
+
+export function PlayerFormModal({
+  player,
+  teams,
+  onClose,
+  onSave,
+}: {
+  player: Player | null
+  teams: Team[]
+  onClose: () => void
+  onSave: (input: PlayerInput, id?: string) => void | Promise<void>
+}) {
+  const [fullName, setFullName] = useState(player?.fullName ?? '')
+  const [displayName, setDisplayName] = useState(player?.displayName ?? '')
+  const [shortName, setShortName] = useState(player?.shortName ?? '')
+  const [role, setRole] = useState<PlayerRole>(player?.role ?? 'batter')
+  const [battingStyle, setBattingStyle] = useState<BattingStyle>(
+    player?.battingStyle ?? 'right_hand',
+  )
+  const [bowlingStyle, setBowlingStyle] = useState<BowlingStyle>(
+    player?.bowlingStyle ?? 'none',
+  )
+  const [photoURL, setPhotoURL] = useState(player?.photoURL ?? '')
+  const [teamIds, setTeamIds] = useState<string[]>(player?.teamIds ?? [])
+  const [active, setActive] = useState(player?.active ?? true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  function toggleTeam(id: string) {
+    setTeamIds((prev) =>
+      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
+    )
+  }
+
+  async function submit() {
+    if (!fullName.trim()) return setError('Full name is required.')
+    setSaving(true)
+    setError(null)
+    const input: PlayerInput = {
+      fullName: fullName.trim(),
+      displayName: displayName.trim() || fullName.trim(),
+      shortName: shortName.trim() || undefined,
+      role,
+      battingStyle,
+      bowlingStyle,
+      photoURL: photoURL.trim() || null,
+      teamIds,
+      active,
+    }
+    try {
+      await onSave(input, player?.id)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={player ? 'Edit player' : 'Add player'}
+      size="lg"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={submit} loading={saving}>
+            {player ? 'Save changes' : 'Create player'}
+          </Button>
+        </>
+      }
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Full name" required>
+          <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
+        </Field>
+        <Field label="Display name" hint="Shown on scorecards">
+          <Input
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="auto from full name"
+          />
+        </Field>
+        <Field label="Short name">
+          <Input
+            value={shortName}
+            onChange={(e) => setShortName(e.target.value)}
+            placeholder="e.g. RS"
+          />
+        </Field>
+        <Field label="Playing role">
+          <Select value={role} onChange={(e) => setRole(e.target.value as PlayerRole)}>
+            {Object.entries(PLAYER_ROLE_LABELS).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Batting style">
+          <Select
+            value={battingStyle}
+            onChange={(e) => setBattingStyle(e.target.value as BattingStyle)}
+          >
+            <option value="right_hand">Right-hand bat</option>
+            <option value="left_hand">Left-hand bat</option>
+          </Select>
+        </Field>
+        <Field label="Bowling style">
+          <Select
+            value={bowlingStyle}
+            onChange={(e) => setBowlingStyle(e.target.value as BowlingStyle)}
+          >
+            {Object.entries(BOWLING_STYLE_LABELS).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Photo URL (optional)">
+          <Input
+            value={photoURL}
+            onChange={(e) => setPhotoURL(e.target.value)}
+            placeholder="https://…"
+          />
+        </Field>
+        <Field label="Status">
+          <Select
+            value={active ? 'active' : 'archived'}
+            onChange={(e) => setActive(e.target.value === 'active')}
+          >
+            <option value="active">Active</option>
+            <option value="archived">Archived</option>
+          </Select>
+        </Field>
+      </div>
+
+      {teams.length > 0 && (
+        <div className="mt-4">
+          <div className="mb-1.5 text-sm font-medium text-ink-700">Teams</div>
+          <div className="flex flex-wrap gap-2">
+            {teams.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => toggleTeam(t.id)}
+                className={`rounded-full border px-3 py-1 text-sm ${
+                  teamIds.includes(t.id)
+                    ? 'border-brand-500 bg-brand-50 text-brand-700'
+                    : 'border-ink-300 text-ink-600 hover:bg-ink-50'
+                }`}
+              >
+                {t.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+    </Modal>
+  )
+}

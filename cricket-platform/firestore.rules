@@ -1,0 +1,162 @@
+rules_version = '2';
+
+// ==================================================================
+// CricketHub Firestore security rules
+//  - Public read for cricket data (players, teams, tournaments,
+//    matches, deliveries, stats, standings) so the viewer site works
+//    without login.
+//  - Writes restricted by role stored on the user's profile doc.
+//  - Users can create their own profile + username lookup at signup.
+// ==================================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function profile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasRole(roles) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && profile().role in roles;
+    }
+
+    // Reserved master-admin username — MUST match VITE_MASTER_ADMIN_USERNAME.
+    function masterUsername() {
+      return 'ayaan';
+    }
+
+    function isMasterAdmin() {
+      return hasRole(['MASTER_ADMIN']);
+    }
+
+    function isAdmin() {
+      return hasRole(['MASTER_ADMIN', 'ADMIN']);
+    }
+
+    function canScore() {
+      return hasRole(['MASTER_ADMIN', 'ADMIN', 'SCORER']);
+    }
+
+    function canManage() {
+      return hasRole(['MASTER_ADMIN', 'ADMIN', 'TEAM_MANAGER', 'TOURNAMENT_MANAGER']);
+    }
+
+    // Master admin always, or the row's owner.
+    function isOwnerOrMaster(ownerId) {
+      return isMasterAdmin() || (isSignedIn() && ownerId == request.auth.uid);
+    }
+
+    // ---- Users -------------------------------------------------
+    match /users/{uid} {
+      allow read: if true; // profiles are needed for stats display
+      // Self-signup may ONLY create a VIEWER, except the one-time master-admin
+      // bootstrap (reserved username). ADMIN/SCORER are granted later by the
+      // master admin via an update.
+      allow create: if isSignedIn() && request.auth.uid == uid && (
+        request.resource.data.role == 'VIEWER'
+        || (request.resource.data.role == 'MASTER_ADMIN'
+            && request.resource.data.username == masterUsername())
+      );
+      // Self may edit own profile but NOT change role or status (ban).
+      // Role/ban changes require the master admin.
+      allow update: if isSignedIn() && (
+        (request.auth.uid == uid
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.status == resource.data.status)
+        || isMasterAdmin()
+      );
+      allow delete: if isMasterAdmin();
+    }
+
+    // ---- Username lookup --------------------------------------
+    match /usernameLookup/{username} {
+      allow read: if true; // existence check for uniqueness / login
+      // Created by the signing-up user; cannot overwrite an existing one.
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // ---- Players / Teams (owner-scoped) -----------------------
+    match /players/{id} {
+      allow read: if true;
+      allow create: if canManage()
+        && (isMasterAdmin() || request.resource.data.ownerId == request.auth.uid);
+      allow update, delete: if isOwnerOrMaster(resource.data.ownerId);
+    }
+    match /teams/{id} {
+      allow read: if true;
+      allow create: if canManage()
+        && (isMasterAdmin() || request.resource.data.ownerId == request.auth.uid);
+      allow update, delete: if isOwnerOrMaster(resource.data.ownerId);
+    }
+
+    // ---- Tournaments + standings (owner-scoped) ---------------
+    match /tournaments/{id} {
+      allow read: if true;
+      allow create: if canManage()
+        && (isMasterAdmin() || request.resource.data.ownerId == request.auth.uid);
+      allow update, delete: if isOwnerOrMaster(resource.data.ownerId);
+      match /standings/{rowId} {
+        allow read: if true;
+        allow write: if canScore();
+      }
+    }
+
+    // ---- Matches + deliveries (owner-scoped) ------------------
+    match /matches/{id} {
+      allow read: if true;
+      allow create: if canScore()
+        && (isMasterAdmin() || request.resource.data.ownerId == request.auth.uid);
+      allow update, delete: if isOwnerOrMaster(resource.data.ownerId);
+      match /deliveries/{ballId} {
+        allow read: if true;
+        allow write: if canScore();
+      }
+    }
+
+    // ---- Cached stats -----------------------------------------
+    match /playerStats/{id} {
+      allow read: if true;
+      allow write: if canScore();
+    }
+    match /teamStats/{id} {
+      allow read: if true;
+      allow write: if canScore();
+    }
+
+    // ---- Admin requests ---------------------------------------
+    match /adminRequests/{uid} {
+      // A user reads their own request; the master admin reads all.
+      allow read: if isMasterAdmin()
+        || (isSignedIn() && request.auth.uid == uid);
+      // A signed-in user may create/replace only their own (pending) request.
+      allow create: if isSignedIn()
+        && request.auth.uid == uid
+        && request.resource.data.uid == uid
+        && request.resource.data.status == 'pending';
+      // Approve / reject / delete is master-admin only.
+      allow update, delete: if isMasterAdmin();
+    }
+
+    // ---- Audit logs -------------------------------------------
+    match /auditLogs/{id} {
+      // Only the master admin reads the audit trail; any admin can append.
+      allow read: if isMasterAdmin();
+      allow create: if isAdmin()
+        && request.resource.data.actorId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ---- App settings -----------------------------------------
+    match /settings/{id} {
+      allow read: if true;
+      allow write: if isMasterAdmin();
+    }
+  }
+}
