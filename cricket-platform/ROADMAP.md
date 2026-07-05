@@ -53,7 +53,8 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 
 ## Phase 6 — Global leaderboards & rankings
 - ✅ Global leaderboards (runs, wickets, avg, SR, economy, 4s, 6s, best bowling, fielding) + Stats page
-- ⬜ Filters (season/tournament/club/team/venue/year/month), MVP score, consistency & player rating, per-scope ranks
+- 🟡 **Per-tournament competition filter on the Stats page** (✅ recomputes boards + totals per
+  competition); add season/club/team/venue/year filters, MVP score, consistency & player rating
 
 ## Phase 7 — Offline scoring hardening
 - ✅ Firestore IndexedDB persistent cache (writes queue offline, sync on reconnect)

@@ -4,6 +4,13 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Leaderboard competition filter
+- **Competition scope filter** on the Stats page: switch leaderboards (and the runs/wickets/
+  sixes/ranked-player totals) between **all competitions** and any single tournament that has
+  completed matches. Per-tournament boards are recomputed on the fly with `aggregatePlayerStats`
+  + `buildLeaderboards` from that tournament's matches; the selector only lists tournaments with
+  data and resolves names from the live tournament docs.
+
 ### Added — Match export & print
 - **Export toolbar** on the match page (`domain/matchExport.ts`): **CSV** (a readable per-innings
   batting & bowling scorecard), **JSON** (the full match doc plus ball-by-ball deliveries) and
