@@ -4,6 +4,16 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Player tournament splits
+- **"By tournament" tab** on player profiles (`domain/playerSplits.ts`): the player's completed
+  matches bucketed by tournament, each row showing matches, runs, high score, batting average &
+  strike rate, wickets, best bowling and catches — reusing `aggregatePlayerStats` so a split row
+  means exactly what the career figures mean. Non-tournament games collapse into an "Other
+  matches" row (sorted last); the tab only appears once the player has completed matches. The
+  tournament name is resolved from the live Tournament doc, falling back to the name denormalised
+  on the match (so legacy/seed matches still display correctly), and links through to the
+  tournament.
+
 ### Added — Tournament awards
 - **Awards tab** on the tournament page (`domain/awards.ts` + an `AwardCard` grid): a curated
   honours cabinet distinct from the raw Leaders lists. Picks a single honouree per award —

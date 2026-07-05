@@ -9,7 +9,9 @@ import { getPlayer } from '@/services/players.service'
 import { getTeamsByIds } from '@/services/teams.service'
 import { getPlayerStats, getPlayerPerformances } from '@/services/stats.service'
 import { listAllMatches } from '@/services/matches.service'
+import { listTournaments } from '@/services/tournaments.service'
 import { computeAchievements, computeAwards } from '@/domain/achievements'
+import { playerTournamentSplits } from '@/domain/playerSplits'
 import { AchievementsPanel } from '@/components/stats/AchievementsPanel'
 import {
   battingAverage,
@@ -30,6 +32,7 @@ export function PlayerPage() {
   const stats = useAsync(() => getPlayerStats(id), [id])
   const perfs = useAsync(() => getPlayerPerformances(id), [id])
   const matches = useAsync(listAllMatches, [])
+  const tournaments = useAsync(listTournaments, [])
   const teams = useAsync(
     () => (player.data ? getTeamsByIds(player.data.teamIds) : Promise.resolve([])),
     [player.data],
@@ -47,6 +50,15 @@ export function PlayerPage() {
   const p = player.data
   const s = stats.data
   const dismissals = s ? s.inningsBatted - s.notOuts : 0
+  const splits = playerTournamentSplits(id, matches.data ?? [])
+  // Prefer the live tournament name; fall back to the name denormalised on
+  // the match (covers legacy/seed matches that never stored one).
+  const tournamentNameById = new Map(
+    (tournaments.data ?? []).map((tn) => [tn.id, tn.name]),
+  )
+  const splitName = (sp: (typeof splits)[number]) =>
+    (sp.tournamentId && tournamentNameById.get(sp.tournamentId)) ||
+    sp.tournamentName
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
@@ -87,6 +99,9 @@ export function PlayerPage() {
         onChange={setTab}
         tabs={[
           { key: 'overview', label: 'Overview' },
+          ...(splits.length > 0
+            ? [{ key: 'tournaments', label: 'By tournament' }]
+            : []),
           { key: 'achievements', label: 'Achievements' },
           { key: 'matches', label: 'Match log' },
         ]}
@@ -181,6 +196,70 @@ export function PlayerPage() {
             />
           </div>
         ))}
+
+      {tab === 'tournaments' && (
+        <Card className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-ink-100 bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
+                <th className="px-4 py-2.5 font-semibold">Tournament</th>
+                <th className="px-2 py-2.5 text-right font-semibold">M</th>
+                <th className="px-2 py-2.5 text-right font-semibold">Runs</th>
+                <th className="px-2 py-2.5 text-right font-semibold">HS</th>
+                <th className="px-2 py-2.5 text-right font-semibold">Avg</th>
+                <th className="px-2 py-2.5 text-right font-semibold">SR</th>
+                <th className="px-2 py-2.5 text-right font-semibold">Wkts</th>
+                <th className="px-2 py-2.5 text-right font-semibold">Best</th>
+                <th className="px-3 py-2.5 text-right font-semibold">Ct</th>
+              </tr>
+            </thead>
+            <tbody>
+              {splits.map((sp) => {
+                const st = sp.stats
+                return (
+                  <tr key={sp.tournamentId ?? '__none__'} className="border-b border-ink-50">
+                    <td className="px-4 py-2.5">
+                      {sp.tournamentId ? (
+                        <Link
+                          to={`/tournament/${sp.tournamentId}`}
+                          className="font-medium text-ink-900 hover:text-brand-700"
+                        >
+                          {splitName(sp)}
+                        </Link>
+                      ) : (
+                        <span className="font-medium text-ink-500">
+                          {splitName(sp)}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-2 py-2.5 text-right text-ink-600">{st.matches}</td>
+                    <td className="px-2 py-2.5 text-right font-semibold text-ink-900">
+                      {st.runs}
+                    </td>
+                    <td className="px-2 py-2.5 text-right text-ink-600">
+                      {st.highScore}
+                      {st.highScoreNotOut ? '*' : ''}
+                    </td>
+                    <td className="px-2 py-2.5 text-right text-ink-600">
+                      {battingAverage(st.runs, st.inningsBatted - st.notOuts)}
+                    </td>
+                    <td className="px-2 py-2.5 text-right text-ink-600">
+                      {strikeRate(st.runs, st.ballsFaced)}
+                    </td>
+                    <td className="px-2 py-2.5 text-right font-semibold text-ink-900">
+                      {st.wickets}
+                    </td>
+                    <td className="px-2 py-2.5 text-right text-ink-600">
+                      {formatBestBowling(st.bestBowlingWkts, st.bestBowlingRuns)}
+                    </td>
+                    <td className="px-3 py-2.5 text-right text-ink-600">{st.catches}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </Card>
+      )}
 
       {tab === 'matches' &&
         (perfs.loading ? (
