@@ -4,6 +4,17 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Team honours & records
+- **Honours** section on team pages (`domain/teamRecords.ts`): knockout **titles** (finals the
+  team won) as trophy rows — "&lt;Tournament&gt; — Champions, beat &lt;opp&gt; in the final" —
+  linking to the final, with the tournament name resolved from the live doc (falling back to the
+  match snapshot).
+- **Team records** grid: the team's own bests — highest total, highest successful chase, biggest
+  win by runs / by wickets, highest individual score and best bowling — each linking to the match
+  it happened in. Computed purely from the cached innings cards; win/chase-only records are hidden
+  for a team that hasn't won that way, and record-holder names resolve across all players (not just
+  the current squad, so a departed player is still credited).
+
 ### Added — Player tournament splits
 - **"By tournament" tab** on player profiles (`domain/playerSplits.ts`): the player's completed
   matches bucketed by tournament, each row showing matches, runs, high score, batting average &

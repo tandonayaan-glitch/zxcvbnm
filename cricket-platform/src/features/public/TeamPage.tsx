@@ -1,5 +1,14 @@
 import { useParams, Link } from 'react-router-dom'
-import { Shield, Crown, TrendingUp, Target } from 'lucide-react'
+import {
+  Shield,
+  Crown,
+  TrendingUp,
+  Target,
+  Trophy,
+  Star,
+  Swords,
+  Rocket,
+} from 'lucide-react'
 import {
   Avatar,
   Badge,
@@ -13,12 +22,14 @@ import {
 import { FollowButton } from '@/components/ui/FollowButton'
 import { useAsync } from '@/hooks/useAsync'
 import { getTeam } from '@/services/teams.service'
-import { getPlayersByIds } from '@/services/players.service'
+import { getPlayersByIds, listPlayers } from '@/services/players.service'
 import { getTeamStats } from '@/services/stats.service'
 import { listAllMatches } from '@/services/matches.service'
+import { listTournaments } from '@/services/tournaments.service'
 import { aggregatePlayerStats } from '@/domain/stats'
 import { teamResults, teamRecord, type FormOutcome } from '@/domain/teamForm'
-import { PLAYER_ROLE_LABELS, formatDate } from '@/lib/format'
+import { computeTeamHonours, hasTeamRecords } from '@/domain/teamRecords'
+import { PLAYER_ROLE_LABELS, formatDate, ballsToOvers } from '@/lib/format'
 
 export function TeamPage() {
   const { id = '' } = useParams()
@@ -29,6 +40,8 @@ export function TeamPage() {
   )
   const stats = useAsync(() => getTeamStats(id), [id])
   const matches = useAsync(listAllMatches, [])
+  const allPlayers = useAsync(listPlayers, [])
+  const tournaments = useAsync(listTournaments, [])
 
   if (team.loading) return <PageLoader />
   if (!team.data)
@@ -63,6 +76,20 @@ export function TeamPage() {
   const topWkts = [...squadStats]
     .sort((a, b) => b.wickets - a.wickets)
     .find((st) => st.wickets > 0)
+
+  // Honours & records — resolve record-holder names across all players, not
+  // just the current squad (a record may belong to a player who has left).
+  const honours = computeTeamHonours(id, matches.data ?? [])
+  const nameOf = (pid: string) =>
+    (allPlayers.data ?? []).find((p) => p.id === pid)?.displayName ?? '—'
+  // Prefer the live tournament name for titles; fall back to the name
+  // denormalised on the match (covers legacy/seed matches without one).
+  const tournamentNameById = new Map(
+    (tournaments.data ?? []).map((tn) => [tn.id, tn.name]),
+  )
+  const titleName = (tt: (typeof honours.titles)[number]) =>
+    (tt.tournamentId && tournamentNameById.get(tt.tournamentId)) ||
+    tt.tournamentName
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
@@ -156,6 +183,117 @@ export function TeamPage() {
         </div>
       )}
 
+      {honours.titles.length > 0 && (
+        <Card className="mb-4">
+          <CardHeader
+            title={`Honours · ${honours.titles.length} title${
+              honours.titles.length === 1 ? '' : 's'
+            }`}
+          />
+          <CardBody className="space-y-2">
+            {honours.titles.map((tt) => (
+              <Link
+                key={tt.matchId}
+                to={`/match/${tt.matchId}`}
+                className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-amber-50"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500 text-white">
+                  <Trophy size={16} />
+                </span>
+                <div className="flex-1">
+                  <div className="font-medium text-ink-900">
+                    {titleName(tt)} — Champions
+                  </div>
+                  <div className="text-xs text-ink-400">
+                    beat {tt.opponentShort} in the final · {formatDate(tt.date)}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </CardBody>
+        </Card>
+      )}
+
+      {hasTeamRecords(honours) && (
+        <div className="mb-4">
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-400">
+            Team records
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {honours.highestTotal && (
+              <TeamRecordCard
+                icon={<TrendingUp size={18} />}
+                tone="#16a34a"
+                label="Highest total"
+                value={`${honours.highestTotal.runs}/${honours.highestTotal.wickets}`}
+                sub={`vs ${honours.highestTotal.opponentShort} · ${ballsToOvers(
+                  honours.highestTotal.legalBalls,
+                )} ov`}
+                matchId={honours.highestTotal.matchId}
+              />
+            )}
+            {honours.highestChase && (
+              <TeamRecordCard
+                icon={<Rocket size={18} />}
+                tone="#0ea5e9"
+                label="Highest chase"
+                value={`${honours.highestChase.runs}/${honours.highestChase.wickets}`}
+                sub={`chased down vs ${honours.highestChase.opponentShort}`}
+                matchId={honours.highestChase.matchId}
+              />
+            )}
+            {honours.biggestWinByRuns && (
+              <TeamRecordCard
+                icon={<Swords size={18} />}
+                tone="#16a34a"
+                label="Biggest win (runs)"
+                value={`${honours.biggestWinByRuns.margin} run${
+                  honours.biggestWinByRuns.margin === 1 ? '' : 's'
+                }`}
+                sub={`vs ${honours.biggestWinByRuns.opponentShort}`}
+                matchId={honours.biggestWinByRuns.matchId}
+              />
+            )}
+            {honours.biggestWinByWickets && (
+              <TeamRecordCard
+                icon={<Swords size={18} />}
+                tone="#16a34a"
+                label="Biggest win (wickets)"
+                value={`${honours.biggestWinByWickets.margin} wkt${
+                  honours.biggestWinByWickets.margin === 1 ? '' : 's'
+                }`}
+                sub={`vs ${honours.biggestWinByWickets.opponentShort}`}
+                matchId={honours.biggestWinByWickets.matchId}
+              />
+            )}
+            {honours.highestIndividualScore && (
+              <TeamRecordCard
+                icon={<Star size={18} />}
+                tone="#d97706"
+                label="Highest individual score"
+                value={`${honours.highestIndividualScore.runs}${
+                  honours.highestIndividualScore.out ? '' : '*'
+                }`}
+                sub={`${nameOf(honours.highestIndividualScore.playerId)} · ${
+                  honours.highestIndividualScore.balls
+                } balls`}
+                matchId={honours.highestIndividualScore.matchId}
+              />
+            )}
+            {honours.bestBowling && (
+              <TeamRecordCard
+                icon={<Target size={18} />}
+                tone="#dc2626"
+                label="Best bowling"
+                value={`${honours.bestBowling.wickets}/${honours.bestBowling.runs}`}
+                sub={nameOf(honours.bestBowling.playerId)}
+                matchId={honours.bestBowling.matchId}
+              />
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader title="Squad" />
@@ -245,6 +383,41 @@ function FormChip({ outcome }: { outcome: FormOutcome }) {
     >
       {c.label}
     </span>
+  )
+}
+
+function TeamRecordCard({
+  icon,
+  tone,
+  label,
+  value,
+  sub,
+  matchId,
+}: {
+  icon: React.ReactNode
+  tone: string
+  label: string
+  value: string
+  sub: string
+  matchId: string
+}) {
+  return (
+    <Link
+      to={`/match/${matchId}`}
+      className="flex items-center gap-3 rounded-xl border border-ink-100 bg-white p-4 hover:border-brand-300 hover:bg-brand-50/40"
+    >
+      <span
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg"
+        style={{ backgroundColor: `${tone}1a`, color: tone }}
+      >
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <div className="text-xs uppercase tracking-wide text-ink-400">{label}</div>
+        <div className="truncate text-lg font-bold text-ink-900">{value}</div>
+        <div className="truncate text-xs text-ink-500">{sub}</div>
+      </div>
+    </Link>
   )
 }
 
