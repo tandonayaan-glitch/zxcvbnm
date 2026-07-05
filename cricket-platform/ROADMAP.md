@@ -47,8 +47,9 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
   total, highest individual score, best bowling figures, most sixes/fours in an innings, biggest
   win by runs/wickets — all derived from cached innings cards, no delivery reads); **knockout
   bracket** (✅ per-match `stage` set in the setup wizard, rounds rendered left-to-right with
-  winner highlighting — `domain/bracket.ts`); add group tables within group-knockout, awards,
-  qualification tracker, timeline
+  winner highlighting — `domain/bracket.ts`); **awards tab** (✅ Player of the Tournament MVP +
+  best batter/bowler/all-rounder/economy/sixes/most-POTM — `domain/awards.ts`); standings robust
+  to deleted team docs (✅); add group tables within group-knockout, qualification tracker, timeline
 
 ## Phase 6 — Global leaderboards & rankings
 - ✅ Global leaderboards (runs, wickets, avg, SR, economy, 4s, 6s, best bowling, fielding) + Stats page

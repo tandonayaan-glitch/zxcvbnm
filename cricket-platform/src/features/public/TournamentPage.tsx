@@ -11,6 +11,7 @@ import {
   Flame,
   Hash,
   Swords,
+  Award as AwardIcon,
 } from 'lucide-react'
 import {
   Avatar,
@@ -35,6 +36,7 @@ import {
   topWicketTakers,
 } from '@/domain/stats'
 import { computeTournamentRecords } from '@/domain/records'
+import { computeTournamentAwards } from '@/domain/awards'
 import { bracketRounds, hasKnockoutPhase } from '@/domain/bracket'
 import { canManageTournaments, useAuthStore } from '@/store/authStore'
 import { formatDate, formatRate, ballsToOvers } from '@/lib/format'
@@ -67,6 +69,10 @@ export function TournamentPage() {
 
   const stats = useMemo(() => aggregatePlayerStats(tMatches), [tMatches])
   const records = useMemo(() => computeTournamentRecords(tMatches), [tMatches])
+  const awards = useMemo(
+    () => computeTournamentAwards(stats, tMatches),
+    [stats, tMatches],
+  )
   const rounds = useMemo(() => bracketRounds(tMatches), [tMatches])
   const playerName = (pid: string) =>
     (players.data ?? []).find((p) => p.id === pid)?.displayName ?? 'Unknown'
@@ -145,6 +151,7 @@ export function TournamentPage() {
           ...(showBracket ? [{ key: 'bracket', label: 'Bracket' }] : []),
           { key: 'matches', label: 'Fixtures & Results' },
           { key: 'leaders', label: 'Leaders' },
+          { key: 'awards', label: 'Awards' },
           { key: 'records', label: 'Records' },
           { key: 'teams', label: 'Teams' },
         ]}
@@ -287,6 +294,32 @@ export function TournamentPage() {
               value: r.value,
             }))}
           />
+        </div>
+      )}
+
+      {tab === 'awards' && (
+        <div>
+          {awards.length === 0 ? (
+            <EmptyState
+              icon={<AwardIcon size={40} />}
+              title="No awards yet"
+              description="Awards are decided once matches are completed and scored."
+            />
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {awards.map((a, i) => (
+                <AwardCard
+                  key={a.key}
+                  featured={i === 0}
+                  title={a.title}
+                  value={a.value}
+                  playerId={a.playerId}
+                  name={playerName(a.playerId)}
+                  sub={a.sub}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -503,6 +536,59 @@ function RecordCard({
         <div className="truncate text-lg font-bold text-ink-900">{value}</div>
         <div className="truncate text-xs text-ink-500">{sub}</div>
       </div>
+    </Link>
+  )
+}
+
+function AwardCard({
+  featured,
+  title,
+  value,
+  playerId,
+  name,
+  sub,
+}: {
+  featured: boolean
+  title: string
+  value: string
+  playerId: string
+  name: string
+  sub: string
+}) {
+  return (
+    <Link
+      to={`/player/${playerId}`}
+      className={
+        featured
+          ? 'flex items-center gap-3 rounded-xl border border-amber-300 bg-gradient-to-br from-amber-50 to-white p-4 hover:border-amber-400 sm:col-span-2 lg:col-span-3'
+          : 'flex items-center gap-3 rounded-xl border border-ink-100 bg-white p-4 hover:border-brand-300 hover:bg-brand-50/40'
+      }
+    >
+      <span
+        className={
+          featured
+            ? 'flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white'
+            : 'flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600'
+        }
+      >
+        <AwardIcon size={featured ? 24 : 18} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="text-xs uppercase tracking-wide text-amber-600">
+          {title}
+        </div>
+        <div
+          className={
+            featured
+              ? 'truncate text-xl font-bold text-ink-900'
+              : 'truncate text-base font-bold text-ink-900'
+          }
+        >
+          {name}
+        </div>
+        <div className="truncate text-xs text-ink-500">{sub}</div>
+      </div>
+      <Badge tone="amber">{value}</Badge>
     </Link>
   )
 }

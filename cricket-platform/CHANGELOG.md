@@ -4,6 +4,22 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Tournament awards
+- **Awards tab** on the tournament page (`domain/awards.ts` + an `AwardCard` grid): a curated
+  honours cabinet distinct from the raw Leaders lists. Picks a single honouree per award —
+  **Player of the Tournament** (a weighted MVP score blending runs, wickets, catches/stumpings/
+  run-outs, boundaries and Player-of-the-Match awards, shown as a featured full-width card),
+  **Best Batter**, **Best Bowler**, **Best All-Rounder** (only for players with ≥20 runs & ≥2
+  wickets), **Most Sixes**, **Best Economy** (min 12 balls) and **Most POTM awards** (only when a
+  player has more than one). Each card links to the player. Computed purely from the cached player
+  stats already on the page plus POTM tallies read off the match docs — no extra reads, and each
+  card renders only once a qualifying player exists.
+
+### Robustness
+- **Standings** now fall back to the team name/short-name **denormalised onto each match** when a
+  Team doc has since been deleted, so the table shows the real name instead of a generic "Team"
+  placeholder (mirrors how the Records tab already reads names off the match snapshot).
+
 ### Added — Knockout bracket
 - **Bracket tab** on knockout / group-knockout tournaments (`domain/bracket.ts` + `BracketMatch`):
   matches are grouped into ordered rounds (Round of 16 → Quarter-finals → Eliminator/Qualifier →
