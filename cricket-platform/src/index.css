@@ -170,3 +170,26 @@ body {
   outline: 2px solid var(--color-brand-500);
   outline-offset: 2px;
 }
+
+/* ------------------------------------------------------------------ *
+ * Print — a clean, printable scorecard: drop chrome, flatten cards
+ * ------------------------------------------------------------------ */
+@media print {
+  header,
+  footer,
+  .print\:hidden {
+    display: none !important;
+  }
+  body {
+    background: #fff !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  .shadow,
+  .shadow-sm,
+  .shadow-md,
+  .shadow-lg {
+    box-shadow: none !important;
+  }
+}

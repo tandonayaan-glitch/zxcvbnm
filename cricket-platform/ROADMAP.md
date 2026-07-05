@@ -65,7 +65,8 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 - ⬜ Backwards-compatible migration for existing data
 
 ## Phase 9 — Exports, accessibility, performance
-- ⬜ PDF/printable scorecard, CSV/JSON export, match archive, import + duplicate detection
+- 🟡 **Printable scorecard (print CSS) + CSV/JSON export** from the match page (✅
+  `domain/matchExport.ts`); add PDF, match archive, import + duplicate detection
 - ⬜ Accessibility: full keyboard nav, ARIA, focus rings, colour-blind palettes, large-text mode
 - ⬜ Performance: lazy routes, pagination/virtualisation, memoisation, query batching
 

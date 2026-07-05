@@ -4,6 +4,14 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Match export & print
+- **Export toolbar** on the match page (`domain/matchExport.ts`): **CSV** (a readable per-innings
+  batting & bowling scorecard), **JSON** (the full match doc plus ball-by-ball deliveries) and
+  **Print**. Downloads are built client-side via Blob with a filesystem-safe filename
+  (`<teamA>-v-<teamB>-<id>`). Available to everyone once a match has innings.
+- **Printable scorecard** — a `@media print` stylesheet drops the header/footer/toolbar and card
+  shadows so the browser's Print/Save-as-PDF produces a clean scorecard.
+
 ### Added — Player form charts
 - **Recent-form mini charts** on the player Overview (`components/charts/PlayerForm`): batting
   (runs per innings) and bowling (wickets per innings) as SVG bar charts built from the

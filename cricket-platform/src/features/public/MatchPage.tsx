@@ -8,6 +8,9 @@ import {
   Settings2,
   Pencil,
   Award,
+  Download,
+  FileJson,
+  Printer,
 } from 'lucide-react'
 import {
   Button,
@@ -26,6 +29,7 @@ import { ScorecardView } from '@/features/scorecard/ScorecardView'
 import { MatchGraphs } from '@/components/charts/MatchGraphs'
 import { MatchInsights } from '@/components/charts/MatchInsights'
 import { ScorecardConfigModal } from '@/features/scorecard/ScorecardConfigModal'
+import { matchToCSV, matchToJSON, exportSlug } from '@/domain/matchExport'
 import { useAuthStore, canScore, isAdmin } from '@/store/authStore'
 import { useBgStore } from '@/store/bgStore'
 import {
@@ -107,6 +111,22 @@ export function MatchPage() {
   }
 
   const allSquad = [...match.squadA, ...match.squadB]
+  const hasScorecard = match.innings.length > 0
+
+  function exportCSV() {
+    downloadBlob(
+      `${exportSlug(match!)}.csv`,
+      matchToCSV(match!, players.data ?? []),
+      'text/csv;charset=utf-8',
+    )
+  }
+  function exportJSON() {
+    downloadBlob(
+      `${exportSlug(match!)}.json`,
+      matchToJSON(match!, deliveries),
+      'application/json',
+    )
+  }
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
@@ -250,6 +270,33 @@ export function MatchPage() {
         </div>
       )}
 
+      {/* Export toolbar */}
+      {hasScorecard && (
+        <div className="mb-3 flex flex-wrap items-center gap-2 print:hidden">
+          <span className="text-xs font-medium uppercase tracking-wide text-ink-400">
+            Export
+          </span>
+          <button
+            onClick={exportCSV}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-ink-50"
+          >
+            <Download size={15} /> CSV
+          </button>
+          <button
+            onClick={exportJSON}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-ink-50"
+          >
+            <FileJson size={15} /> JSON
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-ink-50"
+          >
+            <Printer size={15} /> Print
+          </button>
+        </div>
+      )}
+
       {/* Scorecard */}
       <ScorecardView
         match={match}
@@ -282,6 +329,18 @@ export function MatchPage() {
       )}
     </div>
   )
+}
+
+function downloadBlob(filename: string, content: string, type: string) {
+  const blob = new Blob([content], { type })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
 }
 
 function LivePanel({
