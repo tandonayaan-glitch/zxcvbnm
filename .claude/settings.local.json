@@ -12,7 +12,10 @@
       "Bash(ls src/lib)",
       "Bash(ls src/services)",
       "Bash(ls src/store)",
-      "Bash(node _tmp_verify.mjs)"
+      "Bash(node _tmp_verify.mjs)",
+      "Bash(git config *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git add *)"
     ]
   }
 }
