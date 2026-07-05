@@ -13,6 +13,7 @@ import { listTournaments } from '@/services/tournaments.service'
 import { computeAchievements, computeAwards } from '@/domain/achievements'
 import { playerTournamentSplits } from '@/domain/playerSplits'
 import { AchievementsPanel } from '@/components/stats/AchievementsPanel'
+import { PlayerForm } from '@/components/charts/PlayerForm'
 import {
   battingAverage,
   strikeRate,
@@ -154,7 +155,9 @@ export function PlayerPage() {
             description="Stats will appear once this player features in completed matches."
           />
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-4">
+            <PlayerForm performances={perfs.data ?? []} />
+            <div className="grid gap-4 sm:grid-cols-2">
             <StatBlock
               title="Batting"
               rows={[
@@ -194,6 +197,7 @@ export function PlayerPage() {
                 ['Stumpings', s.stumpings],
               ]}
             />
+            </div>
           </div>
         ))}
 

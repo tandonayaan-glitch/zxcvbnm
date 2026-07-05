@@ -4,6 +4,13 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Player form charts
+- **Recent-form mini charts** on the player Overview (`components/charts/PlayerForm`): batting
+  (runs per innings) and bowling (wickets per innings) as SVG bar charts built from the
+  match-by-match performance log — no external chart deps. Newest innings on the right, bars
+  colour-coded by milestone (50+ gold, 30+ green; 3-wkt hauls purple), not-outs marked with `*`,
+  plus a "last 5" summary. Hidden for players with no completed innings.
+
 ### Added — Team honours & records
 - **Honours** section on team pages (`domain/teamRecords.ts`): knockout **titles** (finals the
   team won) as trophy rows — "&lt;Tournament&gt; — Champions, beat &lt;opp&gt; in the final" —
