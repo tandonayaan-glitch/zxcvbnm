@@ -42,7 +42,8 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 - ✅ Global undo toasts for create/edit actions (Players, Teams, Tournaments)
 
 ## Phase 5 — Player / Team / Tournament depth
-- 🟡 Player profile: career/batting/bowling/fielding stats + match log + follow, achievements, awards cabinet (✅); **per-tournament splits tab** (✅ `domain/playerSplits.ts`); **recent-form charts** (✅ batting/bowling SVG bars — `components/charts/PlayerForm`); add season splits, radar charts, rankings, timeline
+- 🟡 Player profile: career/batting/bowling/fielding stats + match log + follow, achievements, awards cabinet (✅); **per-tournament splits tab** (✅ `domain/playerSplits.ts`); **recent-form charts** (✅ batting/bowling SVG bars — `components/charts/PlayerForm`); **global
+  rankings strip** (✅ runs/wickets/sixes rank); add season splits, radar charts, timeline
 - 🟡 Team profile: squad, recent, record, leaders (✅); **recent-form guide (W/L/T chips), win-rate/record summary, top run-scorer & wicket-taker** (✅); **honours (knockout titles) + team records** (✅ highest total/chase, biggest wins, best individual batting/bowling — `domain/teamRecords.ts`); add home/away splits
 - 🟡 Tournament: standings, fixtures, leaders, teams (✅); **records tab** (✅ highest/lowest team
   total, highest individual score, best bowling figures, most sixes/fours in an innings, biggest

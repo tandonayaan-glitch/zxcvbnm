@@ -35,6 +35,11 @@ All notable changes to CricketHub. Newest first.
 - **Printable scorecard** — a `@media print` stylesheet drops the header/footer/toolbar and card
   shadows so the browser's Print/Save-as-PDF produces a clean scorecard.
 
+### Added — Player global rankings
+- **Rankings strip** on the player Overview: where the player sits among all ranked players for
+  runs, wickets and sixes (e.g. "#1 Runs of 10"), computed from every completed match. Only ranks
+  the player actually places in are shown; each pill links to the Stats page.
+
 ### Added — Player form charts
 - **Recent-form mini charts** on the player Overview (`components/charts/PlayerForm`): batting
   (runs per innings) and bowling (wickets per innings) as SVG bar charts built from the

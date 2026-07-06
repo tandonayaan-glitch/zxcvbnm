@@ -12,6 +12,7 @@ import { listAllMatches } from '@/services/matches.service'
 import { listTournaments } from '@/services/tournaments.service'
 import { computeAchievements, computeAwards } from '@/domain/achievements'
 import { playerTournamentSplits } from '@/domain/playerSplits'
+import { aggregatePlayerStats } from '@/domain/stats'
 import { AchievementsPanel } from '@/components/stats/AchievementsPanel'
 import { PlayerForm } from '@/components/charts/PlayerForm'
 import {
@@ -52,6 +53,23 @@ export function PlayerPage() {
   const s = stats.data
   const dismissals = s ? s.inningsBatted - s.notOuts : 0
   const splits = playerTournamentSplits(id, matches.data ?? [])
+
+  // Global rankings — where this player sits among all ranked players.
+  const allStatsArr = [...aggregatePlayerStats(matches.data ?? []).values()]
+  const rankIn = (key: 'runs' | 'wickets' | 'sixes') => {
+    const sorted = allStatsArr
+      .filter((st) => st[key] > 0)
+      .sort((a, b) => b[key] - a[key])
+    const idx = sorted.findIndex((st) => st.playerId === id)
+    return idx >= 0 ? { rank: idx + 1, total: sorted.length } : null
+  }
+  const rankings = (
+    [
+      { label: 'Runs', ...rankIn('runs') },
+      { label: 'Wickets', ...rankIn('wickets') },
+      { label: 'Sixes', ...rankIn('sixes') },
+    ] as { label: string; rank?: number; total?: number }[]
+  ).filter((r) => r.rank)
   // Prefer the live tournament name; fall back to the name denormalised on
   // the match (covers legacy/seed matches that never stored one).
   const tournamentNameById = new Map(
@@ -156,6 +174,21 @@ export function PlayerPage() {
           />
         ) : (
           <div className="space-y-4">
+            {rankings.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {rankings.map((r) => (
+                  <Link
+                    key={r.label}
+                    to="/stats"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-ink-200 bg-white px-3 py-1.5 text-sm hover:border-brand-300 hover:bg-brand-50/50"
+                  >
+                    <span className="font-bold text-brand-700">#{r.rank}</span>
+                    <span className="text-ink-600">{r.label}</span>
+                    <span className="text-xs text-ink-400">of {r.total}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
             <PlayerForm performances={perfs.data ?? []} />
             <div className="grid gap-4 sm:grid-cols-2">
             <StatBlock
