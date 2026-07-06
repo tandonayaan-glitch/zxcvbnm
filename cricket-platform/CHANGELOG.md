@@ -16,12 +16,16 @@ All notable changes to CricketHub. Newest first.
   on-device and will sync on reconnect (Firestore's IndexedDB cache already queues writes). Uses
   `useSyncExternalStore` on the browser online/offline events; hidden while online and when printing.
 
-### Added — Leaderboard competition filter
+### Added — Leaderboard competition filter & records
 - **Competition scope filter** on the Stats page: switch leaderboards (and the runs/wickets/
   sixes/ranked-player totals) between **all competitions** and any single tournament that has
   completed matches. Per-tournament boards are recomputed on the fly with `aggregatePlayerStats`
   + `buildLeaderboards` from that tournament's matches; the selector only lists tournaments with
   data and resolves names from the live tournament docs.
+- **Records tab** on the Stats page: all-time (or per-competition) records — highest team total,
+  highest individual score, best bowling figures, most sixes in an innings, biggest win by
+  runs/wickets — reusing `computeTournamentRecords` over the scoped match set, each card linking
+  to the match. Respects the competition filter.
 
 ### Added — Match export & print
 - **Export toolbar** on the match page (`domain/matchExport.ts`): **CSV** (a readable per-innings
