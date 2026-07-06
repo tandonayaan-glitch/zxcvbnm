@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Search, Trophy, ChevronRight, Radio } from 'lucide-react'
+import { Search, Trophy, ChevronRight, Radio, TrendingUp, Target, Award } from 'lucide-react'
 import {
+  Avatar,
   Card,
   CardBody,
   CardHeader,
@@ -15,8 +16,10 @@ import {
   subscribeLiveMatches,
 } from '@/services/matches.service'
 import { listTournaments } from '@/services/tournaments.service'
+import { usePlatformStats } from '@/hooks/usePlatformStats'
+import { buildImpactBoard } from '@/domain/stats'
 import { ballsToOvers, formatDate } from '@/lib/format'
-import type { Match } from '@/types'
+import type { Match, Player } from '@/types'
 
 export function PublicHomePage() {
   const navigate = useNavigate()
@@ -24,6 +27,44 @@ export function PublicHomePage() {
   const [live, setLive] = useState<Match[]>([])
   const allMatches = useAsync(listAllMatches, [])
   const tournaments = useAsync(listTournaments, [])
+  const { leaderboards, playerStats, playerMap } = usePlatformStats()
+
+  const topRuns = leaderboards.find((b) => b.key === 'runs')?.rows[0]
+  const topWkts = leaderboards.find((b) => b.key === 'wickets')?.rows[0]
+  const mvp = buildImpactBoard(playerStats, 1).rows[0]
+  const leaders = [
+    topRuns && {
+      row: topRuns,
+      label: 'Most runs',
+      value: `${topRuns.display}`,
+      unit: 'runs',
+      icon: <TrendingUp size={16} />,
+      tone: '#16a34a',
+    },
+    topWkts && {
+      row: topWkts,
+      label: 'Most wickets',
+      value: `${topWkts.display}`,
+      unit: 'wkts',
+      icon: <Target size={16} />,
+      tone: '#dc2626',
+    },
+    mvp && {
+      row: mvp,
+      label: 'Top MVP',
+      value: `${mvp.display}`,
+      unit: 'pts',
+      icon: <Award size={16} />,
+      tone: '#7c3aed',
+    },
+  ].filter(Boolean) as {
+    row: { playerId: string }
+    label: string
+    value: string
+    unit: string
+    icon: React.ReactNode
+    tone: string
+  }[]
 
   useEffect(() => {
     const unsub = subscribeLiveMatches(setLive)
@@ -89,6 +130,34 @@ export function PublicHomePage() {
             </div>
           )}
         </section>
+
+        {/* Leading players */}
+        {leaders.length > 0 && (
+          <section className="mb-8">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-ink-900">Leading players</h2>
+              <Link
+                to="/stats"
+                className="text-sm font-medium text-brand-700 hover:underline"
+              >
+                All stats
+              </Link>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {leaders.map((l) => (
+                <LeaderMiniCard
+                  key={l.label}
+                  player={playerMap.get(l.row.playerId)}
+                  label={l.label}
+                  value={l.value}
+                  unit={l.unit}
+                  icon={l.icon}
+                  tone={l.tone}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="grid gap-8 lg:grid-cols-2">
           {/* Recent results */}
@@ -187,6 +256,48 @@ export function PublicHomePage() {
         </div>
       </div>
     </div>
+  )
+}
+
+function LeaderMiniCard({
+  player,
+  label,
+  value,
+  unit,
+  icon,
+  tone,
+}: {
+  player?: Player
+  label: string
+  value: string
+  unit: string
+  icon: React.ReactNode
+  tone: string
+}) {
+  return (
+    <Link to={player ? `/player/${player.id}` : '/stats'}>
+      <Card className="flex items-center gap-3 p-4 hover:border-brand-300">
+        <span
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+          style={{ backgroundColor: `${tone}1a`, color: tone }}
+        >
+          {icon}
+        </span>
+        <Avatar name={player?.fullName ?? '?'} src={player?.photoURL} size={38} />
+        <div className="min-w-0 flex-1">
+          <div className="text-xs uppercase tracking-wide text-ink-400">
+            {label}
+          </div>
+          <div className="truncate font-semibold text-ink-900">
+            {player?.displayName ?? 'Unknown'}
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-lg font-extrabold text-ink-900">{value}</div>
+          <div className="text-[11px] text-ink-400">{unit}</div>
+        </div>
+      </Card>
+    </Link>
   )
 }
 

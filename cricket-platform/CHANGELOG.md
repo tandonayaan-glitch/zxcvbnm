@@ -4,6 +4,12 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Home page leading players
+- **"Leading players" strip** on the public home page: the platform's top run-scorer, top
+  wicket-taker and top MVP (impact) as mini cards with avatars, each linking to the player, plus
+  an "All stats" link. Derived from `usePlatformStats` + `buildImpactBoard`; hidden until there's
+  data.
+
 ### Added — Head-to-head
 - **Head-to-head card** on the match page (`domain/headToHead.ts`): the completed-match record
   between the two teams (wins each, plus ties / no-results), computed from all matches' result
