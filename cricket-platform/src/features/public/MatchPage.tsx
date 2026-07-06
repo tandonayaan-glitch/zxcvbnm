@@ -11,6 +11,8 @@ import {
   Download,
   FileJson,
   Printer,
+  TrendingUp,
+  Target,
 } from 'lucide-react'
 import {
   Button,
@@ -31,6 +33,7 @@ import { MatchInsights } from '@/components/charts/MatchInsights'
 import { ScorecardConfigModal } from '@/features/scorecard/ScorecardConfigModal'
 import { matchToCSV, matchToJSON, exportSlug } from '@/domain/matchExport'
 import { computeHeadToHead } from '@/domain/headToHead'
+import { matchTopPerformers } from '@/domain/matchPerformers'
 import { useAuthStore, canScore, isAdmin } from '@/store/authStore'
 import { useBgStore } from '@/store/bgStore'
 import {
@@ -119,6 +122,9 @@ export function MatchPage() {
     match.teamB.id,
     allMatches.data ?? [],
   )
+  const stars = matchTopPerformers(match)
+  const teamShortById = (tid: string) =>
+    tid === match.teamA.id ? match.teamA.shortName : match.teamB.shortName
 
   function exportCSV() {
     downloadBlob(
@@ -298,6 +304,57 @@ export function MatchPage() {
             </Link>
           </div>
         </Card>
+      )}
+
+      {/* Star performers */}
+      {hasScorecard && (stars.batter || stars.bowler) && (
+        <div className="mb-4 grid gap-3 sm:grid-cols-2">
+          {stars.batter && (
+            <Link
+              to={`/player/${stars.batter.playerId}`}
+              className="flex items-center gap-3 rounded-xl border border-ink-100 bg-white p-4 hover:border-brand-300 hover:bg-brand-50/40"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-pitch-100 text-pitch-700">
+                <TrendingUp size={18} />
+              </span>
+              <div className="min-w-0">
+                <div className="text-xs uppercase tracking-wide text-ink-400">
+                  Top batter
+                </div>
+                <div className="truncate font-semibold text-ink-900">
+                  {name(stars.batter.playerId)}
+                </div>
+                <div className="text-xs text-ink-500">
+                  {stars.batter.runs}
+                  {stars.batter.out ? '' : '*'} ({stars.batter.balls}) ·{' '}
+                  {teamShortById(stars.batter.teamId)}
+                </div>
+              </div>
+            </Link>
+          )}
+          {stars.bowler && (
+            <Link
+              to={`/player/${stars.bowler.playerId}`}
+              className="flex items-center gap-3 rounded-xl border border-ink-100 bg-white p-4 hover:border-brand-300 hover:bg-brand-50/40"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-600">
+                <Target size={18} />
+              </span>
+              <div className="min-w-0">
+                <div className="text-xs uppercase tracking-wide text-ink-400">
+                  Top bowler
+                </div>
+                <div className="truncate font-semibold text-ink-900">
+                  {name(stars.bowler.playerId)}
+                </div>
+                <div className="text-xs text-ink-500">
+                  {stars.bowler.wickets}/{stars.bowler.runs} ·{' '}
+                  {teamShortById(stars.bowler.teamId)}
+                </div>
+              </div>
+            </Link>
+          )}
+        </div>
       )}
 
       {/* Analytics graphs */}

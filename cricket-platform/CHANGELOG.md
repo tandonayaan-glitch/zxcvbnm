@@ -10,6 +10,11 @@ All notable changes to CricketHub. Newest first.
   an "All stats" link. Derived from `usePlatformStats` + `buildImpactBoard`; hidden until there's
   data.
 
+### Added — Star performers
+- **Star performers highlight** on the match page (`domain/matchPerformers.ts`): the top batter
+  (highest score) and top bowler (best figures) of the match as mini cards linking to the player,
+  computed from the innings cards. Shown once a match has a scorecard.
+
 ### Added — Head-to-head
 - **Head-to-head card** on the match page (`domain/headToHead.ts`): the completed-match record
   between the two teams (wins each, plus ties / no-results), computed from all matches' result
