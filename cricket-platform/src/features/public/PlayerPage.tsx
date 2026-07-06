@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { User } from 'lucide-react'
+import { User, Flag, Star, Award, Target, TrendingUp } from 'lucide-react'
 import { Avatar, Badge, Card, PageLoader, EmptyState } from '@/components/ui/primitives'
 import { FollowButton } from '@/components/ui/FollowButton'
 import { Tabs } from '@/components/ui/Tabs'
@@ -12,6 +12,7 @@ import { listAllMatches } from '@/services/matches.service'
 import { listTournaments } from '@/services/tournaments.service'
 import { computeAchievements, computeAwards } from '@/domain/achievements'
 import { playerTournamentSplits } from '@/domain/playerSplits'
+import { playerTimeline } from '@/domain/playerTimeline'
 import { aggregatePlayerStats } from '@/domain/stats'
 import { AchievementsPanel } from '@/components/stats/AchievementsPanel'
 import { PlayerForm } from '@/components/charts/PlayerForm'
@@ -53,6 +54,7 @@ export function PlayerPage() {
   const s = stats.data
   const dismissals = s ? s.inningsBatted - s.notOuts : 0
   const splits = playerTournamentSplits(id, matches.data ?? [])
+  const timeline = playerTimeline(id, matches.data ?? [])
 
   // Global rankings — where this player sits among all ranked players.
   const allStatsArr = [...aggregatePlayerStats(matches.data ?? []).values()]
@@ -120,6 +122,9 @@ export function PlayerPage() {
           { key: 'overview', label: 'Overview' },
           ...(splits.length > 0
             ? [{ key: 'tournaments', label: 'By tournament' }]
+            : []),
+          ...(timeline.length > 0
+            ? [{ key: 'timeline', label: 'Timeline' }]
             : []),
           { key: 'achievements', label: 'Achievements' },
           { key: 'matches', label: 'Match log' },
@@ -298,6 +303,25 @@ export function PlayerPage() {
         </Card>
       )}
 
+      {tab === 'timeline' && (
+        <Card className="p-5">
+          <ol className="relative ml-1 space-y-5 border-l-2 border-ink-100 pl-5">
+            {timeline.map((e, i) => (
+              <li key={`${e.matchId}-${e.title}-${i}`} className="relative">
+                <span className="absolute -left-[30px] flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-brand-700 ring-4 ring-white">
+                  <TimelineIcon icon={e.icon} />
+                </span>
+                <Link to={`/match/${e.matchId}`} className="block hover:opacity-80">
+                  <div className="font-semibold text-ink-900">{e.title}</div>
+                  <div className="text-sm text-ink-600">{e.detail}</div>
+                  <div className="text-xs text-ink-400">{formatDate(e.date)}</div>
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </Card>
+      )}
+
       {tab === 'matches' &&
         (perfs.loading ? (
           <PageLoader />
@@ -347,6 +371,15 @@ export function PlayerPage() {
         ))}
     </div>
   )
+}
+
+function TimelineIcon({ icon }: { icon: string }) {
+  const size = 14
+  if (icon === 'debut') return <Flag size={size} />
+  if (icon === 'hundred') return <Award size={size} />
+  if (icon === 'fifty') return <Star size={size} />
+  if (icon === 'fivefor') return <Target size={size} />
+  return <TrendingUp size={size} />
 }
 
 function StatBlock({

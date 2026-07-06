@@ -53,6 +53,12 @@ All notable changes to CricketHub. Newest first.
 - **Printable scorecard** — a `@media print` stylesheet drops the header/footer/toolbar and card
   shadows so the browser's Print/Save-as-PDF produces a clean scorecard.
 
+### Added — Player career timeline
+- **Timeline tab** on player profiles (`domain/playerTimeline.ts`): a chronological milestone
+  feed — debut, fifties, hundreds, five-wicket hauls and career-best score/bowling — each entry
+  linking to its match. Derived purely from the performance log; the tab appears once the player
+  has a completed appearance.
+
 ### Added — Player global rankings
 - **Rankings strip** on the player Overview: where the player sits among all ranked players for
   runs, wickets and sixes (e.g. "#1 Runs of 10"), computed from every completed match. Only ranks
