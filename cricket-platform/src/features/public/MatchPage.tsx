@@ -23,13 +23,14 @@ import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/toast'
 import { useAsync } from '@/hooks/useAsync'
 import { listPlayers } from '@/services/players.service'
-import { subscribeMatch, updateMatch } from '@/services/matches.service'
+import { subscribeMatch, updateMatch, listAllMatches } from '@/services/matches.service'
 import { setPlayerOfTheMatch, subscribeDeliveries } from '@/services/scoring.service'
 import { ScorecardView } from '@/features/scorecard/ScorecardView'
 import { MatchGraphs } from '@/components/charts/MatchGraphs'
 import { MatchInsights } from '@/components/charts/MatchInsights'
 import { ScorecardConfigModal } from '@/features/scorecard/ScorecardConfigModal'
 import { matchToCSV, matchToJSON, exportSlug } from '@/domain/matchExport'
+import { computeHeadToHead } from '@/domain/headToHead'
 import { useAuthStore, canScore, isAdmin } from '@/store/authStore'
 import { useBgStore } from '@/store/bgStore'
 import {
@@ -46,6 +47,7 @@ export function MatchPage() {
   const toast = useToast()
   const profile = useAuthStore((s) => s.profile)
   const players = useAsync(listPlayers, [])
+  const allMatches = useAsync(listAllMatches, [])
 
   const [match, setMatch] = useState<Match | null>(null)
   const [deliveries, setDeliveries] = useState<Delivery[]>([])
@@ -112,6 +114,11 @@ export function MatchPage() {
 
   const allSquad = [...match.squadA, ...match.squadB]
   const hasScorecard = match.innings.length > 0
+  const h2h = computeHeadToHead(
+    match.teamA.id,
+    match.teamB.id,
+    allMatches.data ?? [],
+  )
 
   function exportCSV() {
     downloadBlob(
@@ -231,6 +238,43 @@ export function MatchPage() {
           </div>
         )}
       </Card>
+
+      {/* Head-to-head */}
+      {h2h.played > 0 && (
+        <Card className="mb-4 p-4">
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-400">
+            Head to head · {h2h.played} meeting{h2h.played === 1 ? '' : 's'}
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex-1 text-center">
+              <div className="truncate text-sm font-medium text-ink-700">
+                {match.teamA.shortName}
+              </div>
+              <div className="text-2xl font-extrabold text-ink-900">
+                {h2h.aWins}
+              </div>
+            </div>
+            <div className="text-center text-xs text-ink-400">
+              <div>won</div>
+              {(h2h.tied > 0 || h2h.noResult > 0) && (
+                <div className="mt-0.5">
+                  {h2h.tied > 0 && `${h2h.tied} tie`}
+                  {h2h.tied > 0 && h2h.noResult > 0 && ' · '}
+                  {h2h.noResult > 0 && `${h2h.noResult} NR`}
+                </div>
+              )}
+            </div>
+            <div className="flex-1 text-center">
+              <div className="truncate text-sm font-medium text-ink-700">
+                {match.teamB.shortName}
+              </div>
+              <div className="text-2xl font-extrabold text-ink-900">
+                {h2h.bWins}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Live mini panel */}
       {live && match.innings[match.currentInnings] && (

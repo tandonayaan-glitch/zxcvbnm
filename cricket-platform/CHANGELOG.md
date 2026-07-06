@@ -4,6 +4,12 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Head-to-head
+- **Head-to-head card** on the match page (`domain/headToHead.ts`): the completed-match record
+  between the two teams (wins each, plus ties / no-results), computed from all matches' result
+  fields. Shown whenever the two teams have met before; robust to deleted team docs since it reads
+  the denormalised result.
+
 ### Added — Offline indicator
 - **Global offline banner** (`components/ui/OfflineBanner` + `hooks/useOnlineStatus`): a fixed
   amber bar appears whenever the browser goes offline, reassuring the user that changes are saved
