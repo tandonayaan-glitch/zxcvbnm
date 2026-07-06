@@ -62,10 +62,13 @@ All notable changes to CricketHub. Newest first.
   colour-coded by milestone (50+ gold, 30+ green; 3-wkt hauls purple), not-outs marked with `*`,
   plus a "last 5" summary. Hidden for players with no completed innings.
 
-### Added — Team record vs opponents
+### Added — Team splits (opponents & venues)
 - **Record vs opponents table** on team pages (`domain/teamOpponents.ts`): the team's
   completed-match record broken down by opponent (played, won, lost, tied/NR and win %), each
   opponent linking to its team page. Shown once the team has completed matches.
+- **Record by venue table** on team pages (`domain/teamVenues.ts`): the same completed-match
+  record grouped by ground (played/won/lost and win %), shown once the team has matches with a
+  recorded venue.
 
 ### Added — Team honours & records
 - **Honours** section on team pages (`domain/teamRecords.ts`): knockout **titles** (finals the

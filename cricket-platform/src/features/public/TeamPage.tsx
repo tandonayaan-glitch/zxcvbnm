@@ -30,6 +30,7 @@ import { aggregatePlayerStats } from '@/domain/stats'
 import { teamResults, teamRecord, type FormOutcome } from '@/domain/teamForm'
 import { computeTeamHonours, hasTeamRecords } from '@/domain/teamRecords'
 import { teamOpponentRecords } from '@/domain/teamOpponents'
+import { teamVenueRecords } from '@/domain/teamVenues'
 import { PLAYER_ROLE_LABELS, formatDate, ballsToOvers } from '@/lib/format'
 
 export function TeamPage() {
@@ -82,6 +83,7 @@ export function TeamPage() {
   // just the current squad (a record may belong to a player who has left).
   const honours = computeTeamHonours(id, matches.data ?? [])
   const opponentRecords = teamOpponentRecords(id, matches.data ?? [])
+  const venueRecords = teamVenueRecords(id, matches.data ?? [])
   const nameOf = (pid: string) =>
     (allPlayers.data ?? []).find((p) => p.id === pid)?.displayName ?? '—'
   // Prefer the live tournament name for titles; fall back to the name
@@ -330,6 +332,42 @@ export function TeamPage() {
                     <td className="px-2 py-2.5 text-right text-ink-600">
                       {o.tied + o.noResult}
                     </td>
+                    <td className="px-4 py-2.5 text-right font-semibold text-ink-900">
+                      {winPct}%
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </Card>
+      )}
+
+      {venueRecords.length > 0 && (
+        <Card className="mb-4 overflow-x-auto">
+          <CardHeader title="Record by venue" />
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-ink-100 bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
+                <th className="px-4 py-2.5 font-semibold">Venue</th>
+                <th className="px-2 py-2.5 text-right font-semibold">P</th>
+                <th className="px-2 py-2.5 text-right font-semibold">W</th>
+                <th className="px-2 py-2.5 text-right font-semibold">L</th>
+                <th className="px-4 py-2.5 text-right font-semibold">Win %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {venueRecords.map((v) => {
+                const decided = v.won + v.lost + v.tied
+                const winPct = decided > 0 ? Math.round((v.won / decided) * 100) : 0
+                return (
+                  <tr key={v.venue} className="border-b border-ink-50">
+                    <td className="px-4 py-2.5 font-medium text-ink-900">
+                      {v.venue}
+                    </td>
+                    <td className="px-2 py-2.5 text-right text-ink-600">{v.played}</td>
+                    <td className="px-2 py-2.5 text-right text-pitch-700">{v.won}</td>
+                    <td className="px-2 py-2.5 text-right text-red-600">{v.lost}</td>
                     <td className="px-4 py-2.5 text-right font-semibold text-ink-900">
                       {winPct}%
                     </td>
