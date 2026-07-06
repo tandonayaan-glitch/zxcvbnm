@@ -32,6 +32,7 @@ import { MatchGraphs } from '@/components/charts/MatchGraphs'
 import { MatchInsights } from '@/components/charts/MatchInsights'
 import { ScorecardConfigModal } from '@/features/scorecard/ScorecardConfigModal'
 import { matchToCSV, matchToJSON, exportSlug } from '@/domain/matchExport'
+import { downloadBlob } from '@/lib/download'
 import { computeHeadToHead } from '@/domain/headToHead'
 import { matchTopPerformers } from '@/domain/matchPerformers'
 import { useAuthStore, canScore, isAdmin } from '@/store/authStore'
@@ -430,18 +431,6 @@ export function MatchPage() {
       )}
     </div>
   )
-}
-
-function downloadBlob(filename: string, content: string, type: string) {
-  const blob = new Blob([content], { type })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  URL.revokeObjectURL(url)
 }
 
 function LivePanel({
