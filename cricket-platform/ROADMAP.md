@@ -74,7 +74,8 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 - 🟡 **Printable scorecard (print CSS) + CSV/JSON export** from the match page (✅
   `domain/matchExport.ts`); add PDF, match archive, import + duplicate detection
 - ⬜ Accessibility: full keyboard nav, ARIA, focus rings, colour-blind palettes, large-text mode
-- ⬜ Performance: lazy routes, pagination/virtualisation, memoisation, query batching
+- 🟡 Performance: **lazy-loaded routes / code-splitting** (✅ `React.lazy` + `Suspense` per route);
+  add pagination/virtualisation, memoisation, query batching
 
 ---
 

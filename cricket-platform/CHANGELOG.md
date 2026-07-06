@@ -65,6 +65,12 @@ All notable changes to CricketHub. Newest first.
   colour-coded by milestone (50+ gold, 30+ green; 3-wkt hauls purple), not-outs marked with `*`,
   plus a "last 5" summary. Hidden for players with no completed innings.
 
+### Performance
+- **Lazy-loaded route pages** — every route component is now `React.lazy` + `Suspense`, so each
+  page ships in its own chunk fetched on navigation. The initial entry bundle drops from one large
+  file to ~268 kB, with small per-page chunks (e.g. MatchPage ~35 kB, PlayerPage ~18 kB); the
+  Firebase SDK is isolated in its own cached vendor chunk.
+
 ### Fixed
 - **Tournament standings showed a generic "Team"** when a team's doc had been deleted from the
   Teams collection. Standings now resolve the team name from denormalised match data (falling back
