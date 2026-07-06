@@ -26,6 +26,10 @@ All notable changes to CricketHub. Newest first.
   highest individual score, best bowling figures, most sixes in an innings, biggest win by
   runs/wickets — reusing `computeTournamentRecords` over the scoped match set, each card linking
   to the match. Respects the competition filter.
+- **MVP / impact leaderboard** (`impactRating` + `buildImpactBoard`): a transparent all-round
+  rating (batting runs + boundary/milestone bonuses, 20/wicket + maidens & five-fors, 8–12 per
+  fielding dismissal) surfaced as a "Most valuable players" board at the top of the Stats page,
+  with a plain-English scoring note. Respects the competition filter.
 
 ### Added — Match export & print
 - **Export toolbar** on the match page (`domain/matchExport.ts`): **CSV** (a readable per-innings

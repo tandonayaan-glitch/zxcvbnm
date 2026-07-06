@@ -18,7 +18,11 @@ import { LeaderboardCard } from '@/components/stats/LeaderboardCard'
 import { usePlatformStats } from '@/hooks/usePlatformStats'
 import { useAsync } from '@/hooks/useAsync'
 import { listTournaments } from '@/services/tournaments.service'
-import { aggregatePlayerStats, buildLeaderboards } from '@/domain/stats'
+import {
+  aggregatePlayerStats,
+  buildLeaderboards,
+  buildImpactBoard,
+} from '@/domain/stats'
 import { computeTournamentRecords } from '@/domain/records'
 import { ballsToOvers } from '@/lib/format'
 
@@ -68,6 +72,11 @@ export function StatsPage() {
   const records = useMemo(
     () => computeTournamentRecords(scopedMatches),
     [scopedMatches],
+  )
+
+  const impactBoard = useMemo(
+    () => buildImpactBoard(scoped.playerStats, 5),
+    [scoped.playerStats],
   )
 
   const totals = useMemo(() => {
@@ -133,6 +142,26 @@ export function StatsPage() {
             <StatCard label="Sixes hit" value={totals.sixes} icon={<BarChart3 size={20} />} tone="amber" />
             <StatCard label="Ranked players" value={totals.players} icon={<Users size={20} />} tone="purple" />
           </div>
+
+          {impactBoard.rows.length > 0 && (
+            <div className="mb-6 grid gap-4 lg:grid-cols-2">
+              <LeaderboardCard
+                board={impactBoard}
+                players={playerMap}
+                limit={5}
+                tone={3}
+              />
+              <div className="rounded-xl border border-ink-100 bg-ink-50/60 p-4 text-sm text-ink-500">
+                <div className="mb-1 font-semibold text-ink-700">
+                  How impact is scored
+                </div>
+                Batting: runs + boundary &amp; milestone bonuses. Bowling: 20 per
+                wicket, plus maidens &amp; five-fors. Fielding: 8&ndash;12 per
+                dismissal. A simple, explainable all-round rating&nbsp;&mdash; not
+                a tuned model.
+              </div>
+            </div>
+          )}
 
           <Tabs
             className="mb-4"

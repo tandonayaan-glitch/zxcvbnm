@@ -609,3 +609,51 @@ export function buildLeaderboards(
     fielding,
   ].filter((lb) => lb.rows.length > 0)
 }
+
+/* ---------------------------- MVP / Impact ---------------------------- */
+
+export interface ImpactBreakdown {
+  total: number
+  batting: number
+  bowling: number
+  fielding: number
+}
+
+/**
+ * A transparent all-round impact score: batting (runs + boundary & milestone
+ * bonuses), bowling (wickets, maidens, hauls) and fielding (dismissals).
+ * Deliberately simple and explainable rather than a tuned model.
+ */
+export function impactRating(s: PlayerStats): ImpactBreakdown {
+  const batting =
+    s.runs + s.fours + s.sixes * 2 + s.thirties * 4 + s.fifties * 8 + s.hundreds * 16
+  const bowling = s.wickets * 20 + s.maidens * 4 + s.fiveWktHauls * 25
+  const fielding = s.catches * 8 + s.stumpings * 12 + s.runOuts * 8
+  return { total: batting + bowling + fielding, batting, bowling, fielding }
+}
+
+/** Leaderboard of overall impact — the platform's "most valuable players". */
+export function buildImpactBoard(
+  stats: Map<string, PlayerStats>,
+  limit = 10,
+): Leaderboard {
+  const rows = [...stats.values()]
+    .map((s) => ({ s, r: impactRating(s) }))
+    .filter((x) => x.r.total > 0)
+    .sort((a, b) => b.r.total - a.r.total)
+    .slice(0, limit)
+    .map(({ s, r }) => ({
+      playerId: s.playerId,
+      value: r.total,
+      display: String(r.total),
+      sub: `${s.runs} runs · ${s.wickets} wkts · ${
+        s.catches + s.runOuts + s.stumpings
+      } dis`,
+    }))
+  return {
+    key: 'mvp',
+    title: 'Most valuable players (impact)',
+    icon: 'award',
+    rows,
+  }
+}
