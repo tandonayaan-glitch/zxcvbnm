@@ -45,6 +45,12 @@ All notable changes to CricketHub. Newest first.
   `aggregateTeamStats`, respecting the competition filter. Team names resolve from denormalised
   match data, so standings stay correct even if a team doc has been deleted.
 
+### Added — Tournament export
+- **Export toolbar** on the tournament page (`domain/tournamentExport.ts`): **CSV** and **JSON**
+  of the tournament's standings plus most-runs / most-wickets leaders, with names resolved from
+  the live docs (and denormalised match data as a fallback). Client-side Blob download via a
+  shared `lib/download` helper; shown once the tournament has data.
+
 ### Added — Match export & print
 - **Export toolbar** on the match page (`domain/matchExport.ts`): **CSV** (a readable per-innings
   batting & bowling scorecard), **JSON** (the full match doc plus ball-by-ball deliveries) and

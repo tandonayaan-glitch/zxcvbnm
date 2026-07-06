@@ -12,6 +12,8 @@ import {
   Hash,
   Swords,
   Award as AwardIcon,
+  Download,
+  FileJson,
 } from 'lucide-react'
 import {
   Avatar,
@@ -38,6 +40,12 @@ import {
 import { computeTournamentRecords } from '@/domain/records'
 import { computeTournamentAwards } from '@/domain/awards'
 import { bracketRounds, hasKnockoutPhase } from '@/domain/bracket'
+import {
+  tournamentToCSV,
+  tournamentToJSON,
+  type TournamentExport,
+} from '@/domain/tournamentExport'
+import { downloadBlob, slugify } from '@/lib/download'
 import { canManageTournaments, useAuthStore } from '@/store/authStore'
 import { formatDate, formatRate, ballsToOvers } from '@/lib/format'
 import type { Match } from '@/types'
@@ -102,6 +110,35 @@ export function TournamentPage() {
   )
   const showBracket = hasKnockoutPhase(t.format)
 
+  const exportData: TournamentExport = {
+    name: t.name,
+    standings: standings.map((r, i) => ({
+      rank: i + 1,
+      team: teamNameById.get(r.teamId) ?? r.teamName,
+      played: r.played,
+      won: r.won,
+      lost: r.lost,
+      tied: r.tied,
+      points: r.points,
+      nrr: r.nrr,
+    })),
+    mostRuns: topRunScorers(stats, 20).map((r, i) => ({
+      rank: i + 1,
+      player: playerName(r.playerId),
+      value: r.value,
+    })),
+    mostWickets: topWicketTakers(stats, 20).map((r, i) => ({
+      rank: i + 1,
+      player: playerName(r.playerId),
+      value: r.value,
+    })),
+  }
+  const hasExport =
+    exportData.standings.length > 0 ||
+    exportData.mostRuns.length > 0 ||
+    exportData.mostWickets.length > 0
+  const exportBase = `${slugify(t.name)}-${id}`
+
   async function refresh() {
     setRefreshing(true)
     try {
@@ -152,6 +189,38 @@ export function TournamentPage() {
           <p className="mt-3 text-sm text-ink-600">{t.description}</p>
         )}
       </Card>
+
+      {hasExport && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium uppercase tracking-wide text-ink-400">
+            Export
+          </span>
+          <button
+            onClick={() =>
+              downloadBlob(
+                `${exportBase}.csv`,
+                tournamentToCSV(exportData),
+                'text/csv;charset=utf-8',
+              )
+            }
+            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-ink-50"
+          >
+            <Download size={15} /> CSV
+          </button>
+          <button
+            onClick={() =>
+              downloadBlob(
+                `${exportBase}.json`,
+                tournamentToJSON(exportData),
+                'application/json',
+              )
+            }
+            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-ink-50"
+          >
+            <FileJson size={15} /> JSON
+          </button>
+        </div>
+      )}
 
       <Tabs
         className="mb-4"

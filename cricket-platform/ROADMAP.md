@@ -73,7 +73,8 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 
 ## Phase 9 — Exports, accessibility, performance
 - 🟡 **Printable scorecard (print CSS) + CSV/JSON export** from the match page (✅
-  `domain/matchExport.ts`); add PDF, match archive, import + duplicate detection
+  `domain/matchExport.ts`) **and tournament standings/leaders export** (✅
+  `domain/tournamentExport.ts`); add PDF, match archive, import + duplicate detection
 - ⬜ Accessibility: full keyboard nav, ARIA, focus rings, colour-blind palettes, large-text mode
 - 🟡 Performance: **lazy-loaded routes / code-splitting** (✅ `React.lazy` + `Suspense` per route);
   add pagination/virtualisation, memoisation, query batching
