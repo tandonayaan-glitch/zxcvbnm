@@ -58,7 +58,8 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 
 ## Phase 7 — Offline scoring hardening
 - ✅ Firestore IndexedDB persistent cache (writes queue offline, sync on reconnect)
-- ⬜ Explicit event queue model, offline badge, sync-progress indicator, queue-inspection page, manual/force resync
+- 🟡 **Global offline banner** (✅ `useOnlineStatus` + `OfflineBanner`); add explicit event queue
+  model, sync-progress indicator, queue-inspection page, manual/force resync
 
 ## Phase 8 — Clubs & Seasons architecture
 - ⬜ Club (top-level org) + Season entities; Team→Club, Tournament→Club+Season

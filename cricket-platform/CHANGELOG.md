@@ -4,6 +4,12 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Offline indicator
+- **Global offline banner** (`components/ui/OfflineBanner` + `hooks/useOnlineStatus`): a fixed
+  amber bar appears whenever the browser goes offline, reassuring the user that changes are saved
+  on-device and will sync on reconnect (Firestore's IndexedDB cache already queues writes). Uses
+  `useSyncExternalStore` on the browser online/offline events; hidden while online and when printing.
+
 ### Added — Leaderboard competition filter
 - **Competition scope filter** on the Stats page: switch leaderboards (and the runs/wickets/
   sixes/ranked-player totals) between **all competitions** and any single tournament that has

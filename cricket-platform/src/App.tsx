@@ -30,6 +30,7 @@ import { AccountPage } from '@/features/account/AccountPage'
 import { StatsPage } from '@/features/stats/StatsPage'
 import { RecoverPage } from '@/features/auth/RecoverPage'
 import { BackgroundLayer } from '@/components/background/BackgroundLayer'
+import { OfflineBanner } from '@/components/ui/OfflineBanner'
 
 import { PublicHomePage } from '@/features/public/PublicHomePage'
 import { PublicBrowsePage } from '@/features/public/PublicBrowsePage'
@@ -56,6 +57,7 @@ export default function App() {
   return (
     <>
       <BackgroundLayer />
+      <OfflineBanner />
       <Routes>
       {/* Auth (full screen) */}
       <Route path="/login" element={<LoginPage />} />
