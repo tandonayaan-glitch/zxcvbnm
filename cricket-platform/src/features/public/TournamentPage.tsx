@@ -77,6 +77,17 @@ export function TournamentPage() {
   const playerName = (pid: string) =>
     (players.data ?? []).find((p) => p.id === pid)?.displayName ?? 'Unknown'
 
+  // Team names from denormalised match data, so standings survive a deleted
+  // team doc (computeStandings falls back to a generic "Team" otherwise).
+  const teamNameById = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const m of tMatches) {
+      map.set(m.teamA.id, m.teamA.name)
+      map.set(m.teamB.id, m.teamB.name)
+    }
+    return map
+  }, [tMatches])
+
   if (tournament.loading) return <PageLoader />
   if (!tournament.data)
     return (
@@ -181,7 +192,7 @@ export function TournamentPage() {
                       to={`/team/${r.teamId}`}
                       className="font-medium text-ink-900 hover:text-brand-700"
                     >
-                      {r.teamName}
+                      {teamNameById.get(r.teamId) ?? r.teamName}
                     </Link>
                   </td>
                   <td className="px-2 py-2.5 text-right text-ink-600">{r.played}</td>

@@ -65,6 +65,11 @@ All notable changes to CricketHub. Newest first.
   colour-coded by milestone (50+ gold, 30+ green; 3-wkt hauls purple), not-outs marked with `*`,
   plus a "last 5" summary. Hidden for players with no completed innings.
 
+### Fixed
+- **Tournament standings showed a generic "Team"** when a team's doc had been deleted from the
+  Teams collection. Standings now resolve the team name from denormalised match data (falling back
+  to the standings engine's value), matching the Records tab and the Stats "Teams" tab.
+
 ### Added — Team splits (opponents & venues)
 - **Record vs opponents table** on team pages (`domain/teamOpponents.ts`): the team's
   completed-match record broken down by opponent (played, won, lost, tied/NR and win %), each
