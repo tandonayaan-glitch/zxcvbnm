@@ -29,6 +29,7 @@ import { listTournaments } from '@/services/tournaments.service'
 import { aggregatePlayerStats } from '@/domain/stats'
 import { teamResults, teamRecord, type FormOutcome } from '@/domain/teamForm'
 import { computeTeamHonours, hasTeamRecords } from '@/domain/teamRecords'
+import { teamOpponentRecords } from '@/domain/teamOpponents'
 import { PLAYER_ROLE_LABELS, formatDate, ballsToOvers } from '@/lib/format'
 
 export function TeamPage() {
@@ -80,6 +81,7 @@ export function TeamPage() {
   // Honours & records — resolve record-holder names across all players, not
   // just the current squad (a record may belong to a player who has left).
   const honours = computeTeamHonours(id, matches.data ?? [])
+  const opponentRecords = teamOpponentRecords(id, matches.data ?? [])
   const nameOf = (pid: string) =>
     (allPlayers.data ?? []).find((p) => p.id === pid)?.displayName ?? '—'
   // Prefer the live tournament name for titles; fall back to the name
@@ -292,6 +294,51 @@ export function TeamPage() {
             )}
           </div>
         </div>
+      )}
+
+      {opponentRecords.length > 0 && (
+        <Card className="mb-4 overflow-x-auto">
+          <CardHeader title="Record vs opponents" />
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-ink-100 bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
+                <th className="px-4 py-2.5 font-semibold">Opponent</th>
+                <th className="px-2 py-2.5 text-right font-semibold">P</th>
+                <th className="px-2 py-2.5 text-right font-semibold">W</th>
+                <th className="px-2 py-2.5 text-right font-semibold">L</th>
+                <th className="px-2 py-2.5 text-right font-semibold">T</th>
+                <th className="px-4 py-2.5 text-right font-semibold">Win %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {opponentRecords.map((o) => {
+                const decided = o.won + o.lost + o.tied
+                const winPct = decided > 0 ? Math.round((o.won / decided) * 100) : 0
+                return (
+                  <tr key={o.opponentId} className="border-b border-ink-50">
+                    <td className="px-4 py-2.5">
+                      <Link
+                        to={`/team/${o.opponentId}`}
+                        className="font-medium text-ink-900 hover:text-brand-700"
+                      >
+                        {o.opponentName}
+                      </Link>
+                    </td>
+                    <td className="px-2 py-2.5 text-right text-ink-600">{o.played}</td>
+                    <td className="px-2 py-2.5 text-right text-pitch-700">{o.won}</td>
+                    <td className="px-2 py-2.5 text-right text-red-600">{o.lost}</td>
+                    <td className="px-2 py-2.5 text-right text-ink-600">
+                      {o.tied + o.noResult}
+                    </td>
+                    <td className="px-4 py-2.5 text-right font-semibold text-ink-900">
+                      {winPct}%
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </Card>
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">
