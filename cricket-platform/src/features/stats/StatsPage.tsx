@@ -20,6 +20,7 @@ import { useAsync } from '@/hooks/useAsync'
 import { listTournaments } from '@/services/tournaments.service'
 import {
   aggregatePlayerStats,
+  aggregateTeamStats,
   buildLeaderboards,
   buildImpactBoard,
 } from '@/domain/stats'
@@ -33,11 +34,11 @@ const GROUPS: Record<string, string[]> = {
 }
 
 export function StatsPage() {
-  const { loading, leaderboards, playerMap, playerStats, matches } =
+  const { loading, leaderboards, playerMap, teamMap, playerStats, matches } =
     usePlatformStats()
   const tournaments = useAsync(listTournaments, [])
   const [tab, setTab] = useState<
-    'batting' | 'bowling' | 'fielding' | 'records'
+    'batting' | 'bowling' | 'fielding' | 'teams' | 'records'
   >('batting')
   const [scope, setScope] = useState('all')
 
@@ -77,6 +78,29 @@ export function StatsPage() {
   const impactBoard = useMemo(
     () => buildImpactBoard(scoped.playerStats, 5),
     [scoped.playerStats],
+  )
+
+  // Resolve team names from denormalised match data, so standings survive a
+  // deleted team doc (falls back to the live team doc name when present).
+  const teamNameById = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const m of matches) {
+      map.set(m.teamA.id, m.teamA.name)
+      map.set(m.teamB.id, m.teamB.name)
+    }
+    return map
+  }, [matches])
+
+  const teamStandings = useMemo(
+    () =>
+      [...aggregateTeamStats(scopedMatches).values()].sort(
+        (a, b) =>
+          b.won - a.won ||
+          b.won / Math.max(1, b.won + b.lost) -
+            a.won / Math.max(1, a.won + a.lost) ||
+          b.runsScored - a.runsScored,
+      ),
+    [scopedMatches],
   )
 
   const totals = useMemo(() => {
@@ -171,11 +195,65 @@ export function StatsPage() {
               { key: 'batting', label: 'Batting' },
               { key: 'bowling', label: 'Bowling' },
               { key: 'fielding', label: 'Fielding' },
+              { key: 'teams', label: 'Teams' },
               { key: 'records', label: 'Records' },
             ]}
           />
 
-          {tab === 'records' ? (
+          {tab === 'teams' ? (
+            teamStandings.length === 0 ? (
+              <EmptyState title="No team results yet" />
+            ) : (
+              <Card className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-ink-100 bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
+                      <th className="px-3 py-2.5 font-semibold">#</th>
+                      <th className="px-3 py-2.5 font-semibold">Team</th>
+                      <th className="px-2 py-2.5 text-right font-semibold">P</th>
+                      <th className="px-2 py-2.5 text-right font-semibold">W</th>
+                      <th className="px-2 py-2.5 text-right font-semibold">L</th>
+                      <th className="px-2 py-2.5 text-right font-semibold">Win %</th>
+                      <th className="px-3 py-2.5 text-right font-semibold">Runs</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {teamStandings.map((t, i) => {
+                      const decided = t.won + t.lost + t.tied
+                      const winPct =
+                        decided > 0 ? Math.round((t.won / decided) * 100) : 0
+                      const teamName =
+                        teamMap.get(t.teamId)?.name ??
+                        teamNameById.get(t.teamId) ??
+                        'Team'
+                      return (
+                        <tr key={t.teamId} className="border-b border-ink-50">
+                          <td className="px-3 py-2.5 text-ink-400">{i + 1}</td>
+                          <td className="px-3 py-2.5">
+                            <Link
+                              to={`/team/${t.teamId}`}
+                              className="font-medium text-ink-900 hover:text-brand-700"
+                            >
+                              {teamName}
+                            </Link>
+                          </td>
+                          <td className="px-2 py-2.5 text-right text-ink-600">{t.matches}</td>
+                          <td className="px-2 py-2.5 text-right text-pitch-700">{t.won}</td>
+                          <td className="px-2 py-2.5 text-right text-red-600">{t.lost}</td>
+                          <td className="px-2 py-2.5 text-right font-semibold text-ink-900">
+                            {winPct}%
+                          </td>
+                          <td className="px-3 py-2.5 text-right text-ink-600">
+                            {t.runsScored}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </Card>
+            )
+          ) : tab === 'records' ? (
             <RecordsGrid
               records={records}
               nameOf={(pid) => playerMap.get(pid)?.displayName ?? '—'}

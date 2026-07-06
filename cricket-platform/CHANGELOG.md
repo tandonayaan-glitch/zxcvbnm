@@ -41,6 +41,9 @@ All notable changes to CricketHub. Newest first.
   rating (batting runs + boundary/milestone bonuses, 20/wicket + maidens & five-fors, 8–12 per
   fielding dismissal) surfaced as a "Most valuable players" board at the top of the Stats page,
   with a plain-English scoring note. Respects the competition filter.
+- **Teams tab** on the Stats page: a team ranking table (played, won, lost, win %, runs) from
+  `aggregateTeamStats`, respecting the competition filter. Team names resolve from denormalised
+  match data, so standings stay correct even if a team doc has been deleted.
 
 ### Added — Match export & print
 - **Export toolbar** on the match page (`domain/matchExport.ts`): **CSV** (a readable per-innings
