@@ -162,6 +162,12 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-screen">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-brand-600 focus:px-4 focus:py-2 focus:font-semibold focus:text-white"
+      >
+        Skip to content
+      </a>
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 hidden w-60 bg-ink-900 lg:block">
         {SidebarInner}
@@ -184,6 +190,8 @@ export function AppShell() {
       <div className="flex min-w-0 flex-1 flex-col lg:pl-60">
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-ink-200 bg-white/90 px-4 backdrop-blur">
           <button
+            aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'}
+            aria-expanded={mobileOpen}
             className="rounded-md p-2 text-ink-600 hover:bg-ink-100 lg:hidden"
             onClick={() => setMobileOpen((v) => !v)}
           >
@@ -204,7 +212,7 @@ export function AppShell() {
           </div>
         </header>
 
-        <main className="flex-1 px-4 py-6 sm:px-6">
+        <main id="main" className="flex-1 px-4 py-6 sm:px-6">
           <ErrorBoundary key={location.pathname}>
             <Outlet />
           </ErrorBoundary>

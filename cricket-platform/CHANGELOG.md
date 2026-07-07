@@ -88,6 +88,12 @@ All notable changes to CricketHub. Newest first.
   colour-coded by milestone (50+ gold, 30+ green; 3-wkt hauls purple), not-outs marked with `*`,
   plus a "last 5" summary. Hidden for players with no completed innings.
 
+### Accessibility
+- **Skip-to-content link** (keyboard-only, visible on focus) and an `id="main"` landmark on both
+  the public and app-shell layouts, so keyboard/screen-reader users can bypass the nav. Added an
+  `aria-label` + `aria-expanded` to the app-shell mobile menu toggle; sidebar nav already exposes
+  `aria-current` via `NavLink`.
+
 ### Performance
 - **Lazy-loaded route pages** — every route component is now `React.lazy` + `Suspense`, so each
   page ships in its own chunk fetched on navigation. The initial entry bundle drops from one large

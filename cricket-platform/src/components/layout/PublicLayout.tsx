@@ -34,6 +34,12 @@ export function PublicLayout() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-brand-600 focus:px-4 focus:py-2 focus:font-semibold focus:text-white"
+      >
+        Skip to content
+      </a>
       <header className="sticky top-0 z-30 border-b border-ink-200 bg-white">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4">
           <Link to="/" className="flex items-center gap-2">
@@ -129,7 +135,7 @@ export function PublicLayout() {
         </div>
       </header>
 
-      <main className="flex-1">
+      <main id="main" className="flex-1">
         <ErrorBoundary key={location.pathname}>
           <Outlet />
         </ErrorBoundary>

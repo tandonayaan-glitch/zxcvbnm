@@ -75,7 +75,8 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 - 🟡 **Printable scorecard (print CSS) + CSV/JSON export** from the match page (✅
   `domain/matchExport.ts`) **and tournament standings/leaders export** (✅
   `domain/tournamentExport.ts`); add PDF, match archive, import + duplicate detection
-- ⬜ Accessibility: full keyboard nav, ARIA, focus rings, colour-blind palettes, large-text mode
+- 🟡 Accessibility: focus rings, large-text mode, high-contrast (✅ earlier); **skip-to-content
+  link + `main` landmarks + nav `aria-current`/labels** (✅); add colour-blind palettes, full ARIA audit
 - 🟡 Performance: **lazy-loaded routes / code-splitting** (✅ `React.lazy` + `Suspense` per route);
   add pagination/virtualisation, memoisation, query batching
 
