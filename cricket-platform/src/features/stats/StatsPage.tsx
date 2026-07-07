@@ -124,6 +124,14 @@ export function StatsPage() {
       <PageHeader
         title="Stats & analytics"
         subtitle="Leaderboards built from completed matches — platform-wide or per competition."
+        actions={
+          <Link
+            to="/compare"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 px-3 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50"
+          >
+            Compare players
+          </Link>
+        }
       />
 
       {loading ? (

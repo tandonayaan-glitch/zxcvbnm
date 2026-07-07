@@ -81,6 +81,9 @@ const AccountPage = lazy(() =>
 const StatsPage = lazy(() =>
   import('@/features/stats/StatsPage').then((m) => ({ default: m.StatsPage })),
 )
+const ComparePage = lazy(() =>
+  import('@/features/public/ComparePage').then((m) => ({ default: m.ComparePage })),
+)
 const PublicHomePage = lazy(() =>
   import('@/features/public/PublicHomePage').then((m) => ({
     default: m.PublicHomePage,
@@ -223,6 +226,7 @@ export default function App() {
           />
           <Route path="/browse" element={<PublicBrowsePage />} />
           <Route path="/stats" element={<StatsPage />} />
+          <Route path="/compare" element={<ComparePage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/player/:id" element={<PlayerPage />} />
           <Route path="/team/:id" element={<TeamPage />} />

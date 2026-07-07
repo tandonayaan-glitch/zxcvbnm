@@ -110,7 +110,15 @@ export function PlayerPage() {
               </div>
             )}
           </div>
-          <FollowButton kind="players" id={p.id} />
+          <div className="flex flex-col items-end gap-2">
+            <FollowButton kind="players" id={p.id} />
+            <Link
+              to={`/compare?a=${p.id}`}
+              className="text-sm font-medium text-brand-700 hover:underline"
+            >
+              Compare
+            </Link>
+          </div>
         </div>
       </Card>
 

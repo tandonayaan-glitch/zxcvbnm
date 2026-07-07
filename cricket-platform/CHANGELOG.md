@@ -64,6 +64,12 @@ All notable changes to CricketHub. Newest first.
 - **Printable scorecard** — a `@media print` stylesheet drops the header/footer/toolbar and card
   shadows so the browser's Print/Save-as-PDF produces a clean scorecard.
 
+### Added — Player comparison
+- **Compare players page** (`/compare`): pick any two players and see their career batting,
+  bowling and fielding stats side by side, with the better value in each row highlighted
+  (economy compared low-is-better). Selection is URL-driven (`?a=&b=`); reachable from a "Compare
+  players" action on the Stats page and a "Compare" link on each player profile.
+
 ### Added — Player career timeline
 - **Timeline tab** on player profiles (`domain/playerTimeline.ts`): a chronological milestone
   feed — debut, fifties, hundreds, five-wicket hauls and career-best score/bowling — each entry
