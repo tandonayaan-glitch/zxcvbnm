@@ -171,6 +171,14 @@ export function ComparePage() {
       <PageHeader
         title="Compare players"
         subtitle="Head-to-head career stats, side by side."
+        actions={
+          <Link
+            to="/compare/teams"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 px-3 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50"
+          >
+            Compare teams
+          </Link>
+        }
       />
 
       <div className="mb-4 grid grid-cols-2 gap-3">

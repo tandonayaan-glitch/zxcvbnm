@@ -46,7 +46,8 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 - 🟡 Player profile: career/batting/bowling/fielding stats + match log + follow, achievements, awards cabinet (✅); **per-tournament splits tab** (✅ `domain/playerSplits.ts`); **recent-form charts** (✅ batting/bowling SVG bars — `components/charts/PlayerForm`); **global
   rankings strip** (✅ runs/wickets/sixes rank); **career timeline** (✅ `domain/playerTimeline.ts`);
   **player-vs-player comparison** (✅ `/compare`); add season splits, radar charts
-- 🟡 Team profile: squad, recent, record, leaders (✅); **recent-form guide (W/L/T chips), win-rate/record summary, top run-scorer & wicket-taker** (✅); **honours (knockout titles) + team records** (✅ highest total/chase, biggest wins, best individual batting/bowling — `domain/teamRecords.ts`); **record vs opponents + record by venue** (✅ `domain/teamOpponents.ts`, `domain/teamVenues.ts`)
+- 🟡 Team profile: squad, recent, record, leaders (✅); **recent-form guide (W/L/T chips), win-rate/record summary, top run-scorer & wicket-taker** (✅); **honours (knockout titles) + team records** (✅ highest total/chase, biggest wins, best individual batting/bowling — `domain/teamRecords.ts`); **record vs opponents + record by venue** (✅ `domain/teamOpponents.ts`, `domain/teamVenues.ts`);
+  **team-vs-team comparison** (✅ `/compare/teams`)
 - 🟡 Tournament: standings, fixtures, leaders, teams (✅); **records tab** (✅ highest/lowest team
   total, highest individual score, best bowling figures, most sixes/fours in an innings, biggest
   win by runs/wickets — all derived from cached innings cards, no delivery reads); **knockout
