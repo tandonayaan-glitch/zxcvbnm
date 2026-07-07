@@ -9,12 +9,15 @@ import {
 } from '@/components/ui/primitives'
 import { globalSearch, type SearchResults } from '@/services/search.service'
 
+type SearchFilter = 'all' | 'players' | 'teams' | 'tournaments' | 'matches'
+
 export function SearchPage() {
   const [params, setParams] = useSearchParams()
   const q = params.get('q') ?? ''
   const [input, setInput] = useState(q)
   const [results, setResults] = useState<SearchResults | null>(null)
   const [loading, setLoading] = useState(false)
+  const [filter, setFilter] = useState<SearchFilter>('all')
 
   useEffect(() => {
     if (!q.trim()) {
@@ -22,10 +25,14 @@ export function SearchPage() {
       return
     }
     setLoading(true)
+    setFilter('all')
     globalSearch(q)
       .then(setResults)
       .finally(() => setLoading(false))
   }, [q])
+
+  const show = (type: Exclude<SearchFilter, 'all'>) =>
+    filter === 'all' || filter === type
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -69,7 +76,37 @@ export function SearchPage() {
         <EmptyState title={`No results for "${q}"`} />
       ) : (
         <div className="space-y-6">
-          {results.players.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-ink-500">
+              {total} result{total === 1 ? '' : 's'}
+            </span>
+            <span className="text-ink-300">·</span>
+            {(
+              [
+                ['all', 'All', total],
+                ['players', 'Players', results.players.length],
+                ['teams', 'Teams', results.teams.length],
+                ['tournaments', 'Tournaments', results.tournaments.length],
+                ['matches', 'Matches', results.matches.length],
+              ] as [SearchFilter, string, number][]
+            )
+              .filter(([key, , count]) => key === 'all' || count > 0)
+              .map(([key, label, count]) => (
+                <button
+                  key={key}
+                  onClick={() => setFilter(key)}
+                  className={`rounded-full px-3 py-1 text-sm font-medium ${
+                    filter === key
+                      ? 'bg-brand-600 text-white'
+                      : 'border border-ink-300 text-ink-600 hover:bg-ink-50'
+                  }`}
+                >
+                  {label} {count}
+                </button>
+              ))}
+          </div>
+
+          {show('players') && results.players.length > 0 && (
             <Section title="Players" icon={<User size={16} />}>
               {results.players.map((p) => (
                 <Link
@@ -89,7 +126,7 @@ export function SearchPage() {
             </Section>
           )}
 
-          {results.teams.length > 0 && (
+          {show('teams') && results.teams.length > 0 && (
             <Section title="Teams" icon={<Shield size={16} />}>
               {results.teams.map((t) => (
                 <Link
@@ -109,7 +146,7 @@ export function SearchPage() {
             </Section>
           )}
 
-          {results.tournaments.length > 0 && (
+          {show('tournaments') && results.tournaments.length > 0 && (
             <Section title="Tournaments" icon={<Trophy size={16} />}>
               {results.tournaments.map((t) => (
                 <Link
@@ -124,7 +161,7 @@ export function SearchPage() {
             </Section>
           )}
 
-          {results.matches.length > 0 && (
+          {show('matches') && results.matches.length > 0 && (
             <Section title="Matches" icon={<Swords size={16} />}>
               {results.matches.map((m) => (
                 <Link

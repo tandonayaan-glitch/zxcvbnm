@@ -4,6 +4,11 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Search type filters
+- **Type filter chips on the search page**: a result count plus All / Players / Teams /
+  Tournaments / Matches chips (each showing its hit count; only types with results appear) that
+  narrow the results to one category. Resets to "All" on each new query.
+
 ### Added — Browse match filter
 - **Status filter on the Browse › Matches tab**: All / Live / Upcoming / Completed chips, with
   results sorted live-first then by most recent activity. A distinct empty state distinguishes
