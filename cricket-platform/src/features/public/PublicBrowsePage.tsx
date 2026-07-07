@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import {
   Badge,
@@ -12,6 +13,20 @@ import { listAllMatches } from '@/services/matches.service'
 import { listTeams } from '@/services/teams.service'
 import { listTournaments } from '@/services/tournaments.service'
 import { formatDate } from '@/lib/format'
+import type { Match } from '@/types'
+
+type MatchFilter = 'all' | 'live' | 'upcoming' | 'completed'
+
+const MATCH_FILTERS: { key: MatchFilter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'live', label: 'Live' },
+  { key: 'upcoming', label: 'Upcoming' },
+  { key: 'completed', label: 'Completed' },
+]
+
+function matchWhen(m: Match): number {
+  return m.completedAt ?? m.scheduledAt ?? m.createdAt
+}
 
 export function PublicBrowsePage() {
   const [params, setParams] = useSearchParams()
@@ -19,6 +34,25 @@ export function PublicBrowsePage() {
   const matches = useAsync(listAllMatches, [])
   const teams = useAsync(listTeams, [])
   const tournaments = useAsync(listTournaments, [])
+  const [matchFilter, setMatchFilter] = useState<MatchFilter>('all')
+
+  const filteredMatches = useMemo(() => {
+    const all = matches.data ?? []
+    const isLive = (m: Match) =>
+      m.status === 'live' || m.status === 'innings_break'
+    const pass = (m: Match) =>
+      matchFilter === 'all' ||
+      (matchFilter === 'live' && isLive(m)) ||
+      (matchFilter === 'upcoming' && m.status === 'setup') ||
+      (matchFilter === 'completed' && m.status === 'completed')
+    // Live first, then by most recent activity.
+    return all
+      .filter(pass)
+      .sort(
+        (a, b) =>
+          Number(isLive(b)) - Number(isLive(a)) || matchWhen(b) - matchWhen(a),
+      )
+  }, [matches.data, matchFilter])
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
@@ -34,14 +68,38 @@ export function PublicBrowsePage() {
         ]}
       />
 
+      {tab === 'matches' && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {MATCH_FILTERS.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setMatchFilter(f.key)}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium ${
+                matchFilter === f.key
+                  ? 'bg-brand-600 text-white'
+                  : 'border border-ink-300 text-ink-600 hover:bg-ink-50'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {tab === 'matches' &&
         (matches.loading ? (
           <PageLoader />
-        ) : (matches.data ?? []).length === 0 ? (
-          <EmptyState title="No matches yet" />
+        ) : filteredMatches.length === 0 ? (
+          <EmptyState
+            title={
+              (matches.data ?? []).length === 0
+                ? 'No matches yet'
+                : 'No matches match this filter'
+            }
+          />
         ) : (
           <div className="space-y-2">
-            {(matches.data ?? []).map((m) => {
+            {filteredMatches.map((m) => {
               const live = m.status === 'live' || m.status === 'innings_break'
               return (
                 <Link key={m.id} to={`/match/${m.id}`}>

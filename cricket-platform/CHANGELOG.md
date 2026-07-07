@@ -4,6 +4,11 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Browse match filter
+- **Status filter on the Browse › Matches tab**: All / Live / Upcoming / Completed chips, with
+  results sorted live-first then by most recent activity. A distinct empty state distinguishes
+  "no matches yet" from "none match this filter".
+
 ### Added — Home page leading players
 - **"Leading players" strip** on the public home page: the platform's top run-scorer, top
   wicket-taker and top MVP (impact) as mini cards with avatars, each linking to the player, plus
