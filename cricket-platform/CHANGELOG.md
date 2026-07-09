@@ -4,6 +4,21 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Platform backup export
+- **"Export platform backup (JSON)"** on the master-admin Platform Tools page
+  (`domain/platformExport.ts` + `admin.service.gatherPlatformBackup`): a read-only snapshot of
+  players, teams, tournaments, matches (with ball-by-ball deliveries for scored matches), and user
+  profiles, downloaded as a single timestamped JSON file. Logged to the audit trail. Verified via
+  an actual button click (blob intercepted, parsed, counts checked) rather than just calling the
+  builder directly.
+
+### Fixed
+- **`listUsers()` didn't fall back to the Firestore doc key for `id`** — a legacy user doc missing
+  the `id`/`displayName`/`status` fields entirely meant `Users & Roles` silently failed to change
+  that user's role or suspend them (`setUserRole`/`setUserStatus` received `id: undefined`).
+  `listUsers()` now merges `{ id: d.id, ...d.data() }`, the same defensive pattern already used by
+  players/teams/tournaments/matches services. Found while verifying the backup export above.
+
 ### Added — Search type filters
 - **Type filter chips on the search page**: a result count plus All / Players / Teams /
   Tournaments / Matches chips (each showing its hit count; only types with results appear) that

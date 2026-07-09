@@ -13,14 +13,18 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 - ✅ Crash fixes: `Avatar`/`colorFromString`/`initials` on missing names; `formatDate` on invalid/timestamp values; `teamIds`/owner-field guards; `pruneUndefined` on all writes
 - ✅ Master-admin route access (super-admin bypasses every guard)
 - ✅ `npm run build` + `tsc` clean; scoring flow verified end-to-end
-- 🟡 Resilience to legacy/foreign docs (missing `displayName`, `status`, etc.) — hardened where hit
+- 🟡 Resilience to legacy/foreign docs (missing `displayName`, `status`, etc.) — hardened where hit;
+  **`listUsers()` now falls back to the doc key for `id`** (✅ — a legacy doc missing it silently
+  broke role/ban actions for that user)
 
 ## Phase 1 — Master Admin platform tools & audit (THIS PASS)
 - ✅ Audit log (`auditLogs` collection + service, records admin actions)
 - ✅ Master-Admin **Platform Tools** page (exclusive): recompute leaderboards, rebuild stats
 - ✅ **Clear leaderboards** danger flow: full-screen warning, "I understand…" checkbox, type `CLEAR LEADERBOARDS`, final confirm, audit-logged
 - ✅ Audit log viewer (master admin)
-- ⬜ System diagnostics / Firestore usage stats · offline-queue force-resync · platform backup export
+- 🟡 **Platform backup export** (✅ JSON snapshot of players/teams/tournaments/matches+deliveries/
+  users — `domain/platformExport.ts`, audit-logged); add system diagnostics / Firestore usage
+  stats · offline-queue force-resync
 
 ## Phase 2 — Match Centre analytics (THIS PASS)
 - ✅ Worm graph (cumulative runs), Manhattan (runs/over), run-rate — SVG, from delivery data
