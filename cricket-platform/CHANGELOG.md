@@ -79,6 +79,12 @@ All notable changes to CricketHub. Newest first.
   from denormalised match data, so teams whose docs were deleted are still comparable. Cross-linked
   with the player comparison page.
 
+### Added — Player export
+- **Export toolbar (CSV/JSON)** on player profiles (`domain/playerExport.ts`): career summary,
+  per-tournament splits and the full match log, resolving the same live tournament name used by
+  the "By tournament" tab (not the raw match-denormalised fallback). Client-side Blob download via
+  the shared `lib/download` helper — completes exports across match, tournament and player pages.
+
 ### Added — Player career timeline
 - **Timeline tab** on player profiles (`domain/playerTimeline.ts`): a chronological milestone
   feed — debut, fifties, hundreds, five-wicket hauls and career-best score/bowling — each entry

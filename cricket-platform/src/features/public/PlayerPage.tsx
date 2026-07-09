@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { User, Flag, Star, Award, Target, TrendingUp } from 'lucide-react'
+import { User, Flag, Star, Award, Target, TrendingUp, Download, FileJson } from 'lucide-react'
 import { Avatar, Badge, Card, PageLoader, EmptyState } from '@/components/ui/primitives'
 import { FollowButton } from '@/components/ui/FollowButton'
 import { Tabs } from '@/components/ui/Tabs'
@@ -14,6 +14,8 @@ import { computeAchievements, computeAwards } from '@/domain/achievements'
 import { playerTournamentSplits } from '@/domain/playerSplits'
 import { playerTimeline } from '@/domain/playerTimeline'
 import { aggregatePlayerStats } from '@/domain/stats'
+import { playerToCSV, playerToJSON } from '@/domain/playerExport'
+import { downloadBlob, slugify } from '@/lib/download'
 import { AchievementsPanel } from '@/components/stats/AchievementsPanel'
 import { PlayerForm } from '@/components/charts/PlayerForm'
 import {
@@ -93,6 +95,35 @@ export function PlayerPage() {
   const s = stats.data
   const dismissals = s ? s.inningsBatted - s.notOuts : 0
 
+  // Resolve the live tournament name for export too (matches the on-page
+  // "By tournament" tab, which uses splitName for the same reason).
+  const exportSplits = splits.map((sp) => ({ ...sp, tournamentName: splitName(sp) }))
+
+  function exportCSV() {
+    downloadBlob(
+      `${slugify(p.fullName)}-${p.id}.csv`,
+      playerToCSV({
+        player: p,
+        stats: s ?? null,
+        splits: exportSplits,
+        performances: perfs.data ?? [],
+      }),
+      'text/csv;charset=utf-8',
+    )
+  }
+  function exportJSON() {
+    downloadBlob(
+      `${slugify(p.fullName)}-${p.id}.json`,
+      playerToJSON({
+        player: p,
+        stats: s ?? null,
+        splits: exportSplits,
+        performances: perfs.data ?? [],
+      }),
+      'application/json',
+    )
+  }
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
       <Card className="mb-4 p-5">
@@ -130,6 +161,22 @@ export function PlayerPage() {
             >
               Compare
             </Link>
+            <div className="flex gap-1.5">
+              <button
+                onClick={exportCSV}
+                title="Export CSV"
+                className="inline-flex items-center gap-1 rounded-lg border border-ink-300 px-2 py-1 text-xs font-medium text-ink-600 hover:bg-ink-50"
+              >
+                <Download size={13} /> CSV
+              </button>
+              <button
+                onClick={exportJSON}
+                title="Export JSON"
+                className="inline-flex items-center gap-1 rounded-lg border border-ink-300 px-2 py-1 text-xs font-medium text-ink-600 hover:bg-ink-50"
+              >
+                <FileJson size={13} /> JSON
+              </button>
+            </div>
           </div>
         </div>
       </Card>
