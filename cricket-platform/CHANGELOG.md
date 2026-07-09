@@ -104,6 +104,11 @@ All notable changes to CricketHub. Newest first.
   `aria-current` via `NavLink`.
 
 ### Performance
+- **Memoised MatchPage and TournamentPage analytics** — `MatchPage` re-renders on every scored
+  ball (live `onSnapshot` subscription), so head-to-head and star-performers are now `useMemo`'d
+  instead of recomputing every ball; `TournamentPage`'s export data (top-20 leader lists) is
+  memoised so tab switches don't rebuild it. Verified behaviour-identical (head-to-head, star
+  performers, and the export toolbar across tab switches).
 - **Memoised analytics on TeamPage and PlayerPage** — the heavier pure aggregations (team
   honours/records/opponents/venues/form-series, player tournament splits/timeline/global rankings)
   now run in `useMemo` keyed on the underlying match data instead of recomputing on every render.

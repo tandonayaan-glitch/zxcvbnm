@@ -93,8 +93,21 @@ export function MatchPage() {
   const name = (pid?: string | null) =>
     (pid && playerById.get(pid)?.displayName) || '—'
 
+  // This page re-renders on every scored ball (live onSnapshot subscription),
+  // so head-to-head — which only depends on the two team IDs and the platform
+  // match list, not the live innings — is memoised to avoid recomputing on
+  // every ball. Hooks must run unconditionally before the early returns below.
+  const h2h = useMemo(
+    () =>
+      match
+        ? computeHeadToHead(match.teamA.id, match.teamB.id, allMatches.data ?? [])
+        : null,
+    [match?.teamA.id, match?.teamB.id, allMatches.data],
+  )
+  const stars = useMemo(() => (match ? matchTopPerformers(match) : null), [match])
+
   if (loading || players.loading) return <PageLoader />
-  if (!match)
+  if (!match || !h2h || !stars)
     return (
       <div className="mx-auto max-w-md py-20 text-center text-ink-500">
         Match not found.
@@ -118,12 +131,6 @@ export function MatchPage() {
 
   const allSquad = [...match.squadA, ...match.squadB]
   const hasScorecard = match.innings.length > 0
-  const h2h = computeHeadToHead(
-    match.teamA.id,
-    match.teamB.id,
-    allMatches.data ?? [],
-  )
-  const stars = matchTopPerformers(match)
   const teamShortById = (tid: string) =>
     tid === match.teamA.id ? match.teamA.shortName : match.teamB.shortName
 

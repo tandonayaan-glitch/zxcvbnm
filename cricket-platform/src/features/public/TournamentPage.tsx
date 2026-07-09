@@ -96,6 +96,36 @@ export function TournamentPage() {
     return map
   }, [tMatches])
 
+  // Rebuilding these (top-20 leader lists) is cheap, but memoise anyway since
+  // standings/stats/teamNameById are already memoised and exportData doesn't
+  // depend on `tab`, so there's no reason to rebuild it on every tab switch.
+  const exportData: TournamentExport = useMemo(
+    () => ({
+      name: tournament.data?.name ?? '',
+      standings: standings.map((r, i) => ({
+        rank: i + 1,
+        team: teamNameById.get(r.teamId) ?? r.teamName,
+        played: r.played,
+        won: r.won,
+        lost: r.lost,
+        tied: r.tied,
+        points: r.points,
+        nrr: r.nrr,
+      })),
+      mostRuns: topRunScorers(stats, 20).map((r, i) => ({
+        rank: i + 1,
+        player: playerName(r.playerId),
+        value: r.value,
+      })),
+      mostWickets: topWicketTakers(stats, 20).map((r, i) => ({
+        rank: i + 1,
+        player: playerName(r.playerId),
+        value: r.value,
+      })),
+    }),
+    [tournament.data?.name, standings, teamNameById, stats, players.data],
+  )
+
   if (tournament.loading) return <PageLoader />
   if (!tournament.data)
     return (
@@ -110,29 +140,6 @@ export function TournamentPage() {
   )
   const showBracket = hasKnockoutPhase(t.format)
 
-  const exportData: TournamentExport = {
-    name: t.name,
-    standings: standings.map((r, i) => ({
-      rank: i + 1,
-      team: teamNameById.get(r.teamId) ?? r.teamName,
-      played: r.played,
-      won: r.won,
-      lost: r.lost,
-      tied: r.tied,
-      points: r.points,
-      nrr: r.nrr,
-    })),
-    mostRuns: topRunScorers(stats, 20).map((r, i) => ({
-      rank: i + 1,
-      player: playerName(r.playerId),
-      value: r.value,
-    })),
-    mostWickets: topWicketTakers(stats, 20).map((r, i) => ({
-      rank: i + 1,
-      player: playerName(r.playerId),
-      value: r.value,
-    })),
-  }
   const hasExport =
     exportData.standings.length > 0 ||
     exportData.mostRuns.length > 0 ||
