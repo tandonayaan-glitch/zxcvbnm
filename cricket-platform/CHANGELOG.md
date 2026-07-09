@@ -59,6 +59,14 @@ All notable changes to CricketHub. Newest first.
   on-device and will sync on reconnect (Firestore's IndexedDB cache already queues writes). Uses
   `useSyncExternalStore` on the browser online/offline events; hidden while online and when printing.
 
+### Added — Consistency rating
+- **"Most consistent batters" leaderboard** on the Stats page (`domain/consistency.ts`): ranks
+  players by coefficient of variation of runs per innings (stddev ÷ average — lower means scores
+  cluster around the average rather than swinging between big and low scores). Requires at least 3
+  qualifying innings; respects the competition filter; hidden until any player qualifies. Math
+  verified against hand-calculated synthetic data (a steady 30/32/28 scorer ranks far above a
+  streaky 5/80/10 one; a 2-innings player is correctly excluded).
+
 ### Added — Leaderboard competition filter & records
 - **Competition scope filter** on the Stats page: switch leaderboards (and the runs/wickets/
   sixes/ranked-player totals) between **all competitions** and any single tournament that has

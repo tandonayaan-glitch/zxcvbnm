@@ -25,6 +25,7 @@ import {
   buildImpactBoard,
 } from '@/domain/stats'
 import { computeTournamentRecords } from '@/domain/records'
+import { buildConsistencyBoard } from '@/domain/consistency'
 import { ballsToOvers } from '@/lib/format'
 
 const GROUPS: Record<string, string[]> = {
@@ -78,6 +79,11 @@ export function StatsPage() {
   const impactBoard = useMemo(
     () => buildImpactBoard(scoped.playerStats, 5),
     [scoped.playerStats],
+  )
+
+  const consistencyBoard = useMemo(
+    () => buildConsistencyBoard(scopedMatches, 5),
+    [scopedMatches],
   )
 
   // Resolve team names from denormalised match data, so standings survive a
@@ -191,6 +197,25 @@ export function StatsPage() {
                 wicket, plus maidens &amp; five-fors. Fielding: 8&ndash;12 per
                 dismissal. A simple, explainable all-round rating&nbsp;&mdash; not
                 a tuned model.
+              </div>
+            </div>
+          )}
+
+          {consistencyBoard.rows.length > 0 && (
+            <div className="mb-6 grid gap-4 lg:grid-cols-2">
+              <LeaderboardCard
+                board={consistencyBoard}
+                players={playerMap}
+                limit={5}
+                tone={4}
+              />
+              <div className="rounded-xl border border-ink-100 bg-ink-50/60 p-4 text-sm text-ink-500">
+                <div className="mb-1 font-semibold text-ink-700">
+                  How consistency is scored
+                </div>
+                Coefficient of variation of runs per innings (standard deviation ÷ average) —
+                lower variation means scores cluster tightly around the average rather than
+                swinging between big scores and low ones. Needs at least 3 innings to qualify.
               </div>
             </div>
           )}
