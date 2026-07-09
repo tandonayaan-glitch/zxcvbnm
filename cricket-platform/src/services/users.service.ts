@@ -15,7 +15,9 @@ export async function listUsers(): Promise<UserProfile[]> {
   const snap = await getDocs(
     query(collection(db, COL.users), orderBy('createdAt', 'desc')),
   )
-  return snap.docs.map((d) => d.data() as UserProfile)
+  // Fall back to the doc's own key for `id` — some legacy docs predate the
+  // field being stored, which otherwise breaks every id-keyed action below.
+  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as object) }) as UserProfile)
 }
 
 export async function setUserRole(uid: string, role: Role): Promise<void> {

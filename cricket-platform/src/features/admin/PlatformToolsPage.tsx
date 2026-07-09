@@ -6,6 +6,7 @@ import {
   ShieldAlert,
   ScrollText,
   AlertTriangle,
+  DatabaseBackup,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
@@ -25,8 +26,10 @@ import {
   recomputeTournamentStandings,
 } from '@/services/stats.service'
 import { listTournaments } from '@/services/tournaments.service'
-import { clearLeaderboards } from '@/services/admin.service'
+import { clearLeaderboards, gatherPlatformBackup } from '@/services/admin.service'
 import { logAudit, listAuditLogs } from '@/services/audit.service'
+import { platformBackupToJSON } from '@/domain/platformExport'
+import { downloadBlob } from '@/lib/download'
 import { formatDateTime } from '@/lib/format'
 
 const CONFIRM_PHRASE = 'CLEAR LEADERBOARDS'
@@ -36,6 +39,7 @@ export function PlatformToolsPage() {
   const profile = useAuthStore((s) => s.profile)
   const audits = useAsync(() => listAuditLogs(50), [])
   const [rebuilding, setRebuilding] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [showClear, setShowClear] = useState(false)
 
   async function rebuild() {
@@ -54,6 +58,31 @@ export function PlatformToolsPage() {
     }
   }
 
+  async function exportBackup() {
+    setExporting(true)
+    try {
+      const backup = await gatherPlatformBackup()
+      const stamp = new Date(backup.exportedAt).toISOString().slice(0, 10)
+      downloadBlob(
+        `crickethub-backup-${stamp}.json`,
+        platformBackupToJSON(backup),
+        'application/json',
+      )
+      await logAudit(
+        profile,
+        'Exported platform backup',
+        `${backup.players.length} players, ${backup.teams.length} teams, ` +
+          `${backup.tournaments.length} tournaments, ${backup.matches.length} matches`,
+      )
+      toast.success('Backup downloaded')
+      audits.refetch()
+    } catch {
+      toast.error('Export failed')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   return (
     <div className="mx-auto max-w-3xl">
       <PageHeader
@@ -66,9 +95,12 @@ export function PlatformToolsPage() {
           title="Maintenance"
           subtitle="Rebuild cached leaderboards and standings from all completed matches."
         />
-        <CardBody>
+        <CardBody className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={rebuild} loading={rebuilding}>
             <RefreshCw size={16} /> Recompute leaderboards & standings
+          </Button>
+          <Button variant="outline" onClick={exportBackup} loading={exporting}>
+            <DatabaseBackup size={16} /> Export platform backup (JSON)
           </Button>
         </CardBody>
       </Card>
