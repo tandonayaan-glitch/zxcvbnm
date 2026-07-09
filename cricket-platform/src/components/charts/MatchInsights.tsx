@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Flame, Handshake, Rocket, CircleDot, Zap } from 'lucide-react'
+import { Flame, Handshake, Rocket, CircleDot, Zap, ShieldCheck } from 'lucide-react'
 import { Card } from '@/components/ui/primitives'
 import { matchInsights, type InningsInsights } from '@/domain/insights'
 import type { Delivery, Match } from '@/types'
@@ -94,6 +94,15 @@ function InningsRow({
           label={`Powerplay (${ins.powerplayOvers} ov)`}
           value={`${ins.powerplayRuns} runs`}
         />
+        {ins.bestSpell && (
+          <Tile
+            icon={<ShieldCheck size={16} />}
+            tone="#0d9488"
+            label="Best spell"
+            value={`${ins.bestSpell.wickets}/${ins.bestSpell.runs}`}
+            sub={`${name(ins.bestSpell.bowlerId)} · ${ins.bestSpell.overs} ov · econ ${ins.bestSpell.economy.toFixed(2)}`}
+          />
+        )}
       </div>
     </div>
   )

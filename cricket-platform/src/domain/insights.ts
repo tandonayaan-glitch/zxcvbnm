@@ -10,6 +10,15 @@ export interface Partnership {
   endedOnWicket: number
 }
 
+/** A bowler's tightest stretch of consecutive-for-them overs in an innings. */
+export interface BowlingSpell {
+  bowlerId: string
+  overs: number
+  runs: number
+  wickets: number
+  economy: number
+}
+
 export interface InningsInsights {
   inningsIndex: number
   battingTeamId: string
@@ -20,6 +29,8 @@ export interface InningsInsights {
   biggestOver?: { over: number; runs: number; wickets: number; bowlerId: string }
   /** Best (highest-run) partnership of the innings. */
   bestPartnership?: Partnership
+  /** Best (lowest-economy) 2-4 over stretch by a single bowler. */
+  bestSpell?: BowlingSpell
   fours: number
   sixes: number
   /** Runs scored in boundaries (4s + 6s off the bat). */
@@ -54,6 +65,58 @@ function isCountedWicket(d: Delivery): boolean {
   return !!d.wicket && d.wicket.type !== 'retired_hurt'
 }
 
+/**
+ * The tightest 2–4 over stretch bowled by a single bowler, evaluated over
+ * their own overs in bowling order (not necessarily consecutive over
+ * numbers, since other bowlers interleave). Requires at least 2 overs from
+ * that bowler so it reads as a "spell" rather than duplicating the
+ * single-over "biggest over" or the innings-long best-bowling-figures stat.
+ */
+function findBestSpell(
+  overMap: Map<
+    number,
+    { runs: number; wickets: number; bowlerId: string; legalBalls: number }
+  >,
+): BowlingSpell | undefined {
+  const byBowler = new Map<
+    string,
+    { runs: number; wickets: number; legalBalls: number }[]
+  >()
+  for (const [, v] of [...overMap].sort((a, b) => a[0] - b[0])) {
+    const arr = byBowler.get(v.bowlerId) ?? []
+    arr.push({ runs: v.runs, wickets: v.wickets, legalBalls: v.legalBalls })
+    byBowler.set(v.bowlerId, arr)
+  }
+
+  let best: BowlingSpell | undefined
+  for (const [bowlerId, overs] of byBowler) {
+    if (overs.length < 2) continue
+    const maxWindow = Math.min(4, overs.length)
+    for (let size = 2; size <= maxWindow; size++) {
+      for (let start = 0; start + size <= overs.length; start++) {
+        let runs = 0
+        let wickets = 0
+        let legalBalls = 0
+        for (let i = start; i < start + size; i++) {
+          runs += overs[i].runs
+          wickets += overs[i].wickets
+          legalBalls += overs[i].legalBalls
+        }
+        if (legalBalls === 0) continue
+        const economy = (runs / legalBalls) * 6
+        if (
+          !best ||
+          economy < best.economy ||
+          (economy === best.economy && wickets > best.wickets)
+        ) {
+          best = { bowlerId, overs: size, runs, wickets, economy }
+        }
+      }
+    }
+  }
+  return best
+}
+
 /** Compute insights for one innings from its raw deliveries. */
 export function inningsInsights(
   match: Match,
@@ -70,10 +133,11 @@ export function inningsInsights(
     .filter((d) => d.inningsIndex === inningsIndex)
     .sort((a, b) => a.sequence - b.sequence)
 
-  // Per-over aggregation for the biggest over.
+  // Per-over aggregation for the biggest over (and, grouped by bowler, the
+  // best spell).
   const overMap = new Map<
     number,
-    { runs: number; wickets: number; bowlerId: string }
+    { runs: number; wickets: number; bowlerId: string; legalBalls: number }
   >()
   const ppOvers = powerplayOverCount(match)
 
@@ -107,9 +171,11 @@ export function inningsInsights(
       runs: 0,
       wickets: 0,
       bowlerId: d.bowlerId,
+      legalBalls: 0,
     }
     o.runs += d.totalRuns
     if (isCountedWicket(d)) o.wickets += 1
+    if (d.isLegal) o.legalBalls += 1
     o.bowlerId = d.bowlerId
     overMap.set(d.overNumber, o)
 
@@ -148,6 +214,8 @@ export function inningsInsights(
     undefined,
   )
 
+  const bestSpell = findBestSpell(overMap)
+
   return {
     inningsIndex,
     battingTeamId: inn?.battingTeamId ?? '',
@@ -156,6 +224,7 @@ export function inningsInsights(
     legalBalls,
     biggestOver,
     bestPartnership,
+    bestSpell,
     fours,
     sixes,
     boundaryRuns,

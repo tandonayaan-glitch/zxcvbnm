@@ -32,7 +32,8 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 - 🟡 **Head-to-head record + star performers** on the match page (✅ `domain/headToHead.ts`,
   `domain/matchPerformers.ts`); add wagon wheel · pitch/bowling map · win probability · momentum ·
   chase predictor
-- ⬜ Turning point / best spell, boundary/wicket timeline polish
+- 🟡 **Best bowling spell** in Match Insights (✅ tightest 2–4 over economy stretch per bowler);
+  add turning point, boundary/wicket timeline polish
 
 ## Phase 3 — Player account lifecycle
 - ⬜ Auto-create linked user account on player create (`user####`, Pending Registration, temp password)

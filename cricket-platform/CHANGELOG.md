@@ -4,6 +4,13 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Best bowling spell
+- **"Best spell" tile** in Match Insights (`domain/insights.ts`): the tightest 2–4 over stretch by
+  a single bowler (lowest economy, ties broken by more wickets), evaluated over that bowler's own
+  overs in bowling order. Requires at least 2 overs from the bowler so it reads as a genuine spell
+  rather than duplicating "biggest over" or the innings' best-bowling-figures stat; hidden when no
+  bowler qualifies.
+
 ### Added — Platform backup export
 - **"Export platform backup (JSON)"** on the master-admin Platform Tools page
   (`domain/platformExport.ts` + `admin.service.gatherPlatformBackup`): a read-only snapshot of
