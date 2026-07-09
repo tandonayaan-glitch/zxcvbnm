@@ -28,6 +28,7 @@ import { listAllMatches } from '@/services/matches.service'
 import { listTournaments } from '@/services/tournaments.service'
 import { aggregatePlayerStats } from '@/domain/stats'
 import { teamResults, teamRecord, type FormOutcome } from '@/domain/teamForm'
+import { TeamForm, type TeamFormPoint } from '@/components/charts/TeamForm'
 import { computeTeamHonours, hasTeamRecords } from '@/domain/teamRecords'
 import { teamOpponentRecords } from '@/domain/teamOpponents'
 import { teamVenueRecords } from '@/domain/teamVenues'
@@ -61,6 +62,21 @@ export function TeamPage() {
 
   const results = teamResults(matches.data ?? [], id)
   const record = teamRecord(results)
+
+  // Runs scored per recent match, for the form chart (oldest → newest).
+  const formSeries: TeamFormPoint[] = results
+    .slice(0, 10)
+    .reverse()
+    .map((r) => {
+      const m = teamMatches.find((x) => x.id === r.matchId)
+      const inn = m?.innings.find((iv) => iv.battingTeamId === id)
+      return {
+        matchId: r.matchId,
+        runs: inn?.totalRuns ?? 0,
+        outcome: r.outcome,
+        opponentShort: r.opponentShort,
+      }
+    })
 
   // Top performers among this squad, across the team's completed matches.
   const squadIds = new Set((squad.data ?? []).map((p) => p.id))
@@ -160,6 +176,12 @@ export function TeamPage() {
             </div>
           </CardBody>
         </Card>
+      )}
+
+      {formSeries.length > 0 && (
+        <div className="mb-4">
+          <TeamForm data={formSeries} />
+        </div>
       )}
 
       {(topRuns || topWkts) && (

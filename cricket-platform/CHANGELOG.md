@@ -114,6 +114,11 @@ All notable changes to CricketHub. Newest first.
   Teams collection. Standings now resolve the team name from denormalised match data (falling back
   to the standings engine's value), matching the Records tab and the Stats "Teams" tab.
 
+### Added — Team form chart
+- **Runs-scored form chart** on team pages (`components/charts/TeamForm`): recent matches as SVG
+  bars coloured by result (win green / loss red / tie amber), labelled by opponent. Complements
+  the W/L/T form chips with the actual totals; hidden until the team has completed matches.
+
 ### Added — Team splits (opponents & venues)
 - **Record vs opponents table** on team pages (`domain/teamOpponents.ts`): the team's
   completed-match record broken down by opponent (played, won, lost, tied/NR and win %), each

@@ -47,6 +47,7 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
   rankings strip** (✅ runs/wickets/sixes rank); **career timeline** (✅ `domain/playerTimeline.ts`);
   **player-vs-player comparison** (✅ `/compare`); add season splits, radar charts
 - 🟡 Team profile: squad, recent, record, leaders (✅); **recent-form guide (W/L/T chips), win-rate/record summary, top run-scorer & wicket-taker** (✅); **honours (knockout titles) + team records** (✅ highest total/chase, biggest wins, best individual batting/bowling — `domain/teamRecords.ts`); **record vs opponents + record by venue** (✅ `domain/teamOpponents.ts`, `domain/teamVenues.ts`);
+  **runs-scored form chart** (✅ `components/charts/TeamForm`);
   **team-vs-team comparison** (✅ `/compare/teams`)
 - 🟡 Tournament: standings, fixtures, leaders, teams (✅); **records tab** (✅ highest/lowest team
   total, highest individual score, best bowling figures, most sixes/fours in an innings, biggest
