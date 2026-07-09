@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   Shield,
@@ -46,6 +47,82 @@ export function TeamPage() {
   const allPlayers = useAsync(listPlayers, [])
   const tournaments = useAsync(listTournaments, [])
 
+  // Analytics recomputation is non-trivial (iterates every match/innings), so
+  // it's memoised on the underlying data rather than recomputed every render.
+  // Hooks must run unconditionally before the loading/not-found early
+  // returns below (Rules of Hooks) — each guards internally for missing data.
+  const teamMatches = useMemo(
+    () => (matches.data ?? []).filter((m) => m.teamA.id === id || m.teamB.id === id),
+    [matches.data, id],
+  )
+  const results = useMemo(
+    () => teamResults(matches.data ?? [], id),
+    [matches.data, id],
+  )
+  const record = useMemo(() => teamRecord(results), [results])
+
+  // Runs scored per recent match, for the form chart (oldest → newest).
+  const formSeries: TeamFormPoint[] = useMemo(
+    () =>
+      results
+        .slice(0, 10)
+        .reverse()
+        .map((r) => {
+          const m = teamMatches.find((x) => x.id === r.matchId)
+          const inn = m?.innings.find((iv) => iv.battingTeamId === id)
+          return {
+            matchId: r.matchId,
+            runs: inn?.totalRuns ?? 0,
+            outcome: r.outcome,
+            opponentShort: r.opponentShort,
+          }
+        }),
+    [results, teamMatches, id],
+  )
+
+  // Top performers among this squad, across the team's completed matches.
+  const playerName = useMemo(
+    () => new Map((squad.data ?? []).map((p) => [p.id, p.displayName])),
+    [squad.data],
+  )
+  const { topRuns, topWkts } = useMemo(() => {
+    const squadIds = new Set((squad.data ?? []).map((p) => p.id))
+    const squadStats = [
+      ...aggregatePlayerStats(
+        teamMatches.filter((m) => m.status === 'completed'),
+      ).values(),
+    ].filter((st) => squadIds.has(st.playerId))
+    return {
+      topRuns: [...squadStats].sort((a, b) => b.runs - a.runs).find((st) => st.runs > 0),
+      topWkts: [...squadStats]
+        .sort((a, b) => b.wickets - a.wickets)
+        .find((st) => st.wickets > 0),
+    }
+  }, [squad.data, teamMatches])
+
+  // Honours & records — resolve record-holder names across all players, not
+  // just the current squad (a record may belong to a player who has left).
+  const honours = useMemo(
+    () => computeTeamHonours(id, matches.data ?? []),
+    [id, matches.data],
+  )
+  const opponentRecords = useMemo(
+    () => teamOpponentRecords(id, matches.data ?? []),
+    [id, matches.data],
+  )
+  const venueRecords = useMemo(
+    () => teamVenueRecords(id, matches.data ?? []),
+    [id, matches.data],
+  )
+  const nameOf = (pid: string) =>
+    (allPlayers.data ?? []).find((p) => p.id === pid)?.displayName ?? '—'
+  // Prefer the live tournament name for titles; fall back to the name
+  // denormalised on the match (covers legacy/seed matches without one).
+  const tournamentNameById = useMemo(
+    () => new Map((tournaments.data ?? []).map((tn) => [tn.id, tn.name])),
+    [tournaments.data],
+  )
+
   if (team.loading) return <PageLoader />
   if (!team.data)
     return (
@@ -55,58 +132,8 @@ export function TeamPage() {
     )
 
   const t = team.data
-  const teamMatches = (matches.data ?? []).filter(
-    (m) => m.teamA.id === id || m.teamB.id === id,
-  )
   const s = stats.data
 
-  const results = teamResults(matches.data ?? [], id)
-  const record = teamRecord(results)
-
-  // Runs scored per recent match, for the form chart (oldest → newest).
-  const formSeries: TeamFormPoint[] = results
-    .slice(0, 10)
-    .reverse()
-    .map((r) => {
-      const m = teamMatches.find((x) => x.id === r.matchId)
-      const inn = m?.innings.find((iv) => iv.battingTeamId === id)
-      return {
-        matchId: r.matchId,
-        runs: inn?.totalRuns ?? 0,
-        outcome: r.outcome,
-        opponentShort: r.opponentShort,
-      }
-    })
-
-  // Top performers among this squad, across the team's completed matches.
-  const squadIds = new Set((squad.data ?? []).map((p) => p.id))
-  const playerName = new Map(
-    (squad.data ?? []).map((p) => [p.id, p.displayName]),
-  )
-  const squadStats = [
-    ...aggregatePlayerStats(
-      teamMatches.filter((m) => m.status === 'completed'),
-    ).values(),
-  ].filter((st) => squadIds.has(st.playerId))
-  const topRuns = [...squadStats]
-    .sort((a, b) => b.runs - a.runs)
-    .find((st) => st.runs > 0)
-  const topWkts = [...squadStats]
-    .sort((a, b) => b.wickets - a.wickets)
-    .find((st) => st.wickets > 0)
-
-  // Honours & records — resolve record-holder names across all players, not
-  // just the current squad (a record may belong to a player who has left).
-  const honours = computeTeamHonours(id, matches.data ?? [])
-  const opponentRecords = teamOpponentRecords(id, matches.data ?? [])
-  const venueRecords = teamVenueRecords(id, matches.data ?? [])
-  const nameOf = (pid: string) =>
-    (allPlayers.data ?? []).find((p) => p.id === pid)?.displayName ?? '—'
-  // Prefer the live tournament name for titles; fall back to the name
-  // denormalised on the match (covers legacy/seed matches without one).
-  const tournamentNameById = new Map(
-    (tournaments.data ?? []).map((tn) => [tn.id, tn.name]),
-  )
   const titleName = (tt: (typeof honours.titles)[number]) =>
     (tt.tournamentId && tournamentNameById.get(tt.tournamentId)) ||
     tt.tournamentName

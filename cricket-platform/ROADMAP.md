@@ -80,7 +80,7 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 - 🟡 Accessibility: focus rings, large-text mode, high-contrast (✅ earlier); **skip-to-content
   link + `main` landmarks + nav `aria-current`/labels** (✅); add colour-blind palettes, full ARIA audit
 - 🟡 Performance: **lazy-loaded routes / code-splitting** (✅ `React.lazy` + `Suspense` per route);
-  add pagination/virtualisation, memoisation, query batching
+  **memoised TeamPage/PlayerPage analytics** (✅ `useMemo`); add pagination/virtualisation, query batching
 
 ---
 

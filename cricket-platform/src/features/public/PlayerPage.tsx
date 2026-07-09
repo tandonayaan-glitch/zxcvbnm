@@ -3,7 +3,7 @@ import { User, Flag, Star, Award, Target, TrendingUp } from 'lucide-react'
 import { Avatar, Badge, Card, PageLoader, EmptyState } from '@/components/ui/primitives'
 import { FollowButton } from '@/components/ui/FollowButton'
 import { Tabs } from '@/components/ui/Tabs'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useAsync } from '@/hooks/useAsync'
 import { getPlayer } from '@/services/players.service'
 import { getTeamsByIds } from '@/services/teams.service'
@@ -42,6 +42,45 @@ export function PlayerPage() {
   )
   const [tab, setTab] = useState('overview')
 
+  // These recompute over every completed match, so they're memoised on the
+  // underlying data. Hooks must run unconditionally before the loading/
+  // not-found early returns below (Rules of Hooks).
+  const splits = useMemo(
+    () => playerTournamentSplits(id, matches.data ?? []),
+    [id, matches.data],
+  )
+  const timeline = useMemo(
+    () => playerTimeline(id, matches.data ?? []),
+    [id, matches.data],
+  )
+  // Global rankings — where this player sits among all ranked players.
+  const rankings = useMemo(() => {
+    const allStatsArr = [...aggregatePlayerStats(matches.data ?? []).values()]
+    const rankIn = (key: 'runs' | 'wickets' | 'sixes') => {
+      const sorted = allStatsArr
+        .filter((st) => st[key] > 0)
+        .sort((a, b) => b[key] - a[key])
+      const idx = sorted.findIndex((st) => st.playerId === id)
+      return idx >= 0 ? { rank: idx + 1, total: sorted.length } : null
+    }
+    return (
+      [
+        { label: 'Runs', ...rankIn('runs') },
+        { label: 'Wickets', ...rankIn('wickets') },
+        { label: 'Sixes', ...rankIn('sixes') },
+      ] as { label: string; rank?: number; total?: number }[]
+    ).filter((r) => r.rank)
+  }, [id, matches.data])
+  // Prefer the live tournament name; fall back to the name denormalised on
+  // the match (covers legacy/seed matches that never stored one).
+  const tournamentNameById = useMemo(
+    () => new Map((tournaments.data ?? []).map((tn) => [tn.id, tn.name])),
+    [tournaments.data],
+  )
+  const splitName = (sp: (typeof splits)[number]) =>
+    (sp.tournamentId && tournamentNameById.get(sp.tournamentId)) ||
+    sp.tournamentName
+
   if (player.loading) return <PageLoader />
   if (!player.data)
     return (
@@ -53,33 +92,6 @@ export function PlayerPage() {
   const p = player.data
   const s = stats.data
   const dismissals = s ? s.inningsBatted - s.notOuts : 0
-  const splits = playerTournamentSplits(id, matches.data ?? [])
-  const timeline = playerTimeline(id, matches.data ?? [])
-
-  // Global rankings — where this player sits among all ranked players.
-  const allStatsArr = [...aggregatePlayerStats(matches.data ?? []).values()]
-  const rankIn = (key: 'runs' | 'wickets' | 'sixes') => {
-    const sorted = allStatsArr
-      .filter((st) => st[key] > 0)
-      .sort((a, b) => b[key] - a[key])
-    const idx = sorted.findIndex((st) => st.playerId === id)
-    return idx >= 0 ? { rank: idx + 1, total: sorted.length } : null
-  }
-  const rankings = (
-    [
-      { label: 'Runs', ...rankIn('runs') },
-      { label: 'Wickets', ...rankIn('wickets') },
-      { label: 'Sixes', ...rankIn('sixes') },
-    ] as { label: string; rank?: number; total?: number }[]
-  ).filter((r) => r.rank)
-  // Prefer the live tournament name; fall back to the name denormalised on
-  // the match (covers legacy/seed matches that never stored one).
-  const tournamentNameById = new Map(
-    (tournaments.data ?? []).map((tn) => [tn.id, tn.name]),
-  )
-  const splitName = (sp: (typeof splits)[number]) =>
-    (sp.tournamentId && tournamentNameById.get(sp.tournamentId)) ||
-    sp.tournamentName
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">

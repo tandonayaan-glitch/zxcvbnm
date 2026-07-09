@@ -104,6 +104,10 @@ All notable changes to CricketHub. Newest first.
   `aria-current` via `NavLink`.
 
 ### Performance
+- **Memoised analytics on TeamPage and PlayerPage** — the heavier pure aggregations (team
+  honours/records/opponents/venues/form-series, player tournament splits/timeline/global rankings)
+  now run in `useMemo` keyed on the underlying match data instead of recomputing on every render.
+  Behaviour-identical; verified render-for-render against the seeded match.
 - **Lazy-loaded route pages** — every route component is now `React.lazy` + `Suspense`, so each
   page ships in its own chunk fetched on navigation. The initial entry bundle drops from one large
   file to ~268 kB, with small per-page chunks (e.g. MatchPage ~35 kB, PlayerPage ~18 kB); the
