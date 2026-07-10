@@ -96,6 +96,20 @@ service cloud.firestore {
       allow update, delete: if isOwnerOrMaster(resource.data.ownerId);
     }
 
+    // ---- Clubs / Seasons (owner-scoped) ------------------------
+    match /clubs/{id} {
+      allow read: if true;
+      allow create: if canManage()
+        && (isMasterAdmin() || request.resource.data.ownerId == request.auth.uid);
+      allow update, delete: if isOwnerOrMaster(resource.data.ownerId);
+    }
+    match /seasons/{id} {
+      allow read: if true;
+      allow create: if canManage()
+        && (isMasterAdmin() || request.resource.data.ownerId == request.auth.uid);
+      allow update, delete: if isOwnerOrMaster(resource.data.ownerId);
+    }
+
     // ---- Tournaments + standings (owner-scoped) ---------------
     match /tournaments/{id} {
       allow read: if true;

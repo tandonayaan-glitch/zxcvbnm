@@ -75,6 +75,11 @@ const PlatformToolsPage = lazy(() =>
     default: m.PlatformToolsPage,
   })),
 )
+const ClubsSeasonsPage = lazy(() =>
+  import('@/features/admin/ClubsSeasonsPage').then((m) => ({
+    default: m.ClubsSeasonsPage,
+  })),
+)
 const AccountPage = lazy(() =>
   import('@/features/account/AccountPage').then((m) => ({ default: m.AccountPage })),
 )
@@ -176,6 +181,7 @@ export default function App() {
           <Route path="/players" element={<PlayersPage />} />
           <Route path="/teams" element={<TeamsPage />} />
           <Route path="/tournaments" element={<TournamentsPage />} />
+          <Route path="/clubs" element={<ClubsSeasonsPage />} />
           <Route
             path="/users"
             element={

@@ -74,6 +74,38 @@ export interface Player {
   updatedAt: number
 }
 
+/* ------------------------- Clubs & Seasons ------------------------- */
+
+/** Top-level organisation that owns teams and runs tournaments/seasons. */
+export interface Club {
+  id: string
+  name: string
+  shortName?: string
+  logoURL?: string | null
+  description?: string
+  homeVenue?: string
+  ownerId?: string // managing admin (uid); master admin sees all
+  createdAt: number
+  updatedAt: number
+}
+
+export type SeasonStatus = 'upcoming' | 'ongoing' | 'completed'
+
+/** A time-boxed period (e.g. a year or a series) that groups tournaments. */
+export interface Season {
+  id: string
+  name: string // e.g. "2026", "Summer 2026"
+  /** Optional — a season can be club-scoped or platform-wide. */
+  clubId?: string | null
+  status: SeasonStatus
+  startDate?: number | null
+  endDate?: number | null
+  description?: string
+  ownerId?: string // managing admin (uid); master admin sees all
+  createdAt: number
+  updatedAt: number
+}
+
 /* ----------------------------- Teams ----------------------------- */
 
 export interface Team {
@@ -87,6 +119,8 @@ export interface Team {
   captainId?: string | null
   viceCaptainId?: string | null
   homeVenue?: string
+  /** Optional — clubs are opt-in, existing teams have no club. */
+  clubId?: string | null
   ownerId?: string // managing admin (uid); master admin sees all
   createdAt: number
   updatedAt: number
@@ -120,6 +154,9 @@ export interface Tournament {
   startDate?: number | null
   endDate?: number | null
   description?: string
+  /** Optional — clubs/seasons are opt-in, existing tournaments have neither. */
+  clubId?: string | null
+  seasonId?: string | null
   ownerId?: string // owning admin (uid); master admin sees all
   createdAt: number
   updatedAt: number

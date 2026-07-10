@@ -18,6 +18,7 @@ import {
   BarChart3,
   Wrench,
   Sliders,
+  Building2,
 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { useAuthStore, isAdmin, canScore } from '@/store/authStore'
@@ -38,6 +39,7 @@ const NAV: NavItem[] = [
   { to: '/players', label: 'Players', icon: <Users size={18} /> },
   { to: '/teams', label: 'Teams', icon: <Shield size={18} /> },
   { to: '/tournaments', label: 'Tournaments', icon: <Trophy size={18} /> },
+  { to: '/clubs', label: 'Clubs & Seasons', icon: <Building2 size={18} /> },
   { to: '/stats', label: 'Stats', icon: <BarChart3 size={18} /> },
   {
     to: '/requests',

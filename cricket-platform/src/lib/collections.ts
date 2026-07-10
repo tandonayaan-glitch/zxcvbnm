@@ -4,6 +4,8 @@ export const COL = {
   usernameLookup: 'usernameLookup',
   players: 'players',
   teams: 'teams',
+  clubs: 'clubs',
+  seasons: 'seasons',
   tournaments: 'tournaments',
   matches: 'matches',
   deliveries: 'deliveries', // subcollection under matches/{id}

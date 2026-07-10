@@ -4,6 +4,21 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Club & Season entities (Phase 8, slice 1/2)
+- **`Club` and `Season` domain types** (`types/index.ts`): a club is a top-level organisation
+  (name, short name, logo, home venue); a season is a time-boxed period (name, status,
+  start/end dates) optionally scoped to a club. Both are additive — `Team.clubId` and
+  `Tournament.clubId`/`seasonId` are optional fields, so every existing team/tournament doc
+  keeps working unchanged (no migration needed).
+- **`services/clubs.service.ts` / `services/seasons.service.ts`**: CRUD mirroring the existing
+  teams/tournaments service pattern (list/get/create/update/delete, `pruneUndefined` on writes).
+- **"Clubs & Seasons" admin page** (`/clubs`, master admin + admins, owner-scoped like Teams):
+  tabbed Clubs/Seasons management, season form's club picker lists the signed-in admin's own
+  clubs. Firestore rules added for both collections (public read, owner-or-master write).
+  Verified end-to-end through the actual UI: created a club, created a season linked to it
+  (dropdown correctly listed the new club), confirmed both counters and rows updated with no
+  console errors, then deleted both to leave the database clean.
+
 ### Added — Self-service account data export
 - **"Export my data" button** on the Settings page's Account card: downloads the signed-in user's
   own profile fields and appearance/accessibility preferences as JSON. Client-side, no extra
