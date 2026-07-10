@@ -43,6 +43,7 @@ export function StatsPage() {
   >('batting')
   const [scope, setScope] = useState('all')
   const [venue, setVenue] = useState('all')
+  const [team, setTeam] = useState('all')
 
   // Tournaments that actually have completed matches, for the scope filter.
   const scopeOptions = useMemo(() => {
@@ -74,22 +75,41 @@ export function StatsPage() {
     return [...set].sort((a, b) => a.localeCompare(b))
   }, [scopedMatches])
 
-  const finalMatches = useMemo(
-    () => (venue === 'all' ? scopedMatches : scopedMatches.filter((m) => m.venue === venue)),
-    [scopedMatches, venue],
-  )
+  // Teams with completed matches within the current competition scope, named
+  // from denormalised match data so a deleted team doc doesn't break the list.
+  const teamOptions = useMemo(() => {
+    const nameById = new Map<string, string>()
+    for (const m of scopedMatches) {
+      if (m.status !== 'completed') continue
+      nameById.set(m.teamA.id, m.teamA.name)
+      nameById.set(m.teamB.id, m.teamB.name)
+    }
+    return [...nameById.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [scopedMatches])
+
+  const finalMatches = useMemo(() => {
+    let list = scopedMatches
+    if (venue !== 'all') list = list.filter((m) => m.venue === venue)
+    if (team !== 'all') list = list.filter((m) => m.teamA.id === team || m.teamB.id === team)
+    return list
+  }, [scopedMatches, venue, team])
 
   function changeScope(next: string) {
     setScope(next)
     setVenue('all')
+    setTeam('all')
   }
 
   // Recompute leaderboards/stats for the selected scope (or reuse platform-wide).
   const scoped = useMemo(() => {
-    if (scope === 'all' && venue === 'all') return { leaderboards, playerStats }
+    if (scope === 'all' && venue === 'all' && team === 'all') {
+      return { leaderboards, playerStats }
+    }
     const ps = aggregatePlayerStats(finalMatches)
     return { leaderboards: buildLeaderboards(ps), playerStats: ps }
-  }, [scope, venue, finalMatches, leaderboards, playerStats])
+  }, [scope, venue, team, finalMatches, leaderboards, playerStats])
 
   const records = useMemo(
     () => computeTournamentRecords(finalMatches),
@@ -170,7 +190,7 @@ export function StatsPage() {
         />
       ) : (
         <>
-          {(scopeOptions.length > 0 || venueOptions.length > 0) && (
+          {(scopeOptions.length > 0 || venueOptions.length > 0 || teamOptions.length > 0) && (
             <div className="mb-4 flex flex-wrap items-center gap-3">
               {scopeOptions.length > 0 && (
                 <div className="flex items-center gap-2">
@@ -213,6 +233,29 @@ export function StatsPage() {
                     {venueOptions.map((v) => (
                       <option key={v} value={v}>
                         {v}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {teamOptions.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <label
+                    htmlFor="stats-team"
+                    className="text-sm font-medium text-ink-600"
+                  >
+                    Team
+                  </label>
+                  <select
+                    id="stats-team"
+                    value={team}
+                    onChange={(e) => setTeam(e.target.value)}
+                    className="rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm font-medium text-ink-800 focus:border-brand-500 focus:outline-none"
+                  >
+                    <option value="all">All teams</option>
+                    {teamOptions.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
                       </option>
                     ))}
                   </select>
