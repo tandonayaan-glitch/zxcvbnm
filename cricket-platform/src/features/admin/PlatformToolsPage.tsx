@@ -7,6 +7,9 @@ import {
   ScrollText,
   AlertTriangle,
   DatabaseBackup,
+  Gauge,
+  Wifi,
+  WifiOff,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
@@ -17,9 +20,11 @@ import {
   PageLoader,
   Badge,
   EmptyState,
+  StatCard,
 } from '@/components/ui/primitives'
 import { useToast } from '@/components/ui/toast'
 import { useAsync } from '@/hooks/useAsync'
+import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { useAuthStore } from '@/store/authStore'
 import {
   recomputeAllStats,
@@ -27,6 +32,7 @@ import {
 } from '@/services/stats.service'
 import { listTournaments } from '@/services/tournaments.service'
 import { clearLeaderboards, gatherPlatformBackup } from '@/services/admin.service'
+import { getPlatformDiagnostics } from '@/services/diagnostics.service'
 import { logAudit, listAuditLogs } from '@/services/audit.service'
 import { platformBackupToJSON } from '@/domain/platformExport'
 import { downloadBlob } from '@/lib/download'
@@ -37,7 +43,9 @@ const CONFIRM_PHRASE = 'CLEAR LEADERBOARDS'
 export function PlatformToolsPage() {
   const toast = useToast()
   const profile = useAuthStore((s) => s.profile)
+  const online = useOnlineStatus()
   const audits = useAsync(() => listAuditLogs(50), [])
+  const diagnostics = useAsync(getPlatformDiagnostics, [])
   const [rebuilding, setRebuilding] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [showClear, setShowClear] = useState(false)
@@ -89,6 +97,63 @@ export function PlatformToolsPage() {
         title="Platform tools"
         subtitle="Master-admin only — maintenance, leaderboard controls and audit log."
       />
+
+      <Card className="mb-4">
+        <CardHeader
+          title={
+            <span className="flex items-center gap-2">
+              <Gauge size={18} /> System diagnostics
+            </span>
+          }
+          subtitle="Firestore document counts (server-side aggregate counts — no document downloads) and connectivity."
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => diagnostics.refetch()}
+              loading={diagnostics.loading}
+            >
+              <RefreshCw size={14} /> Refresh
+            </Button>
+          }
+        />
+        <CardBody>
+          <div className="mb-3 flex items-center gap-2 text-sm">
+            {online ? (
+              <>
+                <Wifi size={16} className="text-pitch-600" />
+                <Badge tone="green">Online</Badge>
+              </>
+            ) : (
+              <>
+                <WifiOff size={16} className="text-red-600" />
+                <Badge tone="red">Offline</Badge>
+              </>
+            )}
+            {diagnostics.data && (
+              <span className="text-xs text-ink-400">
+                as of {formatDateTime(diagnostics.data.generatedAt)}
+              </span>
+            )}
+          </div>
+          {diagnostics.loading ? (
+            <PageLoader />
+          ) : diagnostics.data ? (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <StatCard label="Players" value={diagnostics.data.counts.players} tone="blue" />
+              <StatCard label="Teams" value={diagnostics.data.counts.teams} tone="green" />
+              <StatCard label="Tournaments" value={diagnostics.data.counts.tournaments} tone="amber" />
+              <StatCard label="Matches" value={diagnostics.data.counts.matches} tone="purple" />
+              <StatCard label="Deliveries" value={diagnostics.data.counts.deliveries} tone="blue" />
+              <StatCard label="Users" value={diagnostics.data.counts.users} tone="green" />
+              <StatCard label="Audit entries" value={diagnostics.data.counts.auditLogs} tone="amber" />
+              <StatCard label="Admin requests" value={diagnostics.data.counts.adminRequests} tone="purple" />
+            </div>
+          ) : (
+            <EmptyState title="Could not load diagnostics" />
+          )}
+        </CardBody>
+      </Card>
 
       <Card className="mb-4">
         <CardHeader

@@ -22,9 +22,11 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 - ✅ Master-Admin **Platform Tools** page (exclusive): recompute leaderboards, rebuild stats
 - ✅ **Clear leaderboards** danger flow: full-screen warning, "I understand…" checkbox, type `CLEAR LEADERBOARDS`, final confirm, audit-logged
 - ✅ Audit log viewer (master admin)
-- 🟡 **Platform backup export** (✅ JSON snapshot of players/teams/tournaments/matches+deliveries/
-  users — `domain/platformExport.ts`, audit-logged); add system diagnostics / Firestore usage
-  stats · offline-queue force-resync
+- ✅ **Platform backup export** (JSON snapshot of players/teams/tournaments/matches+deliveries/
+  users — `domain/platformExport.ts`, audit-logged)
+- ✅ **System diagnostics** (`services/diagnostics.service.ts`): Firestore document counts via
+  server-side aggregate queries + online/offline badge, on Platform Tools
+- ⬜ offline-queue force-resync
 
 ## Phase 2 — Match Centre analytics (THIS PASS)
 - ✅ Worm graph (cumulative runs), Manhattan (runs/over), run-rate — SVG, from delivery data

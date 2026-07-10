@@ -4,6 +4,14 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — System diagnostics
+- **System diagnostics card** on Platform Tools (`services/diagnostics.service.ts`): Firestore
+  document counts (players, teams, tournaments, matches, deliveries, users, audit entries, admin
+  requests) via server-side `getCountFromServer`/`collectionGroup` aggregate queries — cheap even
+  as the platform grows, since it never downloads the underlying documents — plus a live
+  online/offline badge and a manual refresh. Cross-checked the deliveries count against summed
+  per-match delivery reads (66 = 66) to confirm the collection-group aggregate is correct.
+
 ### Added — Venue filter on Stats
 - **Venue filter on the Stats page**, alongside the existing competition filter: narrows every
   board (leaderboards, MVP, consistency, records, team standings, totals) to matches played at a
