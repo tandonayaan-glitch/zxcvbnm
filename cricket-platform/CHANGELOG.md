@@ -4,6 +4,20 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Group tables for group_knockout tournaments
+- **`domain/groups.ts`**: `groupStandings()` buckets a tournament's `teamIds` by an optional
+  `Tournament.teamGroups` map (team id -> group label) and reuses `computeStandings` per group —
+  pure derivation, no new stats logic. Teams left ungrouped are simply omitted.
+- **`TournamentFormModal`**: when format is "Group + Knockout", a group-assignment row (team name
+  + short label input, e.g. "A"/"B") appears per selected team.
+- **`TournamentPage`**: a "Groups" tab appears once at least one team has a group assigned,
+  rendering one standings table per group (extracted the existing standings table into a shared
+  `StandingsTable` component so the main Standings tab and each group render identically).
+  Verified end-to-end in the browser: created a group_knockout tournament, assigned the two
+  existing teams to groups A/B, confirmed the saved `teamGroups` map and that each group's table
+  showed only its own team with no cross-group leakage; also unit-verified the domain function
+  against a synthetic 4-team/2-group dataset with a real result (points/NRR isolated per group).
+
 ### Added — Club & Season wired into Team/Tournament (Phase 8, slice 2/2)
 - **Team and Tournament form pickers**: `TeamFormModal` gained an optional Club select;
   `TournamentFormModal` gained optional Club and Season selects. `TeamsPage`/`TournamentsPage`

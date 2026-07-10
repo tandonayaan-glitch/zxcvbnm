@@ -66,7 +66,9 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
   bracket** (✅ per-match `stage` set in the setup wizard, rounds rendered left-to-right with
   winner highlighting — `domain/bracket.ts`); **awards tab** (✅ Player of the Tournament MVP +
   best batter/bowler/all-rounder/economy/sixes/most-POTM — `domain/awards.ts`); standings robust
-  to deleted team docs (✅); add group tables within group-knockout, qualification tracker, timeline
+  to deleted team docs (✅); **group tables within group-knockout** (✅ per-team group label set in
+  the tournament form, `domain/groups.ts` reuses `computeStandings` per group, "Groups" tab shown
+  when configured); add qualification tracker, timeline
 
 ## Phase 6 — Global leaderboards & rankings
 - ✅ Global leaderboards (runs, wickets, avg, SR, economy, 4s, 6s, best bowling, fielding) + Stats page

@@ -157,6 +157,8 @@ export interface Tournament {
   /** Optional — clubs/seasons are opt-in, existing tournaments have neither. */
   clubId?: string | null
   seasonId?: string | null
+  /** Team id -> group label ("A", "B"…), only meaningful for group_knockout. */
+  teamGroups?: Record<string, string>
   ownerId?: string // owning admin (uid); master admin sees all
   createdAt: number
   updatedAt: number

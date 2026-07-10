@@ -42,6 +42,7 @@ import {
 import { computeTournamentRecords } from '@/domain/records'
 import { computeTournamentAwards } from '@/domain/awards'
 import { bracketRounds, hasKnockoutPhase } from '@/domain/bracket'
+import { groupStandings } from '@/domain/groups'
 import {
   tournamentToCSV,
   tournamentToJSON,
@@ -50,7 +51,7 @@ import {
 import { downloadBlob, slugify } from '@/lib/download'
 import { canManageTournaments, useAuthStore } from '@/store/authStore'
 import { formatDate, formatRate, ballsToOvers } from '@/lib/format'
-import type { Match } from '@/types'
+import type { Match, StandingsRow } from '@/types'
 
 export function TournamentPage() {
   const { id = '' } = useParams()
@@ -73,6 +74,16 @@ export function TournamentPage() {
   const standings = useMemo(() => {
     if (!tournament.data) return []
     return computeStandings(
+      tournament.data.teamIds ?? [],
+      teams.data ?? [],
+      tMatches,
+    )
+  }, [tournament.data, teams.data, tMatches])
+
+  const groups = useMemo(() => {
+    if (!tournament.data) return []
+    return groupStandings(
+      tournament.data.teamGroups,
       tournament.data.teamIds ?? [],
       teams.data ?? [],
       tMatches,
@@ -244,6 +255,7 @@ export function TournamentPage() {
         onChange={setTab}
         tabs={[
           { key: 'standings', label: 'Standings' },
+          ...(groups.length > 0 ? [{ key: 'groups', label: 'Groups' }] : []),
           ...(showBracket ? [{ key: 'bracket', label: 'Bracket' }] : []),
           { key: 'matches', label: 'Fixtures & Results' },
           { key: 'leaders', label: 'Leaders' },
@@ -254,54 +266,20 @@ export function TournamentPage() {
       />
 
       {tab === 'standings' && (
-        <Card className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-ink-100 bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
-                <th className="px-3 py-2.5 font-semibold">#</th>
-                <th className="px-3 py-2.5 font-semibold">Team</th>
-                <th className="px-2 py-2.5 text-right font-semibold">P</th>
-                <th className="px-2 py-2.5 text-right font-semibold">W</th>
-                <th className="px-2 py-2.5 text-right font-semibold">L</th>
-                <th className="px-2 py-2.5 text-right font-semibold">T</th>
-                <th className="px-2 py-2.5 text-right font-semibold">Pts</th>
-                <th className="px-3 py-2.5 text-right font-semibold">NRR</th>
-              </tr>
-            </thead>
-            <tbody>
-              {standings.map((r, i) => (
-                <tr key={r.teamId} className="border-b border-ink-50">
-                  <td className="px-3 py-2.5 text-ink-400">{i + 1}</td>
-                  <td className="px-3 py-2.5">
-                    <Link
-                      to={`/team/${r.teamId}`}
-                      className="font-medium text-ink-900 hover:text-brand-700"
-                    >
-                      {teamNameById.get(r.teamId) ?? r.teamName}
-                    </Link>
-                  </td>
-                  <td className="px-2 py-2.5 text-right text-ink-600">{r.played}</td>
-                  <td className="px-2 py-2.5 text-right text-ink-600">{r.won}</td>
-                  <td className="px-2 py-2.5 text-right text-ink-600">{r.lost}</td>
-                  <td className="px-2 py-2.5 text-right text-ink-600">{r.tied}</td>
-                  <td className="px-2 py-2.5 text-right font-bold text-ink-900">
-                    {r.points}
-                  </td>
-                  <td className="px-3 py-2.5 text-right text-ink-600">
-                    {formatRate(r.nrr)}
-                  </td>
-                </tr>
-              ))}
-              {standings.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="px-4 py-6 text-center text-ink-400">
-                    No teams in this tournament yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </Card>
+        <StandingsTable rows={standings} teamNameById={teamNameById} />
+      )}
+
+      {tab === 'groups' && (
+        <div className="space-y-4">
+          {groups.map((g) => (
+            <div key={g.group}>
+              <div className="mb-1.5 text-sm font-semibold text-ink-800">
+                Group {g.group}
+              </div>
+              <StandingsTable rows={g.rows} teamNameById={teamNameById} />
+            </div>
+          ))}
+        </div>
       )}
 
       {tab === 'bracket' && (
@@ -542,6 +520,61 @@ export function TournamentPage() {
         </div>
       )}
     </div>
+  )
+}
+
+function StandingsTable({
+  rows,
+  teamNameById,
+}: {
+  rows: StandingsRow[]
+  teamNameById: Map<string, string>
+}) {
+  return (
+    <Card className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-ink-100 bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
+            <th className="px-3 py-2.5 font-semibold">#</th>
+            <th className="px-3 py-2.5 font-semibold">Team</th>
+            <th className="px-2 py-2.5 text-right font-semibold">P</th>
+            <th className="px-2 py-2.5 text-right font-semibold">W</th>
+            <th className="px-2 py-2.5 text-right font-semibold">L</th>
+            <th className="px-2 py-2.5 text-right font-semibold">T</th>
+            <th className="px-2 py-2.5 text-right font-semibold">Pts</th>
+            <th className="px-3 py-2.5 text-right font-semibold">NRR</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={r.teamId} className="border-b border-ink-50">
+              <td className="px-3 py-2.5 text-ink-400">{i + 1}</td>
+              <td className="px-3 py-2.5">
+                <Link
+                  to={`/team/${r.teamId}`}
+                  className="font-medium text-ink-900 hover:text-brand-700"
+                >
+                  {teamNameById.get(r.teamId) ?? r.teamName}
+                </Link>
+              </td>
+              <td className="px-2 py-2.5 text-right text-ink-600">{r.played}</td>
+              <td className="px-2 py-2.5 text-right text-ink-600">{r.won}</td>
+              <td className="px-2 py-2.5 text-right text-ink-600">{r.lost}</td>
+              <td className="px-2 py-2.5 text-right text-ink-600">{r.tied}</td>
+              <td className="px-2 py-2.5 text-right font-bold text-ink-900">{r.points}</td>
+              <td className="px-3 py-2.5 text-right text-ink-600">{formatRate(r.nrr)}</td>
+            </tr>
+          ))}
+          {rows.length === 0 && (
+            <tr>
+              <td colSpan={8} className="px-4 py-6 text-center text-ink-400">
+                No teams in this tournament yet.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </Card>
   )
 }
 

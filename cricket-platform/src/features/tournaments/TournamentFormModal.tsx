@@ -47,6 +47,9 @@ export function TournamentFormModal({
   const [teamIds, setTeamIds] = useState<string[]>(tournament?.teamIds ?? [])
   const [clubId, setClubId] = useState(tournament?.clubId ?? '')
   const [seasonId, setSeasonId] = useState(tournament?.seasonId ?? '')
+  const [teamGroups, setTeamGroups] = useState<Record<string, string>>(
+    tournament?.teamGroups ?? {},
+  )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -54,6 +57,10 @@ export function TournamentFormModal({
     setTeamIds((prev) =>
       prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
     )
+  }
+
+  function setGroup(teamId: string, group: string) {
+    setTeamGroups((prev) => ({ ...prev, [teamId]: group }))
   }
 
   async function submit() {
@@ -73,6 +80,14 @@ export function TournamentFormModal({
       teamIds,
       clubId: clubId || null,
       seasonId: seasonId || null,
+      teamGroups:
+        format === 'group_knockout'
+          ? Object.fromEntries(
+              teamIds
+                .map((id) => [id, (teamGroups[id] ?? '').trim().toUpperCase()])
+                .filter(([, g]) => g),
+            )
+          : undefined,
     }
     try {
       await onSave(input, tournament?.id)
@@ -209,6 +224,37 @@ export function TournamentFormModal({
           </div>
         )}
       </div>
+
+      {format === 'group_knockout' && teamIds.length > 0 && (
+        <div className="mt-4">
+          <div className="mb-1.5 text-sm font-medium text-ink-700">
+            Group assignment
+          </div>
+          <p className="mb-2 text-xs text-ink-500">
+            Give each team a group label (e.g. A, B). Teams left blank won't appear on the
+            Groups tab.
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {teamIds.map((id) => {
+              const t = teams.find((x) => x.id === id)
+              return (
+                <div key={id} className="flex items-center gap-2">
+                  <span className="flex-1 truncate text-sm text-ink-800">
+                    {t?.name ?? id}
+                  </span>
+                  <Input
+                    className="w-20"
+                    value={teamGroups[id] ?? ''}
+                    onChange={(e) => setGroup(id, e.target.value)}
+                    placeholder="A"
+                    maxLength={8}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
     </Modal>
