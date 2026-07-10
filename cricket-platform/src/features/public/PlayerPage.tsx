@@ -18,6 +18,8 @@ import { playerToCSV, playerToJSON } from '@/domain/playerExport'
 import { downloadBlob, slugify } from '@/lib/download'
 import { AchievementsPanel } from '@/components/stats/AchievementsPanel'
 import { PlayerForm } from '@/components/charts/PlayerForm'
+import { PlayerRadar } from '@/components/charts/PlayerRadar'
+import { playerRadarProfile } from '@/domain/radar'
 import {
   battingAverage,
   strikeRate,
@@ -262,6 +264,7 @@ export function PlayerPage() {
               </div>
             )}
             <PlayerForm performances={perfs.data ?? []} />
+            <PlayerRadar axes={playerRadarProfile(s)} />
             <div className="grid gap-4 sm:grid-cols-2">
             <StatBlock
               title="Batting"

@@ -4,6 +4,14 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Player radar profile
+- **Six-axis radar/spider chart** on the player Overview (`domain/radar.ts` +
+  `components/charts/PlayerRadar`): Runs, Average, Strike rate, Wickets, Economy and Fielding,
+  each normalised 0-100 against fixed benchmarks (not other players) — a shape, not a ranking,
+  with the raw stat shown in a legend below. New SVG chart type (polar, not bar/line); verified
+  the polygon geometry against hand-calculated trigonometry and the normalisation math against a
+  hand-calculated synthetic stat line, then confirmed against the real seeded player's stats.
+
 ### Performance
 - **Batched the backup export's delivery reads** — `gatherPlatformBackup()` now fetches every
   match's deliveries concurrently (`Promise.all`) instead of one round-trip at a time; read-only,
