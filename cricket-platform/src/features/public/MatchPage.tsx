@@ -43,6 +43,7 @@ import {
   formatRate,
   runRate,
   requiredRate,
+  projectedScore,
 } from '@/lib/format'
 import type { Delivery, Match, Player, ScorecardConfig } from '@/types'
 
@@ -456,6 +457,12 @@ function LivePanel({
   const chasing = inn.target != null
   const ballsLeft = match.oversPerInnings * match.ballsPerOver - inn.legalBalls
   const need = inn.target != null ? Math.max(0, inn.target - inn.totalRuns) : 0
+  const rrr = chasing ? requiredRate(need, ballsLeft, match.ballsPerOver) : 0
+  // "On this run rate" projection — only meaningful for a first innings with
+  // no target yet; a chase compares crr against the required rate instead.
+  const projected = !chasing
+    ? projectedScore(inn.totalRuns, inn.legalBalls, ballsLeft)
+    : 0
 
   const striker = inn.battingCard.find((b) => b.playerId === inn.strikerId)
   const nonStriker = inn.battingCard.find((b) => b.playerId === inn.nonStrikerId)
@@ -472,13 +479,30 @@ function LivePanel({
             {ballsToOvers(inn.legalBalls, match.ballsPerOver)} ov · CRR{' '}
             {formatRate(crr)}
           </div>
+          {!chasing && ballsLeft > 0 && inn.legalBalls > 0 && (
+            <div className="text-xs text-ink-400">
+              Projected {projected} on this run rate
+            </div>
+          )}
         </div>
         {chasing && (
           <div className="text-right text-sm">
             <div className="font-semibold text-brand-700">
               Need {need} in {ballsLeft}
             </div>
-            <div className="text-ink-500">Target {inn.target}</div>
+            <div className="text-ink-500">
+              Target {inn.target} · RRR {formatRate(rrr)}
+            </div>
+            {ballsLeft > 0 && (
+              <div
+                className={`text-xs font-medium ${
+                  crr >= rrr ? 'text-pitch-600' : 'text-red-600'
+                }`}
+              >
+                {crr >= rrr ? 'Ahead' : 'Behind'} by {formatRate(Math.abs(crr - rrr))}{' '}
+                run{Math.abs(crr - rrr) === 1 ? '' : 's'}/ov
+              </div>
+            )}
           </div>
         )}
       </div>

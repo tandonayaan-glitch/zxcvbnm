@@ -31,9 +31,9 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 ## Phase 2 — Match Centre analytics (THIS PASS)
 - ✅ Worm graph (cumulative runs), Manhattan (runs/over), run-rate — SVG, from delivery data
 - ✅ Match insights panel (biggest over, best partnership, boundary %, dot-ball %, powerplay) — pure computation from deliveries
-- 🟡 **Head-to-head record + star performers** on the match page (✅ `domain/headToHead.ts`,
-  `domain/matchPerformers.ts`); add wagon wheel · pitch/bowling map · win probability · momentum ·
-  chase predictor
+- 🟡 **Head-to-head record + star performers + live projected score/chase-rate comparison** on the
+  match page (✅ `domain/headToHead.ts`, `domain/matchPerformers.ts`, `projectedScore` in
+  `lib/format.ts`); add wagon wheel · pitch/bowling map · full win-probability model · momentum
 - 🟡 **Best bowling spell + boundary/wicket timeline** in Match Insights (✅ tightest 2–4 over
   economy stretch per bowler; ✅ colour-coded ball-order timeline of every 4/6/wicket); add
   turning point

@@ -4,6 +4,15 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Live projected score & chase-rate comparison
+- **Projected score** on the live match panel for a first innings: the standard "on this run
+  rate" extrapolation from current run rate over the balls remaining (`projectedScore` in
+  `lib/format.ts`). For a chase, the panel now also shows the **required run rate** and an
+  **"Ahead"/"Behind" by X runs/ov** comparison against the current rate. Pure, read-only maths
+  over already-live innings state — no scoring-engine changes. Verified against hand-calculated
+  values (e.g. 60 off 60 balls with 60 remaining → projected 120; need 41 off 30 balls → RRR 8.20),
+  since a live in-progress match is needed to see it on-page and the seed match is completed.
+
 ### Added — Boundary & wicket timeline
 - **Boundary & wicket timeline strip** in Match Insights (`domain/insights.ts`): every four, six
   and wicket of an innings in ball order as compact colour-coded badges (4 green, 6 purple, W
