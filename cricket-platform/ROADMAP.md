@@ -46,7 +46,9 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 
 ## Phase 4 — Settings & user profile
 - 🟡 Background customization (pill + panel + presets, persisted locally) — ✅ done earlier
-- ⬜ Unified Settings page on every dashboard: profile pic, display name, bio, email, change password, appearance (light/dark/system/high-contrast, density, reduced motion, font scale), privacy, sessions, export data
+- 🟡 Unified Settings page on every dashboard (✅ profile pic/display name/bio/email, change
+  password, appearance — text size/density/reduced motion/high contrast — and now
+  **self-service "export my data" (JSON)**); add light/dark/system theme, privacy, sessions
 - ✅ Cross-device persistence of preferences (Firestore `userPrefs`) — pull/seed on sign-in (remote wins), debounced push on change, resets on sign-out
 - ✅ Global undo toasts for create/edit actions (Players, Teams, Tournaments)
 

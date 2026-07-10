@@ -4,6 +4,12 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Self-service account data export
+- **"Export my data" button** on the Settings page's Account card: downloads the signed-in user's
+  own profile fields and appearance/accessibility preferences as JSON. Client-side, no extra
+  service calls (both are already in memory). Verified the export payload shape and download path
+  directly (route is sign-in gated, so not click-through-able in this preview).
+
 ### Added — Momentum indicator
 - **Momentum tile** in Match Insights (`domain/insights.ts`): the last (up to) 3 overs' run rate
   vs the innings' overall rate so far, labelled accelerating/slowing/steady — computed in the same

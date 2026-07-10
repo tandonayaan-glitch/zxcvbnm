@@ -8,6 +8,7 @@ import {
   Zap,
   Contrast,
   LayoutGrid,
+  Download,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
@@ -28,6 +29,7 @@ import { BackgroundControl } from '@/components/background/BackgroundControl'
 import { updateUserProfile } from '@/services/users.service'
 import { changePassword, authErrorMessage } from '@/services/auth.service'
 import { formatDate } from '@/lib/format'
+import { downloadBlob, slugify } from '@/lib/download'
 import { cn } from '@/lib/cn'
 
 export function UserSettingsPage() {
@@ -83,6 +85,27 @@ export function UserSettingsPage() {
     } finally {
       setSavingPw(false)
     }
+  }
+
+  function exportMyData() {
+    if (!profile) return
+    const data = {
+      exportedAt: Date.now(),
+      profile: {
+        username: profile.username,
+        displayName: profile.displayName,
+        role: profile.role,
+        bio: profile.bio ?? null,
+        email: profile.email ?? null,
+        createdAt: profile.createdAt,
+      },
+      preferences: prefs,
+    }
+    downloadBlob(
+      `${slugify(profile.username)}-account-data.json`,
+      JSON.stringify(data, null, 2),
+      'application/json',
+    )
   }
 
   const scales: { key: TextScale; label: string }[] = [
@@ -275,6 +298,11 @@ export function UserSettingsPage() {
             <dt className="text-ink-500">Joined</dt>
             <dd className="text-right text-ink-700">{formatDate(profile.createdAt)}</dd>
           </dl>
+          <div className="mt-4 flex justify-end border-t border-ink-100 pt-4">
+            <Button variant="outline" onClick={exportMyData}>
+              <Download size={16} /> Export my data (JSON)
+            </Button>
+          </div>
         </CardBody>
       </Card>
     </div>
