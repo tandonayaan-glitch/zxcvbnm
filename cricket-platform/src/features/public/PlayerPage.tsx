@@ -85,6 +85,24 @@ export function PlayerPage() {
     (sp.tournamentId && tournamentNameById.get(sp.tournamentId)) ||
     sp.tournamentName
 
+  // Where this player ranks by runs within each tournament they've played in
+  // (per-scope, as opposed to the platform-wide `rankings` above).
+  const splitRunsRank = useMemo(() => {
+    const map = new Map<string, number | null>()
+    for (const sp of splits) {
+      if (!sp.tournamentId) continue
+      const tMatches = (matches.data ?? []).filter(
+        (m) => m.tournamentId === sp.tournamentId,
+      )
+      const sorted = [...aggregatePlayerStats(tMatches).values()]
+        .filter((st) => st.runs > 0)
+        .sort((a, b) => b.runs - a.runs)
+      const idx = sorted.findIndex((st) => st.playerId === id)
+      map.set(sp.tournamentId, idx >= 0 ? idx + 1 : null)
+    }
+    return map
+  }, [splits, matches.data, id])
+
   if (player.loading) return <PageLoader />
   if (!player.data)
     return (
@@ -317,6 +335,7 @@ export function PlayerPage() {
                 <th className="px-4 py-2.5 font-semibold">Tournament</th>
                 <th className="px-2 py-2.5 text-right font-semibold">M</th>
                 <th className="px-2 py-2.5 text-right font-semibold">Runs</th>
+                <th className="px-2 py-2.5 text-right font-semibold">Rank</th>
                 <th className="px-2 py-2.5 text-right font-semibold">HS</th>
                 <th className="px-2 py-2.5 text-right font-semibold">Avg</th>
                 <th className="px-2 py-2.5 text-right font-semibold">SR</th>
@@ -347,6 +366,11 @@ export function PlayerPage() {
                     <td className="px-2 py-2.5 text-right text-ink-600">{st.matches}</td>
                     <td className="px-2 py-2.5 text-right font-semibold text-ink-900">
                       {st.runs}
+                    </td>
+                    <td className="px-2 py-2.5 text-right text-ink-600">
+                      {sp.tournamentId && splitRunsRank.get(sp.tournamentId)
+                        ? `#${splitRunsRank.get(sp.tournamentId)}`
+                        : '—'}
                     </td>
                     <td className="px-2 py-2.5 text-right text-ink-600">
                       {st.highScore}

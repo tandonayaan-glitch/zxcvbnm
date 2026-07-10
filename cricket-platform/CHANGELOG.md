@@ -4,6 +4,12 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Per-tournament rank
+- **Rank column** on the player "By tournament" tab: where the player stands by runs within that
+  specific tournament (as opposed to the existing platform-wide rankings strip on Overview),
+  computed by re-aggregating that tournament's own matches. Verified against the seeded data
+  (#1 in CricketHub Cup, consistent with the platform-wide #1 Runs rank).
+
 ### Added — Player radar profile
 - **Six-axis radar/spider chart** on the player Overview (`domain/radar.ts` +
   `components/charts/PlayerRadar`): Runs, Average, Strike rate, Wickets, Economy and Fielding,
