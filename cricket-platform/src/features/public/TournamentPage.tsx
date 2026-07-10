@@ -30,6 +30,8 @@ import { getTournament } from '@/services/tournaments.service'
 import { listTeams } from '@/services/teams.service'
 import { listPlayers } from '@/services/players.service'
 import { listAllMatches } from '@/services/matches.service'
+import { listClubs } from '@/services/clubs.service'
+import { listSeasons } from '@/services/seasons.service'
 import { recomputeTournamentStandings, recomputeAllStats } from '@/services/stats.service'
 import {
   computeStandings,
@@ -58,6 +60,8 @@ export function TournamentPage() {
   const teams = useAsync(listTeams, [])
   const players = useAsync(listPlayers, [])
   const matches = useAsync(listAllMatches, [])
+  const clubs = useAsync(listClubs, [])
+  const seasons = useAsync(listSeasons, [])
   const [tab, setTab] = useState('standings')
   const [refreshing, setRefreshing] = useState(false)
 
@@ -138,6 +142,8 @@ export function TournamentPage() {
   const tournamentTeams = (teams.data ?? []).filter((x) =>
     (t.teamIds ?? []).includes(x.id),
   )
+  const clubName = (clubs.data ?? []).find((c) => c.id === t.clubId)?.name
+  const seasonName = (seasons.data ?? []).find((s) => s.id === t.seasonId)?.name
   const showBracket = hasKnockoutPhase(t.format)
 
   const hasExport =
@@ -176,6 +182,9 @@ export function TournamentPage() {
                 </Badge>
                 <span className="capitalize">{t.format.replace('_', ' + ')}</span>
                 <span>· {formatDate(t.startDate)}</span>
+                {(clubName || seasonName) && (
+                  <span>· {[clubName, seasonName].filter(Boolean).join(' / ')}</span>
+                )}
               </div>
             </div>
           </div>

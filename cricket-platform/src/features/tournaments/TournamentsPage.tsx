@@ -19,6 +19,8 @@ import {
   type TournamentInput,
 } from '@/services/tournaments.service'
 import { listTeams } from '@/services/teams.service'
+import { listClubs } from '@/services/clubs.service'
+import { listSeasons } from '@/services/seasons.service'
 import { formatDate } from '@/lib/format'
 import { useAuthStore, ownerScope } from '@/store/authStore'
 import { TournamentFormModal } from './TournamentFormModal'
@@ -36,6 +38,8 @@ export function TournamentsPage() {
   const scope = ownerScope(profile)
   const tournaments = useAsync(listTournaments, [])
   const teams = useAsync(listTeams, [])
+  const clubs = useAsync(listClubs, [])
+  const seasons = useAsync(listSeasons, [])
   const [editing, setEditing] = useState<Tournament | null>(null)
   const [showForm, setShowForm] = useState(false)
 
@@ -45,6 +49,10 @@ export function TournamentsPage() {
   const scopedTeams = (teams.data ?? []).filter(
     (t) => !scope || t.ownerId === scope,
   )
+  const scopedClubs = (clubs.data ?? []).filter((c) => !scope || c.ownerId === scope)
+  const scopedSeasons = (seasons.data ?? []).filter((s) => !scope || s.ownerId === scope)
+  const clubName = (id?: string | null) => scopedClubs.find((c) => c.id === id)?.name
+  const seasonName = (id?: string | null) => scopedSeasons.find((s) => s.id === id)?.name
 
   async function handleSave(input: TournamentInput, id?: string) {
     try {
@@ -129,6 +137,8 @@ export function TournamentsPage() {
                     </Link>
                     <div className="text-xs capitalize text-ink-500">
                       {t.format.replace('_', ' + ')}
+                      {(clubName(t.clubId) || seasonName(t.seasonId)) &&
+                        ` · ${[clubName(t.clubId), seasonName(t.seasonId)].filter(Boolean).join(' / ')}`}
                     </div>
                   </div>
                 </div>
@@ -180,6 +190,8 @@ export function TournamentsPage() {
         <TournamentFormModal
           tournament={editing}
           teams={scopedTeams}
+          clubs={scopedClubs}
+          seasons={scopedSeasons}
           onClose={() => {
             setShowForm(false)
             setEditing(null)

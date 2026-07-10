@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Button, Field, Input, Select, Textarea } from '@/components/ui/primitives'
 import type {
+  Club,
+  Season,
   Team,
   Tournament,
   TournamentFormat,
@@ -17,11 +19,15 @@ function toDateInput(ms?: number | null): string {
 export function TournamentFormModal({
   tournament,
   teams,
+  clubs,
+  seasons,
   onClose,
   onSave,
 }: {
   tournament: Tournament | null
   teams: Team[]
+  clubs: Club[]
+  seasons: Season[]
   onClose: () => void
   onSave: (input: TournamentInput, id?: string) => void | Promise<void>
 }) {
@@ -39,6 +45,8 @@ export function TournamentFormModal({
   const [endDate, setEndDate] = useState(toDateInput(tournament?.endDate))
   const [description, setDescription] = useState(tournament?.description ?? '')
   const [teamIds, setTeamIds] = useState<string[]>(tournament?.teamIds ?? [])
+  const [clubId, setClubId] = useState(tournament?.clubId ?? '')
+  const [seasonId, setSeasonId] = useState(tournament?.seasonId ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -63,6 +71,8 @@ export function TournamentFormModal({
       endDate: endDate ? new Date(endDate).getTime() : null,
       description: description.trim() || undefined,
       teamIds,
+      clubId: clubId || null,
+      seasonId: seasonId || null,
     }
     try {
       await onSave(input, tournament?.id)
@@ -139,6 +149,26 @@ export function TournamentFormModal({
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
           />
+        </Field>
+        <Field label="Club (optional)">
+          <Select value={clubId} onChange={(e) => setClubId(e.target.value)}>
+            <option value="">— none —</option>
+            {clubs.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Season (optional)">
+          <Select value={seasonId} onChange={(e) => setSeasonId(e.target.value)}>
+            <option value="">— none —</option>
+            {seasons.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </Select>
         </Field>
       </div>
 

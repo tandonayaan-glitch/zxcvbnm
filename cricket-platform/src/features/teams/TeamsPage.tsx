@@ -19,6 +19,7 @@ import {
   type TeamInput,
 } from '@/services/teams.service'
 import { listPlayers } from '@/services/players.service'
+import { listClubs } from '@/services/clubs.service'
 import { useAuthStore, ownerScope } from '@/store/authStore'
 import { TeamFormModal } from './TeamFormModal'
 import type { Team } from '@/types'
@@ -29,6 +30,7 @@ export function TeamsPage() {
   const scope = ownerScope(profile)
   const teams = useAsync(listTeams, [])
   const players = useAsync(listPlayers, [])
+  const clubs = useAsync(listClubs, [])
   const [editing, setEditing] = useState<Team | null>(null)
   const [showForm, setShowForm] = useState(false)
 
@@ -41,6 +43,11 @@ export function TeamsPage() {
     [players.data, scope],
   )
   const playerCount = scopedPlayers.length
+  const scopedClubs = useMemo(
+    () => (clubs.data ?? []).filter((c) => !scope || c.ownerId === scope),
+    [clubs.data, scope],
+  )
+  const clubName = (id?: string | null) => scopedClubs.find((c) => c.id === id)?.name
 
   async function handleSave(input: TeamInput, id?: string) {
     try {
@@ -132,6 +139,7 @@ export function TeamsPage() {
                   </Link>
                   <div className="text-xs text-ink-500">
                     {t.playerIds.length} players
+                    {t.clubId && clubName(t.clubId) && ` · ${clubName(t.clubId)}`}
                   </div>
                 </div>
               </div>
@@ -182,6 +190,7 @@ export function TeamsPage() {
         <TeamFormModal
           team={editing}
           players={scopedPlayers}
+          clubs={scopedClubs}
           onClose={() => {
             setShowForm(false)
             setEditing(null)

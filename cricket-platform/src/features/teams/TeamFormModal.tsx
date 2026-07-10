@@ -1,17 +1,19 @@
 import { useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Avatar, Button, Field, Input, Select } from '@/components/ui/primitives'
-import type { Player, Team } from '@/types'
+import type { Club, Player, Team } from '@/types'
 import type { TeamInput } from '@/services/teams.service'
 
 export function TeamFormModal({
   team,
   players,
+  clubs,
   onClose,
   onSave,
 }: {
   team: Team | null
   players: Player[]
+  clubs: Club[]
   onClose: () => void
   onSave: (input: TeamInput, id?: string) => void | Promise<void>
 }) {
@@ -22,6 +24,7 @@ export function TeamFormModal({
     team?.secondaryColor ?? '#1e293b',
   )
   const [homeVenue, setHomeVenue] = useState(team?.homeVenue ?? '')
+  const [clubId, setClubId] = useState(team?.clubId ?? '')
   const [playerIds, setPlayerIds] = useState<string[]>(team?.playerIds ?? [])
   const [captainId, setCaptainId] = useState(team?.captainId ?? '')
   const [viceCaptainId, setViceCaptainId] = useState(team?.viceCaptainId ?? '')
@@ -47,6 +50,7 @@ export function TeamFormModal({
       primaryColor,
       secondaryColor,
       homeVenue: homeVenue.trim() || undefined,
+      clubId: clubId || null,
       playerIds,
       captainId: captainId || null,
       viceCaptainId: viceCaptainId || null,
@@ -114,6 +118,16 @@ export function TeamFormModal({
         </Field>
         <Field label="Home venue (optional)">
           <Input value={homeVenue} onChange={(e) => setHomeVenue(e.target.value)} />
+        </Field>
+        <Field label="Club (optional)">
+          <Select value={clubId} onChange={(e) => setClubId(e.target.value)}>
+            <option value="">— none —</option>
+            {clubs.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
         </Field>
       </div>
 

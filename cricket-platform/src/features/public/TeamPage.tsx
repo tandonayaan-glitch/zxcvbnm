@@ -27,6 +27,7 @@ import { getPlayersByIds, listPlayers } from '@/services/players.service'
 import { getTeamStats } from '@/services/stats.service'
 import { listAllMatches } from '@/services/matches.service'
 import { listTournaments } from '@/services/tournaments.service'
+import { listClubs } from '@/services/clubs.service'
 import { aggregatePlayerStats } from '@/domain/stats'
 import { teamResults, teamRecord, type FormOutcome } from '@/domain/teamForm'
 import { TeamForm, type TeamFormPoint } from '@/components/charts/TeamForm'
@@ -46,6 +47,7 @@ export function TeamPage() {
   const matches = useAsync(listAllMatches, [])
   const allPlayers = useAsync(listPlayers, [])
   const tournaments = useAsync(listTournaments, [])
+  const clubs = useAsync(listClubs, [])
 
   // Analytics recomputation is non-trivial (iterates every match/innings), so
   // it's memoised on the underlying data rather than recomputed every render.
@@ -133,6 +135,7 @@ export function TeamPage() {
 
   const t = team.data
   const s = stats.data
+  const clubName = (clubs.data ?? []).find((c) => c.id === t.clubId)?.name
 
   const titleName = (tt: (typeof honours.titles)[number]) =>
     (tt.tournamentId && tournamentNameById.get(tt.tournamentId)) ||
@@ -152,7 +155,9 @@ export function TeamPage() {
           </div>
           <div className="text-white">
             <h1 className="text-2xl font-bold">{t.name}</h1>
-            <p className="text-white/80">{t.playerIds.length} players</p>
+            <p className="text-white/80">
+              {t.playerIds.length} players{clubName && ` · ${clubName}`}
+            </p>
           </div>
           <div className="ml-auto">
             <FollowButton kind="teams" id={t.id} />
