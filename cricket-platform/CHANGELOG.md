@@ -4,6 +4,14 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Team filter on Stats
+- **Team filter on the Stats page**, alongside competition and venue: narrows every board to
+  matches involving a single team, composing with the other two. Team names resolve from
+  denormalised match data. Verified the filter logic directly (0 matches for a non-existent team
+  ID vs 1 match/12 players for a real one) since the seed data has only one match to exercise
+  through the UI itself — filtering to one team correctly still shows the opponent in the Teams
+  tab, since both played that shared match.
+
 ### Added — Per-tournament rank
 - **Rank column** on the player "By tournament" tab: where the player stands by runs within that
   specific tournament (as opposed to the existing platform-wide rankings strip on Overview),
