@@ -4,6 +4,21 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Club/season/year filters on the Stats page
+- **`StatsPage`**: three more composable filters alongside the existing Competition/Venue/Team —
+  Club, Season and Year. Club/Season options come from resolving each scoped match's tournament to
+  its club/season (same lookup-map approach as the new player season splits); Year comes from each
+  match's completion/scheduled/created date. All three follow the existing non-cross-narrowing
+  pattern (options derived from the competition-scoped match set, not from each other) and stay
+  hidden until there's real data to filter by — so the page is unchanged until clubs/seasons are
+  actually configured. Selecting a competition resets all five downstream filters, matching the
+  existing venue/team reset behaviour.
+  Verified in the browser: confirmed Club/Season selects were absent with no linked data, then
+  temporarily linked a real tournament (with a real completed match) to a throwaway club+season,
+  reloaded, confirmed all six filters rendered with the right option lists, exercised each new
+  select without errors or a broken total, then reverted the tournament and deleted the throwaway
+  club/season.
+
 ### Added — Season splits on the player page
 - **`playerSeasonSplits()`** (`domain/playerSplits.ts`, next to the existing
   `playerTournamentSplits`): buckets a player's completed matches by season, via a caller-supplied

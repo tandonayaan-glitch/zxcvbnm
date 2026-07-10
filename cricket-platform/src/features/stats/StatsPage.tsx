@@ -18,6 +18,8 @@ import { LeaderboardCard } from '@/components/stats/LeaderboardCard'
 import { usePlatformStats } from '@/hooks/usePlatformStats'
 import { useAsync } from '@/hooks/useAsync'
 import { listTournaments } from '@/services/tournaments.service'
+import { listClubs } from '@/services/clubs.service'
+import { listSeasons } from '@/services/seasons.service'
 import {
   aggregatePlayerStats,
   aggregateTeamStats,
@@ -38,12 +40,36 @@ export function StatsPage() {
   const { loading, leaderboards, playerMap, teamMap, playerStats, matches } =
     usePlatformStats()
   const tournaments = useAsync(listTournaments, [])
+  const clubs = useAsync(listClubs, [])
+  const seasons = useAsync(listSeasons, [])
   const [tab, setTab] = useState<
     'batting' | 'bowling' | 'fielding' | 'teams' | 'records'
   >('batting')
   const [scope, setScope] = useState('all')
   const [venue, setVenue] = useState('all')
   const [team, setTeam] = useState('all')
+  const [club, setClub] = useState('all')
+  const [season, setSeason] = useState('all')
+  const [year, setYear] = useState('all')
+
+  // Tournament -> club/season, so match-level filtering doesn't need a join
+  // on every row.
+  const tournamentClubId = useMemo(
+    () => new Map((tournaments.data ?? []).map((t) => [t.id, t.clubId ?? null])),
+    [tournaments.data],
+  )
+  const tournamentSeasonId = useMemo(
+    () => new Map((tournaments.data ?? []).map((t) => [t.id, t.seasonId ?? null])),
+    [tournaments.data],
+  )
+  const clubNameById = useMemo(
+    () => new Map((clubs.data ?? []).map((c) => [c.id, c.name])),
+    [clubs.data],
+  )
+  const seasonNameById = useMemo(
+    () => new Map((seasons.data ?? []).map((s) => [s.id, s.name])),
+    [seasons.data],
+  )
 
   // Tournaments that actually have completed matches, for the scope filter.
   const scopeOptions = useMemo(() => {
@@ -89,27 +115,86 @@ export function StatsPage() {
       .sort((a, b) => a.name.localeCompare(b.name))
   }, [scopedMatches])
 
+  // Clubs/seasons/years with completed matches within the current
+  // competition scope — same non-cross-narrowing pattern as venue/team.
+  const clubOptions = useMemo(() => {
+    const nameById = new Map<string, string>()
+    for (const m of scopedMatches) {
+      if (m.status !== 'completed' || !m.tournamentId) continue
+      const cId = tournamentClubId.get(m.tournamentId)
+      if (cId) nameById.set(cId, clubNameById.get(cId) ?? 'Club')
+    }
+    return [...nameById.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [scopedMatches, tournamentClubId, clubNameById])
+
+  const seasonOptions = useMemo(() => {
+    const nameById = new Map<string, string>()
+    for (const m of scopedMatches) {
+      if (m.status !== 'completed' || !m.tournamentId) continue
+      const sId = tournamentSeasonId.get(m.tournamentId)
+      if (sId) nameById.set(sId, seasonNameById.get(sId) ?? 'Season')
+    }
+    return [...nameById.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [scopedMatches, tournamentSeasonId, seasonNameById])
+
+  const yearOptions = useMemo(() => {
+    const set = new Set<number>()
+    for (const m of scopedMatches) {
+      if (m.status !== 'completed') continue
+      const d = m.completedAt ?? m.scheduledAt ?? m.createdAt
+      if (d) set.add(new Date(d).getFullYear())
+    }
+    return [...set].sort((a, b) => b - a)
+  }, [scopedMatches])
+
   const finalMatches = useMemo(() => {
     let list = scopedMatches
     if (venue !== 'all') list = list.filter((m) => m.venue === venue)
     if (team !== 'all') list = list.filter((m) => m.teamA.id === team || m.teamB.id === team)
+    if (club !== 'all')
+      list = list.filter(
+        (m) => m.tournamentId && tournamentClubId.get(m.tournamentId) === club,
+      )
+    if (season !== 'all')
+      list = list.filter(
+        (m) => m.tournamentId && tournamentSeasonId.get(m.tournamentId) === season,
+      )
+    if (year !== 'all')
+      list = list.filter((m) => {
+        const d = m.completedAt ?? m.scheduledAt ?? m.createdAt
+        return d && String(new Date(d).getFullYear()) === year
+      })
     return list
-  }, [scopedMatches, venue, team])
+  }, [scopedMatches, venue, team, club, season, year, tournamentClubId, tournamentSeasonId])
 
   function changeScope(next: string) {
     setScope(next)
     setVenue('all')
     setTeam('all')
+    setClub('all')
+    setSeason('all')
+    setYear('all')
   }
 
   // Recompute leaderboards/stats for the selected scope (or reuse platform-wide).
   const scoped = useMemo(() => {
-    if (scope === 'all' && venue === 'all' && team === 'all') {
+    if (
+      scope === 'all' &&
+      venue === 'all' &&
+      team === 'all' &&
+      club === 'all' &&
+      season === 'all' &&
+      year === 'all'
+    ) {
       return { leaderboards, playerStats }
     }
     const ps = aggregatePlayerStats(finalMatches)
     return { leaderboards: buildLeaderboards(ps), playerStats: ps }
-  }, [scope, venue, team, finalMatches, leaderboards, playerStats])
+  }, [scope, venue, team, club, season, year, finalMatches, leaderboards, playerStats])
 
   const records = useMemo(
     () => computeTournamentRecords(finalMatches),
@@ -190,7 +275,12 @@ export function StatsPage() {
         />
       ) : (
         <>
-          {(scopeOptions.length > 0 || venueOptions.length > 0 || teamOptions.length > 0) && (
+          {(scopeOptions.length > 0 ||
+            venueOptions.length > 0 ||
+            teamOptions.length > 0 ||
+            clubOptions.length > 0 ||
+            seasonOptions.length > 0 ||
+            yearOptions.length > 0) && (
             <div className="mb-4 flex flex-wrap items-center gap-3">
               {scopeOptions.length > 0 && (
                 <div className="flex items-center gap-2">
@@ -256,6 +346,75 @@ export function StatsPage() {
                     {teamOptions.map((t) => (
                       <option key={t.id} value={t.id}>
                         {t.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {clubOptions.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <label
+                    htmlFor="stats-club"
+                    className="text-sm font-medium text-ink-600"
+                  >
+                    Club
+                  </label>
+                  <select
+                    id="stats-club"
+                    value={club}
+                    onChange={(e) => setClub(e.target.value)}
+                    className="rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm font-medium text-ink-800 focus:border-brand-500 focus:outline-none"
+                  >
+                    <option value="all">All clubs</option>
+                    {clubOptions.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {seasonOptions.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <label
+                    htmlFor="stats-season"
+                    className="text-sm font-medium text-ink-600"
+                  >
+                    Season
+                  </label>
+                  <select
+                    id="stats-season"
+                    value={season}
+                    onChange={(e) => setSeason(e.target.value)}
+                    className="rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm font-medium text-ink-800 focus:border-brand-500 focus:outline-none"
+                  >
+                    <option value="all">All seasons</option>
+                    {seasonOptions.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {yearOptions.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <label
+                    htmlFor="stats-year"
+                    className="text-sm font-medium text-ink-600"
+                  >
+                    Year
+                  </label>
+                  <select
+                    id="stats-year"
+                    value={year}
+                    onChange={(e) => setYear(e.target.value)}
+                    className="rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm font-medium text-ink-800 focus:border-brand-500 focus:outline-none"
+                  >
+                    <option value="all">All years</option>
+                    {yearOptions.map((y) => (
+                      <option key={y} value={String(y)}>
+                        {y}
                       </option>
                     ))}
                   </select>

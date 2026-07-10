@@ -77,8 +77,10 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 - 🟡 **Competition + venue + team filters, all-time Records tab, MVP/impact rating, consistency
   rating on the Stats page + per-tournament player rank** (✅ composable competition/venue/team
   filters recompute boards, totals, records, impact and consistency leaderboards —
-  `domain/consistency.ts`; ✅ per-tournament runs rank on the player "By tournament" tab); add
-  season/club/year filters
+  `domain/consistency.ts`; ✅ per-tournament runs rank on the player "By tournament" tab); **season/
+  club/year filters** (✅ same composable, non-cross-narrowing pattern — options derived from the
+  competition-scoped matches via each match's tournament -> club/season lookup, or match date for
+  year; selects stay hidden until real club/season data exists)
 
 ## Phase 7 — Offline scoring hardening
 - ✅ Firestore IndexedDB persistent cache (writes queue offline, sync on reconnect)
