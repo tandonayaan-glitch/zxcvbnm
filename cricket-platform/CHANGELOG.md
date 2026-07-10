@@ -4,6 +4,32 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Light/dark/system theme (Phase 4)
+- **Theme preference** (`light`/`dark`/`system`) in `prefsStore`, synced cross-device the same way
+  as the other appearance prefs (text scale, density, etc.), plus a live `matchMedia` listener so
+  "System" tracks OS theme changes without a reload. Toggled via a Light/Dark/System pill row on
+  the Settings Appearance card, next to the existing text-size/density controls.
+  - **Scope decision**: dark mode is applied to the app-shell chrome only — `body` background,
+    `AppShell`/`PublicLayout` header/footer/nav, and `PageHeader` (the title used at the top of
+    nearly every page). Individual pages' own card content keeps its current light styling.
+    Traced through why a blanket approach would break things first: (1) redefining the `ink-*`
+    colour-scale CSS variables under `.dark` would auto-flip every `bg-ink-900`/`text-ink-900`
+    utility in the app, including ones that are *intentionally* always-dark regardless of theme
+    (the sidebar, modal backdrop, toasts — 9 files rely on this); (2) adding `dark:` variants to
+    every page's own raw `text-ink-900`/`bg-white` JSX (outside the shared primitives) is hundreds
+    of instances across 40+ files, too large to complete and visually verify in one slice; (3) a
+    first attempt without touching `PageHeader` left every page's `<h1>` dark-on-dark against the
+    new dark page background, confirmed via `preview_inspect` computed styles before shipping —
+    fixed by giving `PageHeader` (used everywhere) explicit `dark:` text classes. The result: every
+    page gets a coherent dark frame (nav, background, title) without the contrast risk; full
+    per-page content theming is called out as follow-up work in ROADMAP and in a hint under the
+    Settings toggle.
+  - Verified via the actual Settings toggle (not just the domain function): clicking Dark/Light/
+    System updates the `<html class="dark">`, persists to `localStorage`, and correctly flips
+    computed `background-color`/`color` on the AppShell header (`#0f172a`), sidebar (unchanged,
+    already dark), `PublicLayout` header/footer, and `PageHeader` title/subtitle — checked with
+    `preview_inspect` on real computed styles, not screenshots. No console errors.
+
 ### Added — Club/season/year filters on the Stats page
 - **`StatsPage`**: three more composable filters alongside the existing Competition/Venue/Team —
   Club, Season and Year. Club/Season options come from resolving each scoped match's tournament to

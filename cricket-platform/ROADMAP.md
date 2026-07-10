@@ -48,7 +48,13 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 - 🟡 Background customization (pill + panel + presets, persisted locally) — ✅ done earlier
 - 🟡 Unified Settings page on every dashboard (✅ profile pic/display name/bio/email, change
   password, appearance — text size/density/reduced motion/high contrast — and now
-  **self-service "export my data" (JSON)**); add light/dark/system theme, privacy, sessions
+  **self-service "export my data" (JSON)**); add privacy, sessions
+- 🟡 **Light/dark/system theme** (✅ `theme` pref in `prefsStore`, synced cross-device like the
+  other appearance prefs, live OS-preference listener for "system", Light/Dark/System toggle on
+  Settings; scoped to app-shell chrome — page background, sidebar/header/footer, `PageHeader`
+  titles — deliberately, since flipping every page's own card/text colours safely needs a broader
+  follow-up pass to avoid dark-text-on-dark-background contrast bugs); add full per-page dark
+  styling
 - ✅ Cross-device persistence of preferences (Firestore `userPrefs`) — pull/seed on sign-in (remote wins), debounced push on change, resets on sign-out
 - ✅ Global undo toasts for create/edit actions (Players, Teams, Tournaments)
 
