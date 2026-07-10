@@ -27,6 +27,16 @@ export interface BoundaryWicketEvent {
   playerId: string
 }
 
+/** The over where momentum shifted most dramatically (largest run swing). */
+export interface TurningPoint {
+  /** 1-based over number. */
+  over: number
+  runs: number
+  /** Signed delta: positive = acceleration, negative = collapse/quiet over. */
+  delta: number
+  bowlerId: string
+}
+
 /** Recent-overs run rate vs the innings' overall rate, up to the latest over. */
 export interface Momentum {
   /** How many of the most recent overs this window covers (up to 3). */
@@ -64,6 +74,8 @@ export interface InningsInsights {
   powerplayOvers: number
   /** Every boundary and wicket, in ball order — for a compact timeline strip. */
   events: BoundaryWicketEvent[]
+  /** The over where momentum shifted most — undefined until at least 3 overs played. */
+  turningPoint?: TurningPoint
   /** Recent-overs run rate vs overall — undefined until at least 2 overs are in. */
   momentum?: Momentum
 }
@@ -265,6 +277,25 @@ export function inningsInsights(
     }
   }
 
+  // Turning point: over with the largest absolute run swing vs the previous over.
+  // Needs at least 3 overs so there are at least 2 deltas to compare.
+  let turningPoint: TurningPoint | undefined
+  if (overEntries.length >= 3) {
+    let maxAbs = -1
+    for (let i = 1; i < overEntries.length; i++) {
+      const delta = overEntries[i][1].runs - overEntries[i - 1][1].runs
+      if (Math.abs(delta) > maxAbs) {
+        maxAbs = Math.abs(delta)
+        turningPoint = {
+          over: overEntries[i][0] + 1,
+          runs: overEntries[i][1].runs,
+          delta,
+          bowlerId: overEntries[i][1].bowlerId,
+        }
+      }
+    }
+  }
+
   return {
     inningsIndex,
     battingTeamId: inn?.battingTeamId ?? '',
@@ -283,6 +314,7 @@ export function inningsInsights(
     powerplayRuns,
     powerplayOvers: ppOvers,
     events,
+    turningPoint,
     momentum,
   }
 }

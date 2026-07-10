@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Flame, Handshake, Rocket, CircleDot, Zap, ShieldCheck, Gauge } from 'lucide-react'
+import { Flame, Handshake, Rocket, CircleDot, Zap, ShieldCheck, Gauge, TrendingUp } from 'lucide-react'
 import { Card } from '@/components/ui/primitives'
 import { matchInsights, type InningsInsights } from '@/domain/insights'
 import type { Delivery, Match } from '@/types'
@@ -101,6 +101,15 @@ function InningsRow({
             label="Best spell"
             value={`${ins.bestSpell.wickets}/${ins.bestSpell.runs}`}
             sub={`${name(ins.bestSpell.bowlerId)} · ${ins.bestSpell.overs} ov · econ ${ins.bestSpell.economy.toFixed(2)}`}
+          />
+        )}
+        {ins.turningPoint && (
+          <Tile
+            icon={<TrendingUp size={16} />}
+            tone="#b45309"
+            label="Turning point"
+            value={`Ov ${ins.turningPoint.over} · ${ins.turningPoint.runs} runs`}
+            sub={`${ins.turningPoint.delta > 0 ? '+' : ''}${ins.turningPoint.delta} swing · ${name(ins.turningPoint.bowlerId)}`}
           />
         )}
         {ins.momentum && (
