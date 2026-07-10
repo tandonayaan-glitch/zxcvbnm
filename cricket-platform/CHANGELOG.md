@@ -4,6 +4,15 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Club & Season wired into Team/Tournament (Phase 8, slice 2/2)
+- **Team and Tournament form pickers**: `TeamFormModal` gained an optional Club select;
+  `TournamentFormModal` gained optional Club and Season selects. `TeamsPage`/`TournamentsPage`
+  fetch and owner-scope the club/season lists and pass them down, matching the existing
+  team-picker pattern.
+- **Public display**: `TeamPage` and `TournamentPage` show the club (and season) name next to
+  the existing team/tournament summary line when set, resolved the same way team/tournament names
+  already are (looked up from the fetched collection, silently omitted when unset).
+
 ### Added — Club & Season entities (Phase 8, slice 1/2)
 - **`Club` and `Season` domain types** (`types/index.ts`): a club is a top-level organisation
   (name, short name, logo, home venue); a season is a time-boxed period (name, status,

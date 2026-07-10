@@ -83,8 +83,9 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 
 ## Phase 8 — Clubs & Seasons architecture
 - 🟡 **Club (top-level org) + Season entities; Team→Club, Tournament→Club+Season** (✅ types +
-  services + admin management page at `/clubs`, owner-scoped); add team/tournament form pickers
-  to set them, and group tables / season splits / season+club filters that build on this
+  services + admin management page at `/clubs`, owner-scoped; ✅ Team/Tournament form pickers to
+  set them; ✅ club/season badge on the public Team/Tournament pages); add group tables / season
+  splits / season+club filters that build on this
 - ⬜ Club profile pages, season archive, hall of fame
 - ✅ Backwards-compatible migration for existing data (n/a by design — every new field is
   optional, so pre-existing team/tournament docs are unaffected)
