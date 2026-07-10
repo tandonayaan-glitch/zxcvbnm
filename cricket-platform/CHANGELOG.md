@@ -4,6 +4,25 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Club profile pages, season archive & hall of fame (Phase 8)
+- **`ClubPage`** (`/club/:id`): club header (logo/initials, short name, home venue, description),
+  and three linked lists — teams, seasons, tournaments — each filtered by `clubId` from the
+  already-fetched collections (no new queries).
+- **`SeasonPage`** (`/season/:id`): season header (status badge, dates, link back to its club),
+  its tournaments, and a "Hall of fame" — top 5 run-scorers and wicket-takers aggregated across
+  every completed match in every tournament that belongs to the season. Reuses
+  `aggregatePlayerStats`/`topRunScorers`/`topWicketTakers` from `domain/stats.ts` unchanged (a
+  season's hall of fame is just player stats scoped to a wider match set than a single
+  tournament).
+- **Wiring**: routes added to `App.tsx`; the admin Clubs & Seasons page's "View" links (removed
+  earlier since the routes didn't exist yet) now point here; the club/season names already shown
+  on the public Team/Tournament pages are now links instead of plain text.
+  Verified end-to-end in the browser: created a real club + season, linked them to a real team and
+  a real tournament with completed-match data, confirmed both new pages rendered the linked
+  entities correctly (including a hall of fame with real top scorers/wicket-takers), confirmed
+  every cross-link (Team -> Club, Tournament -> Club/Season, admin "View" -> public page) resolved
+  to the right URL, then reverted the team/tournament and deleted the throwaway club/season.
+
 ### Added — Light/dark/system theme (Phase 4)
 - **Theme preference** (`light`/`dark`/`system`) in `prefsStore`, synced cross-device the same way
   as the other appearance prefs (text scale, density, etc.), plus a live `matchMedia` listener so

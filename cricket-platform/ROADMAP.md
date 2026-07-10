@@ -94,11 +94,14 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
   model, sync-progress indicator, queue-inspection page, manual/force resync
 
 ## Phase 8 — Clubs & Seasons architecture
-- 🟡 **Club (top-level org) + Season entities; Team→Club, Tournament→Club+Season** (✅ types +
-  services + admin management page at `/clubs`, owner-scoped; ✅ Team/Tournament form pickers to
-  set them; ✅ club/season badge on the public Team/Tournament pages); add group tables / season
-  splits / season+club filters that build on this
-- ⬜ Club profile pages, season archive, hall of fame
+- ✅ **Club (top-level org) + Season entities; Team→Club, Tournament→Club+Season** — types +
+  services + admin management page at `/clubs` (owner-scoped); Team/Tournament form pickers;
+  club/season badge (linked) on the public Team/Tournament pages
+- ✅ **Club profile pages, season archive, hall of fame** — `/club/:id` (teams, seasons,
+  tournaments under the club) and `/season/:id` (tournaments in the season + a hall of fame:
+  top run-scorers/wicket-takers aggregated across every match in every tournament in that season,
+  reusing `aggregatePlayerStats`/`topRunScorers`/`topWicketTakers`); linked from the admin
+  Clubs & Seasons page and from the club/season badges on Team/Tournament pages
 - ✅ Backwards-compatible migration for existing data (n/a by design — every new field is
   optional, so pre-existing team/tournament docs are unaffected)
 

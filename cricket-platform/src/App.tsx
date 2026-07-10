@@ -118,6 +118,12 @@ const TournamentPage = lazy(() =>
     default: m.TournamentPage,
   })),
 )
+const ClubPage = lazy(() =>
+  import('@/features/public/ClubPage').then((m) => ({ default: m.ClubPage })),
+)
+const SeasonPage = lazy(() =>
+  import('@/features/public/SeasonPage').then((m) => ({ default: m.SeasonPage })),
+)
 const MatchPage = lazy(() =>
   import('@/features/public/MatchPage').then((m) => ({ default: m.MatchPage })),
 )
@@ -243,6 +249,8 @@ export default function App() {
           <Route path="/player/:id" element={<PlayerPage />} />
           <Route path="/team/:id" element={<TeamPage />} />
           <Route path="/tournament/:id" element={<TournamentPage />} />
+          <Route path="/club/:id" element={<ClubPage />} />
+          <Route path="/season/:id" element={<SeasonPage />} />
           <Route path="/match/:id" element={<MatchPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>

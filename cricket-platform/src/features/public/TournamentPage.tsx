@@ -194,7 +194,20 @@ export function TournamentPage() {
                 <span className="capitalize">{t.format.replace('_', ' + ')}</span>
                 <span>· {formatDate(t.startDate)}</span>
                 {(clubName || seasonName) && (
-                  <span>· {[clubName, seasonName].filter(Boolean).join(' / ')}</span>
+                  <span className="flex items-center gap-1">
+                    ·
+                    {clubName && t.clubId && (
+                      <Link to={`/club/${t.clubId}`} className="hover:text-brand-700">
+                        {clubName}
+                      </Link>
+                    )}
+                    {clubName && seasonName && '/'}
+                    {seasonName && t.seasonId && (
+                      <Link to={`/season/${t.seasonId}`} className="hover:text-brand-700">
+                        {seasonName}
+                      </Link>
+                    )}
+                  </span>
                 )}
               </div>
             </div>

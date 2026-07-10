@@ -156,7 +156,15 @@ export function TeamPage() {
           <div className="text-white">
             <h1 className="text-2xl font-bold">{t.name}</h1>
             <p className="text-white/80">
-              {t.playerIds.length} players{clubName && ` · ${clubName}`}
+              {t.playerIds.length} players
+              {clubName && t.clubId && (
+                <>
+                  {' · '}
+                  <Link to={`/club/${t.clubId}`} className="underline hover:text-white">
+                    {clubName}
+                  </Link>
+                </>
+              )}
             </p>
           </div>
           <div className="ml-auto">

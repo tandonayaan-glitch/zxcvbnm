@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Plus, Building2, CalendarRange, Pencil, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Tabs } from '@/components/ui/Tabs'
@@ -179,6 +180,12 @@ export function ClubsSeasonsPage() {
                   </div>
                 )}
                 <div className="mt-3 flex justify-end gap-1 border-t border-ink-100 pt-2">
+                  <Link
+                    to={`/club/${c.id}`}
+                    className="rounded-md px-2 py-1 text-sm font-medium text-brand-700 hover:bg-brand-50"
+                  >
+                    View
+                  </Link>
                   <button
                     onClick={() => {
                       setEditingClub(c)
@@ -235,6 +242,12 @@ export function ClubsSeasonsPage() {
                 {formatDate(s.startDate)} – {formatDate(s.endDate)}
               </div>
               <div className="mt-3 flex justify-end gap-1 border-t border-ink-100 pt-2">
+                <Link
+                  to={`/season/${s.id}`}
+                  className="rounded-md px-2 py-1 text-sm font-medium text-brand-700 hover:bg-brand-50"
+                >
+                  View
+                </Link>
                 <button
                   onClick={() => {
                     setEditingSeason(s)
