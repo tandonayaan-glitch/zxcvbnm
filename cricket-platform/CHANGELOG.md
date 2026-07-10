@@ -4,6 +4,13 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Boundary & wicket timeline
+- **Boundary & wicket timeline strip** in Match Insights (`domain/insights.ts`): every four, six
+  and wicket of an innings in ball order as compact colour-coded badges (4 green, 6 purple, W
+  red), each showing the over.ball and player on hover — a quick-scan view of how an innings
+  swung, complementing the Worm/Manhattan run graphs which don't show event types. Computed in
+  the same pass as the other insights, no extra delivery reads.
+
 ### Added — System diagnostics
 - **System diagnostics card** on Platform Tools (`services/diagnostics.service.ts`): Firestore
   document counts (players, teams, tournaments, matches, deliveries, users, audit entries, admin

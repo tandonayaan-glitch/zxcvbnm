@@ -104,6 +104,31 @@ function InningsRow({
           />
         )}
       </div>
+
+      {ins.events.length > 0 && (
+        <div className="mt-3 border-t border-ink-100 pt-3">
+          <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-ink-400">
+            Boundary &amp; wicket timeline
+          </div>
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+            {ins.events.map((e, i) => (
+              <span
+                key={i}
+                title={`${e.displayOver} · ${name(e.playerId)}`}
+                className={`inline-flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full px-1.5 text-xs font-bold ${
+                  e.kind === 'wicket'
+                    ? 'bg-red-600 text-white'
+                    : e.kind === 'six'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-pitch-600 text-white'
+                }`}
+              >
+                {e.kind === 'wicket' ? 'W' : e.kind === 'six' ? '6' : '4'}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

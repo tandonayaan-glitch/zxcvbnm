@@ -19,6 +19,14 @@ export interface BowlingSpell {
   economy: number
 }
 
+/** A single boundary or wicket, in ball order, for the innings timeline strip. */
+export interface BoundaryWicketEvent {
+  displayOver: string
+  kind: 'four' | 'six' | 'wicket'
+  /** The batter who hit the boundary, or who got out. */
+  playerId: string
+}
+
 export interface InningsInsights {
   inningsIndex: number
   battingTeamId: string
@@ -43,6 +51,8 @@ export interface InningsInsights {
   /** Runs in the opening powerplay and how many overs it spans. */
   powerplayRuns: number
   powerplayOvers: number
+  /** Every boundary and wicket, in ball order — for a compact timeline strip. */
+  events: BoundaryWicketEvent[]
 }
 
 function powerplayOverCount(match: Match): number {
@@ -148,6 +158,7 @@ export function inningsInsights(
   let boundaryRuns = 0
   let dotBalls = 0
   let powerplayRuns = 0
+  const events: BoundaryWicketEvent[] = []
 
   // Partnership tracking.
   const partnerships: Partnership[] = []
@@ -160,9 +171,11 @@ export function inningsInsights(
     if (d.runsOffBat === 4) {
       fours += 1
       boundaryRuns += 4
+      events.push({ displayOver: d.displayOver, kind: 'four', playerId: d.strikerId })
     } else if (d.runsOffBat === 6) {
       sixes += 1
       boundaryRuns += 6
+      events.push({ displayOver: d.displayOver, kind: 'six', playerId: d.strikerId })
     }
     if (d.isLegal && d.totalRuns === 0 && !isCountedWicket(d)) dotBalls += 1
     if (d.overNumber < ppOvers) powerplayRuns += d.totalRuns
@@ -196,6 +209,11 @@ export function inningsInsights(
       cur.endedOnWicket = wicketsSoFar
       partnerships.push(cur)
       cur = null
+      events.push({
+        displayOver: d.displayOver,
+        kind: 'wicket',
+        playerId: d.wicket!.outBatterId,
+      })
     }
   }
   if (cur && (cur.runs > 0 || cur.balls > 0)) partnerships.push(cur)
@@ -233,6 +251,7 @@ export function inningsInsights(
     dotPct: legalBalls > 0 ? Math.round((dotBalls / legalBalls) * 100) : 0,
     powerplayRuns,
     powerplayOvers: ppOvers,
+    events,
   }
 }
 
