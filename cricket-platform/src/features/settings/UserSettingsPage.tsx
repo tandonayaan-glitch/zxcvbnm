@@ -9,6 +9,9 @@ import {
   Contrast,
   LayoutGrid,
   Download,
+  Sun,
+  Moon,
+  MonitorSmartphone,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
@@ -24,7 +27,7 @@ import {
 } from '@/components/ui/primitives'
 import { useToast } from '@/components/ui/toast'
 import { useAuthStore } from '@/store/authStore'
-import { usePrefsStore, type TextScale } from '@/store/prefsStore'
+import { usePrefsStore, type TextScale, type ThemeMode } from '@/store/prefsStore'
 import { BackgroundControl } from '@/components/background/BackgroundControl'
 import { updateUserProfile } from '@/services/users.service'
 import { changePassword, authErrorMessage } from '@/services/auth.service'
@@ -115,6 +118,12 @@ export function UserSettingsPage() {
     { key: 'xlarge', label: 'X-Large' },
   ]
 
+  const themes: { key: ThemeMode; label: string; icon: React.ReactNode }[] = [
+    { key: 'light', label: 'Light', icon: <Sun size={15} /> },
+    { key: 'dark', label: 'Dark', icon: <Moon size={15} /> },
+    { key: 'system', label: 'System', icon: <MonitorSmartphone size={15} /> },
+  ]
+
   return (
     <div className="mx-auto max-w-2xl">
       <PageHeader title="Settings" subtitle="Manage your profile, appearance and security." />
@@ -172,6 +181,33 @@ export function UserSettingsPage() {
           subtitle="Synced to your account across devices."
         />
         <CardBody className="space-y-5">
+          <div>
+            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-ink-700">
+              <Sun size={15} /> Theme
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {themes.map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setPref('theme', t.key)}
+                  className={cn(
+                    'flex items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-sm font-semibold',
+                    prefs.theme === t.key
+                      ? 'border-brand-500 bg-brand-50 text-brand-700'
+                      : 'border-ink-300 text-ink-600 hover:bg-ink-50',
+                  )}
+                >
+                  {t.icon}
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1.5 text-xs text-ink-500">
+              Dark mode currently themes the navigation and page background; individual
+              page content will follow in a later update.
+            </p>
+          </div>
+
           <div>
             <div className="mb-2 flex items-center gap-2 text-sm font-medium text-ink-700">
               <Type size={15} /> Text size

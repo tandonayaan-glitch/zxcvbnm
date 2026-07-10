@@ -190,11 +190,11 @@ export function AppShell() {
 
       {/* Main column */}
       <div className="flex min-w-0 flex-1 flex-col lg:pl-60">
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-ink-200 bg-white/90 px-4 backdrop-blur">
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-ink-200 bg-white/90 px-4 backdrop-blur dark:border-ink-800 dark:bg-ink-900/90">
           <button
             aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'}
             aria-expanded={mobileOpen}
-            className="rounded-md p-2 text-ink-600 hover:bg-ink-100 lg:hidden"
+            className="rounded-md p-2 text-ink-600 hover:bg-ink-100 lg:hidden dark:text-ink-300 dark:hover:bg-ink-800"
             onClick={() => setMobileOpen((v) => !v)}
           >
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
@@ -203,10 +203,10 @@ export function AppShell() {
           <div className="flex items-center gap-3">
             <BackgroundControl />
             <div className="text-right">
-              <div className="text-sm font-semibold text-ink-900">
+              <div className="text-sm font-semibold text-ink-900 dark:text-ink-50">
                 {profile?.displayName}
               </div>
-              <div className="text-xs capitalize text-ink-500">
+              <div className="text-xs capitalize text-ink-500 dark:text-ink-400">
                 {profile?.role.toLowerCase().replace('_', ' ')}
               </div>
             </div>

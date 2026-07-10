@@ -1,5 +1,10 @@
 @import 'tailwindcss';
 
+/* Class-based dark mode (toggled on <html> by prefsStore) instead of the
+ * default OS-media-query strategy, so the in-app Light/Dark/System control
+ * can override the OS preference. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ------------------------------------------------------------------ *
  * CricketHub design tokens (Tailwind v4 @theme)
  * ------------------------------------------------------------------ */
@@ -58,6 +63,22 @@ body {
   color: var(--color-ink-900);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* Dark mode, scope: app-shell chrome (page background, sidebar, headers,
+ * footers) — not individual page/card content, which stays on its existing
+ * light styling. Flipping every page's own text/surface colours is a much
+ * larger follow-up pass; this gives every page a coherent dark "frame"
+ * without the risk of dark-text-on-dark-card contrast bugs in the meantime. */
+.dark body {
+  background-color: var(--color-ink-950);
+  color: var(--color-ink-100);
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--color-ink-700);
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ink-600);
 }
 
 #root {

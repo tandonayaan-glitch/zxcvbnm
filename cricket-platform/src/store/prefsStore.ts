@@ -2,12 +2,14 @@ import { create } from 'zustand'
 
 export type TextScale = 'small' | 'normal' | 'large' | 'xlarge'
 export type Density = 'comfortable' | 'compact'
+export type ThemeMode = 'light' | 'dark' | 'system'
 
 export interface Prefs {
   textScale: TextScale
   reducedMotion: boolean
   density: Density
   highContrast: boolean
+  theme: ThemeMode
 }
 
 const STORAGE_KEY = 'crickethub.prefs'
@@ -17,6 +19,7 @@ const DEFAULT_PREFS: Prefs = {
   reducedMotion: false,
   density: 'comfortable',
   highContrast: false,
+  theme: 'system',
 }
 
 const SCALE_PX: Record<TextScale, string> = {
@@ -44,14 +47,33 @@ function save(p: Prefs) {
   }
 }
 
-/** Apply preferences to the document root (fonts, motion, contrast, density). */
+const darkMediaQuery =
+  typeof window !== 'undefined' && window.matchMedia
+    ? window.matchMedia('(prefers-color-scheme: dark)')
+    : null
+
+function resolveDark(theme: ThemeMode): boolean {
+  if (theme === 'dark') return true
+  if (theme === 'light') return false
+  return darkMediaQuery?.matches ?? false
+}
+
+/** Apply preferences to the document root (fonts, motion, contrast, density, theme). */
 export function applyPrefs(p: Prefs) {
   const root = document.documentElement
   root.style.fontSize = SCALE_PX[p.textScale]
   root.classList.toggle('reduce-motion', p.reducedMotion)
   root.classList.toggle('high-contrast', p.highContrast)
   root.classList.toggle('density-compact', p.density === 'compact')
+  root.classList.toggle('dark', resolveDark(p.theme))
 }
+
+// Live-follow the OS theme while the user has picked "system" — re-applying
+// prefs on every OS change so the media query is the only place this lives.
+darkMediaQuery?.addEventListener('change', () => {
+  const { prefs } = usePrefsStore.getState()
+  if (prefs.theme === 'system') applyPrefs(prefs)
+})
 
 interface PrefsState {
   prefs: Prefs
