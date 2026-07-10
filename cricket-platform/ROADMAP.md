@@ -33,10 +33,10 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 - ✅ Match insights panel (biggest over, best partnership, boundary %, dot-ball %, powerplay) — pure computation from deliveries
 - 🟡 **Head-to-head record + star performers + live projected score/chase-rate comparison** on the
   match page (✅ `domain/headToHead.ts`, `domain/matchPerformers.ts`, `projectedScore` in
-  `lib/format.ts`); add wagon wheel · pitch/bowling map · full win-probability model · momentum
-- 🟡 **Best bowling spell + boundary/wicket timeline** in Match Insights (✅ tightest 2–4 over
-  economy stretch per bowler; ✅ colour-coded ball-order timeline of every 4/6/wicket); add
-  turning point
+  `lib/format.ts`); add wagon wheel · pitch/bowling map · full win-probability model
+- 🟡 **Best bowling spell + boundary/wicket timeline + momentum** in Match Insights (✅ tightest
+  2–4 over economy stretch per bowler; ✅ colour-coded ball-order timeline of every 4/6/wicket;
+  ✅ last-3-overs rate vs overall, accelerating/slowing/steady); add turning point
 
 ## Phase 3 — Player account lifecycle
 - ⬜ Auto-create linked user account on player create (`user####`, Pending Registration, temp password)

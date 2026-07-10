@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Flame, Handshake, Rocket, CircleDot, Zap, ShieldCheck } from 'lucide-react'
+import { Flame, Handshake, Rocket, CircleDot, Zap, ShieldCheck, Gauge } from 'lucide-react'
 import { Card } from '@/components/ui/primitives'
 import { matchInsights, type InningsInsights } from '@/domain/insights'
 import type { Delivery, Match } from '@/types'
@@ -101,6 +101,21 @@ function InningsRow({
             label="Best spell"
             value={`${ins.bestSpell.wickets}/${ins.bestSpell.runs}`}
             sub={`${name(ins.bestSpell.bowlerId)} · ${ins.bestSpell.overs} ov · econ ${ins.bestSpell.economy.toFixed(2)}`}
+          />
+        )}
+        {ins.momentum && (
+          <Tile
+            icon={<Gauge size={16} />}
+            tone="#4338ca"
+            label="Momentum"
+            value={`${ins.momentum.rate.toFixed(1)} rpo`}
+            sub={`last ${ins.momentum.overs} ov (${ins.momentum.runs}) · overall ${ins.momentum.overallRate.toFixed(1)} rpo · ${
+              ins.momentum.rate > ins.momentum.overallRate
+                ? 'accelerating'
+                : ins.momentum.rate < ins.momentum.overallRate
+                  ? 'slowing'
+                  : 'steady'
+            }`}
           />
         )}
       </div>

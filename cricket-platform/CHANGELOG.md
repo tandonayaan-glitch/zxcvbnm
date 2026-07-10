@@ -4,6 +4,13 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Momentum indicator
+- **Momentum tile** in Match Insights (`domain/insights.ts`): the last (up to) 3 overs' run rate
+  vs the innings' overall rate so far, labelled accelerating/slowing/steady — computed in the same
+  per-over pass as the other insights, no extra delivery reads. Verified by independently
+  hand-computing the same window from raw deliveries and matching the function's output exactly
+  (8.57 rpo last-3 vs 9.16 rpo overall → "slowing").
+
 ### Added — Team filter on Stats
 - **Team filter on the Stats page**, alongside competition and venue: narrows every board to
   matches involving a single team, composing with the other two. Team names resolve from

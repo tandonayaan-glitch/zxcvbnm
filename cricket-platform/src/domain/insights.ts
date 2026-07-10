@@ -27,6 +27,17 @@ export interface BoundaryWicketEvent {
   playerId: string
 }
 
+/** Recent-overs run rate vs the innings' overall rate, up to the latest over. */
+export interface Momentum {
+  /** How many of the most recent overs this window covers (up to 3). */
+  overs: number
+  runs: number
+  /** Run rate over just that recent window. */
+  rate: number
+  /** Run rate across the whole innings so far. */
+  overallRate: number
+}
+
 export interface InningsInsights {
   inningsIndex: number
   battingTeamId: string
@@ -53,6 +64,8 @@ export interface InningsInsights {
   powerplayOvers: number
   /** Every boundary and wicket, in ball order — for a compact timeline strip. */
   events: BoundaryWicketEvent[]
+  /** Recent-overs run rate vs overall — undefined until at least 2 overs are in. */
+  momentum?: Momentum
 }
 
 function powerplayOverCount(match: Match): number {
@@ -234,6 +247,24 @@ export function inningsInsights(
 
   const bestSpell = findBestSpell(overMap)
 
+  // Momentum: the last (up to) 3 overs' run rate vs the innings' overall
+  // rate so far — a simple, well-understood "is the innings accelerating or
+  // slowing" signal, not a predictive model.
+  let momentum: Momentum | undefined
+  const overEntries = [...overMap.entries()].sort((a, b) => a[0] - b[0])
+  if (overEntries.length >= 2) {
+    const windowSize = Math.min(3, overEntries.length)
+    const recent = overEntries.slice(-windowSize)
+    const recentRuns = recent.reduce((a, [, v]) => a + v.runs, 0)
+    const recentBalls = recent.reduce((a, [, v]) => a + v.legalBalls, 0)
+    momentum = {
+      overs: windowSize,
+      runs: recentRuns,
+      rate: recentBalls > 0 ? (recentRuns / recentBalls) * 6 : 0,
+      overallRate: legalBalls > 0 ? (totalRuns / legalBalls) * 6 : 0,
+    }
+  }
+
   return {
     inningsIndex,
     battingTeamId: inn?.battingTeamId ?? '',
@@ -252,6 +283,7 @@ export function inningsInsights(
     powerplayRuns,
     powerplayOvers: ppOvers,
     events,
+    momentum,
   }
 }
 
