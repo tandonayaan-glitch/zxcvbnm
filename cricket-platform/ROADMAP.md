@@ -56,7 +56,9 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 - 🟡 Player profile: career/batting/bowling/fielding stats + match log + follow, achievements, awards cabinet (✅); **per-tournament splits tab** (✅ `domain/playerSplits.ts`); **recent-form charts** (✅ batting/bowling SVG bars — `components/charts/PlayerForm`); **global
   rankings strip** (✅ runs/wickets/sixes rank); **career timeline** (✅ `domain/playerTimeline.ts`);
   **player-vs-player comparison** (✅ `/compare`); **radar profile chart** (✅ `domain/radar.ts` +
-  `components/charts/PlayerRadar`); add season splits
+  `components/charts/PlayerRadar`); **season splits** (✅ `playerSeasonSplits` in
+  `domain/playerSplits.ts` buckets by season via each match's tournament -> season lookup; "By
+  season" tab shown once a player has at least one match under a seasoned tournament)
 - 🟡 Team profile: squad, recent, record, leaders (✅); **recent-form guide (W/L/T chips), win-rate/record summary, top run-scorer & wicket-taker** (✅); **honours (knockout titles) + team records** (✅ highest total/chase, biggest wins, best individual batting/bowling — `domain/teamRecords.ts`); **record vs opponents + record by venue** (✅ `domain/teamOpponents.ts`, `domain/teamVenues.ts`);
   **runs-scored form chart** (✅ `components/charts/TeamForm`);
   **team-vs-team comparison** (✅ `/compare/teams`)

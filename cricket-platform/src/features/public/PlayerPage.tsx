@@ -10,8 +10,9 @@ import { getTeamsByIds } from '@/services/teams.service'
 import { getPlayerStats, getPlayerPerformances } from '@/services/stats.service'
 import { listAllMatches } from '@/services/matches.service'
 import { listTournaments } from '@/services/tournaments.service'
+import { listSeasons } from '@/services/seasons.service'
 import { computeAchievements, computeAwards } from '@/domain/achievements'
-import { playerTournamentSplits } from '@/domain/playerSplits'
+import { playerTournamentSplits, playerSeasonSplits } from '@/domain/playerSplits'
 import { playerTimeline } from '@/domain/playerTimeline'
 import { aggregatePlayerStats } from '@/domain/stats'
 import { playerToCSV, playerToJSON } from '@/domain/playerExport'
@@ -40,6 +41,7 @@ export function PlayerPage() {
   const perfs = useAsync(() => getPlayerPerformances(id), [id])
   const matches = useAsync(listAllMatches, [])
   const tournaments = useAsync(listTournaments, [])
+  const seasons = useAsync(listSeasons, [])
   const teams = useAsync(
     () => (player.data ? getTeamsByIds(player.data.teamIds) : Promise.resolve([])),
     [player.data],
@@ -53,6 +55,20 @@ export function PlayerPage() {
     () => playerTournamentSplits(id, matches.data ?? []),
     [id, matches.data],
   )
+  const seasonIdByTournamentId = useMemo(
+    () => new Map((tournaments.data ?? []).map((t) => [t.id, t.seasonId ?? null])),
+    [tournaments.data],
+  )
+  const seasonNameById = useMemo(
+    () => new Map((seasons.data ?? []).map((s) => [s.id, s.name])),
+    [seasons.data],
+  )
+  const seasonSplits = useMemo(
+    () =>
+      playerSeasonSplits(id, matches.data ?? [], seasonIdByTournamentId, seasonNameById),
+    [id, matches.data, seasonIdByTournamentId, seasonNameById],
+  )
+  const hasSeasonData = seasonSplits.some((sp) => sp.seasonId)
   const timeline = useMemo(
     () => playerTimeline(id, matches.data ?? []),
     [id, matches.data],
@@ -210,6 +226,7 @@ export function PlayerPage() {
           ...(splits.length > 0
             ? [{ key: 'tournaments', label: 'By tournament' }]
             : []),
+          ...(hasSeasonData ? [{ key: 'seasons', label: 'By season' }] : []),
           ...(timeline.length > 0
             ? [{ key: 'timeline', label: 'Timeline' }]
             : []),
@@ -371,6 +388,67 @@ export function PlayerPage() {
                       {sp.tournamentId && splitRunsRank.get(sp.tournamentId)
                         ? `#${splitRunsRank.get(sp.tournamentId)}`
                         : '—'}
+                    </td>
+                    <td className="px-2 py-2.5 text-right text-ink-600">
+                      {st.highScore}
+                      {st.highScoreNotOut ? '*' : ''}
+                    </td>
+                    <td className="px-2 py-2.5 text-right text-ink-600">
+                      {battingAverage(st.runs, st.inningsBatted - st.notOuts)}
+                    </td>
+                    <td className="px-2 py-2.5 text-right text-ink-600">
+                      {strikeRate(st.runs, st.ballsFaced)}
+                    </td>
+                    <td className="px-2 py-2.5 text-right font-semibold text-ink-900">
+                      {st.wickets}
+                    </td>
+                    <td className="px-2 py-2.5 text-right text-ink-600">
+                      {formatBestBowling(st.bestBowlingWkts, st.bestBowlingRuns)}
+                    </td>
+                    <td className="px-3 py-2.5 text-right text-ink-600">{st.catches}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </Card>
+      )}
+
+      {tab === 'seasons' && (
+        <Card className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-ink-100 bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
+                <th className="px-4 py-2.5 font-semibold">Season</th>
+                <th className="px-2 py-2.5 text-right font-semibold">M</th>
+                <th className="px-2 py-2.5 text-right font-semibold">Runs</th>
+                <th className="px-2 py-2.5 text-right font-semibold">HS</th>
+                <th className="px-2 py-2.5 text-right font-semibold">Avg</th>
+                <th className="px-2 py-2.5 text-right font-semibold">SR</th>
+                <th className="px-2 py-2.5 text-right font-semibold">Wkts</th>
+                <th className="px-2 py-2.5 text-right font-semibold">Best</th>
+                <th className="px-3 py-2.5 text-right font-semibold">Ct</th>
+              </tr>
+            </thead>
+            <tbody>
+              {seasonSplits.map((sp) => {
+                const st = sp.stats
+                return (
+                  <tr key={sp.seasonId ?? '__none__'} className="border-b border-ink-50">
+                    <td className="px-4 py-2.5">
+                      <span
+                        className={
+                          sp.seasonId
+                            ? 'font-medium text-ink-900'
+                            : 'font-medium text-ink-500'
+                        }
+                      >
+                        {sp.seasonName}
+                      </span>
+                    </td>
+                    <td className="px-2 py-2.5 text-right text-ink-600">{st.matches}</td>
+                    <td className="px-2 py-2.5 text-right font-semibold text-ink-900">
+                      {st.runs}
                     </td>
                     <td className="px-2 py-2.5 text-right text-ink-600">
                       {st.highScore}

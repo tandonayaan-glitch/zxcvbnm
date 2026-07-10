@@ -58,3 +58,62 @@ export function playerTournamentSplits(
     )
   })
 }
+
+/* ------------------------------------------------------------------
+ * Season splits — the same idea, bucketed by season instead. A match
+ * only has a tournamentId, not a seasonId directly, so the caller
+ * supplies a tournamentId -> seasonId lookup (built from the
+ * tournaments collection) plus a seasonId -> name lookup.
+ * ------------------------------------------------------------------ */
+export interface SeasonSplit {
+  /** null for matches whose tournament has no season (or has no tournament). */
+  seasonId: string | null
+  seasonName: string
+  stats: PlayerStats
+}
+
+const NO_SEASON = '__none__'
+
+export function playerSeasonSplits(
+  playerId: string,
+  matches: Match[],
+  seasonIdByTournamentId: Map<string, string | null | undefined>,
+  seasonNameById: Map<string, string>,
+): SeasonSplit[] {
+  const groups = new Map<string, { name: string; matches: Match[] }>()
+  for (const m of matches) {
+    if (m.status !== 'completed') continue
+    if (!m.squadA.includes(playerId) && !m.squadB.includes(playerId)) continue
+    const seasonId = m.tournamentId
+      ? (seasonIdByTournamentId.get(m.tournamentId) ?? null)
+      : null
+    const key = seasonId ?? NO_SEASON
+    const name = seasonId ? (seasonNameById.get(seasonId) ?? 'Season') : 'No season'
+    let g = groups.get(key)
+    if (!g) {
+      g = { name, matches: [] }
+      groups.set(key, g)
+    }
+    g.matches.push(m)
+  }
+
+  const out: SeasonSplit[] = []
+  for (const [key, g] of groups) {
+    const stats = aggregatePlayerStats(g.matches).get(playerId)
+    if (!stats) continue
+    out.push({
+      seasonId: key === NO_SEASON ? null : key,
+      seasonName: g.name,
+      stats,
+    })
+  }
+
+  return out.sort((a, b) => {
+    if (!a.seasonId && b.seasonId) return 1
+    if (a.seasonId && !b.seasonId) return -1
+    return (
+      b.stats.matches - a.stats.matches ||
+      a.seasonName.localeCompare(b.seasonName)
+    )
+  })
+}

@@ -4,6 +4,19 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Season splits on the player page
+- **`playerSeasonSplits()`** (`domain/playerSplits.ts`, next to the existing
+  `playerTournamentSplits`): buckets a player's completed matches by season, via a caller-supplied
+  tournamentId -> seasonId lookup (matches only carry a tournamentId) plus a seasonId -> name
+  lookup. Reuses `aggregatePlayerStats` so a season row means exactly what the career figures mean.
+- **`PlayerPage`**: a "By season" tab appears once the player has at least one completed match
+  under a tournament that belongs to a season (i.e. only when there's real season data — a
+  brand-new feature with no seasons configured yet stays invisible rather than showing an
+  all-"No season" table). Verified the domain function against a synthetic 2-match/2-tournament
+  dataset, then end-to-end: temporarily linked a real tournament with real match/player data to a
+  throwaway season, confirmed the tab appeared and the row's runs/matches exactly matched the
+  player's Overview stats, then reverted the tournament and deleted the throwaway season.
+
 ### Added — Group tables for group_knockout tournaments
 - **`domain/groups.ts`**: `groupStandings()` buckets a tournament's `teamIds` by an optional
   `Tournament.teamGroups` map (team id -> group label) and reuses `computeStandings` per group —
