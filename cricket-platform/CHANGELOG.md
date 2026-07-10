@@ -4,6 +4,13 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Venue filter on Stats
+- **Venue filter on the Stats page**, alongside the existing competition filter: narrows every
+  board (leaderboards, MVP, consistency, records, team standings, totals) to matches played at a
+  single ground, composing with the competition filter (both apply together). Only lists venues
+  with completed matches in the current competition scope; switching competition resets the venue
+  filter back to "All venues" to avoid an empty, confusing combination.
+
 ### Added — Best bowling spell
 - **"Best spell" tile** in Match Insights (`domain/insights.ts`): the tightest 2–4 over stretch by
   a single bowler (lowest economy, ties broken by more wickets), evaluated over that bowler's own

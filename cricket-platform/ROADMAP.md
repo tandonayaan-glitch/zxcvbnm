@@ -64,10 +64,10 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 
 ## Phase 6 — Global leaderboards & rankings
 - ✅ Global leaderboards (runs, wickets, avg, SR, economy, 4s, 6s, best bowling, fielding) + Stats page
-- 🟡 **Per-tournament competition filter + all-time Records tab + MVP/impact rating + consistency
-  rating on the Stats page** (✅ recomputes boards, totals, records, impact and consistency
-  leaderboards per competition — `domain/consistency.ts`); add season/club/team/venue/year
-  filters, per-scope ranks
+- 🟡 **Competition + venue filters, all-time Records tab, MVP/impact rating and consistency
+  rating on the Stats page** (✅ composable competition/venue filters recompute boards, totals,
+  records, impact and consistency leaderboards — `domain/consistency.ts`); add season/club/team/
+  year filters, per-scope ranks
 
 ## Phase 7 — Offline scoring hardening
 - ✅ Firestore IndexedDB persistent cache (writes queue offline, sync on reconnect)

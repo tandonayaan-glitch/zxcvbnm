@@ -42,6 +42,7 @@ export function StatsPage() {
     'batting' | 'bowling' | 'fielding' | 'teams' | 'records'
   >('batting')
   const [scope, setScope] = useState('all')
+  const [venue, setVenue] = useState('all')
 
   // Tournaments that actually have completed matches, for the scope filter.
   const scopeOptions = useMemo(() => {
@@ -64,16 +65,35 @@ export function StatsPage() {
     [scope, matches],
   )
 
+  // Venues with completed matches within the current competition scope.
+  const venueOptions = useMemo(() => {
+    const set = new Set<string>()
+    for (const m of scopedMatches) {
+      if (m.status === 'completed' && m.venue?.trim()) set.add(m.venue.trim())
+    }
+    return [...set].sort((a, b) => a.localeCompare(b))
+  }, [scopedMatches])
+
+  const finalMatches = useMemo(
+    () => (venue === 'all' ? scopedMatches : scopedMatches.filter((m) => m.venue === venue)),
+    [scopedMatches, venue],
+  )
+
+  function changeScope(next: string) {
+    setScope(next)
+    setVenue('all')
+  }
+
   // Recompute leaderboards/stats for the selected scope (or reuse platform-wide).
   const scoped = useMemo(() => {
-    if (scope === 'all') return { leaderboards, playerStats }
-    const ps = aggregatePlayerStats(scopedMatches)
+    if (scope === 'all' && venue === 'all') return { leaderboards, playerStats }
+    const ps = aggregatePlayerStats(finalMatches)
     return { leaderboards: buildLeaderboards(ps), playerStats: ps }
-  }, [scope, scopedMatches, leaderboards, playerStats])
+  }, [scope, venue, finalMatches, leaderboards, playerStats])
 
   const records = useMemo(
-    () => computeTournamentRecords(scopedMatches),
-    [scopedMatches],
+    () => computeTournamentRecords(finalMatches),
+    [finalMatches],
   )
 
   const impactBoard = useMemo(
@@ -82,8 +102,8 @@ export function StatsPage() {
   )
 
   const consistencyBoard = useMemo(
-    () => buildConsistencyBoard(scopedMatches, 5),
-    [scopedMatches],
+    () => buildConsistencyBoard(finalMatches, 5),
+    [finalMatches],
   )
 
   // Resolve team names from denormalised match data, so standings survive a
@@ -99,14 +119,14 @@ export function StatsPage() {
 
   const teamStandings = useMemo(
     () =>
-      [...aggregateTeamStats(scopedMatches).values()].sort(
+      [...aggregateTeamStats(finalMatches).values()].sort(
         (a, b) =>
           b.won - a.won ||
           b.won / Math.max(1, b.won + b.lost) -
             a.won / Math.max(1, a.won + a.lost) ||
           b.runsScored - a.runsScored,
       ),
-    [scopedMatches],
+    [finalMatches],
   )
 
   const totals = useMemo(() => {
@@ -150,27 +170,54 @@ export function StatsPage() {
         />
       ) : (
         <>
-          {scopeOptions.length > 0 && (
-            <div className="mb-4 flex items-center gap-2">
-              <label
-                htmlFor="stats-scope"
-                className="text-sm font-medium text-ink-600"
-              >
-                Competition
-              </label>
-              <select
-                id="stats-scope"
-                value={scope}
-                onChange={(e) => setScope(e.target.value)}
-                className="rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm font-medium text-ink-800 focus:border-brand-500 focus:outline-none"
-              >
-                <option value="all">All competitions</option>
-                {scopeOptions.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
+          {(scopeOptions.length > 0 || venueOptions.length > 0) && (
+            <div className="mb-4 flex flex-wrap items-center gap-3">
+              {scopeOptions.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <label
+                    htmlFor="stats-scope"
+                    className="text-sm font-medium text-ink-600"
+                  >
+                    Competition
+                  </label>
+                  <select
+                    id="stats-scope"
+                    value={scope}
+                    onChange={(e) => changeScope(e.target.value)}
+                    className="rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm font-medium text-ink-800 focus:border-brand-500 focus:outline-none"
+                  >
+                    <option value="all">All competitions</option>
+                    {scopeOptions.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {venueOptions.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <label
+                    htmlFor="stats-venue"
+                    className="text-sm font-medium text-ink-600"
+                  >
+                    Venue
+                  </label>
+                  <select
+                    id="stats-venue"
+                    value={venue}
+                    onChange={(e) => setVenue(e.target.value)}
+                    className="rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm font-medium text-ink-800 focus:border-brand-500 focus:outline-none"
+                  >
+                    <option value="all">All venues</option>
+                    {venueOptions.map((v) => (
+                      <option key={v} value={v}>
+                        {v}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           )}
 
