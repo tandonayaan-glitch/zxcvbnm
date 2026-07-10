@@ -4,6 +4,12 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Performance
+- **Batched the backup export's delivery reads** — `gatherPlatformBackup()` now fetches every
+  match's deliveries concurrently (`Promise.all`) instead of one round-trip at a time; read-only,
+  so there's no ordering concern. Verified identical output (66 deliveries across 2 matches,
+  matching the pre-change result).
+
 ### Added — Live projected score & chase-rate comparison
 - **Projected score** on the live match panel for a first innings: the standard "on this run
   rate" extrapolation from current run rate over the balls remaining (`projectedScore` in

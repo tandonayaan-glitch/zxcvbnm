@@ -91,7 +91,8 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
   link + `main` landmarks + nav `aria-current`/labels** (✅); add colour-blind palettes, full ARIA audit
 - 🟡 Performance: **lazy-loaded routes / code-splitting** (✅ `React.lazy` + `Suspense` per route);
   **memoised TeamPage/PlayerPage/MatchPage/TournamentPage analytics** (✅ `useMemo`, incl. the
-  live-scoring MatchPage which re-renders every ball); add pagination/virtualisation, query batching
+  live-scoring MatchPage which re-renders every ball); **batched backup-export delivery reads**
+  (✅ `Promise.all` instead of sequential per-match reads); add pagination/virtualisation
 
 ---
 

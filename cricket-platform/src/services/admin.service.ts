@@ -68,12 +68,16 @@ export async function gatherPlatformBackup(): Promise<PlatformBackup> {
     listUsers(),
   ])
 
+  // Fetch every match's deliveries concurrently rather than one round-trip
+  // at a time — read-only, so there's no ordering/consistency reason not to.
+  const scoredMatches = matches.filter((m) => m.innings.length > 0)
+  const deliveriesLists = await Promise.all(
+    scoredMatches.map((m) => getDeliveries(m.id)),
+  )
   const deliveriesByMatch: Record<string, Delivery[]> = {}
-  for (const m of matches) {
-    if (m.innings.length > 0) {
-      deliveriesByMatch[m.id] = await getDeliveries(m.id)
-    }
-  }
+  scoredMatches.forEach((m, i) => {
+    deliveriesByMatch[m.id] = deliveriesLists[i]
+  })
 
   return {
     exportedAt: Date.now(),
