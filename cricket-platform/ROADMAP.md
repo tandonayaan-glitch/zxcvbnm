@@ -91,11 +91,9 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
   `Input`/`Select`/`Textarea`/`Tabs`/`EmptyState`/`StatCard`/toast/pagination/follow-button all
   gained `dark:` variants (verified: 157/158 sampled text elements pass a computed-style contrast
   check on the Stats page in dark mode), plus 39 feature/chart page files. `MatchPage`,
-  `PlayerPage`, `TournamentPage` and the settings page are still on the old unscoped styling —
-  held back this pass specifically to avoid clobbering concurrent work landing in those same
-  files); still missing a broader
-  follow-up pass to avoid dark-text-on-dark-background contrast bugs); add full per-page dark
-  styling
+  `PlayerPage`, `TournamentPage` and the settings page are still on the old unscoped styling,
+  held back this pass to avoid clobbering concurrent work landing in those same files); add a
+  follow-up pass over those four to finish the job
 - ✅ Cross-device persistence of preferences (Firestore `userPrefs`) — pull/seed on sign-in (remote wins), debounced push on change, resets on sign-out
 - ✅ Global undo toasts for create/edit actions (Players, Teams, Tournaments)
 
