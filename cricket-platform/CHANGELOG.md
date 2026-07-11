@@ -4,6 +4,46 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Player account lifecycle (Phase 3)
+- **Auto-create linked login on player create**: `PlayerFormModal` gained a "Create a linked login
+  account" checkbox (on by default for new players). On save, `createLinkedAccount()`
+  (`services/auth.service.ts`) generates a unique `user######` username and a random 12-char temp
+  password, creates the Firebase Auth user, writes its `users/{uid}` profile as
+  `pending_registration`, and stores `Player.linkedUserId`. The admin sees the credentials exactly
+  once in a copy-to-clipboard dialog they must acknowledge before closing (Firebase never exposes
+  a plaintext password again once set).
+  - **The session-hijack problem**: the Firebase client SDK signs in as whichever user
+    `createUserWithEmailAndPassword` just created — calling it on the primary `auth` instance while
+    creating an account *for someone else* would silently switch the signed-in admin to the new
+    (empty, pending) account. Fixed with the standard client-side workaround: a throwaway secondary
+    `initializeApp` instance handles the creation and is torn down immediately after, leaving the
+    admin's own session on the primary instance untouched.
+- **First-login activation** (`/activate`, `ActivatePage.tsx`): `ProtectedRoute` redirects any
+  `pending_registration` account here before any other route. The account picks a real password
+  and display name and becomes `active` (`activateAccount()`).
+  - **Scoped down from "choose username" to "keep the assigned username, change password"**: the
+    original plan let the user pick a new username at activation too, but usernames map to a
+    synthetic email, and changing it means calling Firebase Auth's `updateEmail` — which, on
+    projects with email enumeration protection (the default for new Firebase projects), requires
+    verifying the new address before it applies. There's no real mailbox behind the synthetic
+    domain, so that verification could never complete. This was discovered by actually hitting the
+    error in the browser (`auth/operation-not-allowed`), not anticipated in advance — fixed by
+    dropping the username-change path entirely rather than working around Firebase's own security
+    feature. `ActivatePage` now shows the assigned username read-only for reference.
+- **Firestore rules**: `users/{uid}` create now also allows an admin to create a `VIEWER` +
+  `pending_registration` doc for a different uid (previously self-only); `update` now allows the
+  one `pending_registration -> active` self-transition (previously status was fully self-immutable).
+  Both are narrowly scoped — an admin still can't grant themselves or anyone else an elevated role
+  or a status other than the pending-signup one through this path.
+  Verified fully end-to-end in the browser: created a real player with a linked account, captured
+  the generated username/password from the actual dialog, logged in with those temp credentials
+  and confirmed `status: "pending_registration"` plus the redirect-to-`/activate` guard (tried
+  navigating to `/dashboard` directly — still landed on `/activate`), completed activation with a
+  new password, confirmed the Firestore profile flipped to `status: "active"`, confirmed the *old*
+  temp password no longer matters and the *new* password logs in successfully, confirmed navigating
+  to a normal protected route no longer redirects, then fully cleaned up (deleted the Firebase Auth
+  user, the `users` doc, the `usernameLookup` doc, and the test player).
+
 ### Added — Scoped ARIA accessibility pass (Phase 9)
 - **`Modal`** (used by every form dialog in the app): `role="dialog"`, `aria-modal="true"`,
   `aria-labelledby` pointing at the title (via `useId()`, so it's collision-safe even if two

@@ -43,8 +43,20 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
   ✅ last-3-overs rate vs overall, accelerating/slowing/steady); add turning point
 
 ## Phase 3 — Player account lifecycle
-- ⬜ Auto-create linked user account on player create (`user####`, Pending Registration, temp password)
-- ⬜ First-login activation (choose username/password, complete profile) → activate
+- ✅ **Auto-create linked user account on player create** — optional checkbox on the player form;
+  generates a `user######` username + random temp password via a throwaway secondary Firebase App
+  instance (so the admin's own session isn't hijacked — the client SDK signs in as whichever user
+  it just created, which would otherwise switch the admin to the new account), stores the profile
+  as `pending_registration`, links `Player.linkedUserId`, and shows the credentials to the admin
+  exactly once in a copy-to-clipboard dialog (Firebase never exposes a password again after set)
+- ✅ **First-login activation** (`/activate`, password + display name → `active`) — `ProtectedRoute`
+  redirects any `pending_registration` account here first, for any route. Scoped down from the
+  original "choose username" plan: usernames map to a synthetic email, and Firebase Auth's
+  `updateEmail` requires verifying the new address first on projects with email enumeration
+  protection (the default for new projects) — there's no real mailbox behind the synthetic domain,
+  so that verification could never complete. The assigned username is kept permanently instead;
+  only the password (and display name) are chosen at activation. This is a platform constraint,
+  not a shortcut — a real fix would need a backend (Admin SDK) this project doesn't have.
 - 🟡 Cricket-based password recovery (fuzzy name match exists at `/recover`; add match-history Q&A verification, rate limiting, cooldowns, recovery audit)
 - ⬜ Claim / merge duplicate player profiles (master-admin merge tool preserving stats + audit)
 
