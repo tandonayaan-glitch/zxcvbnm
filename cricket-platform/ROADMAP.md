@@ -13,9 +13,12 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 - ✅ Crash fixes: `Avatar`/`colorFromString`/`initials` on missing names; `formatDate` on invalid/timestamp values; `teamIds`/owner-field guards; `pruneUndefined` on all writes
 - ✅ Master-admin route access (super-admin bypasses every guard)
 - ✅ `npm run build` + `tsc` clean; scoring flow verified end-to-end
-- 🟡 Resilience to legacy/foreign docs (missing `displayName`, `status`, etc.) — hardened where hit;
-  **`listUsers()` now falls back to the doc key for `id`** (✅ — a legacy doc missing it silently
-  broke role/ban actions for that user)
+- ✅ Resilience to legacy/foreign docs (missing `displayName`, `status`, etc.) — hardened where hit;
+  **`listUsers()` now falls back to the doc key for `id`** (a legacy doc missing it silently broke
+  role/ban actions for that user); audited every other `list*()` in `src/services/` for the same
+  missing-`id`-merge shape — `audit.service.ts`, `requests.service.ts`, and the deliveries reader in
+  `scoring.service.ts` all write `id` explicitly into the document at creation time, so none share
+  the bug; no further instances found
 
 ## Phase 1 — Master Admin platform tools & audit (THIS PASS)
 - ✅ Audit log (`auditLogs` collection + service, records admin actions)
@@ -98,16 +101,16 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 - ✅ Global undo toasts for create/edit actions (Players, Teams, Tournaments)
 
 ## Phase 5 — Player / Team / Tournament depth
-- 🟡 Player profile: career/batting/bowling/fielding stats + match log + follow, achievements, awards cabinet (✅); **per-tournament splits tab** (✅ `domain/playerSplits.ts`); **recent-form charts** (✅ batting/bowling SVG bars — `components/charts/PlayerForm`); **global
+- ✅ Player profile: career/batting/bowling/fielding stats + match log + follow, achievements, awards cabinet (✅); **per-tournament splits tab** (✅ `domain/playerSplits.ts`); **recent-form charts** (✅ batting/bowling SVG bars — `components/charts/PlayerForm`); **global
   rankings strip** (✅ runs/wickets/sixes rank); **career timeline** (✅ `domain/playerTimeline.ts`);
   **player-vs-player comparison** (✅ `/compare`); **radar profile chart** (✅ `domain/radar.ts` +
   `components/charts/PlayerRadar`); **season splits** (✅ `playerSeasonSplits` in
   `domain/playerSplits.ts` buckets by season via each match's tournament -> season lookup; "By
   season" tab shown once a player has at least one match under a seasoned tournament)
-- 🟡 Team profile: squad, recent, record, leaders (✅); **recent-form guide (W/L/T chips), win-rate/record summary, top run-scorer & wicket-taker** (✅); **honours (knockout titles) + team records** (✅ highest total/chase, biggest wins, best individual batting/bowling — `domain/teamRecords.ts`); **record vs opponents + record by venue** (✅ `domain/teamOpponents.ts`, `domain/teamVenues.ts`);
+- ✅ Team profile: squad, recent, record, leaders (✅); **recent-form guide (W/L/T chips), win-rate/record summary, top run-scorer & wicket-taker** (✅); **honours (knockout titles) + team records** (✅ highest total/chase, biggest wins, best individual batting/bowling — `domain/teamRecords.ts`); **record vs opponents + record by venue** (✅ `domain/teamOpponents.ts`, `domain/teamVenues.ts`);
   **runs-scored form chart** (✅ `components/charts/TeamForm`);
   **team-vs-team comparison** (✅ `/compare/teams`)
-- 🟡 Tournament: standings, fixtures, leaders, teams (✅); **records tab** (✅ highest/lowest team
+- ✅ Tournament: standings, fixtures, leaders, teams (✅); **records tab** (✅ highest/lowest team
   total, highest individual score, best bowling figures, most sixes/fours in an innings, biggest
   win by runs/wickets — all derived from cached innings cards, no delivery reads); **knockout
   bracket** (✅ per-match `stage` set in the setup wizard, rounds rendered left-to-right with
@@ -125,7 +128,7 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 
 ## Phase 6 — Global leaderboards & rankings
 - ✅ Global leaderboards (runs, wickets, avg, SR, economy, 4s, 6s, best bowling, fielding) + Stats page
-- 🟡 **Competition + venue + team filters, all-time Records tab, MVP/impact rating, consistency
+- ✅ **Competition + venue + team filters, all-time Records tab, MVP/impact rating, consistency
   rating on the Stats page + per-tournament player rank** (✅ composable competition/venue/team
   filters recompute boards, totals, records, impact and consistency leaderboards —
   `domain/consistency.ts`; ✅ per-tournament runs rank on the player "By tournament" tab); **season/
