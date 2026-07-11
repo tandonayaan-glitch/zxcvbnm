@@ -4,6 +4,22 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Offline force-resync (Phase 1 & 7)
+- **`forceResync()`** (`services/diagnostics.service.ts`): drops and re-establishes the Firestore
+  network connection (forcing every active listener to re-subscribe), then waits for any writes
+  queued while offline to be acknowledged by the backend — raced against an 8s timeout so it
+  reports "still pending" instead of hanging forever if genuinely offline (`waitForPendingWrites`
+  never resolves with no connection).
+- **"Force resync" button** on Platform Tools, next to the online/offline badge.
+  - **Scope decision, documented in ROADMAP**: a literal "queue-inspection page" listing
+    individual pending writes isn't implementable — the Firestore client SDK's offline mutation
+    queue is internal, with no public API to enumerate what's queued. This ships the part that's
+    real and honestly exposable (force a resync, know whether it flushed and how long it took)
+    rather than fabricating a fake queue list.
+  - Verified: called the service function directly (online, resolved `flushed: true` in single-
+    digit ms), then clicked the actual button and confirmed the toast read "Resynced in 78ms" with
+    no console errors.
+
 ### Added — Client-side pagination (Phase 9)
 - **`usePaginated<T>()`** hook (`hooks/usePaginated.ts`): slices an already-fetched array into
   pages, clamping automatically when the underlying list shrinks (e.g. a filter narrows the

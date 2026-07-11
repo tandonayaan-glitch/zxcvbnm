@@ -26,7 +26,11 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
   users — `domain/platformExport.ts`, audit-logged)
 - ✅ **System diagnostics** (`services/diagnostics.service.ts`): Firestore document counts via
   server-side aggregate queries + online/offline badge, on Platform Tools
-- ⬜ offline-queue force-resync
+- ✅ **Offline-queue force resync** (`forceResync()`: drops/re-establishes the Firestore
+  connection then waits for queued writes to be acknowledged, raced against an 8s timeout so it
+  can't hang forever while genuinely offline — the client SDK doesn't expose an enumerable list
+  of queued mutations, so this reports aggregate sync state rather than a fabricated per-write
+  queue); "Force resync" button on Platform Tools
 
 ## Phase 2 — Match Centre analytics (THIS PASS)
 - ✅ Worm graph (cumulative runs), Manhattan (runs/over), run-rate — SVG, from delivery data
@@ -90,8 +94,13 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 
 ## Phase 7 — Offline scoring hardening
 - ✅ Firestore IndexedDB persistent cache (writes queue offline, sync on reconnect)
-- 🟡 **Global offline banner** (✅ `useOnlineStatus` + `OfflineBanner`); add explicit event queue
-  model, sync-progress indicator, queue-inspection page, manual/force resync
+- ✅ **Global offline banner** (`useOnlineStatus` + `OfflineBanner`)
+- ✅ **Manual/force resync** — see Phase 1's `forceResync()`
+- ⬜ Explicit event queue model / queue-inspection page listing individual pending writes: not
+  implementable honestly — the Firestore client SDK's offline queue is internal and doesn't expose
+  enumerable pending mutations (no public API returns "what's queued"). `forceResync()` covers the
+  real, exposable part of this (force a resync, know whether it flushed); a literal queue list
+  would have to be faked to exist at all.
 
 ## Phase 8 — Clubs & Seasons architecture
 - ✅ **Club (top-level org) + Season entities; Team→Club, Tournament→Club+Season** — types +

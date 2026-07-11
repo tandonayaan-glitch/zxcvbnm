@@ -10,6 +10,7 @@ import {
   Gauge,
   Wifi,
   WifiOff,
+  RotateCw,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
@@ -32,7 +33,7 @@ import {
 } from '@/services/stats.service'
 import { listTournaments } from '@/services/tournaments.service'
 import { clearLeaderboards, gatherPlatformBackup } from '@/services/admin.service'
-import { getPlatformDiagnostics } from '@/services/diagnostics.service'
+import { getPlatformDiagnostics, forceResync } from '@/services/diagnostics.service'
 import { logAudit, listAuditLogs } from '@/services/audit.service'
 import { platformBackupToJSON } from '@/domain/platformExport'
 import { downloadBlob } from '@/lib/download'
@@ -48,7 +49,24 @@ export function PlatformToolsPage() {
   const diagnostics = useAsync(getPlatformDiagnostics, [])
   const [rebuilding, setRebuilding] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [resyncing, setResyncing] = useState(false)
   const [showClear, setShowClear] = useState(false)
+
+  async function resync() {
+    setResyncing(true)
+    try {
+      const { ms, flushed } = await forceResync()
+      if (flushed) {
+        toast.success(`Resynced in ${ms}ms`)
+      } else {
+        toast.info('Reconnected — writes still pending, will finish syncing once online')
+      }
+    } catch {
+      toast.error('Resync failed')
+    } finally {
+      setResyncing(false)
+    }
+  }
 
   async function rebuild() {
     setRebuilding(true)
@@ -135,7 +153,20 @@ export function PlatformToolsPage() {
                 as of {formatDateTime(diagnostics.data.generatedAt)}
               </span>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-auto"
+              onClick={resync}
+              loading={resyncing}
+            >
+              <RotateCw size={14} /> Force resync
+            </Button>
           </div>
+          <p className="mb-3 text-xs text-ink-500">
+            Drops and re-establishes the Firestore connection, then waits for any writes queued
+            while offline to be acknowledged by the server.
+          </p>
           {diagnostics.loading ? (
             <PageLoader />
           ) : diagnostics.data ? (

@@ -1,4 +1,11 @@
-import { collection, collectionGroup, getCountFromServer } from 'firebase/firestore'
+import {
+  collection,
+  collectionGroup,
+  getCountFromServer,
+  disableNetwork,
+  enableNetwork,
+  waitForPendingWrites,
+} from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { COL } from '@/lib/collections'
 
@@ -45,4 +52,30 @@ export async function getPlatformDiagnostics(): Promise<PlatformDiagnostics> {
     counts: { players, teams, tournaments, matches, users, auditLogs, adminRequests, deliveries },
     generatedAt: Date.now(),
   }
+}
+
+/**
+ * Force a resync: tear down and re-establish Firestore's network connection
+ * (forcing every active listener to re-subscribe), then wait for any writes
+ * that were queued locally to be acknowledged by the backend.
+ *
+ * `waitForPendingWrites` never resolves while genuinely offline (there's
+ * nothing to acknowledge it against), so it's raced against a timeout —
+ * without that, "force resync" while offline would spin forever instead of
+ * honestly reporting "still pending, will retry once reconnected".
+ *
+ * The Firestore client SDK doesn't expose an enumerable list of queued
+ * mutations, so this can't show a literal per-write "queue" — it reports
+ * aggregate sync state (did pending writes flush, how long it took) rather
+ * than a fabricated list of individual operations.
+ */
+export async function forceResync(): Promise<{ ms: number; flushed: boolean }> {
+  const start = Date.now()
+  await disableNetwork(db)
+  await enableNetwork(db)
+  const flushed = await Promise.race([
+    waitForPendingWrites(db).then(() => true),
+    new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 8000)),
+  ])
+  return { ms: Date.now() - start, flushed }
 }
