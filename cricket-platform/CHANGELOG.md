@@ -4,6 +4,27 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Colour-blind friendly palette (Phase 9)
+- **`colorBlind` preference** (`prefsStore`), synced cross-device like the other appearance prefs.
+  Toggles a `.colorblind` class on `<html>` that remaps the `pitch-*` (green) CSS variable scale to
+  teal — teal stays clearly distinct from red for red-green colour blindness (the most common
+  form), unlike green vs red.
+  - **Scope decision**: `pitch` is the app's one consistent "positive/win" accent token (23 files),
+    so remapping it is a single coherent change with full coverage of every Tailwind-class usage —
+    the same reasoning the dark-mode work used (a targeted token swap beats hundreds of individual
+    fixes). Two spots used inline hex instead of the token (`TeamPage`'s form-result chip,
+    `TeamForm` chart's win-bar colour) and were switched to reference the CSS variable/Tailwind
+    class so they pick up the override too. Decorative single-hue icon accents (e.g. record-card
+    icons, batting-form intensity gradients) were deliberately left alone: they don't encode
+    information via a colour-only red/green contrast, so they're not a colour-blind accessibility
+    gap, and touching them would be exactly the kind of broad, hard-to-verify change avoided
+    elsewhere in this pass.
+  - Verified: toggled via the actual Settings switch (not just the store) and confirmed
+    `document.documentElement` gained/lost the `colorblind` class; checked real computed colour
+    (`getComputedStyle`) on both a CSS-variable consumer (`--color-pitch-600` itself, `#16a34a` ->
+    `#0d9488`) and a class consumer (`text-pitch-700` on the Stats page Teams tab win column,
+    `#15803d` -> `#0f766e`), then toggled back and confirmed it reverted. No console errors.
+
 ### Added — Club profile pages, season archive & hall of fame (Phase 8)
 - **`ClubPage`** (`/club/:id`): club header (logo/initials, short name, home venue, description),
   and three linked lists — teams, seasons, tournaments — each filtered by `clubId` from the

@@ -10,6 +10,7 @@ export interface Prefs {
   density: Density
   highContrast: boolean
   theme: ThemeMode
+  colorBlind: boolean
 }
 
 const STORAGE_KEY = 'crickethub.prefs'
@@ -20,6 +21,7 @@ const DEFAULT_PREFS: Prefs = {
   density: 'comfortable',
   highContrast: false,
   theme: 'system',
+  colorBlind: false,
 }
 
 const SCALE_PX: Record<TextScale, string> = {
@@ -66,6 +68,7 @@ export function applyPrefs(p: Prefs) {
   root.classList.toggle('high-contrast', p.highContrast)
   root.classList.toggle('density-compact', p.density === 'compact')
   root.classList.toggle('dark', resolveDark(p.theme))
+  root.classList.toggle('colorblind', p.colorBlind)
 }
 
 // Live-follow the OS theme while the user has picked "system" — re-applying

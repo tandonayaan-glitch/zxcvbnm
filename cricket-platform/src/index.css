@@ -174,6 +174,29 @@ body {
   text-decoration-thickness: 2px;
 }
 
+/* Colour-blind friendly palette: the app's "positive/win" accent (the
+ * `pitch-*` green scale, used wherever a result or state is implicitly
+ * contrasted against red — win/loss, four/wicket) is remapped to teal,
+ * which stays clearly distinct from red for red-green colour blindness
+ * (the most common form). `red-*` itself is left alone since it's also
+ * used standalone for errors/danger actions with no adjacent green to
+ * confuse it with. Scoped to the `pitch-*` token (23 files use it) rather
+ * than every decorative accent colour in the app, for the same reason the
+ * dark-mode pass stayed scoped to app-shell chrome: a targeted, coherent
+ * change beats a sprawling one that can't be fully visually verified. */
+.colorblind {
+  --color-pitch-50: #f0fdfa;
+  --color-pitch-100: #ccfbf1;
+  --color-pitch-200: #99f6e4;
+  --color-pitch-300: #5eead4;
+  --color-pitch-400: #2dd4bf;
+  --color-pitch-500: #14b8a6;
+  --color-pitch-600: #0d9488;
+  --color-pitch-700: #0f766e;
+  --color-pitch-800: #115e59;
+  --color-pitch-900: #134e4a;
+}
+
 .density-compact {
   --radius-xl: 0.75rem;
   --radius-2xl: 1rem;

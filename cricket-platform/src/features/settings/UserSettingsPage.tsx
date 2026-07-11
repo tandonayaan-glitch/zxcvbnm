@@ -12,6 +12,7 @@ import {
   Sun,
   Moon,
   MonitorSmartphone,
+  Eye,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
@@ -265,6 +266,13 @@ export function UserSettingsPage() {
             hint="Darker secondary text and stronger links."
             value={prefs.highContrast}
             onChange={(v) => setPref('highContrast', v)}
+          />
+          <ToggleRow
+            icon={<Eye size={15} />}
+            label="Colour-blind friendly palette"
+            hint="Swaps the green 'win' accent for teal, which stays distinct from red."
+            value={prefs.colorBlind}
+            onChange={(v) => setPref('colorBlind', v)}
           />
 
           <div className="flex items-center justify-between border-t border-ink-100 pt-4">

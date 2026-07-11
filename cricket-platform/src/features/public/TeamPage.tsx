@@ -514,19 +514,21 @@ export function TeamPage() {
   )
 }
 
+// Uses the `pitch`/`red` theme tokens (not inline hex) so the colour-blind
+// palette's `.colorblind` override (pitch -> teal) applies to the win chip
+// automatically, the same way it does everywhere else pitch-* is used.
 const FORM_TONE: Record<FormOutcome, { bg: string; label: string }> = {
-  W: { bg: '#16a34a', label: 'W' },
-  L: { bg: '#dc2626', label: 'L' },
-  T: { bg: '#d97706', label: 'T' },
-  N: { bg: '#94a3b8', label: 'N' },
+  W: { bg: 'bg-pitch-600', label: 'W' },
+  L: { bg: 'bg-red-600', label: 'L' },
+  T: { bg: 'bg-amber-600', label: 'T' },
+  N: { bg: 'bg-ink-400', label: 'N' },
 }
 
 function FormChip({ outcome }: { outcome: FormOutcome }) {
   const c = FORM_TONE[outcome]
   return (
     <span
-      className="inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-white"
-      style={{ backgroundColor: c.bg }}
+      className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-white ${c.bg}`}
     >
       {c.label}
     </span>

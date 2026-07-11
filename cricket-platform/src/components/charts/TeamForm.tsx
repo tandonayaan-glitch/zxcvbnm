@@ -4,8 +4,11 @@ import type { FormOutcome } from '@/domain/teamForm'
 /* Runs-scored-per-match bar chart for a team, coloured by result. SVG, no
  * external chart deps. Oldest match on the left. */
 
+// W uses the `pitch` CSS variable (not a literal) so the colour-blind
+// palette's pitch -> teal override applies here too, consistent with every
+// other pitch-* usage in the app.
 const COLOR: Record<FormOutcome, string> = {
-  W: '#16a34a',
+  W: 'var(--color-pitch-600)',
   L: '#dc2626',
   T: '#d97706',
   N: '#94a3b8',

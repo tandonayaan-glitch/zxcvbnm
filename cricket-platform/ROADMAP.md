@@ -111,7 +111,11 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
   `domain/tournamentExport.ts`) **and player career/splits/match-log export** (✅
   `domain/playerExport.ts`); add PDF, match archive, import + duplicate detection
 - 🟡 Accessibility: focus rings, large-text mode, high-contrast (✅ earlier); **skip-to-content
-  link + `main` landmarks + nav `aria-current`/labels** (✅); add colour-blind palettes, full ARIA audit
+  link + `main` landmarks + nav `aria-current`/labels** (✅); **colour-blind friendly palette**
+  (✅ `colorBlind` pref remaps the `pitch-*` green token to teal via a `.colorblind` CSS-variable
+  override — covers every Tailwind-class usage of pitch plus the few chart/SVG spots that read the
+  same CSS variable; standalone decorative icon tones left as-is since they don't pair information
+  with colour alone); add full ARIA audit
 - 🟡 Performance: **lazy-loaded routes / code-splitting** (✅ `React.lazy` + `Suspense` per route);
   **memoised TeamPage/PlayerPage/MatchPage/TournamentPage analytics** (✅ `useMemo`, incl. the
   live-scoring MatchPage which re-renders every ball); **batched backup-export delivery reads**
