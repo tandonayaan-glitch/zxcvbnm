@@ -99,13 +99,13 @@ export function PublicHomePage() {
             <div className="relative">
               <Search
                 size={18}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400"
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400 dark:text-ink-500"
               />
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search players, teams, tournaments…"
-                className="w-full rounded-xl border-0 bg-white py-3 pl-11 pr-4 text-ink-900 shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-400"
+                className="w-full rounded-xl border-0 bg-white dark:bg-ink-900 py-3 pl-11 pr-4 text-ink-900 dark:text-ink-50 shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-400"
               />
             </div>
           </form>
@@ -115,11 +115,11 @@ export function PublicHomePage() {
       <div className="mx-auto max-w-6xl px-4 py-8">
         {/* Live */}
         <section className="mb-8">
-          <h2 className="mb-3 flex items-center gap-2 text-lg font-bold text-ink-900">
+          <h2 className="mb-3 flex items-center gap-2 text-lg font-bold text-ink-900 dark:text-ink-50">
             <Radio size={18} className="text-red-500" /> Live matches
           </h2>
           {live.length === 0 ? (
-            <Card className="p-6 text-center text-ink-500">
+            <Card className="p-6 text-center text-ink-500 dark:text-ink-400">
               No live matches right now. Check back soon!
             </Card>
           ) : (
@@ -135,7 +135,7 @@ export function PublicHomePage() {
         {leaders.length > 0 && (
           <section className="mb-8">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-ink-900">Leading players</h2>
+              <h2 className="text-lg font-bold text-ink-900 dark:text-ink-50">Leading players</h2>
               <Link
                 to="/stats"
                 className="text-sm font-medium text-brand-700 hover:underline"
@@ -162,13 +162,13 @@ export function PublicHomePage() {
         <div className="grid gap-8 lg:grid-cols-2">
           {/* Recent results */}
           <section>
-            <h2 className="mb-3 text-lg font-bold text-ink-900">
+            <h2 className="mb-3 text-lg font-bold text-ink-900 dark:text-ink-50">
               Recent results
             </h2>
             {allMatches.loading ? (
               <PageLoader />
             ) : recent.length === 0 ? (
-              <Card className="p-5 text-center text-ink-500">
+              <Card className="p-5 text-center text-ink-500 dark:text-ink-400">
                 No completed matches yet.
               </Card>
             ) : (
@@ -177,14 +177,14 @@ export function PublicHomePage() {
                   <Link key={m.id} to={`/match/${m.id}`}>
                     <Card className="flex items-center justify-between p-3.5 hover:border-brand-300">
                       <div>
-                        <div className="font-semibold text-ink-900">
+                        <div className="font-semibold text-ink-900 dark:text-ink-50">
                           {m.teamA.shortName} vs {m.teamB.shortName}
                         </div>
                         <div className="text-sm text-pitch-700">
                           {m.result?.summary}
                         </div>
                       </div>
-                      <span className="text-xs text-ink-400">
+                      <span className="text-xs text-ink-400 dark:text-ink-500">
                         {formatDate(m.completedAt)}
                       </span>
                     </Card>
@@ -197,9 +197,9 @@ export function PublicHomePage() {
           {/* Upcoming + tournaments */}
           <section className="space-y-6">
             <div>
-              <h2 className="mb-3 text-lg font-bold text-ink-900">Upcoming</h2>
+              <h2 className="mb-3 text-lg font-bold text-ink-900 dark:text-ink-50">Upcoming</h2>
               {upcoming.length === 0 ? (
-                <Card className="p-5 text-center text-ink-500">
+                <Card className="p-5 text-center text-ink-500 dark:text-ink-400">
                   Nothing scheduled.
                 </Card>
               ) : (
@@ -208,14 +208,14 @@ export function PublicHomePage() {
                     <Link key={m.id} to={`/match/${m.id}`}>
                       <Card className="flex items-center justify-between p-3.5 hover:border-brand-300">
                         <div>
-                          <div className="font-medium text-ink-900">
+                          <div className="font-medium text-ink-900 dark:text-ink-50">
                             {m.teamA.shortName} vs {m.teamB.shortName}
                           </div>
-                          <div className="text-xs text-ink-500">
+                          <div className="text-xs text-ink-500 dark:text-ink-400">
                             {formatDate(m.scheduledAt ?? m.createdAt)} · {m.format}
                           </div>
                         </div>
-                        <ChevronRight size={16} className="text-ink-400" />
+                        <ChevronRight size={16} className="text-ink-400 dark:text-ink-500" />
                       </Card>
                     </Link>
                   ))}
@@ -233,7 +233,7 @@ export function PublicHomePage() {
               />
               <CardBody className="space-y-2">
                 {(tournaments.data ?? []).length === 0 ? (
-                  <p className="text-center text-sm text-ink-500">
+                  <p className="text-center text-sm text-ink-500 dark:text-ink-400">
                     No tournaments yet.
                   </p>
                 ) : (
@@ -241,9 +241,9 @@ export function PublicHomePage() {
                     <Link
                       key={t.id}
                       to={`/tournament/${t.id}`}
-                      className="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-ink-50"
+                      className="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-ink-50 dark:hover:bg-ink-800"
                     >
-                      <span className="font-medium text-ink-800">{t.name}</span>
+                      <span className="font-medium text-ink-800 dark:text-ink-200">{t.name}</span>
                       <Badge tone={t.status === 'ongoing' ? 'green' : 'gray'}>
                         {t.status}
                       </Badge>
@@ -285,16 +285,16 @@ function LeaderMiniCard({
         </span>
         <Avatar name={player?.fullName ?? '?'} src={player?.photoURL} size={38} />
         <div className="min-w-0 flex-1">
-          <div className="text-xs uppercase tracking-wide text-ink-400">
+          <div className="text-xs uppercase tracking-wide text-ink-400 dark:text-ink-500">
             {label}
           </div>
-          <div className="truncate font-semibold text-ink-900">
+          <div className="truncate font-semibold text-ink-900 dark:text-ink-50">
             {player?.displayName ?? 'Unknown'}
           </div>
         </div>
         <div className="text-right">
-          <div className="text-lg font-extrabold text-ink-900">{value}</div>
-          <div className="text-[11px] text-ink-400">{unit}</div>
+          <div className="text-lg font-extrabold text-ink-900 dark:text-ink-50">{value}</div>
+          <div className="text-[11px] text-ink-400 dark:text-ink-500">{unit}</div>
         </div>
       </Card>
     </Link>
@@ -305,9 +305,9 @@ function LiveMatchCard({ match: m }: { match: Match }) {
   return (
     <Link to={`/match/${m.id}`}>
       <Card className="overflow-hidden hover:border-red-300">
-        <div className="flex items-center justify-between border-b border-ink-100 px-4 py-2">
+        <div className="flex items-center justify-between border-b border-ink-100 dark:border-ink-800 px-4 py-2">
           <LiveBadge />
-          <span className="text-xs text-ink-400">{m.format}</span>
+          <span className="text-xs text-ink-400 dark:text-ink-500">{m.format}</span>
         </div>
         <CardBody className="space-y-2">
           {m.innings.map((inn, i) => {
@@ -317,10 +317,10 @@ function LiveMatchCard({ match: m }: { match: Match }) {
                 : m.teamB.shortName
             return (
               <div key={i} className="flex items-center justify-between">
-                <span className="font-semibold text-ink-900">{short}</span>
-                <span className="font-bold text-ink-900">
+                <span className="font-semibold text-ink-900 dark:text-ink-50">{short}</span>
+                <span className="font-bold text-ink-900 dark:text-ink-50">
                   {inn.totalRuns}/{inn.wickets}{' '}
-                  <span className="text-sm font-normal text-ink-500">
+                  <span className="text-sm font-normal text-ink-500 dark:text-ink-400">
                     ({ballsToOvers(inn.legalBalls, m.ballsPerOver)})
                   </span>
                 </span>
@@ -328,7 +328,7 @@ function LiveMatchCard({ match: m }: { match: Match }) {
             )
           })}
           {m.innings.length === 0 && (
-            <div className="text-sm text-ink-500">
+            <div className="text-sm text-ink-500 dark:text-ink-400">
               {m.teamA.name} vs {m.teamB.name}
             </div>
           )}

@@ -135,11 +135,11 @@ export function TournamentsPage() {
                   <div>
                     <Link
                       to={`/tournament/${t.id}`}
-                      className="font-semibold text-ink-900 hover:text-brand-700"
+                      className="font-semibold text-ink-900 dark:text-ink-50 hover:text-brand-700"
                     >
                       {t.name}
                     </Link>
-                    <div className="text-xs capitalize text-ink-500">
+                    <div className="text-xs capitalize text-ink-500 dark:text-ink-400">
                       {t.format.replace('_', ' + ')}
                       {(clubName(t.clubId) || seasonName(t.seasonId)) &&
                         ` · ${[clubName(t.clubId), seasonName(t.seasonId)].filter(Boolean).join(' / ')}`}
@@ -148,21 +148,21 @@ export function TournamentsPage() {
                 </div>
                 <Badge tone={STATUS_TONE[t.status]}>{t.status}</Badge>
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-ink-600">
+              <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-ink-600 dark:text-ink-400">
                 <div>
-                  <div className="text-xs text-ink-400">Teams</div>
+                  <div className="text-xs text-ink-400 dark:text-ink-500">Teams</div>
                   {t.teamIds?.length ?? 0}
                 </div>
                 <div>
-                  <div className="text-xs text-ink-400">Overs</div>
+                  <div className="text-xs text-ink-400 dark:text-ink-500">Overs</div>
                   {t.oversPerInnings}
                 </div>
                 <div className="col-span-2">
-                  <div className="text-xs text-ink-400">Dates</div>
+                  <div className="text-xs text-ink-400 dark:text-ink-500">Dates</div>
                   {formatDate(t.startDate)} – {formatDate(t.endDate)}
                 </div>
               </div>
-              <div className="mt-3 flex justify-end gap-1 border-t border-ink-100 pt-2">
+              <div className="mt-3 flex justify-end gap-1 border-t border-ink-100 dark:border-ink-800 pt-2">
                 <Link
                   to={`/tournament/${t.id}`}
                   className="rounded-md px-2 py-1 text-sm font-medium text-brand-700 hover:bg-brand-50"
@@ -176,7 +176,7 @@ export function TournamentsPage() {
                   }}
                   aria-label={`Edit ${t.name}`}
                   title="Edit"
-                  className="rounded-md p-1.5 text-ink-500 hover:bg-ink-100"
+                  className="rounded-md p-1.5 text-ink-500 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800"
                 >
                   <Pencil size={15} />
                 </button>

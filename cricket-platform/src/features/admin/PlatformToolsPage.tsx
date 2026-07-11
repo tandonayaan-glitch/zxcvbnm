@@ -149,7 +149,7 @@ export function PlatformToolsPage() {
               </>
             )}
             {diagnostics.data && (
-              <span className="text-xs text-ink-400">
+              <span className="text-xs text-ink-400 dark:text-ink-500">
                 as of {formatDateTime(diagnostics.data.generatedAt)}
               </span>
             )}
@@ -163,7 +163,7 @@ export function PlatformToolsPage() {
               <RotateCw size={14} /> Force resync
             </Button>
           </div>
-          <p className="mb-3 text-xs text-ink-500">
+          <p className="mb-3 text-xs text-ink-500 dark:text-ink-400">
             Drops and re-establishes the Firestore connection, then waits for any writes queued
             while offline to be acknowledged by the server.
           </p>
@@ -213,10 +213,10 @@ export function PlatformToolsPage() {
         />
         <CardBody>
           <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-ink-800">
+            <span className="text-sm font-medium text-ink-800 dark:text-ink-200">
               Clear all leaderboards
             </span>
-            <span className="text-xs text-ink-500">
+            <span className="text-xs text-ink-500 dark:text-ink-400">
               Permanently removes cached player &amp; team rankings and tournament
               standings. Match data is kept, so you can rebuild afterwards.
             </span>
@@ -252,13 +252,13 @@ export function PlatformToolsPage() {
               {(audits.data ?? []).map((a) => (
                 <div key={a.id} className="flex items-start justify-between gap-3 px-4 py-3">
                   <div>
-                    <div className="text-sm font-medium text-ink-900">
+                    <div className="text-sm font-medium text-ink-900 dark:text-ink-50">
                       {a.action}
                     </div>
                     {a.details && (
-                      <div className="text-xs text-ink-500">{a.details}</div>
+                      <div className="text-xs text-ink-500 dark:text-ink-400">{a.details}</div>
                     )}
-                    <div className="mt-0.5 text-xs text-ink-400">
+                    <div className="mt-0.5 text-xs text-ink-400 dark:text-ink-500">
                       {a.actorName} · {formatDateTime(a.createdAt)}
                     </div>
                   </div>
@@ -326,7 +326,7 @@ function ClearLeaderboardsDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="clear-leaderboards-title"
-        className="w-full max-w-lg rounded-2xl border border-red-200 bg-white p-6 shadow-2xl"
+        className="w-full max-w-lg rounded-2xl border border-red-200 bg-white dark:bg-ink-900 p-6 shadow-2xl"
       >
         <div className="mb-3 flex items-center gap-3 text-red-700">
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
@@ -337,7 +337,7 @@ function ClearLeaderboardsDialog({
           </h2>
         </div>
 
-        <p className="text-sm text-ink-600">
+        <p className="text-sm text-ink-600 dark:text-ink-400">
           This permanently deletes all cached player and team rankings and every
           tournament standings table. It cannot be undone directly — you will need
           to <b>Recompute</b> to rebuild them from match history.
@@ -348,7 +348,7 @@ function ClearLeaderboardsDialog({
           <li>Tournament points tables</li>
         </ul>
 
-        <label className="mt-4 flex cursor-pointer items-start gap-2 text-sm text-ink-800">
+        <label className="mt-4 flex cursor-pointer items-start gap-2 text-sm text-ink-800 dark:text-ink-200">
           <input
             type="checkbox"
             checked={understood}
@@ -359,25 +359,25 @@ function ClearLeaderboardsDialog({
         </label>
 
         <div className="mt-4">
-          <label className="mb-1 block text-xs font-medium text-ink-600">
+          <label className="mb-1 block text-xs font-medium text-ink-600 dark:text-ink-400">
             Type <span className="font-mono font-bold">{CONFIRM_PHRASE}</span> to confirm
           </label>
           <input
             value={phrase}
             onChange={(e) => setPhrase(e.target.value)}
-            className="w-full rounded-lg border border-ink-300 px-3 py-2 font-mono text-sm focus:border-red-500 focus:outline-none"
+            className="w-full rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-2 font-mono text-sm focus:border-red-500 focus:outline-none"
             placeholder={CONFIRM_PHRASE}
           />
         </div>
 
         <div className="mt-3">
-          <label className="mb-1 block text-xs font-medium text-ink-600">
+          <label className="mb-1 block text-xs font-medium text-ink-600 dark:text-ink-400">
             Reason (optional)
           </label>
           <input
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            className="w-full rounded-lg border border-ink-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+            className="w-full rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
             placeholder="e.g. end of season reset"
           />
         </div>

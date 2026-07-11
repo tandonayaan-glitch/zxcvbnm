@@ -20,8 +20,8 @@ export function FollowButton({
       className={cn(
         'inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors',
         isFav
-          ? 'border-red-200 bg-red-50 text-red-600'
-          : 'border-ink-300 bg-white text-ink-700 hover:bg-ink-50',
+          ? 'border-red-200 bg-red-50 text-red-600 dark:border-red-900 dark:bg-red-900/20 dark:text-red-400'
+          : 'border-ink-300 bg-white text-ink-700 hover:bg-ink-50 dark:border-ink-700 dark:bg-ink-900 dark:text-ink-300 dark:hover:bg-ink-800',
         className,
       )}
     >

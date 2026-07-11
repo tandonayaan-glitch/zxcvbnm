@@ -77,10 +77,10 @@ export function AccountPage() {
         <CardBody className="flex items-center gap-4">
           <Avatar name={profile.displayName} size={56} />
           <div>
-            <h1 className="text-xl font-bold text-ink-900">
+            <h1 className="text-xl font-bold text-ink-900 dark:text-ink-50">
               {profile.displayName}
             </h1>
-            <div className="mt-1 flex items-center gap-2 text-sm text-ink-500">
+            <div className="mt-1 flex items-center gap-2 text-sm text-ink-500 dark:text-ink-400">
               <span>@{profile.username}</span>
               <Badge tone={profile.role === 'VIEWER' ? 'gray' : 'blue'}>
                 {profile.role.replace('_', ' ').toLowerCase()}
@@ -113,7 +113,7 @@ export function AccountPage() {
                 <Link
                   key={pid}
                   to={`/player/${pid}`}
-                  className="rounded-full border border-ink-200 px-3 py-1 text-sm text-ink-700 hover:bg-ink-50"
+                  className="rounded-full border border-ink-200 dark:border-ink-800 px-3 py-1 text-sm text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
                 >
                   {p.displayName}
                 </Link>
@@ -126,7 +126,7 @@ export function AccountPage() {
                 <Link
                   key={tid}
                   to={`/team/${tid}`}
-                  className="rounded-full border border-ink-200 px-3 py-1 text-sm font-medium text-ink-700 hover:bg-ink-50"
+                  className="rounded-full border border-ink-200 dark:border-ink-800 px-3 py-1 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
                   style={{ borderColor: t.primaryColor }}
                 >
                   {t.shortName}

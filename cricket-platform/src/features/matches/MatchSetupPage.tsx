@@ -330,7 +330,7 @@ export function MatchSetupPage() {
               onClick={() => i < step && setStep(i)}
               className={cn(
                 'flex items-center gap-2',
-                i <= step ? 'text-brand-700' : 'text-ink-400',
+                i <= step ? 'text-brand-700' : 'text-ink-400 dark:text-ink-500',
               )}
             >
               <span
@@ -340,7 +340,7 @@ export function MatchSetupPage() {
                     ? 'bg-brand-600 text-white'
                     : i === step
                       ? 'bg-brand-100 text-brand-700 ring-2 ring-brand-500'
-                      : 'bg-ink-100 text-ink-400',
+                      : 'bg-ink-100 dark:bg-ink-800 text-ink-400 dark:text-ink-500',
                 )}
               >
                 {i < step ? <Check size={16} /> : i + 1}
@@ -529,7 +529,7 @@ export function MatchSetupPage() {
         {step === 3 && (
           <div className="space-y-5">
             <div>
-              <div className="mb-2 text-sm font-medium text-ink-700">
+              <div className="mb-2 text-sm font-medium text-ink-700 dark:text-ink-300">
                 Who won the toss?
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -543,18 +543,18 @@ export function MatchSetupPage() {
                         'rounded-xl border-2 p-4 text-left',
                         form.tossWinner === slot
                           ? 'border-brand-500 bg-brand-50'
-                          : 'border-ink-200 hover:border-ink-300',
+                          : 'border-ink-200 dark:border-ink-800 hover:border-ink-300',
                       )}
                     >
-                      <div className="font-semibold text-ink-900">{t?.name}</div>
-                      <div className="text-sm text-ink-500">{t?.shortName}</div>
+                      <div className="font-semibold text-ink-900 dark:text-ink-50">{t?.name}</div>
+                      <div className="text-sm text-ink-500 dark:text-ink-400">{t?.shortName}</div>
                     </button>
                   )
                 })}
               </div>
             </div>
             <div>
-              <div className="mb-2 text-sm font-medium text-ink-700">
+              <div className="mb-2 text-sm font-medium text-ink-700 dark:text-ink-300">
                 Elected to
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -566,7 +566,7 @@ export function MatchSetupPage() {
                       'rounded-xl border-2 p-4 font-semibold capitalize',
                       form.tossDecision === d
                         ? 'border-brand-500 bg-brand-50 text-brand-700'
-                        : 'border-ink-200 text-ink-700 hover:border-ink-300',
+                        : 'border-ink-200 dark:border-ink-800 text-ink-700 dark:text-ink-300 hover:border-ink-300',
                     )}
                   >
                     {d} first
@@ -588,7 +588,7 @@ export function MatchSetupPage() {
         )}
 
         {/* Footer nav */}
-        <div className="mt-6 flex items-center justify-between border-t border-ink-100 pt-4">
+        <div className="mt-6 flex items-center justify-between border-t border-ink-100 dark:border-ink-800 pt-4">
           <Button
             variant="ghost"
             onClick={() => (step === 0 ? navigate(-1) : setStep(step - 1))}
@@ -651,17 +651,17 @@ function SquadPicker({
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
-        <span className="font-semibold text-ink-900">{title}</span>
-        <span className="text-sm text-ink-500">{selected.length} selected</span>
+        <span className="font-semibold text-ink-900 dark:text-ink-50">{title}</span>
+        <span className="text-sm text-ink-500 dark:text-ink-400">{selected.length} selected</span>
       </div>
-      <div className="max-h-72 space-y-1 overflow-y-auto rounded-lg border border-ink-200 p-2">
+      <div className="max-h-72 space-y-1 overflow-y-auto rounded-lg border border-ink-200 dark:border-ink-800 p-2">
         {candidates.length === 0 && (
-          <p className="px-2 py-3 text-sm text-ink-500">No players available.</p>
+          <p className="px-2 py-3 text-sm text-ink-500 dark:text-ink-400">No players available.</p>
         )}
         {candidates.map((p) => (
           <label
             key={p.id}
-            className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-ink-50"
+            className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-ink-50 dark:hover:bg-ink-800"
           >
             <input
               type="checkbox"
@@ -670,7 +670,7 @@ function SquadPicker({
               className="h-4 w-4"
             />
             <Avatar name={p.fullName} src={p.photoURL} size={26} />
-            <span className="text-sm text-ink-800">{p.fullName}</span>
+            <span className="text-sm text-ink-800 dark:text-ink-200">{p.fullName}</span>
           </label>
         ))}
       </div>
@@ -694,33 +694,33 @@ function ReviewStep({
     ids.map((id) => playerById.get(id)?.displayName ?? '?').join(', ')
   return (
     <div className="space-y-4 text-sm">
-      <div className="rounded-xl bg-ink-50 p-4">
-        <div className="text-lg font-bold text-ink-900">
+      <div className="rounded-xl bg-ink-50 dark:bg-ink-800/60 p-4">
+        <div className="text-lg font-bold text-ink-900 dark:text-ink-50">
           {teamA.name} vs {teamB.name}
         </div>
-        <div className="mt-1 text-ink-600">
+        <div className="mt-1 text-ink-600 dark:text-ink-400">
           {form.format} · {form.oversPerInnings} overs/innings ·{' '}
           {form.venue || 'Venue TBD'}
         </div>
-        <div className="mt-1 text-ink-600">
+        <div className="mt-1 text-ink-600 dark:text-ink-400">
           {tossTeam.name} won the toss & chose to {form.tossDecision} first
         </div>
-        <div className="mt-1 text-ink-500">
+        <div className="mt-1 text-ink-500 dark:text-ink-400">
           {form.isPublic ? 'Public match' : 'Private match'}
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <div className="mb-1 font-semibold text-ink-800">
+          <div className="mb-1 font-semibold text-ink-800 dark:text-ink-200">
             {teamA.shortName} XI ({form.squadA.length})
           </div>
-          <p className="text-ink-600">{names(form.squadA) || '—'}</p>
+          <p className="text-ink-600 dark:text-ink-400">{names(form.squadA) || '—'}</p>
         </div>
         <div>
-          <div className="mb-1 font-semibold text-ink-800">
+          <div className="mb-1 font-semibold text-ink-800 dark:text-ink-200">
             {teamB.shortName} XI ({form.squadB.length})
           </div>
-          <p className="text-ink-600">{names(form.squadB) || '—'}</p>
+          <p className="text-ink-600 dark:text-ink-400">{names(form.squadB) || '—'}</p>
         </div>
       </div>
     </div>

@@ -166,20 +166,20 @@ export function ClubsSeasonsPage() {
                       <Building2 size={20} />
                     </span>
                     <div>
-                      <div className="font-semibold text-ink-900">{c.name}</div>
+                      <div className="font-semibold text-ink-900 dark:text-ink-50">{c.name}</div>
                       {c.shortName && (
-                        <div className="text-xs text-ink-500">{c.shortName}</div>
+                        <div className="text-xs text-ink-500 dark:text-ink-400">{c.shortName}</div>
                       )}
                     </div>
                   </div>
                 </div>
                 {c.homeVenue && (
-                  <div className="mt-3 text-sm text-ink-600">
-                    <span className="text-xs text-ink-400">Home venue </span>
+                  <div className="mt-3 text-sm text-ink-600 dark:text-ink-400">
+                    <span className="text-xs text-ink-400 dark:text-ink-500">Home venue </span>
                     {c.homeVenue}
                   </div>
                 )}
-                <div className="mt-3 flex justify-end gap-1 border-t border-ink-100 pt-2">
+                <div className="mt-3 flex justify-end gap-1 border-t border-ink-100 dark:border-ink-800 pt-2">
                   <Link
                     to={`/club/${c.id}`}
                     className="rounded-md px-2 py-1 text-sm font-medium text-brand-700 hover:bg-brand-50"
@@ -193,7 +193,7 @@ export function ClubsSeasonsPage() {
                     }}
                     aria-label={`Edit ${c.name}`}
                     title="Edit"
-                    className="rounded-md p-1.5 text-ink-500 hover:bg-ink-100"
+                    className="rounded-md p-1.5 text-ink-500 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800"
                   >
                     <Pencil size={15} />
                   </button>
@@ -233,19 +233,19 @@ export function ClubsSeasonsPage() {
                     <CalendarRange size={20} />
                   </span>
                   <div>
-                    <div className="font-semibold text-ink-900">{s.name}</div>
-                    <div className="text-xs text-ink-500">
+                    <div className="font-semibold text-ink-900 dark:text-ink-50">{s.name}</div>
+                    <div className="text-xs text-ink-500 dark:text-ink-400">
                       {clubName(s.clubId) ?? 'Platform-wide'}
                     </div>
                   </div>
                 </div>
                 <Badge tone={STATUS_TONE[s.status]}>{s.status}</Badge>
               </div>
-              <div className="mt-3 text-sm text-ink-600">
-                <div className="text-xs text-ink-400">Dates</div>
+              <div className="mt-3 text-sm text-ink-600 dark:text-ink-400">
+                <div className="text-xs text-ink-400 dark:text-ink-500">Dates</div>
                 {formatDate(s.startDate)} – {formatDate(s.endDate)}
               </div>
-              <div className="mt-3 flex justify-end gap-1 border-t border-ink-100 pt-2">
+              <div className="mt-3 flex justify-end gap-1 border-t border-ink-100 dark:border-ink-800 pt-2">
                 <Link
                   to={`/season/${s.id}`}
                   className="rounded-md px-2 py-1 text-sm font-medium text-brand-700 hover:bg-brand-50"
@@ -259,7 +259,7 @@ export function ClubsSeasonsPage() {
                   }}
                   aria-label={`Edit ${s.name}`}
                   title="Edit"
-                  className="rounded-md p-1.5 text-ink-500 hover:bg-ink-100"
+                  className="rounded-md p-1.5 text-ink-500 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800"
                 >
                   <Pencil size={15} />
                 </button>

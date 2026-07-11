@@ -88,7 +88,7 @@ export function SettingsPage() {
             </Select>
           </Field>
         </CardBody>
-        <div className="flex justify-end border-t border-ink-100 px-5 py-3">
+        <div className="flex justify-end border-t border-ink-100 dark:border-ink-800 px-5 py-3">
           <Button onClick={save} loading={saving}>
             <Save size={16} /> Save settings
           </Button>

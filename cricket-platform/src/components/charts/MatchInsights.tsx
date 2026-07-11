@@ -22,8 +22,8 @@ export function MatchInsights({
 
   return (
     <Card className="overflow-hidden">
-      <div className="border-b border-ink-100 bg-ink-50 px-4 py-2.5">
-        <h3 className="text-sm font-semibold text-ink-900">Match insights</h3>
+      <div className="border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 px-4 py-2.5">
+        <h3 className="text-sm font-semibold text-ink-900 dark:text-ink-50">Match insights</h3>
       </div>
       <div className="divide-y divide-ink-100">
         {innings.map((ins) => (
@@ -47,7 +47,7 @@ function InningsRow({
         <span className="rounded-md bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-700">
           {ins.battingShort}
         </span>
-        <span className="text-sm font-semibold text-ink-800">
+        <span className="text-sm font-semibold text-ink-800 dark:text-ink-200">
           {ins.totalRuns} runs
         </span>
       </div>
@@ -130,8 +130,8 @@ function InningsRow({
       </div>
 
       {ins.events.length > 0 && (
-        <div className="mt-3 border-t border-ink-100 pt-3">
-          <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-ink-400">
+        <div className="mt-3 border-t border-ink-100 dark:border-ink-800 pt-3">
+          <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-ink-400 dark:text-ink-500">
             Boundary &amp; wicket timeline
           </div>
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
@@ -171,15 +171,15 @@ function Tile({
   sub?: string
 }) {
   return (
-    <div className="rounded-xl border border-ink-100 bg-white p-3">
+    <div className="rounded-xl border border-ink-100 dark:border-ink-800 bg-white dark:bg-ink-900 p-3">
       <div className="mb-1 flex items-center gap-1.5">
         <span style={{ color: tone }}>{icon}</span>
-        <span className="text-[11px] font-medium uppercase tracking-wide text-ink-400">
+        <span className="text-[11px] font-medium uppercase tracking-wide text-ink-400 dark:text-ink-500">
           {label}
         </span>
       </div>
-      <div className="text-base font-bold text-ink-900">{value}</div>
-      {sub && <div className="truncate text-xs text-ink-500">{sub}</div>}
+      <div className="text-base font-bold text-ink-900 dark:text-ink-50">{value}</div>
+      {sub && <div className="truncate text-xs text-ink-500 dark:text-ink-400">{sub}</div>}
     </div>
   )
 }

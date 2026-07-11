@@ -137,17 +137,17 @@ export function TeamsPage() {
                 <div className="min-w-0">
                   <Link
                     to={`/team/${t.id}`}
-                    className="block truncate font-semibold text-ink-900 hover:text-brand-700"
+                    className="block truncate font-semibold text-ink-900 dark:text-ink-50 hover:text-brand-700"
                   >
                     {t.name}
                   </Link>
-                  <div className="text-xs text-ink-500">
+                  <div className="text-xs text-ink-500 dark:text-ink-400">
                     {t.playerIds.length} players
                     {t.clubId && clubName(t.clubId) && ` · ${clubName(t.clubId)}`}
                   </div>
                 </div>
               </div>
-              <div className="flex items-center justify-between border-t border-ink-100 px-4 py-2.5">
+              <div className="flex items-center justify-between border-t border-ink-100 dark:border-ink-800 px-4 py-2.5">
                 <div className="flex -space-x-2">
                   {t.playerIds.slice(0, 5).map((pid) => {
                     const p = scopedPlayers.find((x) => x.id === pid)
@@ -158,7 +158,7 @@ export function TeamsPage() {
                     )
                   })}
                   {t.playerIds.length === 0 && (
-                    <span className="text-xs text-ink-400">No squad</span>
+                    <span className="text-xs text-ink-400 dark:text-ink-500">No squad</span>
                   )}
                 </div>
                 <div className="flex gap-1">
@@ -169,7 +169,7 @@ export function TeamsPage() {
                     }}
                     aria-label={`Edit ${t.name}`}
                     title="Edit"
-                    className="rounded-md p-1.5 text-ink-500 hover:bg-ink-100"
+                    className="rounded-md p-1.5 text-ink-500 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800"
                   >
                     <Pencil size={15} />
                   </button>
@@ -201,7 +201,7 @@ export function TeamsPage() {
       )}
 
       {!players.loading && playerCount === 0 && (
-        <p className="mt-4 flex items-center gap-2 text-sm text-ink-500">
+        <p className="mt-4 flex items-center gap-2 text-sm text-ink-500 dark:text-ink-400">
           <Users size={15} /> Tip: add players first so you can build squads.
         </p>
       )}

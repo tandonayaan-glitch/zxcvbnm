@@ -203,11 +203,11 @@ export function TournamentFormModal({
       </div>
 
       <div className="mt-4">
-        <div className="mb-1.5 text-sm font-medium text-ink-700">
+        <div className="mb-1.5 text-sm font-medium text-ink-700 dark:text-ink-300">
           Participating teams ({teamIds.length})
         </div>
         {teams.length === 0 ? (
-          <p className="rounded-lg bg-ink-50 px-3 py-2 text-sm text-ink-500">
+          <p className="rounded-lg bg-ink-50 dark:bg-ink-800/60 px-3 py-2 text-sm text-ink-500 dark:text-ink-400">
             No teams available. Create teams first.
           </p>
         ) : (
@@ -220,7 +220,7 @@ export function TournamentFormModal({
                 className={`rounded-full border px-3 py-1 text-sm ${
                   teamIds.includes(t.id)
                     ? 'border-brand-500 bg-brand-50 text-brand-700'
-                    : 'border-ink-300 text-ink-600 hover:bg-ink-50'
+                    : 'border-ink-300 dark:border-ink-700 text-ink-600 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800'
                 }`}
               >
                 {t.name}
@@ -232,10 +232,10 @@ export function TournamentFormModal({
 
       {format === 'group_knockout' && teamIds.length > 0 && (
         <div className="mt-4">
-          <div className="mb-1.5 text-sm font-medium text-ink-700">
+          <div className="mb-1.5 text-sm font-medium text-ink-700 dark:text-ink-300">
             Group assignment
           </div>
-          <p className="mb-2 text-xs text-ink-500">
+          <p className="mb-2 text-xs text-ink-500 dark:text-ink-400">
             Give each team a group label (e.g. A, B). Teams left blank won't appear on the
             Groups tab.
           </p>
@@ -254,7 +254,7 @@ export function TournamentFormModal({
               const t = teams.find((x) => x.id === id)
               return (
                 <div key={id} className="flex items-center gap-2">
-                  <span className="flex-1 truncate text-sm text-ink-800">
+                  <span className="flex-1 truncate text-sm text-ink-800 dark:text-ink-200">
                     {t?.name ?? id}
                   </span>
                   <Input

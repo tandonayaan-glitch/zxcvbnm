@@ -66,7 +66,7 @@ export function MatchGraphs({
     <div className="grid gap-4 md:grid-cols-2">
       {/* Worm */}
       <Card className="p-4">
-        <h3 className="mb-2 text-sm font-semibold text-ink-800">
+        <h3 className="mb-2 text-sm font-semibold text-ink-800 dark:text-ink-200">
           Worm — cumulative runs
         </h3>
         <Worm
@@ -80,7 +80,7 @@ export function MatchGraphs({
 
       {/* Manhattan */}
       <Card className="p-4">
-        <h3 className="mb-2 text-sm font-semibold text-ink-800">
+        <h3 className="mb-2 text-sm font-semibold text-ink-800 dark:text-ink-200">
           Manhattan — runs per over
         </h3>
         <Manhattan innings={innings} maxOver={maxOver} maxRuns={maxOverRuns} />
@@ -98,7 +98,7 @@ function Legend({
   label: (i: number) => string
 }) {
   return (
-    <div className="mt-2 flex flex-wrap gap-3 text-xs text-ink-500">
+    <div className="mt-2 flex flex-wrap gap-3 text-xs text-ink-500 dark:text-ink-400">
       {innings.map((o, i) =>
         o.length ? (
           <span key={i} className="flex items-center gap-1.5">

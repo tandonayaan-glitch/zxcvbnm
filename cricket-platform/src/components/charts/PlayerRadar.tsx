@@ -25,7 +25,7 @@ export function PlayerRadar({ axes }: { axes: RadarAxis[] }) {
 
   return (
     <Card className="p-4">
-      <h3 className="mb-2 text-sm font-semibold text-ink-800">Player profile</h3>
+      <h3 className="mb-2 text-sm font-semibold text-ink-800 dark:text-ink-200">Player profile</h3>
       <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="w-full" role="img" aria-label="Player radar profile">
         {rings.map((f) => {
           const pts = axes.map((_, i) => pointFor(i, n, f * MAX_R).join(',')).join(' ')
@@ -81,10 +81,10 @@ export function PlayerRadar({ axes }: { axes: RadarAxis[] }) {
           )
         })}
       </svg>
-      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-500">
+      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-500 dark:text-ink-400">
         {axes.map((a) => (
           <span key={a.label}>
-            {a.label}: <b className="text-ink-700">{a.raw}</b>
+            {a.label}: <b className="text-ink-700 dark:text-ink-300">{a.raw}</b>
           </span>
         ))}
       </div>

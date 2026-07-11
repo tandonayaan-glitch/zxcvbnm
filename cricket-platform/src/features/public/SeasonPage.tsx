@@ -80,8 +80,8 @@ export function SeasonPage() {
               <CalendarRange size={24} />
             </span>
             <div>
-              <h1 className="text-2xl font-bold text-ink-900">{s.name}</h1>
-              <div className="mt-0.5 flex items-center gap-2 text-sm text-ink-500">
+              <h1 className="text-2xl font-bold text-ink-900 dark:text-ink-50">{s.name}</h1>
+              <div className="mt-0.5 flex items-center gap-2 text-sm text-ink-500 dark:text-ink-400">
                 <Badge tone={SEASON_TONE[s.status]}>{s.status}</Badge>
                 <span>
                   {formatDate(s.startDate)} – {formatDate(s.endDate)}
@@ -96,13 +96,13 @@ export function SeasonPage() {
           </div>
         </div>
         {s.description && (
-          <p className="mt-3 text-sm text-ink-600">{s.description}</p>
+          <p className="mt-3 text-sm text-ink-600 dark:text-ink-400">{s.description}</p>
         )}
       </Card>
 
       {(topRuns.length > 0 || topWickets.length > 0) && (
         <div className="mb-6">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink-800">
+          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink-800 dark:text-ink-200">
             <Award size={16} /> Hall of fame
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -117,21 +117,21 @@ export function SeasonPage() {
         </div>
       )}
 
-      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink-800">
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink-800 dark:text-ink-200">
         <Trophy size={16} /> Tournaments ({seasonTournaments.length})
       </div>
       {seasonTournaments.length === 0 ? (
-        <p className="text-sm text-ink-500">No tournaments in this season yet.</p>
+        <p className="text-sm text-ink-500 dark:text-ink-400">No tournaments in this season yet.</p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {seasonTournaments.map((t) => (
             <Link key={t.id} to={`/tournament/${t.id}`}>
               <Card className="p-4 hover:border-brand-300">
                 <div className="flex items-start justify-between">
-                  <span className="font-medium text-ink-900">{t.name}</span>
+                  <span className="font-medium text-ink-900 dark:text-ink-50">{t.name}</span>
                   <Badge tone={TOURNAMENT_TONE[t.status]}>{t.status}</Badge>
                 </div>
-                <div className="mt-1 text-xs text-ink-500">
+                <div className="mt-1 text-xs text-ink-500 dark:text-ink-400">
                   {formatDate(t.startDate)} – {formatDate(t.endDate)}
                 </div>
               </Card>
@@ -156,22 +156,22 @@ function LeaderCard({
 }) {
   return (
     <Card className="overflow-hidden">
-      <div className="border-b border-ink-100 bg-ink-50 px-4 py-2.5 font-semibold text-ink-900">
+      <div className="border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 px-4 py-2.5 font-semibold text-ink-900 dark:text-ink-50">
         {title}
       </div>
       <div className="divide-y divide-ink-50">
         {rows.length === 0 && (
-          <p className="px-4 py-4 text-center text-sm text-ink-400">No data yet.</p>
+          <p className="px-4 py-4 text-center text-sm text-ink-400 dark:text-ink-500">No data yet.</p>
         )}
         {rows.map((r, i) => (
           <Link
             key={r.playerId}
             to={`/player/${r.playerId}`}
-            className="flex items-center gap-3 px-4 py-2 hover:bg-ink-50"
+            className="flex items-center gap-3 px-4 py-2 hover:bg-ink-50 dark:hover:bg-ink-800"
           >
-            <span className="w-4 text-sm text-ink-400">{i + 1}</span>
+            <span className="w-4 text-sm text-ink-400 dark:text-ink-500">{i + 1}</span>
             <Avatar name={playerName(r.playerId)} size={26} />
-            <span className="flex-1 text-sm text-ink-800">{playerName(r.playerId)}</span>
+            <span className="flex-1 text-sm text-ink-800 dark:text-ink-200">{playerName(r.playerId)}</span>
             <Badge tone={tone}>{r.value}</Badge>
           </Link>
         ))}

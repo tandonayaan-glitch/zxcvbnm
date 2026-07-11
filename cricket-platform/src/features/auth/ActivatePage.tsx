@@ -51,9 +51,9 @@ export function ActivatePage() {
       title="Welcome to CricketHub"
       subtitle="Your account was set up by an admin. Choose your own password to finish activating it."
     >
-      <div className="mb-4 rounded-lg bg-ink-50 px-3 py-2.5 text-sm text-ink-600">
+      <div className="mb-4 rounded-lg bg-ink-50 dark:bg-ink-800/60 px-3 py-2.5 text-sm text-ink-600 dark:text-ink-400">
         Your username is{' '}
-        <span className="font-mono font-semibold text-ink-900">{profile.username}</span> — this
+        <span className="font-mono font-semibold text-ink-900 dark:text-ink-50">{profile.username}</span> — this
         stays the same; only your password changes here.
       </div>
       <form onSubmit={submit} className="space-y-4">

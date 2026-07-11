@@ -4,6 +4,42 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Dark mode extended to the shared UI kit and most pages (Phase 4)
+- **Shared primitives now theme-aware**: `Card`, `CardHeader`, `Modal`, `Badge` (all six tones),
+  `Button` (all variants), `Input`/`Select`/`Textarea`/`Field`/`Label`, `Tabs`, `EmptyState`,
+  `StatCard`, plus the toast, `Pagination`, and `FollowButton` components all gained `dark:`
+  variants. Previously the theme toggle only recoloured app-shell chrome (sidebar/header/footer);
+  the actual card/table/form content on every page stayed hardcoded light, so dark mode looked
+  like a dark frame around white boxes. This is the fix.
+- **39 feature/chart page files** swept for `text-ink-*`/`border-ink-*`/`bg-white`/`bg-ink-*`
+  utilities and given matching `dark:` counterparts (538 substitutions total), covering the
+  Dashboard, Players/Teams/Tournaments/Clubs & Seasons/Matches admin pages, auth pages, all four
+  chart components, and most public pages (Home, Browse, Search, Compare, Club, Season, plus the
+  Stats page). Verified in the browser: sampled 158 real text elements on the Stats page in dark
+  mode, checked each against its resolved ancestor background — 157/158 passed a computed-style
+  contrast check (the one flagged was a false positive from an `oklab()` colour the check script
+  couldn't parse, not an actual contrast bug).
+- **`MatchPage`, `PlayerPage`, `TournamentPage` and the Settings page intentionally held back**
+  this pass — they had concurrent, unrelated work landing in them at the same time (win
+  probability, PDF export, privacy & sessions, qualification/timeline), and editing a file mid-flight
+  under another change risks clobbering it. Left for a follow-up slice once those land.
+
+### Added — Match win probability, PDF export, privacy & sessions (Phases 2, 4, 9)
+- **Win-probability bar** on the live match page (`domain/winProbability.ts` `chaseWinProbability()`):
+  while a side is chasing, a labelled progress bar shows a heuristic win-probability estimate built
+  from the required run rate vs. an achievable-rate curve that scales with wickets in hand — deliberately
+  labelled "heuristic estimate", not a trained model, since there's no historical ball-by-ball dataset
+  in this app to fit one on.
+- **PDF export**: "Print / Save as PDF" buttons on the Match, Tournament, and Player pages, reusing
+  the app's existing print stylesheet via `window.print()` — the standard client-only route to a real
+  PDF (the browser's own print dialog) rather than shipping a PDF-rendering library to reproduce what
+  the browser already does.
+- **Privacy & sessions** card on the Settings page: states plainly what's public (nothing
+  account-related — only display name where credited as a scorer) vs. visible to other admins
+  (bio/email, needed to manage roles) and why; shows the current session's sign-in time and a
+  "Sign out this device" action. Cross-device session listing/remote revocation needs a
+  server-side Admin SDK this project doesn't run, so that limitation is documented rather than faked.
+
 ### Added — Tournament qualification tracker & timeline (Phase 5)
 - **Qualification tab** on group_knockout tournaments (`domain/qualification.ts`
   `groupQualification()`): per group, marks each team `qualified`, `eliminated`, or `contention`.

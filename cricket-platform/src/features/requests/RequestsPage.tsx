@@ -110,20 +110,20 @@ export function RequestsPage() {
                 <div className="flex items-start gap-3">
                   <Avatar name={r.displayName} size={40} />
                   <div>
-                    <div className="font-semibold text-ink-900">
+                    <div className="font-semibold text-ink-900 dark:text-ink-50">
                       {r.displayName}{' '}
-                      <span className="text-sm font-normal text-ink-400">
+                      <span className="text-sm font-normal text-ink-400 dark:text-ink-500">
                         @{r.username}
                       </span>
                     </div>
-                    <div className="mt-0.5 flex items-center gap-1.5 text-sm text-ink-600">
+                    <div className="mt-0.5 flex items-center gap-1.5 text-sm text-ink-600 dark:text-ink-400">
                       <Trophy size={14} className="text-amber-500" />
                       {r.tournamentName || 'Tournament not specified'}
                     </div>
                     {r.message && (
-                      <p className="mt-1 text-sm text-ink-500">“{r.message}”</p>
+                      <p className="mt-1 text-sm text-ink-500 dark:text-ink-400">“{r.message}”</p>
                     )}
-                    <div className="mt-1 text-xs text-ink-400">
+                    <div className="mt-1 text-xs text-ink-400 dark:text-ink-500">
                       {formatDateTime(r.createdAt)}
                     </div>
                   </div>

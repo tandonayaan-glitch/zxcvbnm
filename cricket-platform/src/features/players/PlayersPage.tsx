@@ -183,7 +183,7 @@ export function PlayersPage() {
 
       {topBoards.length > 0 && (
         <div className="mb-6">
-          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-ink-500">
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-ink-500 dark:text-ink-400">
             Global rankings
           </h2>
           <div className="grid gap-4 md:grid-cols-3">
@@ -205,7 +205,7 @@ export function PlayersPage() {
           <div className="relative flex-1">
             <Search
               size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400 dark:text-ink-500"
             />
             <Input
               value={search}
@@ -247,7 +247,7 @@ export function PlayersPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-ink-100 bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
+                <tr className="border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 text-left text-xs uppercase tracking-wide text-ink-500 dark:text-ink-400">
                   <th className="px-4 py-3 font-semibold">Player</th>
                   <th className="px-4 py-3 font-semibold">Role</th>
                   <th className="px-4 py-3 font-semibold">Bowling</th>
@@ -258,16 +258,16 @@ export function PlayersPage() {
               </thead>
               <tbody>
                 {pageItems.map((p) => (
-                  <tr key={p.id} className="border-b border-ink-50 hover:bg-ink-50/50">
+                  <tr key={p.id} className="border-b border-ink-50 dark:border-ink-800 hover:bg-ink-50/50">
                     <td className="px-4 py-2.5">
                       <Link
                         to={`/player/${p.id}`}
-                        className="flex items-center gap-3 font-medium text-ink-900 hover:text-brand-700"
+                        className="flex items-center gap-3 font-medium text-ink-900 dark:text-ink-50 hover:text-brand-700"
                       >
                         <Avatar name={p.fullName} src={p.photoURL} size={34} />
                         <div>
                           <div>{p.fullName}</div>
-                          <div className="text-xs text-ink-400">
+                          <div className="text-xs text-ink-400 dark:text-ink-500">
                             {p.displayName}
                           </div>
                         </div>
@@ -276,10 +276,10 @@ export function PlayersPage() {
                     <td className="px-4 py-2.5">
                       <Badge tone="blue">{PLAYER_ROLE_LABELS[p.role]}</Badge>
                     </td>
-                    <td className="px-4 py-2.5 text-ink-600">
+                    <td className="px-4 py-2.5 text-ink-600 dark:text-ink-400">
                       {BOWLING_STYLE_LABELS[p.bowlingStyle]}
                     </td>
-                    <td className="px-4 py-2.5 text-ink-600">
+                    <td className="px-4 py-2.5 text-ink-600 dark:text-ink-400">
                       {p.teamIds.length
                         ? p.teamIds.map(teamName).join(', ')
                         : '—'}
@@ -300,7 +300,7 @@ export function PlayersPage() {
                             setEditing(p)
                             setShowForm(true)
                           }}
-                          className="rounded-md p-1.5 text-ink-500 hover:bg-ink-100 hover:text-ink-800"
+                          className="rounded-md p-1.5 text-ink-500 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800 hover:text-ink-800 dark:hover:text-ink-200"
                         >
                           <Pencil size={16} />
                         </button>
@@ -308,7 +308,7 @@ export function PlayersPage() {
                           title={p.active ? 'Archive' : 'Restore'}
                           aria-label={`${p.active ? 'Archive' : 'Restore'} ${p.fullName}`}
                           onClick={() => toggleActive(p)}
-                          className="rounded-md p-1.5 text-ink-500 hover:bg-ink-100 hover:text-ink-800"
+                          className="rounded-md p-1.5 text-ink-500 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800 hover:text-ink-800 dark:hover:text-ink-200"
                         >
                           {p.active ? (
                             <Archive size={16} />
@@ -395,7 +395,7 @@ function CredentialsDialog({
         </Button>
       }
     >
-      <p className="text-sm text-ink-600">
+      <p className="text-sm text-ink-600 dark:text-ink-400">
         Share these with {credentials.playerName} — the password is shown only this once and
         can't be retrieved later. They'll be asked to choose their own username and password
         on first login.
@@ -414,7 +414,7 @@ function CredentialsDialog({
           onCopy={() => copy('password', credentials.password)}
         />
       </div>
-      <label className="mt-4 flex cursor-pointer items-start gap-2 text-sm text-ink-800">
+      <label className="mt-4 flex cursor-pointer items-start gap-2 text-sm text-ink-800 dark:text-ink-200">
         <input
           type="checkbox"
           checked={acked}
@@ -440,15 +440,15 @@ function CredentialRow({
 }) {
   return (
     <div>
-      <div className="mb-1 text-xs font-medium text-ink-500">{label}</div>
+      <div className="mb-1 text-xs font-medium text-ink-500 dark:text-ink-400">{label}</div>
       <div className="flex items-center gap-2">
-        <code className="flex-1 rounded-lg border border-ink-200 bg-ink-50 px-3 py-2 font-mono text-sm text-ink-900">
+        <code className="flex-1 rounded-lg border border-ink-200 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 px-3 py-2 font-mono text-sm text-ink-900 dark:text-ink-50">
           {value}
         </code>
         <button
           onClick={onCopy}
           aria-label={`Copy ${label.toLowerCase()}`}
-          className="rounded-lg border border-ink-300 p-2 text-ink-600 hover:bg-ink-50"
+          className="rounded-lg border border-ink-300 dark:border-ink-700 p-2 text-ink-600 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800"
         >
           {copied ? <Check size={16} className="text-pitch-600" /> : <Copy size={16} />}
         </button>

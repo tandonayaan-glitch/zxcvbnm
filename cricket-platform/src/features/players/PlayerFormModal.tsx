@@ -155,7 +155,7 @@ export function PlayerFormModal({
       </div>
 
       {!player && (
-        <label className="mt-4 flex cursor-pointer items-start gap-2 text-sm text-ink-800">
+        <label className="mt-4 flex cursor-pointer items-start gap-2 text-sm text-ink-800 dark:text-ink-200">
           <input
             type="checkbox"
             checked={createLogin}
@@ -164,7 +164,7 @@ export function PlayerFormModal({
           />
           <span>
             Create a linked login account for this player
-            <span className="block text-xs text-ink-500">
+            <span className="block text-xs text-ink-500 dark:text-ink-400">
               Generates a temporary username/password you can hand to the player. They'll be
               asked to choose their own on first login.
             </span>
@@ -174,7 +174,7 @@ export function PlayerFormModal({
 
       {teams.length > 0 && (
         <div className="mt-4">
-          <div className="mb-1.5 text-sm font-medium text-ink-700">Teams</div>
+          <div className="mb-1.5 text-sm font-medium text-ink-700 dark:text-ink-300">Teams</div>
           <div className="flex flex-wrap gap-2">
             {teams.map((t) => (
               <button
@@ -184,7 +184,7 @@ export function PlayerFormModal({
                 className={`rounded-full border px-3 py-1 text-sm ${
                   teamIds.includes(t.id)
                     ? 'border-brand-500 bg-brand-50 text-brand-700'
-                    : 'border-ink-300 text-ink-600 hover:bg-ink-50'
+                    : 'border-ink-300 dark:border-ink-700 text-ink-600 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800'
                 }`}
               >
                 {t.name}

@@ -37,7 +37,7 @@ export function TeamForm({ data }: { data: TeamFormPoint[] }) {
 
   return (
     <Card className="p-4">
-      <h3 className="mb-1 text-sm font-semibold text-ink-800">
+      <h3 className="mb-1 text-sm font-semibold text-ink-800 dark:text-ink-200">
         Runs scored — recent matches
       </h3>
       <svg

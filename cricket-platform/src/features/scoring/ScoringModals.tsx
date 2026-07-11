@@ -28,10 +28,10 @@ export function PlayerPickModal({
 }) {
   return (
     <Modal open onClose={onClose} title={title} size="sm">
-      {subtitle && <p className="mb-3 text-sm text-ink-500">{subtitle}</p>}
+      {subtitle && <p className="mb-3 text-sm text-ink-500 dark:text-ink-400">{subtitle}</p>}
       <div className="space-y-1">
         {options.length === 0 && (
-          <p className="py-4 text-center text-sm text-ink-500">
+          <p className="py-4 text-center text-sm text-ink-500 dark:text-ink-400">
             No eligible players.
           </p>
         )}
@@ -39,11 +39,11 @@ export function PlayerPickModal({
           <button
             key={o.id}
             onClick={() => onPick(o.id)}
-            className="flex w-full items-center gap-3 rounded-lg border border-ink-200 px-3 py-2.5 text-left hover:border-brand-400 hover:bg-brand-50"
+            className="flex w-full items-center gap-3 rounded-lg border border-ink-200 dark:border-ink-800 px-3 py-2.5 text-left hover:border-brand-400 hover:bg-brand-50"
           >
             <Avatar name={o.name} src={o.photoURL} size={32} />
-            <span className="flex-1 font-medium text-ink-800">{o.name}</span>
-            {o.hint && <span className="text-xs text-ink-400">{o.hint}</span>}
+            <span className="flex-1 font-medium text-ink-800 dark:text-ink-200">{o.name}</span>
+            {o.hint && <span className="text-xs text-ink-400 dark:text-ink-500">{o.hint}</span>}
           </button>
         ))}
       </div>
@@ -161,7 +161,7 @@ export function WicketModal({
                   className={`h-10 flex-1 rounded-lg border font-semibold ${
                     runs === r
                       ? 'border-brand-500 bg-brand-50 text-brand-700'
-                      : 'border-ink-300 text-ink-600'
+                      : 'border-ink-300 dark:border-ink-700 text-ink-600 dark:text-ink-400'
                   }`}
                 >
                   {r}

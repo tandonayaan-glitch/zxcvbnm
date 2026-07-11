@@ -54,15 +54,15 @@ export function LeaderboardCard({
 
   return (
     <Card className="overflow-hidden">
-      <div className="flex items-center gap-2 border-b border-ink-100 bg-ink-50 px-4 py-2.5">
-        <span className="text-ink-500">
+      <div className="flex items-center gap-2 border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 px-4 py-2.5">
+        <span className="text-ink-500 dark:text-ink-400">
           <Icon size={16} />
         </span>
-        <h3 className="text-sm font-semibold text-ink-800">{board.title}</h3>
+        <h3 className="text-sm font-semibold text-ink-800 dark:text-ink-200">{board.title}</h3>
       </div>
       <div className="divide-y divide-ink-50">
         {rows.length === 0 && (
-          <p className="px-4 py-5 text-center text-sm text-ink-400">
+          <p className="px-4 py-5 text-center text-sm text-ink-400 dark:text-ink-500">
             No data yet.
           </p>
         )}
@@ -73,27 +73,27 @@ export function LeaderboardCard({
             <Link
               key={r.playerId}
               to={`/player/${r.playerId}`}
-              className="flex items-center gap-3 px-4 py-2.5 hover:bg-ink-50"
+              className="flex items-center gap-3 px-4 py-2.5 hover:bg-ink-50 dark:hover:bg-ink-800"
             >
-              <span className="w-4 text-sm font-semibold text-ink-400">
+              <span className="w-4 text-sm font-semibold text-ink-400 dark:text-ink-500">
                 {i + 1}
               </span>
               <Avatar name={p?.fullName ?? '?'} src={p?.photoURL} size={30} />
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium text-ink-900">
+                <div className="truncate text-sm font-medium text-ink-900 dark:text-ink-50">
                   {p?.displayName ?? 'Unknown'}
                 </div>
-                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-ink-100">
+                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800">
                   <div
                     className={`h-full rounded-full ${barColor}`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>
                 {r.sub && (
-                  <div className="mt-0.5 text-[11px] text-ink-400">{r.sub}</div>
+                  <div className="mt-0.5 text-[11px] text-ink-400 dark:text-ink-500">{r.sub}</div>
                 )}
               </div>
-              <span className="text-base font-bold text-ink-900">
+              <span className="text-base font-bold text-ink-900 dark:text-ink-50">
                 {r.display}
               </span>
             </Link>

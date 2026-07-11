@@ -3,13 +3,13 @@ import { missingFirebaseEnv } from '@/lib/firebase'
 export function FirebaseNotice() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-ink-900 p-4">
-      <div className="max-w-lg rounded-2xl bg-white p-8 shadow-2xl">
-        <h1 className="text-xl font-bold text-ink-900">
+      <div className="max-w-lg rounded-2xl bg-white dark:bg-ink-900 p-8 shadow-2xl">
+        <h1 className="text-xl font-bold text-ink-900 dark:text-ink-50">
           Connect Firebase to get started
         </h1>
-        <p className="mt-2 text-sm text-ink-600">
+        <p className="mt-2 text-sm text-ink-600 dark:text-ink-400">
           CricketHub needs a Firebase project (Authentication + Firestore). Add
-          your config to a <code className="rounded bg-ink-100 px-1">.env.local</code>{' '}
+          your config to a <code className="rounded bg-ink-100 dark:bg-ink-800 px-1">.env.local</code>{' '}
           file in the project root and restart the dev server.
         </p>
         {missingFirebaseEnv.length > 0 && (
@@ -30,7 +30,7 @@ VITE_FIREBASE_STORAGE_BUCKET=...
 VITE_FIREBASE_MESSAGING_SENDER_ID=...
 VITE_FIREBASE_APP_ID=...`}
         </pre>
-        <p className="mt-4 text-xs text-ink-500">
+        <p className="mt-4 text-xs text-ink-500 dark:text-ink-400">
           In the Firebase console, enable{' '}
           <b>Authentication → Email/Password</b> and create a{' '}
           <b>Firestore database</b>. See <code>README.md</code> for full steps

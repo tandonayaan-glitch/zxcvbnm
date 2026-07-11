@@ -122,10 +122,10 @@ export function PlayerForm({
       {batInns.length > 0 && (
         <Card className="p-4">
           <div className="mb-1 flex items-baseline justify-between">
-            <h3 className="text-sm font-semibold text-ink-800">
+            <h3 className="text-sm font-semibold text-ink-800 dark:text-ink-200">
               Batting form
             </h3>
-            <span className="text-xs text-ink-500">
+            <span className="text-xs text-ink-500 dark:text-ink-400">
               last 5: {last5Sum} run{last5Sum === 1 ? '' : 's'}
             </span>
           </div>
@@ -141,10 +141,10 @@ export function PlayerForm({
       {bowlInns.length > 0 && (
         <Card className="p-4">
           <div className="mb-1 flex items-baseline justify-between">
-            <h3 className="text-sm font-semibold text-ink-800">
+            <h3 className="text-sm font-semibold text-ink-800 dark:text-ink-200">
               Bowling form
             </h3>
-            <span className="text-xs text-ink-500">
+            <span className="text-xs text-ink-500 dark:text-ink-400">
               last 5: {last5Bowl} wkt{last5Bowl === 1 ? '' : 's'}
             </span>
           </div>

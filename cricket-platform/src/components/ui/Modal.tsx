@@ -49,19 +49,19 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         className={cn(
-          'animate-fade-in relative z-10 flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl sm:rounded-2xl',
+          'animate-fade-in relative z-10 flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl sm:rounded-2xl dark:bg-ink-900',
           widths[size],
         )}
       >
         {title && (
-          <div className="flex items-center justify-between border-b border-ink-100 px-5 py-3.5">
-            <h3 id={titleId} className="text-lg font-semibold text-ink-900">
+          <div className="flex items-center justify-between border-b border-ink-100 px-5 py-3.5 dark:border-ink-800">
+            <h3 id={titleId} className="text-lg font-semibold text-ink-900 dark:text-ink-50">
               {title}
             </h3>
             <button
               onClick={onClose}
               aria-label="Close"
-              className="rounded-md p-1 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
+              className="rounded-md p-1 text-ink-400 hover:bg-ink-100 hover:text-ink-700 dark:text-ink-500 dark:hover:bg-ink-800 dark:hover:text-ink-200"
             >
               <X size={20} />
             </button>
@@ -69,7 +69,7 @@ export function Modal({
         )}
         <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
         {footer && (
-          <div className="flex justify-end gap-2 border-t border-ink-100 bg-ink-50 px-5 py-3">
+          <div className="flex justify-end gap-2 border-t border-ink-100 bg-ink-50 px-5 py-3 dark:border-ink-800 dark:bg-ink-800/60">
             {footer}
           </div>
         )}

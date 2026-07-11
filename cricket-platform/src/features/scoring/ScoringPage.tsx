@@ -81,7 +81,7 @@ export function ScoringPage() {
   if (loading || players.loading) return <PageLoader label="Loading match…" />
   if (!match)
     return (
-      <div className="mx-auto max-w-md py-16 text-center text-ink-500">
+      <div className="mx-auto max-w-md py-16 text-center text-ink-500 dark:text-ink-400">
         Match not found.
       </div>
     )
@@ -172,7 +172,7 @@ export function ScoringPage() {
     return (
       <div className="mx-auto max-w-lg py-10 text-center">
         <Trophy size={48} className="mx-auto text-amber-500" />
-        <h1 className="mt-4 text-2xl font-bold text-ink-900">Match complete</h1>
+        <h1 className="mt-4 text-2xl font-bold text-ink-900 dark:text-ink-50">Match complete</h1>
         <p className="mt-2 text-lg font-semibold text-pitch-700">
           {match.result?.summary}
         </p>
@@ -192,12 +192,12 @@ export function ScoringPage() {
     const first = match.innings[0]
     return (
       <div className="mx-auto max-w-lg py-10 text-center">
-        <h1 className="text-2xl font-bold text-ink-900">Innings break</h1>
+        <h1 className="text-2xl font-bold text-ink-900 dark:text-ink-50">Innings break</h1>
         <Card className="mt-4 p-5">
-          <div className="text-3xl font-bold text-ink-900">
+          <div className="text-3xl font-bold text-ink-900 dark:text-ink-50">
             {first.totalRuns}/{first.wickets}
           </div>
-          <div className="text-ink-500">
+          <div className="text-ink-500 dark:text-ink-400">
             {ballsToOvers(first.legalBalls, match.ballsPerOver)} overs
           </div>
           <p className="mt-3 text-lg font-semibold text-brand-700">
@@ -262,33 +262,33 @@ export function ScoringPage() {
               name={name(inn.nonStrikerId)}
             />
           </div>
-          <div className="border-l border-ink-100 pl-4">
-            <div className="text-xs uppercase tracking-wide text-ink-400">
+          <div className="border-l border-ink-100 dark:border-ink-800 pl-4">
+            <div className="text-xs uppercase tracking-wide text-ink-400 dark:text-ink-500">
               Bowler
             </div>
-            <div className="font-semibold text-ink-900">{name(inn.bowlerId)}</div>
+            <div className="font-semibold text-ink-900 dark:text-ink-50">{name(inn.bowlerId)}</div>
             {(() => {
               const b = inn.bowlingCard.find((x) => x.playerId === inn.bowlerId)
-              if (!b) return <div className="text-sm text-ink-400">—</div>
+              if (!b) return <div className="text-sm text-ink-400 dark:text-ink-500">—</div>
               return (
-                <div className="text-sm text-ink-600">
+                <div className="text-sm text-ink-600 dark:text-ink-400">
                   {ballsToOvers(b.legalBalls, match.ballsPerOver)}-{b.maidens}-
                   {b.runsConceded}-{b.wickets}
                 </div>
               )
             })()}
-            <div className="mt-2 text-xs uppercase tracking-wide text-ink-400">
+            <div className="mt-2 text-xs uppercase tracking-wide text-ink-400 dark:text-ink-500">
               Partnership
             </div>
-            <div className="text-sm text-ink-700">
+            <div className="text-sm text-ink-700 dark:text-ink-300">
               {inn.partnershipRuns} ({inn.partnershipBalls})
             </div>
           </div>
         </div>
 
         {/* recent balls */}
-        <div className="mt-3 flex items-center gap-1.5 overflow-x-auto border-t border-ink-100 pt-3">
-          <span className="mr-1 text-xs text-ink-400">This over</span>
+        <div className="mt-3 flex items-center gap-1.5 overflow-x-auto border-t border-ink-100 dark:border-ink-800 pt-3">
+          <span className="mr-1 text-xs text-ink-400 dark:text-ink-500">This over</span>
           {ballsThisOver(curDeliveries, inn, match.ballsPerOver).map((d, i) => (
             <BallToken key={i} d={d} />
           ))}
@@ -344,7 +344,7 @@ export function ScoringPage() {
 
       {inn.isComplete && (
         <Card className="p-4 text-center">
-          <p className="font-semibold text-ink-800">
+          <p className="font-semibold text-ink-800 dark:text-ink-200">
             Innings complete — {inn.closeReason.replace('_', ' ')}
           </p>
           <Button
@@ -363,14 +363,14 @@ export function ScoringPage() {
 
       {/* Footer actions */}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-sm text-ink-500">
+        <div className="flex items-center gap-2 text-sm text-ink-500 dark:text-ink-400">
           <Radio size={14} className="text-red-500" /> Scoring live · auto-saved
           {busy && <Spinner size={14} />}
         </div>
         <div className="flex gap-2">
           <Link
             to={`/match/${match.id}`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-ink-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
           >
             <ClipboardList size={15} /> Scorecard
           </Link>
@@ -379,7 +379,7 @@ export function ScoringPage() {
               if (confirm('End the current innings now?'))
                 guard(() => endInnings(match))
             }}
-            className="rounded-lg border border-ink-300 px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-ink-50"
+            className="rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
           >
             End innings
           </button>
@@ -473,20 +473,20 @@ function BatterLine({
 }) {
   return (
     <div>
-      <div className="text-xs uppercase tracking-wide text-ink-400">{label}</div>
+      <div className="text-xs uppercase tracking-wide text-ink-400 dark:text-ink-500">{label}</div>
       <div className="flex items-baseline gap-2">
-        <span className="font-semibold text-ink-900">
+        <span className="font-semibold text-ink-900 dark:text-ink-50">
           {name}
           {striker && <span className="text-pitch-600"> *</span>}
         </span>
         {card && (
-          <span className="text-sm text-ink-600">
+          <span className="text-sm text-ink-600 dark:text-ink-400">
             {card.runs} ({card.balls})
           </span>
         )}
       </div>
       {card && (card.fours > 0 || card.sixes > 0) && (
-        <div className="text-xs text-ink-400">
+        <div className="text-xs text-ink-400 dark:text-ink-500">
           {card.fours}×4 · {card.sixes}×6
         </div>
       )}
@@ -496,7 +496,7 @@ function BatterLine({
 
 function BallToken({ d }: { d: Delivery }) {
   let label = String(d.runsOffBat)
-  let cls = 'bg-ink-100 text-ink-700'
+  let cls = 'bg-ink-100 dark:bg-ink-800 text-ink-700 dark:text-ink-300'
   if (d.wicket && d.wicket.type !== 'retired_hurt') {
     label = 'W'
     cls = 'bg-red-600 text-white'
@@ -508,10 +508,10 @@ function BallToken({ d }: { d: Delivery }) {
     cls = 'bg-amber-100 text-amber-800'
   } else if (d.extraType === 'bye') {
     label = `${d.totalRuns}b`
-    cls = 'bg-ink-100 text-ink-600'
+    cls = 'bg-ink-100 dark:bg-ink-800 text-ink-600 dark:text-ink-400'
   } else if (d.extraType === 'leg_bye') {
     label = `${d.totalRuns}lb`
-    cls = 'bg-ink-100 text-ink-600'
+    cls = 'bg-ink-100 dark:bg-ink-800 text-ink-600 dark:text-ink-400'
   } else if (d.runsOffBat === 4 || d.runsOffBat === 6) {
     cls = 'bg-pitch-600 text-white'
   } else if (d.runsOffBat === 0) {
@@ -581,7 +581,7 @@ function ScorePad({
               'flex h-16 items-center justify-center rounded-xl text-2xl font-bold transition active:scale-95 disabled:opacity-50',
               r === 4 || r === 6
                 ? 'bg-pitch-600 text-white hover:bg-pitch-700'
-                : 'bg-ink-100 text-ink-800 hover:bg-ink-200',
+                : 'bg-ink-100 dark:bg-ink-800 text-ink-800 dark:text-ink-200 hover:bg-ink-200',
             )}
           >
             {r}
@@ -598,7 +598,7 @@ function ScorePad({
               'h-11 rounded-lg border text-sm font-semibold',
               activeExtra === e.key
                 ? 'border-amber-500 bg-amber-100 text-amber-800'
-                : 'border-ink-300 text-ink-700 hover:bg-ink-50',
+                : 'border-ink-300 dark:border-ink-700 text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800',
             )}
           >
             {e.label}
@@ -617,7 +617,7 @@ function ScorePad({
         <button
           onClick={onUndo}
           disabled={busy || !canUndo}
-          className="flex h-12 items-center justify-center gap-2 rounded-lg border border-ink-300 font-semibold text-ink-700 hover:bg-ink-50 disabled:opacity-40"
+          className="flex h-12 items-center justify-center gap-2 rounded-lg border border-ink-300 dark:border-ink-700 font-semibold text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800 disabled:opacity-40"
         >
           <Undo2 size={18} /> Undo
         </button>
@@ -639,12 +639,12 @@ function PreMatch({
 }) {
   return (
     <div className="mx-auto max-w-lg py-10 text-center">
-      <h1 className="text-2xl font-bold text-ink-900">{match.title}</h1>
-      <p className="mt-1 text-ink-500">
+      <h1 className="text-2xl font-bold text-ink-900 dark:text-ink-50">{match.title}</h1>
+      <p className="mt-1 text-ink-500 dark:text-ink-400">
         {match.teamA.name} vs {match.teamB.name}
       </p>
       <Card className="mt-5 p-5 text-left">
-        <div className="text-sm text-ink-600">
+        <div className="text-sm text-ink-600 dark:text-ink-400">
           <div>
             <b>Format:</b> {match.format} · {match.oversPerInnings} overs
           </div>
@@ -689,7 +689,7 @@ function OpenersPanel({
 
   return (
     <Card className="p-4">
-      <h3 className="mb-3 font-semibold text-ink-900">Set openers & bowler</h3>
+      <h3 className="mb-3 font-semibold text-ink-900 dark:text-ink-50">Set openers & bowler</h3>
       <div className="space-y-3">
         <PickRow
           label="Striker"
@@ -744,11 +744,11 @@ function PickRow({
 }) {
   return (
     <div>
-      <div className="mb-1 text-sm font-medium text-ink-700">{label}</div>
+      <div className="mb-1 text-sm font-medium text-ink-700 dark:text-ink-300">{label}</div>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-ink-300 px-3 py-2 text-sm"
+        className="w-full rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-2 text-sm"
       >
         <option value="">Select…</option>
         {options.map((id) => (

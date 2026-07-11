@@ -186,20 +186,20 @@ export function TeamPage() {
         <Card className="mb-4">
           <CardBody className="flex flex-wrap items-center gap-x-6 gap-y-3">
             <div>
-              <div className="text-xs uppercase tracking-wide text-ink-400">
+              <div className="text-xs uppercase tracking-wide text-ink-400 dark:text-ink-500">
                 Win rate
               </div>
-              <div className="text-2xl font-extrabold text-ink-900">
+              <div className="text-2xl font-extrabold text-ink-900 dark:text-ink-50">
                 {record.winPct}%
               </div>
-              <div className="text-xs text-ink-500">
+              <div className="text-xs text-ink-500 dark:text-ink-400">
                 {record.won}W · {record.lost}L
                 {record.tied > 0 && ` · ${record.tied}T`}
                 {record.noResult > 0 && ` · ${record.noResult}NR`}
               </div>
             </div>
             <div className="flex-1">
-              <div className="mb-1.5 text-xs uppercase tracking-wide text-ink-400">
+              <div className="mb-1.5 text-xs uppercase tracking-wide text-ink-400 dark:text-ink-500">
                 Recent form
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -267,10 +267,10 @@ export function TeamPage() {
                   <Trophy size={16} />
                 </span>
                 <div className="flex-1">
-                  <div className="font-medium text-ink-900">
+                  <div className="font-medium text-ink-900 dark:text-ink-50">
                     {titleName(tt)} — Champions
                   </div>
-                  <div className="text-xs text-ink-400">
+                  <div className="text-xs text-ink-400 dark:text-ink-500">
                     beat {tt.opponentShort} in the final · {formatDate(tt.date)}
                   </div>
                 </div>
@@ -282,7 +282,7 @@ export function TeamPage() {
 
       {hasTeamRecords(honours) && (
         <div className="mb-4">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-400">
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-400 dark:text-ink-500">
             Team records
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -365,7 +365,7 @@ export function TeamPage() {
           <CardHeader title="Record vs opponents" />
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-ink-100 bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
+              <tr className="border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 text-left text-xs uppercase tracking-wide text-ink-500 dark:text-ink-400">
                 <th className="px-4 py-2.5 font-semibold">Opponent</th>
                 <th className="px-2 py-2.5 text-right font-semibold">P</th>
                 <th className="px-2 py-2.5 text-right font-semibold">W</th>
@@ -379,22 +379,22 @@ export function TeamPage() {
                 const decided = o.won + o.lost + o.tied
                 const winPct = decided > 0 ? Math.round((o.won / decided) * 100) : 0
                 return (
-                  <tr key={o.opponentId} className="border-b border-ink-50">
+                  <tr key={o.opponentId} className="border-b border-ink-50 dark:border-ink-800">
                     <td className="px-4 py-2.5">
                       <Link
                         to={`/team/${o.opponentId}`}
-                        className="font-medium text-ink-900 hover:text-brand-700"
+                        className="font-medium text-ink-900 dark:text-ink-50 hover:text-brand-700"
                       >
                         {o.opponentName}
                       </Link>
                     </td>
-                    <td className="px-2 py-2.5 text-right text-ink-600">{o.played}</td>
+                    <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">{o.played}</td>
                     <td className="px-2 py-2.5 text-right text-pitch-700">{o.won}</td>
                     <td className="px-2 py-2.5 text-right text-red-600">{o.lost}</td>
-                    <td className="px-2 py-2.5 text-right text-ink-600">
+                    <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">
                       {o.tied + o.noResult}
                     </td>
-                    <td className="px-4 py-2.5 text-right font-semibold text-ink-900">
+                    <td className="px-4 py-2.5 text-right font-semibold text-ink-900 dark:text-ink-50">
                       {winPct}%
                     </td>
                   </tr>
@@ -410,7 +410,7 @@ export function TeamPage() {
           <CardHeader title="Record by venue" />
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-ink-100 bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
+              <tr className="border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 text-left text-xs uppercase tracking-wide text-ink-500 dark:text-ink-400">
                 <th className="px-4 py-2.5 font-semibold">Venue</th>
                 <th className="px-2 py-2.5 text-right font-semibold">P</th>
                 <th className="px-2 py-2.5 text-right font-semibold">W</th>
@@ -423,14 +423,14 @@ export function TeamPage() {
                 const decided = v.won + v.lost + v.tied
                 const winPct = decided > 0 ? Math.round((v.won / decided) * 100) : 0
                 return (
-                  <tr key={v.venue} className="border-b border-ink-50">
-                    <td className="px-4 py-2.5 font-medium text-ink-900">
+                  <tr key={v.venue} className="border-b border-ink-50 dark:border-ink-800">
+                    <td className="px-4 py-2.5 font-medium text-ink-900 dark:text-ink-50">
                       {v.venue}
                     </td>
-                    <td className="px-2 py-2.5 text-right text-ink-600">{v.played}</td>
+                    <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">{v.played}</td>
                     <td className="px-2 py-2.5 text-right text-pitch-700">{v.won}</td>
                     <td className="px-2 py-2.5 text-right text-red-600">{v.lost}</td>
-                    <td className="px-4 py-2.5 text-right font-semibold text-ink-900">
+                    <td className="px-4 py-2.5 text-right font-semibold text-ink-900 dark:text-ink-50">
                       {winPct}%
                     </td>
                   </tr>
@@ -448,7 +448,7 @@ export function TeamPage() {
             {squad.loading ? (
               <PageLoader />
             ) : (squad.data ?? []).length === 0 ? (
-              <p className="py-3 text-center text-sm text-ink-500">
+              <p className="py-3 text-center text-sm text-ink-500 dark:text-ink-400">
                 No players in this squad.
               </p>
             ) : (
@@ -456,12 +456,12 @@ export function TeamPage() {
                 <Link
                   key={p.id}
                   to={`/player/${p.id}`}
-                  className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-ink-50"
+                  className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-ink-50 dark:hover:bg-ink-800"
                 >
                   <Avatar name={p.fullName} src={p.photoURL} size={32} />
                   <div className="flex-1">
-                    <div className="font-medium text-ink-900">{p.fullName}</div>
-                    <div className="text-xs text-ink-400">
+                    <div className="font-medium text-ink-900 dark:text-ink-50">{p.fullName}</div>
+                    <div className="text-xs text-ink-400 dark:text-ink-500">
                       {PLAYER_ROLE_LABELS[p.role]}
                     </div>
                   </div>
@@ -481,7 +481,7 @@ export function TeamPage() {
           <CardHeader title="Recent matches" />
           <CardBody className="space-y-2">
             {teamMatches.length === 0 ? (
-              <p className="py-3 text-center text-sm text-ink-500">
+              <p className="py-3 text-center text-sm text-ink-500 dark:text-ink-400">
                 No matches yet.
               </p>
             ) : (
@@ -489,13 +489,13 @@ export function TeamPage() {
                 <Link
                   key={m.id}
                   to={`/match/${m.id}`}
-                  className="block rounded-lg px-2 py-2 hover:bg-ink-50"
+                  className="block rounded-lg px-2 py-2 hover:bg-ink-50 dark:hover:bg-ink-800"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-ink-900">
+                    <span className="font-medium text-ink-900 dark:text-ink-50">
                       {m.teamA.shortName} vs {m.teamB.shortName}
                     </span>
-                    <span className="text-xs text-ink-400">
+                    <span className="text-xs text-ink-400 dark:text-ink-500">
                       {formatDate(m.completedAt ?? m.scheduledAt ?? m.createdAt)}
                     </span>
                   </div>
@@ -553,7 +553,7 @@ function TeamRecordCard({
   return (
     <Link
       to={`/match/${matchId}`}
-      className="flex items-center gap-3 rounded-xl border border-ink-100 bg-white p-4 hover:border-brand-300 hover:bg-brand-50/40"
+      className="flex items-center gap-3 rounded-xl border border-ink-100 dark:border-ink-800 bg-white dark:bg-ink-900 p-4 hover:border-brand-300 hover:bg-brand-50/40"
     >
       <span
         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg"
@@ -562,9 +562,9 @@ function TeamRecordCard({
         {icon}
       </span>
       <div className="min-w-0">
-        <div className="text-xs uppercase tracking-wide text-ink-400">{label}</div>
-        <div className="truncate text-lg font-bold text-ink-900">{value}</div>
-        <div className="truncate text-xs text-ink-500">{sub}</div>
+        <div className="text-xs uppercase tracking-wide text-ink-400 dark:text-ink-500">{label}</div>
+        <div className="truncate text-lg font-bold text-ink-900 dark:text-ink-50">{value}</div>
+        <div className="truncate text-xs text-ink-500 dark:text-ink-400">{sub}</div>
       </div>
     </Link>
   )
@@ -588,7 +588,7 @@ function PerformerCard({
   return (
     <Link
       to={`/player/${playerId}`}
-      className="flex items-center gap-3 rounded-xl border border-ink-100 bg-white p-4 hover:border-brand-300 hover:bg-brand-50/40"
+      className="flex items-center gap-3 rounded-xl border border-ink-100 dark:border-ink-800 bg-white dark:bg-ink-900 p-4 hover:border-brand-300 hover:bg-brand-50/40"
     >
       <span
         className="flex h-11 w-11 items-center justify-center rounded-lg"
@@ -597,11 +597,11 @@ function PerformerCard({
         {icon}
       </span>
       <div className="min-w-0">
-        <div className="text-xs uppercase tracking-wide text-ink-400">
+        <div className="text-xs uppercase tracking-wide text-ink-400 dark:text-ink-500">
           {label}
         </div>
-        <div className="truncate font-semibold text-ink-900">{name}</div>
-        <div className="text-xs text-ink-500">{line}</div>
+        <div className="truncate font-semibold text-ink-900 dark:text-ink-50">{name}</div>
+        <div className="text-xs text-ink-500 dark:text-ink-400">{line}</div>
       </div>
     </Link>
   )

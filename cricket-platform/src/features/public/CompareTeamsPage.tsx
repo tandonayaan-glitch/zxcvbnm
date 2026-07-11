@@ -101,7 +101,7 @@ export function CompareTeamsPage() {
         actions={
           <Link
             to="/compare"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 px-3 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-2 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
           >
             Compare players
           </Link>
@@ -115,13 +115,13 @@ export function CompareTeamsPage() {
 
       {h2h.played > 0 && (
         <Card className="mb-4 p-4 text-center">
-          <div className="text-xs font-semibold uppercase tracking-wide text-ink-400">
+          <div className="text-xs font-semibold uppercase tracking-wide text-ink-400 dark:text-ink-500">
             Head to head · {h2h.played} meeting{h2h.played === 1 ? '' : 's'}
           </div>
-          <div className="mt-1 text-lg font-extrabold text-ink-900">
+          <div className="mt-1 text-lg font-extrabold text-ink-900 dark:text-ink-50">
             {ta?.shortName} {h2h.aWins} &ndash; {h2h.bWins} {tb?.shortName}
             {h2h.tied > 0 && (
-              <span className="ml-2 text-sm font-medium text-ink-500">
+              <span className="ml-2 text-sm font-medium text-ink-500 dark:text-ink-400">
                 ({h2h.tied} tied)
               </span>
             )}
@@ -145,17 +145,17 @@ export function CompareTeamsPage() {
               >
                 <span
                   className={`text-right font-semibold ${
-                    aBetter ? 'text-pitch-700' : 'text-ink-700'
+                    aBetter ? 'text-pitch-700' : 'text-ink-700 dark:text-ink-300'
                   }`}
                 >
                   {row.a}
                 </span>
-                <span className="px-2 text-center text-xs uppercase tracking-wide text-ink-400">
+                <span className="px-2 text-center text-xs uppercase tracking-wide text-ink-400 dark:text-ink-500">
                   {row.label}
                 </span>
                 <span
                   className={`font-semibold ${
-                    bBetter ? 'text-pitch-700' : 'text-ink-700'
+                    bBetter ? 'text-pitch-700' : 'text-ink-700 dark:text-ink-300'
                   }`}
                 >
                   {row.b}
@@ -184,20 +184,20 @@ function TeamPicker({
 }) {
   return (
     <Card className="p-4">
-      <div className="mb-2 truncate font-semibold text-ink-900">
+      <div className="mb-2 truncate font-semibold text-ink-900 dark:text-ink-50">
         {team ? (
           <Link to={`/team/${team.id}`} className="hover:text-brand-700">
             {team.name}
           </Link>
         ) : (
-          <span className="text-ink-500">Select a team</span>
+          <span className="text-ink-500 dark:text-ink-400">Select a team</span>
         )}
       </div>
       <select
         aria-label={`Team ${side.toUpperCase()}`}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm text-ink-800 focus:border-brand-500 focus:outline-none"
+        className="w-full rounded-lg border border-ink-300 dark:border-ink-700 bg-white dark:bg-ink-900 px-3 py-2 text-sm text-ink-800 dark:text-ink-200 focus:border-brand-500 focus:outline-none"
       >
         {teams.map((t) => (
           <option key={t.id} value={t.id}>

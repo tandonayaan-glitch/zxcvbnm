@@ -36,9 +36,9 @@ export function AuthLayout({
             </span>
             <span className="text-2xl font-extrabold text-white">CricketHub</span>
           </Link>
-          <div className="rounded-2xl bg-white p-6 shadow-2xl sm:p-8">
-            <h1 className="text-2xl font-bold text-ink-900">{title}</h1>
-            {subtitle && <p className="mt-1 text-sm text-ink-500">{subtitle}</p>}
+          <div className="rounded-2xl bg-white dark:bg-ink-900 p-6 shadow-2xl sm:p-8">
+            <h1 className="text-2xl font-bold text-ink-900 dark:text-ink-50">{title}</h1>
+            {subtitle && <p className="mt-1 text-sm text-ink-500 dark:text-ink-400">{subtitle}</p>}
             <div className="mt-6">{children}</div>
           </div>
           {footer && (

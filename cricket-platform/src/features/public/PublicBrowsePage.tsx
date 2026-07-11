@@ -56,7 +56,7 @@ export function PublicBrowsePage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
-      <h1 className="mb-4 text-2xl font-bold text-ink-900">Browse</h1>
+      <h1 className="mb-4 text-2xl font-bold text-ink-900 dark:text-ink-50">Browse</h1>
       <Tabs
         className="mb-4"
         active={tab}
@@ -77,7 +77,7 @@ export function PublicBrowsePage() {
               className={`rounded-full px-3 py-1.5 text-sm font-medium ${
                 matchFilter === f.key
                   ? 'bg-brand-600 text-white'
-                  : 'border border-ink-300 text-ink-600 hover:bg-ink-50'
+                  : 'border border-ink-300 dark:border-ink-700 text-ink-600 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800'
               }`}
             >
               {f.label}
@@ -105,10 +105,10 @@ export function PublicBrowsePage() {
                 <Link key={m.id} to={`/match/${m.id}`}>
                   <Card className="flex items-center justify-between p-3.5 hover:border-brand-300">
                     <div>
-                      <div className="font-medium text-ink-900">
+                      <div className="font-medium text-ink-900 dark:text-ink-50">
                         {m.teamA.name} vs {m.teamB.name}
                       </div>
-                      <div className="text-sm text-ink-500">
+                      <div className="text-sm text-ink-500 dark:text-ink-400">
                         {m.format} · {formatDate(m.scheduledAt ?? m.createdAt)}
                       </div>
                       {m.result && (
@@ -141,8 +141,8 @@ export function PublicBrowsePage() {
             {(tournaments.data ?? []).map((t) => (
               <Link key={t.id} to={`/tournament/${t.id}`}>
                 <Card className="p-4 hover:border-brand-300">
-                  <div className="font-semibold text-ink-900">{t.name}</div>
-                  <div className="mt-1 flex items-center gap-2 text-sm text-ink-500">
+                  <div className="font-semibold text-ink-900 dark:text-ink-50">{t.name}</div>
+                  <div className="mt-1 flex items-center gap-2 text-sm text-ink-500 dark:text-ink-400">
                     <Badge tone={t.status === 'ongoing' ? 'green' : 'gray'}>
                       {t.status}
                     </Badge>
@@ -171,8 +171,8 @@ export function PublicBrowsePage() {
                     {t.shortName}
                   </div>
                   <div>
-                    <div className="font-medium text-ink-900">{t.name}</div>
-                    <div className="text-xs text-ink-400">
+                    <div className="font-medium text-ink-900 dark:text-ink-50">{t.name}</div>
+                    <div className="text-xs text-ink-400 dark:text-ink-500">
                       {t.playerIds.length} players
                     </div>
                   </div>

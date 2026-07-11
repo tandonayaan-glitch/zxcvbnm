@@ -118,7 +118,7 @@ export function DashboardPage() {
             />
             <CardBody className="space-y-3">
               {live.length === 0 ? (
-                <p className="py-4 text-center text-sm text-ink-500">
+                <p className="py-4 text-center text-sm text-ink-500 dark:text-ink-400">
                   No live matches right now.
                 </p>
               ) : (
@@ -126,16 +126,16 @@ export function DashboardPage() {
                   <Link
                     key={m.id}
                     to={canScore(profile) ? `/scoring/${m.id}` : `/match/${m.id}`}
-                    className="flex items-center justify-between rounded-lg border border-ink-200 p-3 hover:border-brand-300 hover:bg-brand-50/40"
+                    className="flex items-center justify-between rounded-lg border border-ink-200 dark:border-ink-800 p-3 hover:border-brand-300 hover:bg-brand-50/40"
                   >
                     <div>
                       <div className="mb-1">
                         <LiveBadge />
                       </div>
-                      <div className="font-semibold text-ink-900">
+                      <div className="font-semibold text-ink-900 dark:text-ink-50">
                         {m.teamA.name} vs {m.teamB.name}
                       </div>
-                      <div className="text-sm text-ink-600">
+                      <div className="text-sm text-ink-600 dark:text-ink-400">
                         {m.innings.map((inn, i) => (
                           <span key={i} className="mr-3">
                             {inn.battingTeamId === m.teamA.id
@@ -147,7 +147,7 @@ export function DashboardPage() {
                         ))}
                       </div>
                     </div>
-                    <ChevronRight size={18} className="text-ink-400" />
+                    <ChevronRight size={18} className="text-ink-400 dark:text-ink-500" />
                   </Link>
                 ))
               )}
@@ -161,7 +161,7 @@ export function DashboardPage() {
             />
             <CardBody className="space-y-2">
               {recent.length === 0 ? (
-                <p className="py-4 text-center text-sm text-ink-500">
+                <p className="py-4 text-center text-sm text-ink-500 dark:text-ink-400">
                   No completed matches yet.
                 </p>
               ) : (
@@ -169,17 +169,17 @@ export function DashboardPage() {
                   <Link
                     key={m.id}
                     to={`/match/${m.id}`}
-                    className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-ink-50"
+                    className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-ink-50 dark:hover:bg-ink-800"
                   >
                     <div>
-                      <div className="font-medium text-ink-900">
+                      <div className="font-medium text-ink-900 dark:text-ink-50">
                         {m.teamA.shortName} vs {m.teamB.shortName}
                       </div>
                       <div className="text-sm text-pitch-700">
                         {m.result?.summary}
                       </div>
                     </div>
-                    <span className="text-xs text-ink-400">
+                    <span className="text-xs text-ink-400 dark:text-ink-500">
                       {formatDate(m.completedAt)}
                     </span>
                   </Link>
@@ -198,7 +198,7 @@ export function DashboardPage() {
             />
             <CardBody className="space-y-2">
               {upcoming.length === 0 ? (
-                <p className="py-3 text-center text-sm text-ink-500">
+                <p className="py-3 text-center text-sm text-ink-500 dark:text-ink-400">
                   Nothing scheduled.
                 </p>
               ) : (
@@ -206,12 +206,12 @@ export function DashboardPage() {
                   <Link
                     key={m.id}
                     to={`/match/${m.id}`}
-                    className="block rounded-lg px-3 py-2 hover:bg-ink-50"
+                    className="block rounded-lg px-3 py-2 hover:bg-ink-50 dark:hover:bg-ink-800"
                   >
-                    <div className="font-medium text-ink-900">
+                    <div className="font-medium text-ink-900 dark:text-ink-50">
                       {m.teamA.shortName} vs {m.teamB.shortName}
                     </div>
-                    <div className="text-xs text-ink-500">
+                    <div className="text-xs text-ink-500 dark:text-ink-400">
                       {formatDate(m.scheduledAt ?? m.createdAt)} · {m.format}
                     </div>
                   </Link>
@@ -232,7 +232,7 @@ export function DashboardPage() {
             />
             <CardBody className="space-y-1">
               {topBat.length === 0 ? (
-                <p className="py-2 text-center text-sm text-ink-500">
+                <p className="py-2 text-center text-sm text-ink-500 dark:text-ink-400">
                   No data yet.
                 </p>
               ) : (
@@ -242,11 +242,11 @@ export function DashboardPage() {
                     <Link
                       key={r.playerId}
                       to={`/player/${r.playerId}`}
-                      className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-ink-50"
+                      className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-ink-50 dark:hover:bg-ink-800"
                     >
-                      <span className="w-4 text-sm text-ink-400">{i + 1}</span>
+                      <span className="w-4 text-sm text-ink-400 dark:text-ink-500">{i + 1}</span>
                       <Avatar name={p?.fullName ?? '?'} src={p?.photoURL} size={26} />
-                      <span className="flex-1 text-sm text-ink-800">
+                      <span className="flex-1 text-sm text-ink-800 dark:text-ink-200">
                         {p?.displayName ?? 'Unknown'}
                       </span>
                       <Badge tone="green">{r.value}</Badge>
@@ -269,7 +269,7 @@ export function DashboardPage() {
             />
             <CardBody className="space-y-1">
               {topBowl.length === 0 ? (
-                <p className="py-2 text-center text-sm text-ink-500">
+                <p className="py-2 text-center text-sm text-ink-500 dark:text-ink-400">
                   No data yet.
                 </p>
               ) : (
@@ -279,11 +279,11 @@ export function DashboardPage() {
                     <Link
                       key={r.playerId}
                       to={`/player/${r.playerId}`}
-                      className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-ink-50"
+                      className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-ink-50 dark:hover:bg-ink-800"
                     >
-                      <span className="w-4 text-sm text-ink-400">{i + 1}</span>
+                      <span className="w-4 text-sm text-ink-400 dark:text-ink-500">{i + 1}</span>
                       <Avatar name={p?.fullName ?? '?'} src={p?.photoURL} size={26} />
-                      <span className="flex-1 text-sm text-ink-800">
+                      <span className="flex-1 text-sm text-ink-800 dark:text-ink-200">
                         {p?.displayName ?? 'Unknown'}
                       </span>
                       <Badge tone="blue">{r.value}</Badge>

@@ -86,7 +86,7 @@ export function UsersPage() {
         <Card className="overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-ink-100 bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
+              <tr className="border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 text-left text-xs uppercase tracking-wide text-ink-500 dark:text-ink-400">
                 <th className="px-4 py-3 font-semibold">User</th>
                 <th className="px-4 py-3 font-semibold">Role</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
@@ -99,19 +99,19 @@ export function UsersPage() {
                 const isSelf = u.id === me?.id
                 const banned = u.status === 'banned'
                 return (
-                  <tr key={u.id} className="border-b border-ink-50">
+                  <tr key={u.id} className="border-b border-ink-50 dark:border-ink-800">
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-2.5">
                         <Avatar name={u.displayName || u.username || 'User'} size={32} />
                         <div>
-                          <div className="font-medium text-ink-900">
+                          <div className="font-medium text-ink-900 dark:text-ink-50">
                             {u.displayName || u.username || 'Unnamed user'}
                             {isSelf && (
-                              <span className="ml-1 text-xs text-ink-400">(you)</span>
+                              <span className="ml-1 text-xs text-ink-400 dark:text-ink-500">(you)</span>
                             )}
                           </div>
-                          <div className="text-xs text-ink-400">@{u.username}</div>
-                          <div className="text-[11px] text-ink-400">
+                          <div className="text-xs text-ink-400 dark:text-ink-500">@{u.username}</div>
+                          <div className="text-[11px] text-ink-400 dark:text-ink-500">
                             Joined {formatDate(u.createdAt)}
                           </div>
                         </div>
@@ -132,7 +132,7 @@ export function UsersPage() {
                     </td>
                     <td className="px-4 py-2.5">
                       {isMaster ? (
-                        <div className="text-right text-xs text-ink-400">
+                        <div className="text-right text-xs text-ink-400 dark:text-ink-500">
                           Master — protected
                         </div>
                       ) : (

@@ -19,7 +19,7 @@ export function Tabs({
   return (
     <div
       className={cn(
-        'flex gap-1 overflow-x-auto border-b border-ink-200',
+        'flex gap-1 overflow-x-auto border-b border-ink-200 dark:border-ink-800',
         className,
       )}
     >
@@ -30,8 +30,8 @@ export function Tabs({
           className={cn(
             'whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
             active === t.key
-              ? 'border-brand-600 text-brand-700'
-              : 'border-transparent text-ink-500 hover:text-ink-800',
+              ? 'border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-400'
+              : 'border-transparent text-ink-500 hover:text-ink-800 dark:text-ink-400 dark:hover:text-ink-200',
           )}
         >
           {t.label}

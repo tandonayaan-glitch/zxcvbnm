@@ -97,7 +97,7 @@ export function TeamFormModal({
               type="color"
               value={primaryColor}
               onChange={(e) => setPrimaryColor(e.target.value)}
-              className="h-10 w-14 cursor-pointer rounded border border-ink-300"
+              className="h-10 w-14 cursor-pointer rounded border border-ink-300 dark:border-ink-700"
             />
             <Input value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} />
           </div>
@@ -108,7 +108,7 @@ export function TeamFormModal({
               type="color"
               value={secondaryColor}
               onChange={(e) => setSecondaryColor(e.target.value)}
-              className="h-10 w-14 cursor-pointer rounded border border-ink-300"
+              className="h-10 w-14 cursor-pointer rounded border border-ink-300 dark:border-ink-700"
             />
             <Input
               value={secondaryColor}
@@ -133,20 +133,20 @@ export function TeamFormModal({
 
       <div className="mt-4">
         <div className="mb-1.5 flex items-center justify-between">
-          <span className="text-sm font-medium text-ink-700">
+          <span className="text-sm font-medium text-ink-700 dark:text-ink-300">
             Squad ({playerIds.length})
           </span>
         </div>
         {players.length === 0 ? (
-          <p className="rounded-lg bg-ink-50 px-3 py-2 text-sm text-ink-500">
+          <p className="rounded-lg bg-ink-50 dark:bg-ink-800/60 px-3 py-2 text-sm text-ink-500 dark:text-ink-400">
             No players available. Add players first.
           </p>
         ) : (
-          <div className="max-h-52 space-y-1 overflow-y-auto rounded-lg border border-ink-200 p-2">
+          <div className="max-h-52 space-y-1 overflow-y-auto rounded-lg border border-ink-200 dark:border-ink-800 p-2">
             {players.map((p) => (
               <label
                 key={p.id}
-                className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-ink-50"
+                className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-ink-50 dark:hover:bg-ink-800"
               >
                 <input
                   type="checkbox"
@@ -155,7 +155,7 @@ export function TeamFormModal({
                   className="h-4 w-4"
                 />
                 <Avatar name={p.fullName} src={p.photoURL} size={26} />
-                <span className="text-sm text-ink-800">{p.fullName}</span>
+                <span className="text-sm text-ink-800 dark:text-ink-200">{p.fullName}</span>
               </label>
             ))}
           </div>

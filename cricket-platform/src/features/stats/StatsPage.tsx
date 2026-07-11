@@ -258,7 +258,7 @@ export function StatsPage() {
         actions={
           <Link
             to="/compare"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 px-3 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-2 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
           >
             Compare players
           </Link>
@@ -286,7 +286,7 @@ export function StatsPage() {
                 <div className="flex items-center gap-2">
                   <label
                     htmlFor="stats-scope"
-                    className="text-sm font-medium text-ink-600"
+                    className="text-sm font-medium text-ink-600 dark:text-ink-400"
                   >
                     Competition
                   </label>
@@ -294,7 +294,7 @@ export function StatsPage() {
                     id="stats-scope"
                     value={scope}
                     onChange={(e) => changeScope(e.target.value)}
-                    className="rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm font-medium text-ink-800 focus:border-brand-500 focus:outline-none"
+                    className="rounded-lg border border-ink-300 dark:border-ink-700 bg-white dark:bg-ink-900 px-3 py-2 text-sm font-medium text-ink-800 dark:text-ink-200 focus:border-brand-500 focus:outline-none"
                   >
                     <option value="all">All competitions</option>
                     {scopeOptions.map((o) => (
@@ -309,7 +309,7 @@ export function StatsPage() {
                 <div className="flex items-center gap-2">
                   <label
                     htmlFor="stats-venue"
-                    className="text-sm font-medium text-ink-600"
+                    className="text-sm font-medium text-ink-600 dark:text-ink-400"
                   >
                     Venue
                   </label>
@@ -317,7 +317,7 @@ export function StatsPage() {
                     id="stats-venue"
                     value={venue}
                     onChange={(e) => setVenue(e.target.value)}
-                    className="rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm font-medium text-ink-800 focus:border-brand-500 focus:outline-none"
+                    className="rounded-lg border border-ink-300 dark:border-ink-700 bg-white dark:bg-ink-900 px-3 py-2 text-sm font-medium text-ink-800 dark:text-ink-200 focus:border-brand-500 focus:outline-none"
                   >
                     <option value="all">All venues</option>
                     {venueOptions.map((v) => (
@@ -332,7 +332,7 @@ export function StatsPage() {
                 <div className="flex items-center gap-2">
                   <label
                     htmlFor="stats-team"
-                    className="text-sm font-medium text-ink-600"
+                    className="text-sm font-medium text-ink-600 dark:text-ink-400"
                   >
                     Team
                   </label>
@@ -340,7 +340,7 @@ export function StatsPage() {
                     id="stats-team"
                     value={team}
                     onChange={(e) => setTeam(e.target.value)}
-                    className="rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm font-medium text-ink-800 focus:border-brand-500 focus:outline-none"
+                    className="rounded-lg border border-ink-300 dark:border-ink-700 bg-white dark:bg-ink-900 px-3 py-2 text-sm font-medium text-ink-800 dark:text-ink-200 focus:border-brand-500 focus:outline-none"
                   >
                     <option value="all">All teams</option>
                     {teamOptions.map((t) => (
@@ -355,7 +355,7 @@ export function StatsPage() {
                 <div className="flex items-center gap-2">
                   <label
                     htmlFor="stats-club"
-                    className="text-sm font-medium text-ink-600"
+                    className="text-sm font-medium text-ink-600 dark:text-ink-400"
                   >
                     Club
                   </label>
@@ -363,7 +363,7 @@ export function StatsPage() {
                     id="stats-club"
                     value={club}
                     onChange={(e) => setClub(e.target.value)}
-                    className="rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm font-medium text-ink-800 focus:border-brand-500 focus:outline-none"
+                    className="rounded-lg border border-ink-300 dark:border-ink-700 bg-white dark:bg-ink-900 px-3 py-2 text-sm font-medium text-ink-800 dark:text-ink-200 focus:border-brand-500 focus:outline-none"
                   >
                     <option value="all">All clubs</option>
                     {clubOptions.map((c) => (
@@ -378,7 +378,7 @@ export function StatsPage() {
                 <div className="flex items-center gap-2">
                   <label
                     htmlFor="stats-season"
-                    className="text-sm font-medium text-ink-600"
+                    className="text-sm font-medium text-ink-600 dark:text-ink-400"
                   >
                     Season
                   </label>
@@ -386,7 +386,7 @@ export function StatsPage() {
                     id="stats-season"
                     value={season}
                     onChange={(e) => setSeason(e.target.value)}
-                    className="rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm font-medium text-ink-800 focus:border-brand-500 focus:outline-none"
+                    className="rounded-lg border border-ink-300 dark:border-ink-700 bg-white dark:bg-ink-900 px-3 py-2 text-sm font-medium text-ink-800 dark:text-ink-200 focus:border-brand-500 focus:outline-none"
                   >
                     <option value="all">All seasons</option>
                     {seasonOptions.map((s) => (
@@ -401,7 +401,7 @@ export function StatsPage() {
                 <div className="flex items-center gap-2">
                   <label
                     htmlFor="stats-year"
-                    className="text-sm font-medium text-ink-600"
+                    className="text-sm font-medium text-ink-600 dark:text-ink-400"
                   >
                     Year
                   </label>
@@ -409,7 +409,7 @@ export function StatsPage() {
                     id="stats-year"
                     value={year}
                     onChange={(e) => setYear(e.target.value)}
-                    className="rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm font-medium text-ink-800 focus:border-brand-500 focus:outline-none"
+                    className="rounded-lg border border-ink-300 dark:border-ink-700 bg-white dark:bg-ink-900 px-3 py-2 text-sm font-medium text-ink-800 dark:text-ink-200 focus:border-brand-500 focus:outline-none"
                   >
                     <option value="all">All years</option>
                     {yearOptions.map((y) => (
@@ -438,8 +438,8 @@ export function StatsPage() {
                 limit={5}
                 tone={3}
               />
-              <div className="rounded-xl border border-ink-100 bg-ink-50/60 p-4 text-sm text-ink-500">
-                <div className="mb-1 font-semibold text-ink-700">
+              <div className="rounded-xl border border-ink-100 dark:border-ink-800 bg-ink-50/60 p-4 text-sm text-ink-500 dark:text-ink-400">
+                <div className="mb-1 font-semibold text-ink-700 dark:text-ink-300">
                   How impact is scored
                 </div>
                 Batting: runs + boundary &amp; milestone bonuses. Bowling: 20 per
@@ -458,8 +458,8 @@ export function StatsPage() {
                 limit={5}
                 tone={4}
               />
-              <div className="rounded-xl border border-ink-100 bg-ink-50/60 p-4 text-sm text-ink-500">
-                <div className="mb-1 font-semibold text-ink-700">
+              <div className="rounded-xl border border-ink-100 dark:border-ink-800 bg-ink-50/60 p-4 text-sm text-ink-500 dark:text-ink-400">
+                <div className="mb-1 font-semibold text-ink-700 dark:text-ink-300">
                   How consistency is scored
                 </div>
                 Coefficient of variation of runs per innings (standard deviation ÷ average) —
@@ -489,7 +489,7 @@ export function StatsPage() {
               <Card className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-ink-100 bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
+                    <tr className="border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 text-left text-xs uppercase tracking-wide text-ink-500 dark:text-ink-400">
                       <th className="px-3 py-2.5 font-semibold">#</th>
                       <th className="px-3 py-2.5 font-semibold">Team</th>
                       <th className="px-2 py-2.5 text-right font-semibold">P</th>
@@ -509,23 +509,23 @@ export function StatsPage() {
                         teamNameById.get(t.teamId) ??
                         'Team'
                       return (
-                        <tr key={t.teamId} className="border-b border-ink-50">
-                          <td className="px-3 py-2.5 text-ink-400">{i + 1}</td>
+                        <tr key={t.teamId} className="border-b border-ink-50 dark:border-ink-800">
+                          <td className="px-3 py-2.5 text-ink-400 dark:text-ink-500">{i + 1}</td>
                           <td className="px-3 py-2.5">
                             <Link
                               to={`/team/${t.teamId}`}
-                              className="font-medium text-ink-900 hover:text-brand-700"
+                              className="font-medium text-ink-900 dark:text-ink-50 hover:text-brand-700"
                             >
                               {teamName}
                             </Link>
                           </td>
-                          <td className="px-2 py-2.5 text-right text-ink-600">{t.matches}</td>
+                          <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">{t.matches}</td>
                           <td className="px-2 py-2.5 text-right text-pitch-700">{t.won}</td>
                           <td className="px-2 py-2.5 text-right text-red-600">{t.lost}</td>
-                          <td className="px-2 py-2.5 text-right font-semibold text-ink-900">
+                          <td className="px-2 py-2.5 text-right font-semibold text-ink-900 dark:text-ink-50">
                             {winPct}%
                           </td>
-                          <td className="px-3 py-2.5 text-right text-ink-600">
+                          <td className="px-3 py-2.5 text-right text-ink-600 dark:text-ink-400">
                             {t.runsScored}
                           </td>
                         </tr>
@@ -648,7 +648,7 @@ function RecordsGrid({
         <Link
           key={c.key}
           to={`/match/${c.matchId}`}
-          className="flex items-center gap-3 rounded-xl border border-ink-100 bg-white p-4 hover:border-brand-300 hover:bg-brand-50/40"
+          className="flex items-center gap-3 rounded-xl border border-ink-100 dark:border-ink-800 bg-white dark:bg-ink-900 p-4 hover:border-brand-300 hover:bg-brand-50/40"
         >
           <span
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg"
@@ -657,13 +657,13 @@ function RecordsGrid({
             {c.icon}
           </span>
           <div className="min-w-0">
-            <div className="text-xs uppercase tracking-wide text-ink-400">
+            <div className="text-xs uppercase tracking-wide text-ink-400 dark:text-ink-500">
               {c.label}
             </div>
-            <div className="truncate text-lg font-bold text-ink-900">
+            <div className="truncate text-lg font-bold text-ink-900 dark:text-ink-50">
               {c.value}
             </div>
-            <div className="truncate text-xs text-ink-500">{c.sub}</div>
+            <div className="truncate text-xs text-ink-500 dark:text-ink-400">{c.sub}</div>
           </div>
         </Link>
       ))}

@@ -112,23 +112,23 @@ export function MatchesPage() {
                         <Badge tone="amber">Upcoming</Badge>
                       )}
                       {m.tournamentName && (
-                        <span className="text-xs text-ink-400">
+                        <span className="text-xs text-ink-400 dark:text-ink-500">
                           {m.tournamentName}
                         </span>
                       )}
                     </div>
                     <Link
                       to={`/match/${m.id}`}
-                      className="font-semibold text-ink-900 hover:text-brand-700"
+                      className="font-semibold text-ink-900 dark:text-ink-50 hover:text-brand-700"
                     >
                       {m.teamA.name} vs {m.teamB.name}
                     </Link>
-                    <div className="mt-0.5 text-sm text-ink-500">
+                    <div className="mt-0.5 text-sm text-ink-500 dark:text-ink-400">
                       {m.format} · {m.oversPerInnings} overs ·{' '}
                       {m.venue || 'Venue TBD'} · {formatDate(m.scheduledAt ?? m.createdAt)}
                     </div>
                     {m.innings.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-ink-700">
+                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-ink-700 dark:text-ink-300">
                         {m.innings.map((inn, i) => (
                           <span key={i}>
                             {inn.battingTeamId === m.teamA.id
@@ -149,7 +149,7 @@ export function MatchesPage() {
                   <div className="flex shrink-0 flex-wrap gap-2">
                     <Link
                       to={`/match/${m.id}`}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 px-3 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-2 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
                     >
                       <Eye size={15} /> View
                     </Link>
@@ -165,7 +165,7 @@ export function MatchesPage() {
                       <>
                         <Link
                           to={`/matches/new?edit=${m.id}`}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 px-3 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-2 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
                         >
                           <Pencil size={15} /> Edit
                         </Link>

@@ -52,23 +52,23 @@ export function ClubPage() {
         <div className="flex items-center gap-4">
           <Avatar name={c.name} src={c.logoURL} size={64} />
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-bold text-ink-900">{c.name}</h1>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-ink-500">
+            <h1 className="text-2xl font-bold text-ink-900 dark:text-ink-50">{c.name}</h1>
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-ink-500 dark:text-ink-400">
               {c.shortName && <span>{c.shortName}</span>}
               {c.homeVenue && <span>· {c.homeVenue}</span>}
             </div>
           </div>
         </div>
         {c.description && (
-          <p className="mt-3 text-sm text-ink-600">{c.description}</p>
+          <p className="mt-3 text-sm text-ink-600 dark:text-ink-400">{c.description}</p>
         )}
       </Card>
 
-      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink-800">
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink-800 dark:text-ink-200">
         <Shield size={16} /> Teams ({clubTeams.length})
       </div>
       {clubTeams.length === 0 ? (
-        <p className="mb-6 text-sm text-ink-500">No teams assigned to this club yet.</p>
+        <p className="mb-6 text-sm text-ink-500 dark:text-ink-400">No teams assigned to this club yet.</p>
       ) : (
         <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {clubTeams.map((t) => (
@@ -80,24 +80,24 @@ export function ClubPage() {
                 >
                   {t.shortName}
                 </div>
-                <span className="font-medium text-ink-900">{t.name}</span>
+                <span className="font-medium text-ink-900 dark:text-ink-50">{t.name}</span>
               </Card>
             </Link>
           ))}
         </div>
       )}
 
-      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink-800">
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink-800 dark:text-ink-200">
         <CalendarRange size={16} /> Seasons ({clubSeasons.length})
       </div>
       {clubSeasons.length === 0 ? (
-        <p className="mb-6 text-sm text-ink-500">No seasons for this club yet.</p>
+        <p className="mb-6 text-sm text-ink-500 dark:text-ink-400">No seasons for this club yet.</p>
       ) : (
         <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {clubSeasons.map((s) => (
             <Link key={s.id} to={`/season/${s.id}`}>
               <Card className="flex items-center justify-between p-4 hover:border-brand-300">
-                <span className="font-medium text-ink-900">{s.name}</span>
+                <span className="font-medium text-ink-900 dark:text-ink-50">{s.name}</span>
                 <Badge tone={SEASON_TONE[s.status]}>{s.status}</Badge>
               </Card>
             </Link>
@@ -105,21 +105,21 @@ export function ClubPage() {
         </div>
       )}
 
-      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink-800">
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink-800 dark:text-ink-200">
         <Trophy size={16} /> Tournaments ({clubTournaments.length})
       </div>
       {clubTournaments.length === 0 ? (
-        <p className="text-sm text-ink-500">No tournaments for this club yet.</p>
+        <p className="text-sm text-ink-500 dark:text-ink-400">No tournaments for this club yet.</p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {clubTournaments.map((t) => (
             <Link key={t.id} to={`/tournament/${t.id}`}>
               <Card className="p-4 hover:border-brand-300">
                 <div className="flex items-start justify-between">
-                  <span className="font-medium text-ink-900">{t.name}</span>
+                  <span className="font-medium text-ink-900 dark:text-ink-50">{t.name}</span>
                   <Badge tone={TOURNAMENT_TONE[t.status]}>{t.status}</Badge>
                 </div>
-                <div className="mt-1 text-xs text-ink-500">
+                <div className="mt-1 text-xs text-ink-500 dark:text-ink-400">
                   {formatDate(t.startDate)} – {formatDate(t.endDate)}
                 </div>
               </Card>

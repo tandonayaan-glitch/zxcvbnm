@@ -60,16 +60,16 @@ export function ScorecardConfigModal({
         </>
       }
     >
-      <p className="mb-4 text-sm text-ink-500">
+      <p className="mb-4 text-sm text-ink-500 dark:text-ink-400">
         Choose which sections appear on this match's scorecard and public page.
       </p>
       <div className="space-y-1">
         {TOGGLES.map((t) => (
           <label
             key={t.key}
-            className="flex cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 hover:bg-ink-50"
+            className="flex cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 hover:bg-ink-50 dark:hover:bg-ink-800"
           >
-            <span className="text-sm font-medium text-ink-800">{t.label}</span>
+            <span className="text-sm font-medium text-ink-800 dark:text-ink-200">{t.label}</span>
             <button
               type="button"
               onClick={(e) => {
@@ -81,7 +81,7 @@ export function ScorecardConfigModal({
               }`}
             >
               <span
-                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white dark:bg-ink-900 transition-transform ${
                   cfg[t.key] ? 'translate-x-5' : 'translate-x-0.5'
                 }`}
               />

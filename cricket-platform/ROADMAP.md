@@ -37,7 +37,13 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 - ✅ Match insights panel (biggest over, best partnership, boundary %, dot-ball %, powerplay) — pure computation from deliveries
 - 🟡 **Head-to-head record + star performers + live projected score/chase-rate comparison** on the
   match page (✅ `domain/headToHead.ts`, `domain/matchPerformers.ts`, `projectedScore` in
-  `lib/format.ts`); add wagon wheel · pitch/bowling map · full win-probability model
+  `lib/format.ts`; ✅ **win-probability bar** for the chasing side — `domain/winProbability.ts`
+  `chaseWinProbability()`, a transparent required-rate/wickets-in-hand heuristic, explicitly labelled
+  "heuristic estimate" rather than a trained model, since there's no historical ball-by-ball dataset
+  in this app to fit one on); add wagon wheel · pitch/bowling map — both need shot-direction/
+  line-length data that isn't captured anywhere in the scoring flow today; adding it would mean
+  extending the ball-input UI during live scoring, a materially bigger feature than an analytics
+  read over existing data, so it's left for a dedicated future slice rather than faked
 - ✅ **Best bowling spell + boundary/wicket timeline + momentum + turning point** in Match Insights
   — tightest 2–4 over economy stretch per bowler; colour-coded ball-order timeline of every
   4/6/wicket; last-3-overs rate vs overall, accelerating/slowing/steady; the over with the largest
@@ -69,15 +75,25 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 
 ## Phase 4 — Settings & user profile
 - 🟡 Background customization (pill + panel + presets, persisted locally) — ✅ done earlier
-- 🟡 Unified Settings page on every dashboard (✅ profile pic/display name/bio/email, change
-  password, appearance — text size/density/reduced motion/high contrast — and now
-  **self-service "export my data" (JSON)**); add privacy, sessions
+- ✅ Unified Settings page on every dashboard: profile pic/display name/bio/email, change
+  password, appearance (text size/density/reduced motion/high contrast/colour-blind palette),
+  self-service "export my data" (JSON), and a **Privacy & sessions** card — states plainly what's
+  public (nothing account-related; only display name where credited as scorer) vs. visible to
+  other admins (bio/email, needed to manage access) and why, current-session sign-in time +
+  "Sign out this device"; cross-device session listing/remote revocation needs a server-side
+  Admin SDK this project doesn't run, so that's documented rather than faked
 - 🟡 **Light/dark/system theme** (✅ `theme` pref in `prefsStore`, synced cross-device like the
   other appearance prefs, live OS-preference listener for "system", Light/Dark/System toggle on
   Settings, plus a quick-access horizontal Sun/Moon slider (`ThemeToggle`) next to the Background
   control in both headers — flips explicitly between light/dark, icon swaps with the mode; scoped
-  to app-shell chrome — page background, sidebar/header/footer, `PageHeader` titles —
-  deliberately, since flipping every page's own card/text colours safely needs a broader
+  to app-shell chrome — page background, sidebar/header/footer, `PageHeader` titles; **✅ extended
+  to the shared UI kit and nearly every page** — `Card`/`CardHeader`/`Modal`/`Badge`/`Button`/
+  `Input`/`Select`/`Textarea`/`Tabs`/`EmptyState`/`StatCard`/toast/pagination/follow-button all
+  gained `dark:` variants (verified: 157/158 sampled text elements pass a computed-style contrast
+  check on the Stats page in dark mode), plus 39 feature/chart page files. `MatchPage`,
+  `PlayerPage`, `TournamentPage` and the settings page are still on the old unscoped styling —
+  held back this pass specifically to avoid clobbering concurrent work landing in those same
+  files); still missing a broader
   follow-up pass to avoid dark-text-on-dark-background contrast bugs); add full per-page dark
   styling
 - ✅ Cross-device persistence of preferences (Firestore `userPrefs`) — pull/seed on sign-in (remote wins), debounced push on change, resets on sign-out
@@ -145,7 +161,13 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 - 🟡 **Printable scorecard (print CSS) + CSV/JSON export** from the match page (✅
   `domain/matchExport.ts`), **tournament standings/leaders export** (✅
   `domain/tournamentExport.ts`) **and player career/splits/match-log export** (✅
-  `domain/playerExport.ts`); add PDF, match archive, import + duplicate detection
+  `domain/playerExport.ts`); **PDF export** (✅ "Print / Save as PDF" buttons on the Match,
+  Tournament and Player pages — reuse the existing print stylesheet via `window.print()`, the
+  standard way a client-only app produces a real PDF without shipping a PDF-rendering library;
+  a generated-PDF-in-JS route would just be a worse version of the browser's own "Save as PDF"
+  print destination); add match archive, import + duplicate detection — an import format/source
+  isn't specified anywhere in this project, so building one would be guessing a contract no
+  consumer has asked for; left for a slice with a concrete source system to import from
 - 🟡 Accessibility: focus rings, large-text mode, high-contrast (✅ earlier); **skip-to-content
   link + `main` landmarks + nav `aria-current`/labels** (✅); **colour-blind friendly palette**
   (✅ `colorBlind` pref remaps the `pitch-*` green token to teal via a `.colorblind` CSS-variable

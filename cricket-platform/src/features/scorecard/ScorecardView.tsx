@@ -59,7 +59,7 @@ export function ScorecardView({
   const [tab, setTab] = useState('0')
   if (match.innings.length === 0) {
     return (
-      <Card className="p-6 text-center text-ink-500">
+      <Card className="p-6 text-center text-ink-500 dark:text-ink-400">
         Scoring hasn't started yet.
       </Card>
     )
@@ -125,17 +125,17 @@ function InningsCard({
 
   return (
     <Card className="overflow-hidden">
-      <div className="flex items-center justify-between border-b border-ink-100 bg-ink-50 px-4 py-3">
-        <div className="font-semibold text-ink-900">
+      <div className="flex items-center justify-between border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 px-4 py-3">
+        <div className="font-semibold text-ink-900 dark:text-ink-50">
           {inn.battingTeamId === match.teamA.id
             ? match.teamA.name
             : match.teamB.name}
         </div>
         <div className="text-right">
-          <div className="text-xl font-bold text-ink-900">
+          <div className="text-xl font-bold text-ink-900 dark:text-ink-50">
             {inn.totalRuns}/{inn.wickets}
           </div>
-          <div className="text-xs text-ink-500">
+          <div className="text-xs text-ink-500 dark:text-ink-400">
             {ballsToOvers(inn.legalBalls, match.ballsPerOver)} ov
             {cfg.showRunRate && ` · RR ${formatRate(crr)}`}
           </div>
@@ -145,7 +145,7 @@ function InningsCard({
       {cfg.showBatting && (
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-ink-100 text-left text-xs uppercase tracking-wide text-ink-400">
+            <tr className="border-b border-ink-100 dark:border-ink-800 text-left text-xs uppercase tracking-wide text-ink-400 dark:text-ink-500">
               <th className="px-4 py-2 font-semibold">Batter</th>
               <th className="px-2 py-2 text-right font-semibold">R</th>
               <th className="px-2 py-2 text-right font-semibold">B</th>
@@ -157,29 +157,29 @@ function InningsCard({
           <tbody>
             {batters.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-3 text-center text-ink-400">
+                <td colSpan={6} className="px-4 py-3 text-center text-ink-400 dark:text-ink-500">
                   No batting yet
                 </td>
               </tr>
             )}
             {batters.map((b) => (
-              <tr key={b.playerId} className="border-b border-ink-50">
+              <tr key={b.playerId} className="border-b border-ink-50 dark:border-ink-800">
                 <td className="px-4 py-2">
-                  <div className="font-medium text-ink-900">
+                  <div className="font-medium text-ink-900 dark:text-ink-50">
                     {name(b.playerId)}
                     {!b.out && (b.balls > 0 || b.runs > 0) && (
                       <span className="text-pitch-600"> *</span>
                     )}
                   </div>
-                  <div className="text-xs text-ink-400">{dismissal(b)}</div>
+                  <div className="text-xs text-ink-400 dark:text-ink-500">{dismissal(b)}</div>
                 </td>
-                <td className="px-2 py-2 text-right font-semibold text-ink-900">
+                <td className="px-2 py-2 text-right font-semibold text-ink-900 dark:text-ink-50">
                   {b.runs}
                 </td>
-                <td className="px-2 py-2 text-right text-ink-600">{b.balls}</td>
-                <td className="px-2 py-2 text-right text-ink-600">{b.fours}</td>
-                <td className="px-2 py-2 text-right text-ink-600">{b.sixes}</td>
-                <td className="px-4 py-2 text-right text-ink-600">
+                <td className="px-2 py-2 text-right text-ink-600 dark:text-ink-400">{b.balls}</td>
+                <td className="px-2 py-2 text-right text-ink-600 dark:text-ink-400">{b.fours}</td>
+                <td className="px-2 py-2 text-right text-ink-600 dark:text-ink-400">{b.sixes}</td>
+                <td className="px-4 py-2 text-right text-ink-600 dark:text-ink-400">
                   {strikeRate(b.runs, b.balls)}
                 </td>
               </tr>
@@ -189,16 +189,16 @@ function InningsCard({
       )}
 
       {cfg.showExtras && (
-        <div className="flex items-center justify-between border-t border-ink-100 px-4 py-2 text-sm">
-          <span className="text-ink-500">Extras</span>
-          <span className="text-ink-700">
+        <div className="flex items-center justify-between border-t border-ink-100 dark:border-ink-800 px-4 py-2 text-sm">
+          <span className="text-ink-500 dark:text-ink-400">Extras</span>
+          <span className="text-ink-700 dark:text-ink-300">
             {inn.extras.total} (b {inn.extras.byes}, lb {inn.extras.legByes}, w{' '}
             {inn.extras.wides}, nb {inn.extras.noBalls})
           </span>
         </div>
       )}
 
-      <div className="flex items-center justify-between border-t border-ink-100 bg-ink-50 px-4 py-2.5 text-sm font-bold text-ink-900">
+      <div className="flex items-center justify-between border-t border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 px-4 py-2.5 text-sm font-bold text-ink-900 dark:text-ink-50">
         <span>Total</span>
         <span>
           {inn.totalRuns}/{inn.wickets} ({ballsToOvers(inn.legalBalls, match.ballsPerOver)} ov)
@@ -206,16 +206,16 @@ function InningsCard({
       </div>
 
       {yetToBat.length > 0 && (
-        <div className="border-t border-ink-100 px-4 py-2 text-xs text-ink-500">
+        <div className="border-t border-ink-100 dark:border-ink-800 px-4 py-2 text-xs text-ink-500 dark:text-ink-400">
           <span className="font-semibold">Yet to bat: </span>
           {yetToBat.map(name).join(', ')}
         </div>
       )}
 
       {cfg.showBowling && (
-        <table className="w-full border-t border-ink-100 text-sm">
+        <table className="w-full border-t border-ink-100 dark:border-ink-800 text-sm">
           <thead>
-            <tr className="border-b border-ink-100 text-left text-xs uppercase tracking-wide text-ink-400">
+            <tr className="border-b border-ink-100 dark:border-ink-800 text-left text-xs uppercase tracking-wide text-ink-400 dark:text-ink-500">
               <th className="px-4 py-2 font-semibold">Bowler</th>
               <th className="px-2 py-2 text-right font-semibold">O</th>
               <th className="px-2 py-2 text-right font-semibold">M</th>
@@ -228,21 +228,21 @@ function InningsCard({
             {inn.bowlingCard
               .filter((b) => b.legalBalls > 0 || b.wides > 0 || b.noBalls > 0)
               .map((b) => (
-                <tr key={b.playerId} className="border-b border-ink-50">
-                  <td className="px-4 py-2 font-medium text-ink-900">
+                <tr key={b.playerId} className="border-b border-ink-50 dark:border-ink-800">
+                  <td className="px-4 py-2 font-medium text-ink-900 dark:text-ink-50">
                     {name(b.playerId)}
                   </td>
-                  <td className="px-2 py-2 text-right text-ink-600">
+                  <td className="px-2 py-2 text-right text-ink-600 dark:text-ink-400">
                     {ballsToOvers(b.legalBalls, match.ballsPerOver)}
                   </td>
-                  <td className="px-2 py-2 text-right text-ink-600">{b.maidens}</td>
-                  <td className="px-2 py-2 text-right text-ink-600">
+                  <td className="px-2 py-2 text-right text-ink-600 dark:text-ink-400">{b.maidens}</td>
+                  <td className="px-2 py-2 text-right text-ink-600 dark:text-ink-400">
                     {b.runsConceded}
                   </td>
-                  <td className="px-2 py-2 text-right font-semibold text-ink-900">
+                  <td className="px-2 py-2 text-right font-semibold text-ink-900 dark:text-ink-50">
                     {b.wickets}
                   </td>
-                  <td className="px-4 py-2 text-right text-ink-600">
+                  <td className="px-4 py-2 text-right text-ink-600 dark:text-ink-400">
                     {economy(b.runsConceded, b.legalBalls, match.ballsPerOver)}
                   </td>
                 </tr>
@@ -252,14 +252,14 @@ function InningsCard({
       )}
 
       {cfg.showFallOfWickets && inn.fallOfWickets.length > 0 && (
-        <div className="border-t border-ink-100 px-4 py-3 text-sm">
-          <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-400">
+        <div className="border-t border-ink-100 dark:border-ink-800 px-4 py-3 text-sm">
+          <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-400 dark:text-ink-500">
             Fall of wickets
           </div>
-          <div className="flex flex-wrap gap-x-3 gap-y-1 text-ink-600">
+          <div className="flex flex-wrap gap-x-3 gap-y-1 text-ink-600 dark:text-ink-400">
             {inn.fallOfWickets.map((f) => (
               <span key={f.wicketNumber}>
-                <b className="text-ink-800">
+                <b className="text-ink-800 dark:text-ink-200">
                   {f.score}-{f.wicketNumber}
                 </b>{' '}
                 ({name(f.batterOutId)}, {f.displayOver})
@@ -306,7 +306,7 @@ function OverByOver({
 
   return (
     <Card className="overflow-hidden">
-      <div className="border-b border-ink-100 bg-ink-50 px-4 py-3 font-semibold text-ink-900">
+      <div className="border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 px-4 py-3 font-semibold text-ink-900 dark:text-ink-50">
         Ball-by-ball commentary
       </div>
       <div className="max-h-[28rem] divide-y divide-ink-50 overflow-y-auto">
@@ -314,17 +314,17 @@ function OverByOver({
           const runs = balls.reduce((s, d) => s + d.totalRuns, 0)
           return (
             <div key={over} className="px-4 py-3">
-              <div className="mb-1.5 flex items-center justify-between text-xs font-semibold text-ink-500">
+              <div className="mb-1.5 flex items-center justify-between text-xs font-semibold text-ink-500 dark:text-ink-400">
                 <span>Over {over + 1}</span>
                 <span>{runs} runs</span>
               </div>
               <div className="space-y-1.5">
                 {[...balls].reverse().map((d) => (
                   <div key={d.id} className="flex gap-2 text-sm">
-                    <span className="w-10 shrink-0 font-mono text-ink-400">
+                    <span className="w-10 shrink-0 font-mono text-ink-400 dark:text-ink-500">
                       {d.overNumber}.{d.ballInOver}
                     </span>
-                    <span className="text-ink-700">
+                    <span className="text-ink-700 dark:text-ink-300">
                       {commentaryLine(d, name, ballsPerOver)}
                     </span>
                   </div>
@@ -334,7 +334,7 @@ function OverByOver({
           )
         })}
         {ordered.length === 0 && (
-          <p className="px-4 py-6 text-center text-sm text-ink-400">
+          <p className="px-4 py-6 text-center text-sm text-ink-400 dark:text-ink-500">
             No deliveries yet.
           </p>
         )}

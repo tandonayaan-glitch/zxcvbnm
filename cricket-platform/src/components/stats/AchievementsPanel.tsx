@@ -57,8 +57,8 @@ export function AchievementsPanel({
     <div className="space-y-4">
       {/* Awards cabinet */}
       <Card className="overflow-hidden">
-        <div className="border-b border-ink-100 bg-ink-50 px-4 py-2.5">
-          <h3 className="text-sm font-semibold text-ink-900">Awards cabinet</h3>
+        <div className="border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 px-4 py-2.5">
+          <h3 className="text-sm font-semibold text-ink-900 dark:text-ink-50">Awards cabinet</h3>
         </div>
         <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3">
           <AwardStat
@@ -84,8 +84,8 @@ export function AchievementsPanel({
 
       {/* Achievements grid */}
       <Card className="overflow-hidden">
-        <div className="border-b border-ink-100 bg-ink-50 px-4 py-2.5">
-          <h3 className="text-sm font-semibold text-ink-900">
+        <div className="border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 px-4 py-2.5">
+          <h3 className="text-sm font-semibold text-ink-900 dark:text-ink-50">
             Achievements ({unlocked}/{achievements.length})
           </h3>
         </div>
@@ -99,8 +99,8 @@ export function AchievementsPanel({
                 className={cn(
                   'flex items-start gap-3 rounded-xl border p-3 transition',
                   a.unlocked
-                    ? 'border-ink-200 bg-white'
-                    : 'border-dashed border-ink-200 bg-ink-50/60',
+                    ? 'border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-900'
+                    : 'border-dashed border-ink-200 dark:border-ink-800 bg-ink-50/60',
                 )}
               >
                 <div
@@ -117,7 +117,7 @@ export function AchievementsPanel({
                     <span
                       className={cn(
                         'text-sm font-semibold',
-                        a.unlocked ? 'text-ink-900' : 'text-ink-500',
+                        a.unlocked ? 'text-ink-900 dark:text-ink-50' : 'text-ink-500 dark:text-ink-400',
                       )}
                     >
                       {a.title}
@@ -129,10 +129,10 @@ export function AchievementsPanel({
                       {a.tier}
                     </span>
                   </div>
-                  <p className="text-xs text-ink-500">{a.description}</p>
+                  <p className="text-xs text-ink-500 dark:text-ink-400">{a.description}</p>
                   {a.progress && !a.unlocked && (
                     <div className="mt-1.5">
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-ink-100">
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800">
                         <div
                           className="h-full rounded-full"
                           style={{
@@ -141,7 +141,7 @@ export function AchievementsPanel({
                           }}
                         />
                       </div>
-                      <div className="mt-0.5 text-[10px] text-ink-400">
+                      <div className="mt-0.5 text-[10px] text-ink-400 dark:text-ink-500">
                         {a.progress.current} / {a.progress.target}
                       </div>
                     </div>
@@ -168,10 +168,10 @@ function AwardStat({
   tone: string
 }) {
   return (
-    <div className="flex flex-col items-center rounded-xl bg-ink-50 p-3 text-center">
+    <div className="flex flex-col items-center rounded-xl bg-ink-50 dark:bg-ink-800/60 p-3 text-center">
       <span style={{ color: tone }}>{icon}</span>
-      <span className="mt-1 text-xl font-bold text-ink-900">{value}</span>
-      <span className="text-[11px] text-ink-500">{label}</span>
+      <span className="mt-1 text-xl font-bold text-ink-900 dark:text-ink-50">{value}</span>
+      <span className="text-[11px] text-ink-500 dark:text-ink-400">{label}</span>
     </div>
   )
 }

@@ -174,7 +174,7 @@ export function ComparePage() {
         actions={
           <Link
             to="/compare/teams"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 px-3 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-2 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
           >
             Compare teams
           </Link>
@@ -225,19 +225,19 @@ function PlayerPicker({
         {player ? (
           <Link
             to={`/player/${player.id}`}
-            className="truncate font-semibold text-ink-900 hover:text-brand-700"
+            className="truncate font-semibold text-ink-900 dark:text-ink-50 hover:text-brand-700"
           >
             {player.displayName}
           </Link>
         ) : (
-          <span className="text-ink-500">Select a player</span>
+          <span className="text-ink-500 dark:text-ink-400">Select a player</span>
         )}
       </div>
       <select
         aria-label={`Player ${side.toUpperCase()}`}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm text-ink-800 focus:border-brand-500 focus:outline-none"
+        className="w-full rounded-lg border border-ink-300 dark:border-ink-700 bg-white dark:bg-ink-900 px-3 py-2 text-sm text-ink-800 dark:text-ink-200 focus:border-brand-500 focus:outline-none"
       >
         {players.map((p) => (
           <option key={p.id} value={p.id}>
@@ -252,7 +252,7 @@ function PlayerPicker({
 function StatGroup({ title, rows }: { title: string; rows: Row[] }) {
   return (
     <Card className="mb-4 overflow-hidden">
-      <div className="border-b border-ink-100 bg-ink-50 px-4 py-2.5 text-sm font-semibold text-ink-800">
+      <div className="border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 px-4 py-2.5 text-sm font-semibold text-ink-800 dark:text-ink-200">
         {title}
       </div>
       <div className="divide-y divide-ink-50">
@@ -272,17 +272,17 @@ function StatGroup({ title, rows }: { title: string; rows: Row[] }) {
             >
               <span
                 className={`text-right font-semibold ${
-                  aBetter ? 'text-pitch-700' : 'text-ink-700'
+                  aBetter ? 'text-pitch-700' : 'text-ink-700 dark:text-ink-300'
                 }`}
               >
                 {row.aText}
               </span>
-              <span className="px-2 text-center text-xs uppercase tracking-wide text-ink-400">
+              <span className="px-2 text-center text-xs uppercase tracking-wide text-ink-400 dark:text-ink-500">
                 {row.label}
               </span>
               <span
                 className={`font-semibold ${
-                  bBetter ? 'text-pitch-700' : 'text-ink-700'
+                  bBetter ? 'text-pitch-700' : 'text-ink-700 dark:text-ink-300'
                 }`}
               >
                 {row.bText}
