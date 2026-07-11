@@ -68,7 +68,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <Ctx.Provider value={api}>
       {children}
       {createPortal(
-        <div className="fixed bottom-4 right-4 z-[100] flex w-80 flex-col gap-2">
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-4 right-4 z-[100] flex w-80 flex-col gap-2"
+        >
           {toasts.map((t) => (
             <div
               key={t.id}
@@ -92,6 +96,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               )}
               <button
                 onClick={() => remove(t.id)}
+                aria-label="Dismiss notification"
                 className="text-ink-400 hover:text-ink-700"
               >
                 <X size={16} />

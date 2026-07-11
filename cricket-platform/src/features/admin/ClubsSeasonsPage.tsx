@@ -191,12 +191,16 @@ export function ClubsSeasonsPage() {
                       setEditingClub(c)
                       setShowClubForm(true)
                     }}
+                    aria-label={`Edit ${c.name}`}
+                    title="Edit"
                     className="rounded-md p-1.5 text-ink-500 hover:bg-ink-100"
                   >
                     <Pencil size={15} />
                   </button>
                   <button
                     onClick={() => handleDeleteClub(c)}
+                    aria-label={`Delete ${c.name}`}
+                    title="Delete"
                     className="rounded-md p-1.5 text-red-500 hover:bg-red-50"
                   >
                     <Trash2 size={15} />
@@ -253,12 +257,16 @@ export function ClubsSeasonsPage() {
                     setEditingSeason(s)
                     setShowSeasonForm(true)
                   }}
+                  aria-label={`Edit ${s.name}`}
+                  title="Edit"
                   className="rounded-md p-1.5 text-ink-500 hover:bg-ink-100"
                 >
                   <Pencil size={15} />
                 </button>
                 <button
                   onClick={() => handleDeleteSeason(s)}
+                  aria-label={`Delete ${s.name}`}
+                  title="Delete"
                   className="rounded-md p-1.5 text-red-500 hover:bg-red-50"
                 >
                   <Trash2 size={15} />

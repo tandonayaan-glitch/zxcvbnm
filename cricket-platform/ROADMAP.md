@@ -124,7 +124,14 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
   (✅ `colorBlind` pref remaps the `pitch-*` green token to teal via a `.colorblind` CSS-variable
   override — covers every Tailwind-class usage of pitch plus the few chart/SVG spots that read the
   same CSS variable; standalone decorative icon tones left as-is since they don't pair information
-  with colour alone); add full ARIA audit
+  with colour alone); **scoped ARIA pass** (✅ `Modal` and the danger-zone dialog gained
+  `role="dialog"`/`aria-modal`/`aria-labelledby`; `Modal`'s and the toast's close/dismiss buttons
+  gained `aria-label`; the toast region gained `role="status" aria-live="polite"`; every icon-only
+  edit/delete button on the Teams/Tournaments/Clubs & Seasons/Matches/Players list pages gained an
+  `aria-label` naming the specific row — previously relied on `title` alone or had no accessible
+  name at all); a truly exhaustive audit (every interactive element in the app) is unbounded scope
+  and diminishing-returns without a specific target, so this targeted the shared dialog/toast
+  primitives (used everywhere) plus the concretely-missing icon buttons found by grepping for them
 - ✅ Performance: **lazy-loaded routes / code-splitting** (`React.lazy` + `Suspense` per route);
   **memoised TeamPage/PlayerPage/MatchPage/TournamentPage analytics** (`useMemo`, incl. the
   live-scoring MatchPage which re-renders every ball); **batched backup-export delivery reads**

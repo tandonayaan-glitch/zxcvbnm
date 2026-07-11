@@ -4,6 +4,31 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Scoped ARIA accessibility pass (Phase 9)
+- **`Modal`** (used by every form dialog in the app): `role="dialog"`, `aria-modal="true"`,
+  `aria-labelledby` pointing at the title (via `useId()`, so it's collision-safe even if two
+  modals were ever open at once), and `aria-label="Close"` on the X button.
+- **Danger-zone confirm dialog** (Platform Tools' "Clear all leaderboards"): same `role="dialog"`/
+  `aria-modal`/`aria-labelledby` treatment (it's a hand-rolled dialog, not the shared `Modal`).
+- **Toast notifications**: the container gained `role="status" aria-live="polite"` so screen
+  readers announce new toasts; the dismiss button gained `aria-label="Dismiss notification"`.
+- **Icon-only edit/delete buttons**: grepped for every bare `<Pencil>`/`<Trash2>` button in the
+  app and added a row-specific `aria-label` (e.g. `"Delete Riverside CC"`, not just `"Delete"`) —
+  found genuinely unlabelled ones on Teams, Tournaments, Clubs & Seasons (both clubs and seasons)
+  and Matches; Players' buttons already had `title` but gained `aria-label` too for reliability.
+  - **Scope decision**: this isn't a claim of full WCAG compliance — a truly exhaustive audit
+    (every interactive element, contrast ratios, keyboard-trap testing, live-region tuning across
+    every page) is unbounded and can't be meaningfully completed or verified in one slice. This
+    targeted the shared dialog/toast primitives (fixing them once fixes every usage) plus the
+    concrete icon-button gaps a grep surfaced, the same bounded-but-real approach used for dark
+    mode and the colour-blind palette.
+  - Verified in the browser: opened a real form modal and confirmed (via the actual DOM, not
+    source reading) `role="dialog"`/`aria-modal="true"`/`aria-labelledby` resolved to the visible
+    title text, and the close button's `aria-label`; triggered a real save action and confirmed
+    the toast region had `role="status"`/`aria-live="polite"` with the dismiss button labelled;
+    confirmed the Teams page's Edit/Delete buttons carry `aria-label="Edit x"`/`"Delete x"`. No
+    console errors.
+
 ### Added — Offline force-resync (Phase 1 & 7)
 - **`forceResync()`** (`services/diagnostics.service.ts`): drops and re-establishes the Firestore
   network connection (forcing every active listener to re-subscribe), then waits for any writes

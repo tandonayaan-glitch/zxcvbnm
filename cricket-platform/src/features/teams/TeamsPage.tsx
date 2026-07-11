@@ -167,12 +167,16 @@ export function TeamsPage() {
                       setEditing(t)
                       setShowForm(true)
                     }}
+                    aria-label={`Edit ${t.name}`}
+                    title="Edit"
                     className="rounded-md p-1.5 text-ink-500 hover:bg-ink-100"
                   >
                     <Pencil size={15} />
                   </button>
                   <button
                     onClick={() => handleDelete(t)}
+                    aria-label={`Delete ${t.name}`}
+                    title="Delete"
                     className="rounded-md p-1.5 text-red-500 hover:bg-red-50"
                   >
                     <Trash2 size={15} />

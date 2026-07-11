@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect } from 'react'
+import { type ReactNode, useEffect, useId } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/cn'
@@ -18,6 +18,8 @@ export function Modal({
   footer?: ReactNode
   size?: 'sm' | 'md' | 'lg' | 'xl'
 }) {
+  const titleId = useId()
+
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -43,6 +45,9 @@ export function Modal({
         onClick={onClose}
       />
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
         className={cn(
           'animate-fade-in relative z-10 flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl sm:rounded-2xl',
           widths[size],
@@ -50,9 +55,12 @@ export function Modal({
       >
         {title && (
           <div className="flex items-center justify-between border-b border-ink-100 px-5 py-3.5">
-            <h3 className="text-lg font-semibold text-ink-900">{title}</h3>
+            <h3 id={titleId} className="text-lg font-semibold text-ink-900">
+              {title}
+            </h3>
             <button
               onClick={onClose}
+              aria-label="Close"
               className="rounded-md p-1 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
             >
               <X size={20} />

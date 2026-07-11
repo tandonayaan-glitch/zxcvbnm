@@ -180,6 +180,8 @@ export function MatchesPage() {
                     {canScore(profile) && (
                       <button
                         onClick={() => handleDelete(m)}
+                        aria-label={`Delete ${m.title}`}
+                        title="Delete"
                         className="rounded-lg p-2 text-red-500 hover:bg-red-50"
                       >
                         <Trash2 size={16} />

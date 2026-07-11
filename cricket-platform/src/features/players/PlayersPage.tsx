@@ -260,6 +260,7 @@ export function PlayersPage() {
                       <div className="flex justify-end gap-1">
                         <button
                           title="Edit"
+                          aria-label={`Edit ${p.fullName}`}
                           onClick={() => {
                             setEditing(p)
                             setShowForm(true)
@@ -270,6 +271,7 @@ export function PlayersPage() {
                         </button>
                         <button
                           title={p.active ? 'Archive' : 'Restore'}
+                          aria-label={`${p.active ? 'Archive' : 'Restore'} ${p.fullName}`}
                           onClick={() => toggleActive(p)}
                           className="rounded-md p-1.5 text-ink-500 hover:bg-ink-100 hover:text-ink-800"
                         >
@@ -281,6 +283,7 @@ export function PlayersPage() {
                         </button>
                         <button
                           title="Delete"
+                          aria-label={`Delete ${p.fullName}`}
                           onClick={() => handleDelete(p)}
                           className="rounded-md p-1.5 text-red-500 hover:bg-red-50"
                         >
