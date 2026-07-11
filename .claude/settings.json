@@ -14,7 +14,10 @@
       "Bash(npx tsc -b*)",
       "Bash(npx vite build*)",
       "Bash(node --version)",
-      "Bash(command -v *)"
+      "Bash(command -v *)",
+      "Bash(node _seed/seed.mjs --dry*)",
+      "Bash(uniq *)",
+      "Bash(npx tsc --noEmit*)"
     ]
   }
 }
