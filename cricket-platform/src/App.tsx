@@ -83,6 +83,11 @@ const ClubsSeasonsPage = lazy(() =>
     default: m.ClubsSeasonsPage,
   })),
 )
+const PlayerMergePage = lazy(() =>
+  import('@/features/admin/PlayerMergePage').then((m) => ({
+    default: m.PlayerMergePage,
+  })),
+)
 const AccountPage = lazy(() =>
   import('@/features/account/AccountPage').then((m) => ({ default: m.AccountPage })),
 )
@@ -220,6 +225,14 @@ export default function App() {
             element={
               <ProtectedRoute roles={['MASTER_ADMIN']}>
                 <PlatformToolsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/merge-players"
+            element={
+              <ProtectedRoute roles={['MASTER_ADMIN']}>
+                <PlayerMergePage />
               </ProtectedRoute>
             }
           />

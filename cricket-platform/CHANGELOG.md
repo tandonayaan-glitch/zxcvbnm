@@ -4,6 +4,17 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Merge duplicate player profiles (Phase 3)
+- **Master-admin merge tool** at `/admin/merge-players` (`PlayerMergePage`, nav entry "Merge
+  Players"): pick a profile to keep and a duplicate to fold into it. `mergePlayers()`
+  (`services/playerMerge.service.ts`) batch-rewrites every stored reference to the duplicate's id —
+  `Team.playerIds`/`captainId`/`viceCaptainId`, `Match.squadA`/`squadB`/`playerOfTheMatchId`, every
+  innings' `battingCard`/`bowlingCard`/`fallOfWickets`/striker-non-striker-bowler ids, and every
+  ball in the match's `deliveries` subcollection — onto the kept player, merges `teamIds`, then
+  calls `recomputeAllStats()` so cached leaderboards reflect the merge, and finally deletes the
+  duplicate's `playerStats` doc and player doc. A confirmation modal spells out the irreversible
+  effect before committing; the merge is audit-logged (`player.merge`).
+
 ### Added — Player account lifecycle (Phase 3)
 - **Auto-create linked login on player create**: `PlayerFormModal` gained a "Create a linked login
   account" checkbox (on by default for new players). On save, `createLinkedAccount()`

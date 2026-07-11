@@ -19,6 +19,7 @@ import {
   Wrench,
   Sliders,
   Building2,
+  Users2,
 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { useAuthStore, isAdmin, canScore } from '@/store/authStore'
@@ -58,6 +59,12 @@ const NAV: NavItem[] = [
     to: '/admin/tools',
     label: 'Platform Tools',
     icon: <Wrench size={18} />,
+    roles: ['MASTER_ADMIN'],
+  },
+  {
+    to: '/admin/merge-players',
+    label: 'Merge Players',
+    icon: <Users2 size={18} />,
     roles: ['MASTER_ADMIN'],
   },
   {

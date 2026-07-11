@@ -38,9 +38,10 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 - 🟡 **Head-to-head record + star performers + live projected score/chase-rate comparison** on the
   match page (✅ `domain/headToHead.ts`, `domain/matchPerformers.ts`, `projectedScore` in
   `lib/format.ts`); add wagon wheel · pitch/bowling map · full win-probability model
-- 🟡 **Best bowling spell + boundary/wicket timeline + momentum** in Match Insights (✅ tightest
-  2–4 over economy stretch per bowler; ✅ colour-coded ball-order timeline of every 4/6/wicket;
-  ✅ last-3-overs rate vs overall, accelerating/slowing/steady); add turning point
+- ✅ **Best bowling spell + boundary/wicket timeline + momentum + turning point** in Match Insights
+  — tightest 2–4 over economy stretch per bowler; colour-coded ball-order timeline of every
+  4/6/wicket; last-3-overs rate vs overall, accelerating/slowing/steady; the over with the largest
+  run swing between consecutive overs (`domain/insights.ts` `TurningPoint`)
 
 ## Phase 3 — Player account lifecycle
 - ✅ **Auto-create linked user account on player create** — optional checkbox on the player form;
@@ -58,7 +59,13 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
   only the password (and display name) are chosen at activation. This is a platform constraint,
   not a shortcut — a real fix would need a backend (Admin SDK) this project doesn't have.
 - 🟡 Cricket-based password recovery (fuzzy name match exists at `/recover`; add match-history Q&A verification, rate limiting, cooldowns, recovery audit)
-- ⬜ Claim / merge duplicate player profiles (master-admin merge tool preserving stats + audit)
+- ✅ **Claim / merge duplicate player profiles** — master-admin-only page at `/admin/merge-players`
+  (`services/playerMerge.service.ts`): rewrites every reference to the duplicate playerId — team
+  rosters/captain/vice-captain, match squads, `playerOfTheMatchId`, every innings' batting/bowling
+  cards, fall-of-wickets, striker/non-striker/bowler ids, and every ball-by-ball delivery doc in
+  the `deliveries` subcollection — over to the kept player, in batched Firestore writes; then
+  recomputes all cached stats (`recomputeAllStats`) and deletes the duplicate player + its stats
+  doc. Confirmation modal warns it's irreversible; the merge is audit-logged
 
 ## Phase 4 — Settings & user profile
 - 🟡 Background customization (pill + panel + presets, persisted locally) — ✅ done earlier
