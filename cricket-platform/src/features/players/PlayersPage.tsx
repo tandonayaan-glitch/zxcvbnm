@@ -13,6 +13,8 @@ import {
   Select,
 } from '@/components/ui/primitives'
 import { useAsync } from '@/hooks/useAsync'
+import { usePaginated } from '@/hooks/usePaginated'
+import { Pagination } from '@/components/ui/Pagination'
 import { useToast } from '@/components/ui/toast'
 import {
   listPlayers,
@@ -74,6 +76,9 @@ export function PlayersPage() {
       )
     })
   }, [players.data, search, roleFilter, scope])
+
+  const { page, setPage, pageCount, pageItems, totalItems, pageSize } =
+    usePaginated(filtered, 20)
 
   async function handleSave(input: PlayerInput, id?: string) {
     try {
@@ -217,7 +222,7 @@ export function PlayersPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((p) => (
+                {pageItems.map((p) => (
                   <tr key={p.id} className="border-b border-ink-50 hover:bg-ink-50/50">
                     <td className="px-4 py-2.5">
                       <Link
@@ -288,6 +293,13 @@ export function PlayersPage() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={page}
+            pageCount={pageCount}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            onChange={setPage}
+          />
         </Card>
       )}
 

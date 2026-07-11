@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/primitives'
 import { Tabs } from '@/components/ui/Tabs'
 import { useAsync } from '@/hooks/useAsync'
+import { usePaginated } from '@/hooks/usePaginated'
+import { Pagination } from '@/components/ui/Pagination'
 import { useToast } from '@/components/ui/toast'
 import { listAllMatches } from '@/services/matches.service'
 import { purgeMatch } from '@/services/scoring.service'
@@ -39,6 +41,9 @@ export function MatchesPage() {
       return list.filter((m) => m.status === 'live' || m.status === 'innings_break')
     return list.filter((m) => m.status === tab)
   }, [matches.data, tab, scope])
+
+  const { page, setPage, pageCount, pageItems, totalItems, pageSize } =
+    usePaginated(filtered, 15)
 
   async function handleDelete(m: Match) {
     if (!confirm(`Delete "${m.title}" and all its scoring data?`)) return
@@ -90,7 +95,7 @@ export function MatchesPage() {
         />
       ) : (
         <div className="space-y-3">
-          {filtered.map((m) => {
+          {pageItems.map((m) => {
             const live = m.status === 'live' || m.status === 'innings_break'
             return (
               <Card key={m.id} className="p-4">
@@ -186,6 +191,18 @@ export function MatchesPage() {
             )
           })}
         </div>
+      )}
+
+      {filtered.length > 0 && (
+        <Card className="mt-3">
+          <Pagination
+            page={page}
+            pageCount={pageCount}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            onChange={setPage}
+          />
+        </Card>
       )}
     </div>
   )

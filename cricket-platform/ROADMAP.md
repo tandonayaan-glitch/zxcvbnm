@@ -116,10 +116,12 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
   override — covers every Tailwind-class usage of pitch plus the few chart/SVG spots that read the
   same CSS variable; standalone decorative icon tones left as-is since they don't pair information
   with colour alone); add full ARIA audit
-- 🟡 Performance: **lazy-loaded routes / code-splitting** (✅ `React.lazy` + `Suspense` per route);
-  **memoised TeamPage/PlayerPage/MatchPage/TournamentPage analytics** (✅ `useMemo`, incl. the
+- ✅ Performance: **lazy-loaded routes / code-splitting** (`React.lazy` + `Suspense` per route);
+  **memoised TeamPage/PlayerPage/MatchPage/TournamentPage analytics** (`useMemo`, incl. the
   live-scoring MatchPage which re-renders every ball); **batched backup-export delivery reads**
-  (✅ `Promise.all` instead of sequential per-match reads); add pagination/virtualisation
+  (`Promise.all` instead of sequential per-match reads); **client-side pagination** (`usePaginated`
+  hook + shared `Pagination` component — Players table 20/page, Teams/Tournaments grids 12/page,
+  Matches list 15/page; page clamps automatically when a filter shrinks the list)
 
 ---
 

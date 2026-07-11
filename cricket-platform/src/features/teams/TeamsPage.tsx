@@ -10,6 +10,8 @@ import {
   PageLoader,
 } from '@/components/ui/primitives'
 import { useAsync } from '@/hooks/useAsync'
+import { usePaginated } from '@/hooks/usePaginated'
+import { Pagination } from '@/components/ui/Pagination'
 import { useToast } from '@/components/ui/toast'
 import {
   listTeams,
@@ -48,6 +50,8 @@ export function TeamsPage() {
     [clubs.data, scope],
   )
   const clubName = (id?: string | null) => scopedClubs.find((c) => c.id === id)?.name
+  const { page, setPage, pageCount, pageItems, totalItems, pageSize } =
+    usePaginated(scopedTeams, 12)
 
   async function handleSave(input: TeamInput, id?: string) {
     try {
@@ -116,7 +120,7 @@ export function TeamsPage() {
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {scopedTeams.map((t) => (
+          {pageItems.map((t) => (
             <Card key={t.id} className="overflow-hidden">
               <div
                 className="flex items-center gap-3 p-4"
@@ -178,6 +182,18 @@ export function TeamsPage() {
             </Card>
           ))}
         </div>
+      )}
+
+      {scopedTeams.length > 0 && (
+        <Card className="mt-3">
+          <Pagination
+            page={page}
+            pageCount={pageCount}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            onChange={setPage}
+          />
+        </Card>
       )}
 
       {!players.loading && playerCount === 0 && (

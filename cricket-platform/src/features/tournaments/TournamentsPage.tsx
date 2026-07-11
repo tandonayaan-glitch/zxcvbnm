@@ -10,6 +10,8 @@ import {
   PageLoader,
 } from '@/components/ui/primitives'
 import { useAsync } from '@/hooks/useAsync'
+import { usePaginated } from '@/hooks/usePaginated'
+import { Pagination } from '@/components/ui/Pagination'
 import { useToast } from '@/components/ui/toast'
 import {
   listTournaments,
@@ -53,6 +55,8 @@ export function TournamentsPage() {
   const scopedSeasons = (seasons.data ?? []).filter((s) => !scope || s.ownerId === scope)
   const clubName = (id?: string | null) => scopedClubs.find((c) => c.id === id)?.name
   const seasonName = (id?: string | null) => scopedSeasons.find((s) => s.id === id)?.name
+  const { page, setPage, pageCount, pageItems, totalItems, pageSize } =
+    usePaginated(scopedTournaments, 12)
 
   async function handleSave(input: TournamentInput, id?: string) {
     try {
@@ -121,7 +125,7 @@ export function TournamentsPage() {
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {scopedTournaments.map((t) => (
+          {pageItems.map((t) => (
             <Card key={t.id} className="p-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
@@ -184,6 +188,18 @@ export function TournamentsPage() {
             </Card>
           ))}
         </div>
+      )}
+
+      {scopedTournaments.length > 0 && (
+        <Card className="mt-3">
+          <Pagination
+            page={page}
+            pageCount={pageCount}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            onChange={setPage}
+          />
+        </Card>
       )}
 
       {showForm && (

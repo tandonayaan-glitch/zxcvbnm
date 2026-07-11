@@ -4,6 +4,21 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Client-side pagination (Phase 9)
+- **`usePaginated<T>()`** hook (`hooks/usePaginated.ts`): slices an already-fetched array into
+  pages, clamping automatically when the underlying list shrinks (e.g. a filter narrows the
+  results) so callers never need to manually reset page state.
+- **`Pagination`** component (`components/ui/Pagination.tsx`): "Showing X–Y of Z" + prev/next,
+  renders nothing when there's only one page.
+- Wired into the four admin list pages: **Players** (table, 20/page), **Teams** and
+  **Tournaments** (grids, 12/page), **Matches** (list, 15/page).
+  Verified in the browser: confirmed pagination stays hidden with the current real record counts
+  (all under their page size — no regression), then created 10 throwaway players to push the
+  total past 20, confirmed "Showing 1–20 of 22 · Page 1 of 2" rendered with exactly 20 rows,
+  clicked Next and confirmed page 2 showed exactly the remaining 2 rows with Next correctly
+  disabled, then deleted the throwaway players. Smoke-tested Teams/Tournaments/Matches for no
+  console errors.
+
 ### Added — Colour-blind friendly palette (Phase 9)
 - **`colorBlind` preference** (`prefsStore`), synced cross-device like the other appearance prefs.
   Toggles a `.colorblind` class on `<html>` that remaps the `pitch-*` (green) CSS variable scale to
