@@ -6,7 +6,15 @@
       "mcp__Claude_Preview__preview_list",
       "mcp__Claude_Preview__preview_snapshot",
       "mcp__Claude_Preview__preview_network",
-      "mcp__visualize__read_me"
+      "mcp__visualize__read_me",
+      "mcp__Claude_Preview__preview_inspect",
+      "mcp__Claude_Preview__preview_logs",
+      "Bash(npx tsc -p tsconfig.app.json --noEmit*)",
+      "Bash(npm run build*)",
+      "Bash(npx tsc -b*)",
+      "Bash(npx vite build*)",
+      "Bash(node --version)",
+      "Bash(command -v *)"
     ]
   }
 }
