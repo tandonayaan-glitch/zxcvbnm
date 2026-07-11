@@ -22,6 +22,12 @@ export function ProtectedRoute({
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
 
+  // Accounts an admin auto-created (e.g. a linked player login) must finish
+  // choosing their own username/password before touching anything else.
+  if (profile.status === 'pending_registration' && location.pathname !== '/activate') {
+    return <Navigate to="/activate" replace />
+  }
+
   if (roles && !hasRole(profile, ...roles)) {
     return (
       <div className="mx-auto max-w-md px-4 py-16">

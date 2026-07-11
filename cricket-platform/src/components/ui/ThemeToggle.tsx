@@ -18,11 +18,10 @@ export function ThemeToggle() {
       onClick={() => set('theme', isDark ? 'light' : 'dark')}
       className="relative inline-flex h-8 w-16 shrink-0 items-center rounded-full border border-ink-300 bg-ink-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 dark:border-ink-700 dark:bg-ink-800"
     >
-      <Sun size={13} className="absolute left-[7px] text-amber-500" />
-      <Moon size={13} className="absolute right-[7px] text-ink-400 dark:text-brand-300" />
       <span
         className={cn(
-          'inline-flex h-6 w-6 translate-x-1 items-center justify-center rounded-full bg-white shadow transition-transform duration-200 dark:translate-x-8 dark:bg-ink-900',
+          'inline-flex h-6 w-6 items-center justify-center rounded-full bg-white shadow transition-transform duration-200',
+          isDark ? 'translate-x-9 bg-ink-900' : 'translate-x-1',
         )}
       >
         {isDark ? (

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { AuthLayout, homeForRole } from './AuthLayout'
+import { AuthLayout, destinationForProfile } from './AuthLayout'
 import { Button, Field, Input } from '@/components/ui/primitives'
 import { useAuthStore } from '@/store/authStore'
 import { authErrorMessage, adminExists } from '@/services/auth.service'
@@ -29,8 +29,10 @@ export function LoginPage() {
   useEffect(() => {
     if (profile) {
       const dest =
-        (location.state as { from?: string } | null)?.from ??
-        homeForRole(profile.role)
+        profile.status === 'pending_registration'
+          ? '/activate'
+          : ((location.state as { from?: string } | null)?.from ??
+            destinationForProfile(profile))
       navigate(dest, { replace: true })
     }
   }, [profile, navigate, location.state])
@@ -41,7 +43,7 @@ export function LoginPage() {
     setLoading(true)
     try {
       const p = await login(username, password)
-      navigate(homeForRole(p.role), { replace: true })
+      navigate(destinationForProfile(p), { replace: true })
     } catch (err) {
       setError(authErrorMessage(err))
     } finally {

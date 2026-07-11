@@ -7,6 +7,7 @@
  *  - usernames are unique (transactional check on usernameLookup)
  *  - first-admin bootstrap is detected from Firestore
  * ================================================================== */
+import { initializeApp, deleteApp } from 'firebase/app'
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -16,6 +17,7 @@ import {
   updatePassword,
   reauthenticateWithCredential,
   EmailAuthProvider,
+  getAuth,
   type User as FirebaseUser,
 } from 'firebase/auth'
 import {
@@ -29,8 +31,8 @@ import {
   limit,
   getDocs,
 } from 'firebase/firestore'
-import { auth, db, usernameToEmail } from '@/lib/firebase'
-import { COL } from '@/lib/collections'
+import { auth, db, app, usernameToEmail } from '@/lib/firebase'
+import { COL, pruneUndefined } from '@/lib/collections'
 import { MASTER_ADMIN_USERNAME } from '@/lib/constants'
 import type { Role, UserProfile } from '@/types'
 
@@ -149,6 +151,131 @@ export async function registerUser(
   }
 
   return profile
+}
+
+const TEMP_PASSWORD_CHARS =
+  'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
+
+function randomTempPassword(length = 12): string {
+  let out = ''
+  const bytes = new Uint32Array(length)
+  crypto.getRandomValues(bytes)
+  for (let i = 0; i < length; i++) {
+    out += TEMP_PASSWORD_CHARS[bytes[i] % TEMP_PASSWORD_CHARS.length]
+  }
+  return out
+}
+
+/** Finds a free `user######` username, retrying on the rare collision. */
+async function generateTempUsername(): Promise<string> {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const candidate = `user${Math.floor(100000 + Math.random() * 900000)}`
+    if (!(await isUsernameTaken(candidate))) return candidate
+  }
+  throw new Error('Could not generate a free username — try again.')
+}
+
+/**
+ * Admin-initiated account creation for someone else (e.g. a newly-added
+ * player) without disturbing the admin's own signed-in session.
+ *
+ * The Firebase client SDK signs in as whichever user it just created, so
+ * creating an account "for someone else" on the primary `auth` instance
+ * would hijack the admin's session. The standard client-side workaround is
+ * a throwaway secondary Firebase App instance: `createUserWithEmailAndPassword`
+ * runs against that instance's own isolated auth state, leaving the primary
+ * app (and the admin's session) untouched. The secondary app is torn down
+ * immediately after.
+ *
+ * Returns the generated credentials — shown to the admin exactly once (they
+ * are not retrievable afterwards; Firebase Auth never exposes a plaintext
+ * password again once set).
+ */
+export async function createLinkedAccount(
+  displayName: string,
+): Promise<{ username: string; password: string; uid: string }> {
+  if (!app) throw new Error('Firebase is not configured.')
+
+  const username = await generateTempUsername()
+  const password = randomTempPassword()
+  const email = usernameToEmail(username)
+
+  const secondaryApp = initializeApp(app.options, `secondary-${Date.now()}`)
+  let uid: string
+  try {
+    const secondaryAuth = getAuth(secondaryApp)
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password)
+    uid = cred.user.uid
+    await signOut(secondaryAuth)
+  } finally {
+    await deleteApp(secondaryApp)
+  }
+
+  const now = Date.now()
+  const profile: UserProfile = {
+    id: uid,
+    username,
+    displayName: displayName.trim() || username,
+    role: 'VIEWER',
+    status: 'pending_registration',
+    bannedAt: null,
+    createdAt: now,
+    updatedAt: now,
+  }
+
+  try {
+    await setDoc(doc(db, COL.users, uid), pruneUndefined(profile))
+    await setDoc(doc(db, COL.usernameLookup, username), { uid, username, createdAt: now })
+  } catch (err) {
+    // No client-side way to delete another user's auth account (that needs
+    // the Admin SDK) — leave the auth user but surface the failure so the
+    // admin knows the profile write didn't complete.
+    throw err
+  }
+
+  return { username, password, uid }
+}
+
+/**
+ * First-login activation: a `pending_registration` account picks a real
+ * password and display name, and becomes `active`. Runs as the signed-in
+ * user themselves (they're already authenticated with the temp credentials).
+ *
+ * The assigned `user######` username is kept permanently rather than made
+ * choosable here: usernames map to a synthetic email, and changing it means
+ * calling Firebase Auth's `updateEmail`, which (on projects with email
+ * enumeration protection — the current default for new Firebase projects)
+ * requires verifying the new address first. There's no real mailbox behind
+ * our synthetic domain, so that verification could never complete — this
+ * isn't a corner we're cutting, it's a platform constraint with no client-
+ * side workaround short of standing up a backend (Admin SDK) this project
+ * doesn't have.
+ */
+export async function activateAccount(input: {
+  newPassword: string
+  displayName: string
+}): Promise<UserProfile> {
+  const user = auth.currentUser
+  if (!user) throw new Error('You must be signed in.')
+
+  if (input.newPassword.length < 6) {
+    throw new Error('Password must be at least 6 characters.')
+  }
+
+  const current = await loadProfile(user.uid)
+  if (!current) throw new Error('Profile not found.')
+
+  await updatePassword(user, input.newPassword)
+
+  const updated: UserProfile = {
+    ...current,
+    displayName: input.displayName.trim() || current.username,
+    status: 'active',
+    updatedAt: Date.now(),
+  }
+  await setDoc(doc(db, COL.users, user.uid), pruneUndefined(updated))
+
+  return updated
 }
 
 /**

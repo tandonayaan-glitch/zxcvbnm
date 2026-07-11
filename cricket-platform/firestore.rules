@@ -56,18 +56,29 @@ service cloud.firestore {
       allow read: if true; // profiles are needed for stats display
       // Self-signup may ONLY create a VIEWER, except the one-time master-admin
       // bootstrap (reserved username). ADMIN/SCORER are granted later by the
-      // master admin via an update.
-      allow create: if isSignedIn() && request.auth.uid == uid && (
-        request.resource.data.role == 'VIEWER'
-        || (request.resource.data.role == 'MASTER_ADMIN'
-            && request.resource.data.username == masterUsername())
+      // master admin via an update. An admin may also create a pending
+      // account FOR someone else (the player-account-lifecycle flow) — always
+      // VIEWER + pending_registration, never a role/status an admin could use
+      // to hand themselves elevated access on another uid.
+      allow create: if isSignedIn() && (
+        (request.auth.uid == uid && (
+          request.resource.data.role == 'VIEWER'
+          || (request.resource.data.role == 'MASTER_ADMIN'
+              && request.resource.data.username == masterUsername())
+        ))
+        || (isAdmin()
+            && request.resource.data.role == 'VIEWER'
+            && request.resource.data.status == 'pending_registration')
       );
-      // Self may edit own profile but NOT change role or status (ban).
-      // Role/ban changes require the master admin.
+      // Self may edit own profile but NOT change role or status, EXCEPT the
+      // one first-login activation transition (pending_registration -> active).
+      // Role/ban changes otherwise require the master admin.
       allow update: if isSignedIn() && (
         (request.auth.uid == uid
           && request.resource.data.role == resource.data.role
-          && request.resource.data.status == resource.data.status)
+          && (request.resource.data.status == resource.data.status
+              || (resource.data.status == 'pending_registration'
+                  && request.resource.data.status == 'active')))
         || isMasterAdmin()
       );
       allow delete: if isMasterAdmin();
@@ -76,9 +87,10 @@ service cloud.firestore {
     // ---- Username lookup --------------------------------------
     match /usernameLookup/{username} {
       allow read: if true; // existence check for uniqueness / login
-      // Created by the signing-up user; cannot overwrite an existing one.
+      // Created by the signing-up user, or by an admin creating a linked
+      // account for someone else. Cannot overwrite an existing one.
       allow create: if isSignedIn()
-        && request.resource.data.uid == request.auth.uid;
+        && (request.resource.data.uid == request.auth.uid || isAdmin());
       allow update, delete: if isAdmin();
     }
 

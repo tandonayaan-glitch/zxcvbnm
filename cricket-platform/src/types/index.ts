@@ -14,7 +14,7 @@ export type Role =
   | 'TEAM_MANAGER'
   | 'TOURNAMENT_MANAGER'
 
-export type UserStatus = 'active' | 'banned'
+export type UserStatus = 'active' | 'banned' | 'pending_registration'
 
 export interface UserProfile {
   id: string // Firebase Auth uid
@@ -69,6 +69,8 @@ export interface Player {
   teamIds: string[]
   photoURL?: string | null
   active: boolean
+  /** Linked user account (auto-created login), if one was set up for this player. */
+  linkedUserId?: string | null
   ownerId?: string // managing admin (uid); master admin sees all
   createdAt: number
   updatedAt: number

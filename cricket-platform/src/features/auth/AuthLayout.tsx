@@ -1,11 +1,18 @@
 import { type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Trophy } from 'lucide-react'
-import type { Role } from '@/types'
+import type { Role, UserProfile } from '@/types'
 
 /** Where to send a user after authentication, based on role. */
 export function homeForRole(role: Role): string {
   return role === 'VIEWER' ? '/' : '/dashboard'
+}
+
+/** Same as `homeForRole`, but routes a still-`pending_registration` account
+ *  to activation first regardless of role. */
+export function destinationForProfile(profile: UserProfile): string {
+  if (profile.status === 'pending_registration') return '/activate'
+  return homeForRole(profile.role)
 }
 
 export function AuthLayout({

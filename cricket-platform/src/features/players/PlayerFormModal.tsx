@@ -20,7 +20,11 @@ export function PlayerFormModal({
   player: Player | null
   teams: Team[]
   onClose: () => void
-  onSave: (input: PlayerInput, id?: string) => void | Promise<void>
+  onSave: (
+    input: PlayerInput,
+    id?: string,
+    createLogin?: boolean,
+  ) => void | Promise<void>
 }) {
   const [fullName, setFullName] = useState(player?.fullName ?? '')
   const [displayName, setDisplayName] = useState(player?.displayName ?? '')
@@ -35,6 +39,7 @@ export function PlayerFormModal({
   const [photoURL, setPhotoURL] = useState(player?.photoURL ?? '')
   const [teamIds, setTeamIds] = useState<string[]>(player?.teamIds ?? [])
   const [active, setActive] = useState(player?.active ?? true)
+  const [createLogin, setCreateLogin] = useState(!player)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -60,7 +65,7 @@ export function PlayerFormModal({
       active,
     }
     try {
-      await onSave(input, player?.id)
+      await onSave(input, player?.id, createLogin)
     } finally {
       setSaving(false)
     }
@@ -148,6 +153,24 @@ export function PlayerFormModal({
           </Select>
         </Field>
       </div>
+
+      {!player && (
+        <label className="mt-4 flex cursor-pointer items-start gap-2 text-sm text-ink-800">
+          <input
+            type="checkbox"
+            checked={createLogin}
+            onChange={(e) => setCreateLogin(e.target.checked)}
+            className="mt-0.5 h-4 w-4"
+          />
+          <span>
+            Create a linked login account for this player
+            <span className="block text-xs text-ink-500">
+              Generates a temporary username/password you can hand to the player. They'll be
+              asked to choose their own on first login.
+            </span>
+          </span>
+        </label>
+      )}
 
       {teams.length > 0 && (
         <div className="mt-4">

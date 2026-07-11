@@ -1,6 +1,17 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Search, Pencil, Archive, ArchiveRestore, Trash2, Users } from 'lucide-react'
+import {
+  Plus,
+  Search,
+  Pencil,
+  Archive,
+  ArchiveRestore,
+  Trash2,
+  Users,
+  KeyRound,
+  Copy,
+  Check,
+} from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
   Avatar,
@@ -12,6 +23,7 @@ import {
   PageLoader,
   Select,
 } from '@/components/ui/primitives'
+import { Modal } from '@/components/ui/Modal'
 import { useAsync } from '@/hooks/useAsync'
 import { usePaginated } from '@/hooks/usePaginated'
 import { Pagination } from '@/components/ui/Pagination'
@@ -26,6 +38,7 @@ import {
 } from '@/services/players.service'
 import { listTeams } from '@/services/teams.service'
 import { listAllMatches } from '@/services/matches.service'
+import { createLinkedAccount } from '@/services/auth.service'
 import { aggregatePlayerStats, buildLeaderboards } from '@/domain/stats'
 import { LeaderboardCard } from '@/components/stats/LeaderboardCard'
 import { PLAYER_ROLE_LABELS, BOWLING_STYLE_LABELS } from '@/lib/format'
@@ -57,6 +70,11 @@ export function PlayersPage() {
   const [roleFilter, setRoleFilter] = useState('')
   const [editing, setEditing] = useState<Player | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [credentials, setCredentials] = useState<{
+    playerName: string
+    username: string
+    password: string
+  } | null>(null)
 
   const teamName = useMemo(() => {
     const map = new Map((teams.data ?? []).map((t) => [t.id, t.shortName]))
@@ -80,7 +98,7 @@ export function PlayersPage() {
   const { page, setPage, pageCount, pageItems, totalItems, pageSize } =
     usePaginated(filtered, 20)
 
-  async function handleSave(input: PlayerInput, id?: string) {
+  async function handleSave(input: PlayerInput, id?: string, createLogin?: boolean) {
     try {
       if (id) {
         const prev = editing // pre-edit snapshot for undo
@@ -108,6 +126,23 @@ export function PlayersPage() {
           players.refetch()
           toast.info('Player removed')
         })
+        if (createLogin) {
+          try {
+            const creds = await createLinkedAccount(input.displayName)
+            await updatePlayer(newId, { linkedUserId: creds.uid })
+            setCredentials({
+              playerName: input.displayName,
+              username: creds.username,
+              password: creds.password,
+            })
+          } catch (e) {
+            toast.error(
+              `Player created, but the linked account failed: ${
+                e instanceof Error ? e.message : 'unknown error'
+              }`,
+            )
+          }
+        }
       }
       setShowForm(false)
       setEditing(null)
@@ -317,6 +352,107 @@ export function PlayersPage() {
           onSave={handleSave}
         />
       )}
+
+      {credentials && (
+        <CredentialsDialog
+          credentials={credentials}
+          onClose={() => setCredentials(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+function CredentialsDialog({
+  credentials,
+  onClose,
+}: {
+  credentials: { playerName: string; username: string; password: string }
+  onClose: () => void
+}) {
+  const [acked, setAcked] = useState(false)
+  const [copied, setCopied] = useState<'username' | 'password' | null>(null)
+
+  function copy(kind: 'username' | 'password', value: string) {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopied(kind)
+      setTimeout(() => setCopied(null), 1500)
+    })
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={
+        <span className="flex items-center gap-2">
+          <KeyRound size={18} /> Login created for {credentials.playerName}
+        </span>
+      }
+      footer={
+        <Button onClick={onClose} disabled={!acked} block>
+          Done
+        </Button>
+      }
+    >
+      <p className="text-sm text-ink-600">
+        Share these with {credentials.playerName} — the password is shown only this once and
+        can't be retrieved later. They'll be asked to choose their own username and password
+        on first login.
+      </p>
+      <div className="mt-4 space-y-3">
+        <CredentialRow
+          label="Username"
+          value={credentials.username}
+          copied={copied === 'username'}
+          onCopy={() => copy('username', credentials.username)}
+        />
+        <CredentialRow
+          label="Temporary password"
+          value={credentials.password}
+          copied={copied === 'password'}
+          onCopy={() => copy('password', credentials.password)}
+        />
+      </div>
+      <label className="mt-4 flex cursor-pointer items-start gap-2 text-sm text-ink-800">
+        <input
+          type="checkbox"
+          checked={acked}
+          onChange={(e) => setAcked(e.target.checked)}
+          className="mt-0.5 h-4 w-4"
+        />
+        I've saved these credentials to share with the player.
+      </label>
+    </Modal>
+  )
+}
+
+function CredentialRow({
+  label,
+  value,
+  copied,
+  onCopy,
+}: {
+  label: string
+  value: string
+  copied: boolean
+  onCopy: () => void
+}) {
+  return (
+    <div>
+      <div className="mb-1 text-xs font-medium text-ink-500">{label}</div>
+      <div className="flex items-center gap-2">
+        <code className="flex-1 rounded-lg border border-ink-200 bg-ink-50 px-3 py-2 font-mono text-sm text-ink-900">
+          {value}
+        </code>
+        <button
+          onClick={onCopy}
+          aria-label={`Copy ${label.toLowerCase()}`}
+          className="rounded-lg border border-ink-300 p-2 text-ink-600 hover:bg-ink-50"
+        >
+          {copied ? <Check size={16} className="text-pitch-600" /> : <Copy size={16} />}
+        </button>
+      </div>
     </div>
   )
 }

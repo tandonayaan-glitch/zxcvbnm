@@ -29,6 +29,9 @@ const SetupPage = lazy(() =>
 const RecoverPage = lazy(() =>
   import('@/features/auth/RecoverPage').then((m) => ({ default: m.RecoverPage })),
 )
+const ActivatePage = lazy(() =>
+  import('@/features/auth/ActivatePage').then((m) => ({ default: m.ActivatePage })),
+)
 const DashboardPage = lazy(() =>
   import('@/features/dashboard/DashboardPage').then((m) => ({
     default: m.DashboardPage,
@@ -153,6 +156,14 @@ export default function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/setup" element={<SetupPage />} />
         <Route path="/recover" element={<RecoverPage />} />
+        <Route
+          path="/activate"
+          element={
+            <ProtectedRoute>
+              <ActivatePage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Live scoring (full screen, scorer/admin only) */}
         <Route
