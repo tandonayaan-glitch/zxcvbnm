@@ -24,6 +24,7 @@ import { cn } from '@/lib/cn'
 import { useAuthStore, isAdmin, canScore } from '@/store/authStore'
 import { Avatar } from '@/components/ui/primitives'
 import { BackgroundControl } from '@/components/background/BackgroundControl'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import type { Role } from '@/types'
 
 interface NavItem {
@@ -202,6 +203,7 @@ export function AppShell() {
           <div className="flex-1" />
           <div className="flex items-center gap-3">
             <BackgroundControl />
+            <ThemeToggle />
             <div className="text-right">
               <div className="text-sm font-semibold text-ink-900 dark:text-ink-50">
                 {profile?.displayName}

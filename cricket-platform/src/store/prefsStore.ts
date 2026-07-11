@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { create } from 'zustand'
 
 export type TextScale = 'small' | 'normal' | 'large' | 'xlarge'
@@ -77,6 +78,21 @@ darkMediaQuery?.addEventListener('change', () => {
   const { prefs } = usePrefsStore.getState()
   if (prefs.theme === 'system') applyPrefs(prefs)
 })
+
+/** The theme actually in effect right now (resolves "system" via the OS
+ * preference), for components that render differently for light vs dark
+ * rather than just relying on the `dark:` CSS variant. */
+export function useResolvedDark(): boolean {
+  const theme = usePrefsStore((s) => s.prefs.theme)
+  const [systemDark, setSystemDark] = useState(() => darkMediaQuery?.matches ?? false)
+  useEffect(() => {
+    if (!darkMediaQuery) return
+    const onChange = () => setSystemDark(darkMediaQuery.matches)
+    darkMediaQuery.addEventListener('change', onChange)
+    return () => darkMediaQuery.removeEventListener('change', onChange)
+  }, [])
+  return theme === 'system' ? systemDark : theme === 'dark'
+}
 
 interface PrefsState {
   prefs: Prefs

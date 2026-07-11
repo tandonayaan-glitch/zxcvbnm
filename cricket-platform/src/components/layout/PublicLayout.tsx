@@ -13,6 +13,7 @@ import {
 import { useAuthStore } from '@/store/authStore'
 import { homeForRole } from '@/features/auth/AuthLayout'
 import { BackgroundControl } from '@/components/background/BackgroundControl'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
 export function PublicLayout() {
   const navigate = useNavigate()
@@ -85,6 +86,7 @@ export function PublicLayout() {
           </form>
 
           <BackgroundControl />
+          <ThemeToggle />
 
           {profile ? (
             <div className="flex items-center gap-2">
