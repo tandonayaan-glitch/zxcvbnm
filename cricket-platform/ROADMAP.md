@@ -101,7 +101,13 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
   best batter/bowler/all-rounder/economy/sixes/most-POTM — `domain/awards.ts`); standings robust
   to deleted team docs (✅); **group tables within group-knockout** (✅ per-team group label set in
   the tournament form, `domain/groups.ts` reuses `computeStandings` per group, "Groups" tab shown
-  when configured); add qualification tracker, timeline
+  when configured); **qualification tracker** (✅ `domain/qualification.ts` — a conservative,
+  mathematically-sound per-group check: a team is only "qualified" or "eliminated" when that
+  outcome is guaranteed regardless of how every remaining group match plays out; ties at the
+  cutoff stay "in contention" rather than guessing an NRR-resolved order; configurable "teams
+  advancing per group" on the tournament form, default 2); **timeline** (✅
+  `domain/tournamentTimeline.ts` — every match ordered by played/scheduled date, distinct from the
+  unordered Fixtures & Results list)
 
 ## Phase 6 — Global leaderboards & rankings
 - ✅ Global leaderboards (runs, wickets, avg, SR, economy, 4s, 6s, best bowling, fielding) + Stats page

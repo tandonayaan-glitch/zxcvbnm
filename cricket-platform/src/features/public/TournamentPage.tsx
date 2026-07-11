@@ -43,6 +43,8 @@ import { computeTournamentRecords } from '@/domain/records'
 import { computeTournamentAwards } from '@/domain/awards'
 import { bracketRounds, hasKnockoutPhase } from '@/domain/bracket'
 import { groupStandings } from '@/domain/groups'
+import { groupQualification, type QualificationRow } from '@/domain/qualification'
+import { tournamentTimeline } from '@/domain/tournamentTimeline'
 import {
   tournamentToCSV,
   tournamentToJSON,
@@ -89,6 +91,17 @@ export function TournamentPage() {
       tMatches,
     )
   }, [tournament.data, teams.data, tMatches])
+
+  const qualification = useMemo(() => {
+    if (groups.length === 0) return []
+    const n = tournament.data?.qualifiersPerGroup ?? 2
+    return groups.map((g) => ({
+      group: g.group,
+      rows: groupQualification(g.rows, tMatches, n),
+    }))
+  }, [groups, tMatches, tournament.data?.qualifiersPerGroup])
+
+  const timeline = useMemo(() => tournamentTimeline(tMatches), [tMatches])
 
   const stats = useMemo(() => aggregatePlayerStats(tMatches), [tMatches])
   const records = useMemo(() => computeTournamentRecords(tMatches), [tMatches])
@@ -268,9 +281,15 @@ export function TournamentPage() {
         onChange={setTab}
         tabs={[
           { key: 'standings', label: 'Standings' },
-          ...(groups.length > 0 ? [{ key: 'groups', label: 'Groups' }] : []),
+          ...(groups.length > 0
+            ? [
+                { key: 'groups', label: 'Groups' },
+                { key: 'qualification', label: 'Qualification' },
+              ]
+            : []),
           ...(showBracket ? [{ key: 'bracket', label: 'Bracket' }] : []),
           { key: 'matches', label: 'Fixtures & Results' },
+          { key: 'timeline', label: 'Timeline' },
           { key: 'leaders', label: 'Leaders' },
           { key: 'awards', label: 'Awards' },
           { key: 'records', label: 'Records' },
@@ -290,6 +309,19 @@ export function TournamentPage() {
                 Group {g.group}
               </div>
               <StandingsTable rows={g.rows} teamNameById={teamNameById} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'qualification' && (
+        <div className="space-y-4">
+          {qualification.map((g) => (
+            <div key={g.group}>
+              <div className="mb-1.5 text-sm font-semibold text-ink-800">
+                Group {g.group}
+              </div>
+              <QualificationTable rows={g.rows} teamNameById={teamNameById} />
             </div>
           ))}
         </div>
@@ -353,6 +385,41 @@ export function TournamentPage() {
                     }
                   >
                     {m.status === 'innings_break' ? 'live' : m.status}
+                  </Badge>
+                </Card>
+              </Link>
+            ))
+          )}
+        </div>
+      )}
+
+      {tab === 'timeline' && (
+        <div className="space-y-2">
+          {timeline.length === 0 ? (
+            <EmptyState title="No matches yet" />
+          ) : (
+            timeline.map((ev) => (
+              <Link key={ev.matchId} to={`/match/${ev.matchId}`}>
+                <Card className="flex items-center justify-between p-3.5 hover:border-brand-300">
+                  <div>
+                    <div className="text-xs text-ink-400">{formatDate(ev.date)}</div>
+                    <div className="font-medium text-ink-900">
+                      {ev.teamAName} vs {ev.teamBName}
+                    </div>
+                    {ev.summary && (
+                      <div className="text-sm text-pitch-700">{ev.summary}</div>
+                    )}
+                  </div>
+                  <Badge
+                    tone={
+                      ev.status === 'live' || ev.status === 'innings_break'
+                        ? 'red'
+                        : ev.status === 'completed'
+                          ? 'gray'
+                          : 'amber'
+                    }
+                  >
+                    {ev.status === 'innings_break' ? 'live' : ev.status}
                   </Badge>
                 </Card>
               </Link>
@@ -582,6 +649,68 @@ function StandingsTable({
             <tr>
               <td colSpan={8} className="px-4 py-6 text-center text-ink-400">
                 No teams in this tournament yet.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </Card>
+  )
+}
+
+const QUAL_TONE: Record<QualificationRow['status'], 'green' | 'amber' | 'gray'> = {
+  qualified: 'green',
+  contention: 'amber',
+  eliminated: 'gray',
+}
+const QUAL_LABEL: Record<QualificationRow['status'], string> = {
+  qualified: 'Qualified',
+  contention: 'In contention',
+  eliminated: 'Eliminated',
+}
+
+function QualificationTable({
+  rows,
+  teamNameById,
+}: {
+  rows: QualificationRow[]
+  teamNameById: Map<string, string>
+}) {
+  return (
+    <Card className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-ink-100 bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
+            <th className="px-3 py-2.5 font-semibold">Team</th>
+            <th className="px-2 py-2.5 text-right font-semibold">Pts</th>
+            <th className="px-2 py-2.5 text-right font-semibold">Remaining</th>
+            <th className="px-2 py-2.5 text-right font-semibold">Max pts</th>
+            <th className="px-3 py-2.5 text-right font-semibold">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.teamId} className="border-b border-ink-50">
+              <td className="px-3 py-2.5">
+                <Link
+                  to={`/team/${r.teamId}`}
+                  className="font-medium text-ink-900 hover:text-brand-700"
+                >
+                  {teamNameById.get(r.teamId) ?? r.teamId}
+                </Link>
+              </td>
+              <td className="px-2 py-2.5 text-right font-bold text-ink-900">{r.points}</td>
+              <td className="px-2 py-2.5 text-right text-ink-600">{r.remainingGames}</td>
+              <td className="px-2 py-2.5 text-right text-ink-600">{r.maxPossiblePoints}</td>
+              <td className="px-3 py-2.5 text-right">
+                <Badge tone={QUAL_TONE[r.status]}>{QUAL_LABEL[r.status]}</Badge>
+              </td>
+            </tr>
+          ))}
+          {rows.length === 0 && (
+            <tr>
+              <td colSpan={5} className="px-4 py-6 text-center text-ink-400">
+                No teams in this group yet.
               </td>
             </tr>
           )}

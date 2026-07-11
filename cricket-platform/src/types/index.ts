@@ -161,6 +161,8 @@ export interface Tournament {
   seasonId?: string | null
   /** Team id -> group label ("A", "B"…), only meaningful for group_knockout. */
   teamGroups?: Record<string, string>
+  /** How many teams advance from each group; only meaningful for group_knockout. */
+  qualifiersPerGroup?: number
   ownerId?: string // owning admin (uid); master admin sees all
   createdAt: number
   updatedAt: number

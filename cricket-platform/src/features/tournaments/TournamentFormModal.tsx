@@ -50,6 +50,9 @@ export function TournamentFormModal({
   const [teamGroups, setTeamGroups] = useState<Record<string, string>>(
     tournament?.teamGroups ?? {},
   )
+  const [qualifiersPerGroup, setQualifiersPerGroup] = useState(
+    tournament?.qualifiersPerGroup ?? 2,
+  )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -88,6 +91,8 @@ export function TournamentFormModal({
                 .filter(([, g]) => g),
             )
           : undefined,
+      qualifiersPerGroup:
+        format === 'group_knockout' ? Number(qualifiersPerGroup) || 2 : undefined,
     }
     try {
       await onSave(input, tournament?.id)
@@ -234,6 +239,16 @@ export function TournamentFormModal({
             Give each team a group label (e.g. A, B). Teams left blank won't appear on the
             Groups tab.
           </p>
+          <div className="mb-3 max-w-[220px]">
+            <Field label="Teams advancing per group" hint="Used by the Qualification tab.">
+              <Input
+                type="number"
+                min={1}
+                value={qualifiersPerGroup}
+                onChange={(e) => setQualifiersPerGroup(Number(e.target.value))}
+              />
+            </Field>
+          </div>
           <div className="grid gap-2 sm:grid-cols-2">
             {teamIds.map((id) => {
               const t = teams.find((x) => x.id === id)

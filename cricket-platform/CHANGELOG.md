@@ -4,6 +4,19 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Tournament qualification tracker & timeline (Phase 5)
+- **Qualification tab** on group_knockout tournaments (`domain/qualification.ts`
+  `groupQualification()`): per group, marks each team `qualified`, `eliminated`, or `contention`.
+  Deliberately conservative and mathematically sound in both directions — `eliminated` only when
+  enough other teams have *already* banked more points than this team could ever reach; `qualified`
+  only when fewer than the advancing-team count could ever catch or tie this team's current points.
+  A tie sitting exactly on the cutoff (which real standings resolve via NRR) is left as
+  `contention` rather than guessed. New optional `Tournament.qualifiersPerGroup` field (default 2),
+  set alongside group assignment on the tournament form.
+- **Timeline tab** (`domain/tournamentTimeline.ts` `tournamentTimeline()`): every match in the
+  tournament ordered by played/scheduled date — a chronological read distinct from the unordered
+  Fixtures & Results list.
+
 ### Added — Merge duplicate player profiles (Phase 3)
 - **Master-admin merge tool** at `/admin/merge-players` (`PlayerMergePage`, nav entry "Merge
   Players"): pick a profile to keep and a duplicate to fold into it. `mergePlayers()`
