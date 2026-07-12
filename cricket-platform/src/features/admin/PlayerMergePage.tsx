@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react'
-import { ArrowRight, AlertTriangle } from 'lucide-react'
+import { ArrowRight, AlertTriangle, Sparkles } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { Button, Card, CardBody, CardHeader, PageLoader, Select, Field, EmptyState } from '@/components/ui/primitives'
+import { Badge, Button, Card, CardBody, CardHeader, PageLoader, Select, Field, EmptyState } from '@/components/ui/primitives'
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/toast'
 import { useAsync } from '@/hooks/useAsync'
 import { useAuthStore } from '@/store/authStore'
 import { listPlayers } from '@/services/players.service'
 import { mergePlayers } from '@/services/playerMerge.service'
+import { findDuplicateCandidates } from '@/domain/duplicateDetection'
 
 export function PlayerMergePage() {
   const toast = useToast()
@@ -27,6 +28,17 @@ export function PlayerMergePage() {
     [players.data, mergeId],
   )
   const canMerge = !!keepId && !!mergeId && keepId !== mergeId
+
+  const candidates = useMemo(
+    () => findDuplicateCandidates(players.data ?? []).slice(0, 10),
+    [players.data],
+  )
+  const nameOf = (id: string) => players.data?.find((p) => p.id === id)?.fullName ?? id
+
+  function review(aId: string, bId: string) {
+    setKeepId(aId)
+    setMergeId(bId)
+  }
 
   async function doMerge() {
     if (!keepPlayer || !mergePlayer) return
@@ -56,8 +68,51 @@ export function PlayerMergePage() {
       {!players.data?.length ? (
         <EmptyState title="No players yet" description="Create players before merging duplicates." />
       ) : (
-        <Card>
-          <CardHeader title="Choose the two profiles" />
+        <>
+          {candidates.length > 0 && (
+            <Card>
+              <CardHeader
+                title={
+                  <span className="flex items-center gap-2">
+                    <Sparkles size={16} /> Suggested duplicates
+                  </span>
+                }
+                subtitle="Similar names found automatically — review before merging, nothing happens until you confirm below."
+              />
+              <CardBody className="space-y-2">
+                {candidates.map((c) => (
+                  <div
+                    key={`${c.playerAId}-${c.playerBId}`}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-100 px-3 py-2 dark:border-ink-800"
+                  >
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                      <span className="font-medium text-ink-900 dark:text-ink-50">
+                        {nameOf(c.playerAId)}
+                      </span>
+                      <ArrowRight size={14} className="text-ink-400" />
+                      <span className="font-medium text-ink-900 dark:text-ink-50">
+                        {nameOf(c.playerBId)}
+                      </span>
+                      <Badge tone={c.similarity >= 0.9 ? 'red' : 'amber'}>
+                        {Math.round(c.similarity * 100)}% similar
+                      </Badge>
+                      {c.sameTeam && <Badge tone="blue">Same team</Badge>}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => review(c.playerAId, c.playerBId)}
+                    >
+                      Review
+                    </Button>
+                  </div>
+                ))}
+              </CardBody>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader title="Choose the two profiles" />
           <CardBody className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
               <Field label="Keep this profile">
@@ -104,7 +159,8 @@ export function PlayerMergePage() {
               </Button>
             </div>
           </CardBody>
-        </Card>
+          </Card>
+        </>
       )}
 
       <Modal

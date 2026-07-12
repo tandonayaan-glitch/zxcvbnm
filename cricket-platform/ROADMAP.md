@@ -166,9 +166,14 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
   Tournament and Player pages — reuse the existing print stylesheet via `window.print()`, the
   standard way a client-only app produces a real PDF without shipping a PDF-rendering library;
   a generated-PDF-in-JS route would just be a worse version of the browser's own "Save as PDF"
-  print destination); add match archive, import + duplicate detection — an import format/source
-  isn't specified anywhere in this project, so building one would be guessing a contract no
-  consumer has asked for; left for a slice with a concrete source system to import from
+  print destination); **duplicate detection** (✅ `domain/duplicateDetection.ts`
+  `findDuplicateCandidates()` — fuzzy Levenshtein-based name matching across active players,
+  surfaced as a "Suggested duplicates" panel on the merge-players tool with a similarity % and a
+  shared-team flag, one click pre-fills the keep/merge pickers; verified live — created two
+  near-duplicate test players, confirmed the suggestion appeared at 90% with a working "Review"
+  button, cleaned up after); add match archive, import — an import format/source isn't specified
+  anywhere in this project, so building one would be guessing a contract no consumer has asked
+  for; left for a slice with a concrete source system to import from
 - 🟡 Accessibility: focus rings, large-text mode, high-contrast (✅ earlier); **skip-to-content
   link + `main` landmarks + nav `aria-current`/labels** (✅); **colour-blind friendly palette**
   (✅ `colorBlind` pref remaps the `pitch-*` green token to teal via a `.colorblind` CSS-variable

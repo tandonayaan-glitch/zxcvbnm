@@ -4,6 +4,19 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Duplicate-player detection on the merge tool (Phase 9)
+- **"Suggested duplicates" panel** on `/admin/merge-players` (`domain/duplicateDetection.ts`
+  `findDuplicateCandidates()`): pairwise Levenshtein-distance similarity over active players'
+  full/display names (normalised the same forgiving way as `/recover` — lowercase, punctuation
+  stripped, whitespace collapsed), flags pairs at ≥75% similarity, and notes when they already
+  share a team as a stronger signal. One click on "Review" pre-fills the existing keep/merge
+  pickers — nothing is merged automatically, this only surfaces candidates an admin would
+  otherwise have to already suspect by name. Deliberately scoped to detection over *existing*
+  data, not "import" — that half of the roadmap item needs a source format nothing in this
+  project defines. Verified live: created two near-duplicate test players ("Test Duplicate
+  Player" / "...Playre"), confirmed the panel surfaced them at 90% similarity with a working
+  "Review" button, then deleted the test data.
+
 ### Added — Dark mode extended to the shared UI kit and most pages (Phase 4)
 - **Shared primitives now theme-aware**: `Card`, `CardHeader`, `Modal`, `Badge` (all six tones),
   `Button` (all variants), `Input`/`Select`/`Textarea`/`Field`/`Label`, `Tabs`, `EmptyState`,
