@@ -34,6 +34,7 @@ import {
 import { listTournaments } from '@/services/tournaments.service'
 import { clearLeaderboards, gatherPlatformBackup } from '@/services/admin.service'
 import { getPlatformDiagnostics, forceResync } from '@/services/diagnostics.service'
+import { SyncQueuePanel } from '@/components/ui/SyncQueuePanel'
 import { logAudit, listAuditLogs } from '@/services/audit.service'
 import { platformBackupToJSON } from '@/domain/platformExport'
 import { downloadBlob } from '@/lib/download'
@@ -167,6 +168,7 @@ export function PlatformToolsPage() {
             Drops and re-establishes the Firestore connection, then waits for any writes queued
             while offline to be acknowledged by the server.
           </p>
+          <SyncQueuePanel className="mb-3" />
           {diagnostics.loading ? (
             <PageLoader />
           ) : diagnostics.data ? (

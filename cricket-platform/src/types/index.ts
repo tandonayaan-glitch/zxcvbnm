@@ -409,6 +409,8 @@ export interface Match {
   updatedAt: number
   startedAt?: number | null
   completedAt?: number | null
+  /** Soft-archived: hidden from the default Matches list/count but not deleted. */
+  archived?: boolean
 }
 
 /* --------------------------- Stats engine --------------------------- */

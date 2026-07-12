@@ -11,8 +11,12 @@ import { logRecoveryAttempt } from '@/services/recovery.service'
 import { buildRecoveryQuestions, type RecoveryQuestion } from '@/domain/recoveryQuiz'
 import type { Player, Team, UserProfile } from '@/types'
 
-/** Forgiving normalisation: lowercase, trim, collapse spaces, drop punctuation. */
-function norm(s: string): string {
+/** Forgiving normalisation: lowercase, trim, collapse spaces, drop punctuation.
+ * Tolerates missing fields (a legacy user/player doc created before some
+ * field existed) rather than throwing mid-`.find()` and silently breaking
+ * the search for every other record after it. */
+function norm(s: string | undefined | null): string {
+  if (!s) return ''
   return s
     .toLowerCase()
     .replace(/[^a-z0-9 ]/g, '')

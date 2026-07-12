@@ -72,10 +72,10 @@ export function PublicHomePage() {
   }, [])
 
   const recent = (allMatches.data ?? [])
-    .filter((m) => m.status === 'completed')
+    .filter((m) => m.status === 'completed' && !m.archived)
     .slice(0, 6)
   const upcoming = (allMatches.data ?? [])
-    .filter((m) => m.status === 'setup')
+    .filter((m) => m.status === 'setup' && !m.archived)
     .slice(0, 6)
 
   function onSearch(e: React.FormEvent) {

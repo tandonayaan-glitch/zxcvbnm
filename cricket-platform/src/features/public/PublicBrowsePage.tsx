@@ -41,10 +41,11 @@ export function PublicBrowsePage() {
     const isLive = (m: Match) =>
       m.status === 'live' || m.status === 'innings_break'
     const pass = (m: Match) =>
-      matchFilter === 'all' ||
-      (matchFilter === 'live' && isLive(m)) ||
-      (matchFilter === 'upcoming' && m.status === 'setup') ||
-      (matchFilter === 'completed' && m.status === 'completed')
+      !m.archived &&
+      (matchFilter === 'all' ||
+        (matchFilter === 'live' && isLive(m)) ||
+        (matchFilter === 'upcoming' && m.status === 'setup') ||
+        (matchFilter === 'completed' && m.status === 'completed'))
     // Live first, then by most recent activity.
     return all
       .filter(pass)

@@ -9,6 +9,7 @@ import {
   Eye,
 } from 'lucide-react'
 import { Button, Card, PageLoader, Spinner } from '@/components/ui/primitives'
+import { SyncQueuePanel } from '@/components/ui/SyncQueuePanel'
 import { useToast } from '@/components/ui/toast'
 import { useAsync } from '@/hooks/useAsync'
 import { listPlayers } from '@/services/players.service'
@@ -360,6 +361,8 @@ export function ScoringPage() {
           </Button>
         </Card>
       )}
+
+      <SyncQueuePanel className="mt-3" />
 
       {/* Footer actions */}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2">

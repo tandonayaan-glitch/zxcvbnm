@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus, Swords, Trash2, Radio, Eye, Play, Pencil } from 'lucide-react'
+import { Plus, Swords, Trash2, Radio, Eye, Play, Pencil, Archive, ArchiveRestore, Upload } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
   Badge,
@@ -15,10 +15,12 @@ import { useAsync } from '@/hooks/useAsync'
 import { usePaginated } from '@/hooks/usePaginated'
 import { Pagination } from '@/components/ui/Pagination'
 import { useToast } from '@/components/ui/toast'
-import { listAllMatches } from '@/services/matches.service'
+import { listAllMatches, updateMatch } from '@/services/matches.service'
 import { purgeMatch } from '@/services/scoring.service'
+import { importMatch } from '@/services/matchImport.service'
 import { useAuthStore, canScore, ownerScope } from '@/store/authStore'
 import { formatDate, ballsToOvers } from '@/lib/format'
+import { MatchImportModal } from './MatchImportModal'
 import type { InningsState, Match, MatchStatus } from '@/types'
 
 function inningsLine(inn: InningsState, ballsPerOver: number): string {
@@ -31,11 +33,14 @@ export function MatchesPage() {
   const profile = useAuthStore((s) => s.profile)
   const scope = ownerScope(profile)
   const matches = useAsync(listAllMatches, [])
-  const [tab, setTab] = useState<'all' | MatchStatus>('all')
+  const [tab, setTab] = useState<'all' | MatchStatus | 'archived'>('all')
+  const [importOpen, setImportOpen] = useState(false)
 
   const filtered = useMemo(() => {
     let list = matches.data ?? []
     if (scope) list = list.filter((m) => m.ownerId === scope)
+    if (tab === 'archived') return list.filter((m) => m.archived)
+    list = list.filter((m) => !m.archived)
     if (tab === 'all') return list
     if (tab === 'live')
       return list.filter((m) => m.status === 'live' || m.status === 'innings_break')
@@ -52,6 +57,21 @@ export function MatchesPage() {
     matches.refetch()
   }
 
+  async function toggleArchive(m: Match) {
+    await updateMatch(m.id, { archived: !m.archived })
+    toast.success(m.archived ? 'Match unarchived' : 'Match archived')
+    matches.refetch()
+  }
+
+  async function handleImport(json: string) {
+    if (!profile) return
+    const id = await importMatch(json, profile.id)
+    toast.success('Match imported (archived — review then unarchive to publish)')
+    setImportOpen(false)
+    matches.refetch()
+    navigate(`/match/${id}`)
+  }
+
   return (
     <div className="mx-auto max-w-6xl">
       <PageHeader
@@ -59,9 +79,14 @@ export function MatchesPage() {
         subtitle="Set up matches, score them live and publish scorecards."
         actions={
           canScore(profile) && (
-            <Button onClick={() => navigate('/matches/new')}>
-              <Plus size={16} /> New match
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setImportOpen(true)}>
+                <Upload size={16} /> Import
+              </Button>
+              <Button onClick={() => navigate('/matches/new')}>
+                <Plus size={16} /> New match
+              </Button>
+            </div>
           )
         }
       />
@@ -75,7 +100,14 @@ export function MatchesPage() {
           { key: 'live', label: 'Live' },
           { key: 'setup', label: 'Upcoming' },
           { key: 'completed', label: 'Completed' },
+          { key: 'archived', label: 'Archived' },
         ]}
+      />
+
+      <MatchImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImport={handleImport}
       />
 
       {matches.loading ? (
@@ -111,6 +143,7 @@ export function MatchesPage() {
                       ) : (
                         <Badge tone="amber">Upcoming</Badge>
                       )}
+                      {m.archived && <Badge tone="gray">Archived</Badge>}
                       {m.tournamentName && (
                         <span className="text-xs text-ink-400 dark:text-ink-500">
                           {m.tournamentName}
@@ -176,6 +209,16 @@ export function MatchesPage() {
                           <Play size={15} /> Start
                         </Link>
                       </>
+                    )}
+                    {canScore(profile) && !live && (
+                      <button
+                        onClick={() => toggleArchive(m)}
+                        aria-label={`${m.archived ? 'Unarchive' : 'Archive'} ${m.title}`}
+                        title={m.archived ? 'Unarchive' : 'Archive'}
+                        className="rounded-lg p-2 text-ink-500 hover:bg-ink-100 dark:text-ink-400 dark:hover:bg-ink-800"
+                      >
+                        {m.archived ? <ArchiveRestore size={16} /> : <Archive size={16} />}
+                      </button>
                     )}
                     {canScore(profile) && (
                       <button

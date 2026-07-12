@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { COL } from '@/lib/collections'
+import { trackedWrite } from '@/store/writeQueueStore'
 import {
   applyBall,
   newInnings,
@@ -194,7 +195,7 @@ export async function recordBall(
     }
   }
   batch.update(doc(db, COL.matches, match.id), patch as Record<string, unknown>)
-  await batch.commit()
+  await trackedWrite(`Ball ${args.sequence}`, batch.commit())
 
   return { delivery, innings: state }
 }
@@ -254,7 +255,7 @@ export async function undoLastBall(match: Match): Promise<void> {
     completedAt: null,
   }
   batch.update(doc(db, COL.matches, match.id), patch as Record<string, unknown>)
-  await batch.commit()
+  await trackedWrite('Undo last ball', batch.commit())
 }
 
 /** Force-close the current innings (e.g. declaration / retire all). */
