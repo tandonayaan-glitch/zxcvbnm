@@ -77,7 +77,7 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
   doc. Confirmation modal warns it's irreversible; the merge is audit-logged
 
 ## Phase 4 — Settings & user profile
-- 🟡 Background customization (pill + panel + presets, persisted locally) — ✅ done earlier
+- ✅ Background customization (pill + panel + presets, persisted locally)
 - ✅ Unified Settings page on every dashboard: profile pic/display name/bio/email, change
   password, appearance (text size/density/reduced motion/high contrast/colour-blind palette),
   self-service "export my data" (JSON), and a **Privacy & sessions** card — states plainly what's
