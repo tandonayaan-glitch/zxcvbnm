@@ -152,11 +152,13 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
 - ✅ Firestore IndexedDB persistent cache (writes queue offline, sync on reconnect)
 - ✅ **Global offline banner** (`useOnlineStatus` + `OfflineBanner`)
 - ✅ **Manual/force resync** — see Phase 1's `forceResync()`
-- ⬜ Explicit event queue model / queue-inspection page listing individual pending writes: not
-  implementable honestly — the Firestore client SDK's offline queue is internal and doesn't expose
-  enumerable pending mutations (no public API returns "what's queued"). `forceResync()` covers the
-  real, exposable part of this (force a resync, know whether it flushed); a literal queue list
-  would have to be faked to exist at all.
+- ✅ **App-level write-queue visibility** (`store/writeQueueStore.ts`, `SyncQueuePanel`) —
+  scoring/undo writes are wrapped in `trackedWrite()`, which records each write from the moment
+  it's issued to the moment its own commit promise settles (synced/failed), shown live on the
+  Scoring page and Platform Tools. Deliberately *not* a view into the Firestore client SDK's
+  private offline queue — that queue is internal with no public enumeration API, so a literal
+  reflection of it would have to be faked. This tracks something real (this app's own issued
+  writes) rather than faking the thing that can't be observed.
 
 ## Phase 8 — Clubs & Seasons architecture
 - ✅ **Club (top-level org) + Season entities; Team→Club, Tournament→Club+Season** — types +
@@ -171,21 +173,26 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
   optional, so pre-existing team/tournament docs are unaffected)
 
 ## Phase 9 — Exports, accessibility, performance
-- 🟡 **Printable scorecard (print CSS) + CSV/JSON export** from the match page (✅
-  `domain/matchExport.ts`), **tournament standings/leaders export** (✅
-  `domain/tournamentExport.ts`) **and player career/splits/match-log export** (✅
-  `domain/playerExport.ts`); **PDF export** (✅ "Print / Save as PDF" buttons on the Match,
+- ✅ **Printable scorecard (print CSS) + CSV/JSON export** from the match page
+  (`domain/matchExport.ts`), **tournament standings/leaders export**
+  (`domain/tournamentExport.ts`) **and player career/splits/match-log export**
+  (`domain/playerExport.ts`); **PDF export** ("Print / Save as PDF" buttons on the Match,
   Tournament and Player pages — reuse the existing print stylesheet via `window.print()`, the
   standard way a client-only app produces a real PDF without shipping a PDF-rendering library;
   a generated-PDF-in-JS route would just be a worse version of the browser's own "Save as PDF"
-  print destination); **duplicate detection** (✅ `domain/duplicateDetection.ts`
+  print destination); **duplicate detection** (`domain/duplicateDetection.ts`
   `findDuplicateCandidates()` — fuzzy Levenshtein-based name matching across active players,
   surfaced as a "Suggested duplicates" panel on the merge-players tool with a similarity % and a
   shared-team flag, one click pre-fills the keep/merge pickers; verified live — created two
   near-duplicate test players, confirmed the suggestion appeared at 90% with a working "Review"
-  button, cleaned up after); add match archive, import — an import format/source isn't specified
-  anywhere in this project, so building one would be guessing a contract no consumer has asked
-  for; left for a slice with a concrete source system to import from
+  button, cleaned up after); **match archive + import** (`services/matchImport.service.ts`
+  `importMatch()` — the import contract is exactly the `{ match, deliveries }` shape this app's
+  own "Export JSON" button already produces, i.e. round-tripping a match previously exported from
+  this same app, not guessing an arbitrary third-party format; imported matches land
+  `archived: true` + `isPublic: false` for review before publishing, `archived` matches are
+  filtered out of the default Matches list, `PublicBrowsePage`, and `PublicHomePage`; verified
+  live — exported a real completed match (65 deliveries), imported it back, confirmed the new
+  match landed correctly archived/private with all 65 deliveries intact, cleaned up)
 - 🟡 Accessibility: focus rings, large-text mode, high-contrast (✅ earlier); **skip-to-content
   link + `main` landmarks + nav `aria-current`/labels** (✅); **colour-blind friendly palette**
   (✅ `colorBlind` pref remaps the `pitch-*` green token to teal via a `.colorblind` CSS-variable
