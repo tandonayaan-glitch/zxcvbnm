@@ -22,7 +22,12 @@ All notable changes to CricketHub. Newest first.
 - **`MatchPage`, `PlayerPage`, `TournamentPage` and the Settings page intentionally held back**
   this pass — they had concurrent, unrelated work landing in them at the same time (win
   probability, PDF export, privacy & sessions, qualification/timeline), and editing a file mid-flight
-  under another change risks clobbering it. Left for a follow-up slice once those land.
+  under another change risks clobbering it. **Follow-up, once that work settled**: same treatment,
+  219 more substitutions across those 4 files (43 total now, up from 39). Verified in the browser:
+  0 low-contrast text elements found across 465 sampled elements on the Match/Player/Tournament/
+  Settings pages (vs. the Stats-page-only sample from the first pass) — including confirming the
+  tournament page's `<h1>` title, which had gone black-on-black when `Card`'s background flipped
+  dark under it without a matching text colour, is now readable.
 
 ### Added — Match win probability, PDF export, privacy & sessions (Phases 2, 4, 9)
 - **Win-probability bar** on the live match page (`domain/winProbability.ts` `chaseWinProbability()`):

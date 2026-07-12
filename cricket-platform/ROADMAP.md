@@ -85,18 +85,18 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
   other admins (bio/email, needed to manage access) and why, current-session sign-in time +
   "Sign out this device"; cross-device session listing/remote revocation needs a server-side
   Admin SDK this project doesn't run, so that's documented rather than faked
-- 🟡 **Light/dark/system theme** (✅ `theme` pref in `prefsStore`, synced cross-device like the
+- ✅ **Light/dark/system theme** — `theme` pref in `prefsStore`, synced cross-device like the
   other appearance prefs, live OS-preference listener for "system", Light/Dark/System toggle on
   Settings, plus a quick-access horizontal Sun/Moon slider (`ThemeToggle`) next to the Background
-  control in both headers — flips explicitly between light/dark, icon swaps with the mode; scoped
-  to app-shell chrome — page background, sidebar/header/footer, `PageHeader` titles; **✅ extended
-  to the shared UI kit and nearly every page** — `Card`/`CardHeader`/`Modal`/`Badge`/`Button`/
-  `Input`/`Select`/`Textarea`/`Tabs`/`EmptyState`/`StatCard`/toast/pagination/follow-button all
-  gained `dark:` variants (verified: 157/158 sampled text elements pass a computed-style contrast
-  check on the Stats page in dark mode), plus 39 feature/chart page files. `MatchPage`,
-  `PlayerPage`, `TournamentPage` and the settings page are still on the old unscoped styling,
-  held back this pass to avoid clobbering concurrent work landing in those same files); add a
-  follow-up pass over those four to finish the job
+  control in both headers — flips explicitly between light/dark, icon swaps with the mode. Extended
+  from app-shell chrome to the shared UI kit and every page: `Card`/`CardHeader`/`Modal`/`Badge`/
+  `Button`/`Input`/`Select`/`Textarea`/`Tabs`/`EmptyState`/`StatCard`/toast/pagination/
+  follow-button/`BackgroundControl` all gained `dark:` variants, plus 43 feature/chart page files
+  including the live-scoring `MatchPage`, `PlayerPage`, `TournamentPage`, and Settings (held back
+  from the first pass since concurrent work was landing in those same files; finished once it
+  settled). Verified via computed-style contrast sampling in the browser rather than screenshots
+  (unreliable this session): 0 low-contrast text elements found across 465 sampled on the Match/
+  Player/Tournament/Settings pages, 157/158 on Stats
 - ✅ Cross-device persistence of preferences (Firestore `userPrefs`) — pull/seed on sign-in (remote wins), debounced push on change, resets on sign-out
 - ✅ Global undo toasts for create/edit actions (Players, Teams, Tournaments)
 

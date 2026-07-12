@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   User,
   Palette,
@@ -13,6 +14,8 @@ import {
   Moon,
   MonitorSmartphone,
   Eye,
+  ShieldCheck,
+  LogOut,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
@@ -28,19 +31,22 @@ import {
 } from '@/components/ui/primitives'
 import { useToast } from '@/components/ui/toast'
 import { useAuthStore } from '@/store/authStore'
+import { auth } from '@/lib/firebase'
 import { usePrefsStore, type TextScale, type ThemeMode } from '@/store/prefsStore'
 import { BackgroundControl } from '@/components/background/BackgroundControl'
 import { updateUserProfile } from '@/services/users.service'
-import { changePassword, authErrorMessage } from '@/services/auth.service'
-import { formatDate } from '@/lib/format'
+import { changePassword, authErrorMessage, logout } from '@/services/auth.service'
+import { formatDate, formatDateTime } from '@/lib/format'
 import { downloadBlob, slugify } from '@/lib/download'
 import { cn } from '@/lib/cn'
 
 export function UserSettingsPage() {
   const toast = useToast()
+  const navigate = useNavigate()
   const profile = useAuthStore((s) => s.profile)
   const setProfile = useAuthStore((s) => s.setProfile)
   const { prefs, set: setPref, reset: resetPrefs } = usePrefsStore()
+  const [signingOut, setSigningOut] = useState(false)
 
   const [displayName, setDisplayName] = useState(profile?.displayName ?? '')
   const [bio, setBio] = useState(profile?.bio ?? '')
@@ -119,6 +125,20 @@ export function UserSettingsPage() {
     { key: 'xlarge', label: 'X-Large' },
   ]
 
+  const lastSignInTime = auth.currentUser?.metadata.lastSignInTime
+  const lastSignInMs = lastSignInTime ? Date.parse(lastSignInTime) : null
+
+  async function signOutThisDevice() {
+    setSigningOut(true)
+    try {
+      await logout()
+      navigate('/login')
+    } catch {
+      toast.error('Could not sign out')
+      setSigningOut(false)
+    }
+  }
+
   const themes: { key: ThemeMode; label: string; icon: React.ReactNode }[] = [
     { key: 'light', label: 'Light', icon: <Sun size={15} /> },
     { key: 'dark', label: 'Dark', icon: <Moon size={15} /> },
@@ -141,7 +161,7 @@ export function UserSettingsPage() {
         <CardBody className="space-y-4">
           <div className="flex items-center gap-3">
             <Avatar name={displayName || profile.username} src={photoURL || null} size={56} />
-            <div className="text-sm text-ink-500">
+            <div className="text-sm text-ink-500 dark:text-ink-400">
               Your avatar comes from the photo URL below (or your initials).
             </div>
           </div>
@@ -183,7 +203,7 @@ export function UserSettingsPage() {
         />
         <CardBody className="space-y-5">
           <div>
-            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-ink-700">
+            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-ink-700 dark:text-ink-300">
               <Sun size={15} /> Theme
             </div>
             <div className="grid grid-cols-3 gap-2">
@@ -195,7 +215,7 @@ export function UserSettingsPage() {
                     'flex items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-sm font-semibold',
                     prefs.theme === t.key
                       ? 'border-brand-500 bg-brand-50 text-brand-700'
-                      : 'border-ink-300 text-ink-600 hover:bg-ink-50',
+                      : 'border-ink-300 dark:border-ink-700 text-ink-600 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800',
                   )}
                 >
                   {t.icon}
@@ -203,14 +223,14 @@ export function UserSettingsPage() {
                 </button>
               ))}
             </div>
-            <p className="mt-1.5 text-xs text-ink-500">
+            <p className="mt-1.5 text-xs text-ink-500 dark:text-ink-400">
               Dark mode currently themes the navigation and page background; individual
               page content will follow in a later update.
             </p>
           </div>
 
           <div>
-            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-ink-700">
+            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-ink-700 dark:text-ink-300">
               <Type size={15} /> Text size
             </div>
             <div className="grid grid-cols-4 gap-2">
@@ -222,7 +242,7 @@ export function UserSettingsPage() {
                     'rounded-lg border px-2 py-2 text-sm font-semibold',
                     prefs.textScale === s.key
                       ? 'border-brand-500 bg-brand-50 text-brand-700'
-                      : 'border-ink-300 text-ink-600 hover:bg-ink-50',
+                      : 'border-ink-300 dark:border-ink-700 text-ink-600 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800',
                   )}
                 >
                   {s.label}
@@ -232,7 +252,7 @@ export function UserSettingsPage() {
           </div>
 
           <div>
-            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-ink-700">
+            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-ink-700 dark:text-ink-300">
               <LayoutGrid size={15} /> Density
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -244,7 +264,7 @@ export function UserSettingsPage() {
                     'rounded-lg border px-2 py-2 text-sm font-semibold capitalize',
                     prefs.density === d
                       ? 'border-brand-500 bg-brand-50 text-brand-700'
-                      : 'border-ink-300 text-ink-600 hover:bg-ink-50',
+                      : 'border-ink-300 dark:border-ink-700 text-ink-600 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800',
                   )}
                 >
                   {d}
@@ -275,8 +295,8 @@ export function UserSettingsPage() {
             onChange={(v) => setPref('colorBlind', v)}
           />
 
-          <div className="flex items-center justify-between border-t border-ink-100 pt-4">
-            <div className="text-sm text-ink-600">Background theme</div>
+          <div className="flex items-center justify-between border-t border-ink-100 dark:border-ink-800 pt-4">
+            <div className="text-sm text-ink-600 dark:text-ink-400">Background theme</div>
             <BackgroundControl />
           </div>
 
@@ -322,6 +342,45 @@ export function UserSettingsPage() {
         </CardBody>
       </Card>
 
+      {/* Privacy & sessions */}
+      <Card className="mb-4">
+        <CardHeader
+          title={
+            <span className="flex items-center gap-2">
+              <ShieldCheck size={18} /> Privacy &amp; sessions
+            </span>
+          }
+        />
+        <CardBody className="space-y-4">
+          <div>
+            <div className="text-sm font-medium text-ink-800 dark:text-ink-200">What's visible publicly</div>
+            <p className="mt-1 text-xs text-ink-500 dark:text-ink-400">
+              Your account (username, bio, email) is never shown on the public site — only your
+              display name appears where you're credited as a scorer. Bio/email are visible to
+              other admins on the Users &amp; Roles page since managing access requires it; clear
+              the email field above at any time if you'd rather not store one.
+            </p>
+          </div>
+          <div className="flex items-center justify-between border-t border-ink-100 dark:border-ink-800 pt-4">
+            <div>
+              <div className="text-sm font-medium text-ink-800 dark:text-ink-200">This session</div>
+              <div className="text-xs text-ink-500 dark:text-ink-400">
+                Signed in {formatDateTime(lastSignInMs)}
+              </div>
+            </div>
+            <Button variant="outline" onClick={signOutThisDevice} loading={signingOut}>
+              <LogOut size={16} /> Sign out this device
+            </Button>
+          </div>
+          <p className="text-xs text-ink-400 dark:text-ink-500">
+            Firebase's client SDK doesn't expose a list of your other signed-in devices or a way to
+            revoke them remotely — that needs a server-side Admin SDK, which this project doesn't
+            run. Changing your password (above) invalidates password-based sign-in everywhere except
+            devices that are already mid-session.
+          </p>
+        </CardBody>
+      </Card>
+
       {/* Account info */}
       <Card>
         <CardHeader
@@ -333,16 +392,16 @@ export function UserSettingsPage() {
         />
         <CardBody>
           <dl className="grid grid-cols-2 gap-y-2 text-sm">
-            <dt className="text-ink-500">Username</dt>
-            <dd className="text-right font-medium text-ink-900">@{profile.username}</dd>
-            <dt className="text-ink-500">Role</dt>
+            <dt className="text-ink-500 dark:text-ink-400">Username</dt>
+            <dd className="text-right font-medium text-ink-900 dark:text-ink-50">@{profile.username}</dd>
+            <dt className="text-ink-500 dark:text-ink-400">Role</dt>
             <dd className="text-right">
               <Badge tone="blue">{profile.role.replace('_', ' ').toLowerCase()}</Badge>
             </dd>
-            <dt className="text-ink-500">Joined</dt>
-            <dd className="text-right text-ink-700">{formatDate(profile.createdAt)}</dd>
+            <dt className="text-ink-500 dark:text-ink-400">Joined</dt>
+            <dd className="text-right text-ink-700 dark:text-ink-300">{formatDate(profile.createdAt)}</dd>
           </dl>
-          <div className="mt-4 flex justify-end border-t border-ink-100 pt-4">
+          <div className="mt-4 flex justify-end border-t border-ink-100 dark:border-ink-800 pt-4">
             <Button variant="outline" onClick={exportMyData}>
               <Download size={16} /> Export my data (JSON)
             </Button>
@@ -369,10 +428,10 @@ function ToggleRow({
   return (
     <div className="flex items-center justify-between">
       <div>
-        <div className="flex items-center gap-2 text-sm font-medium text-ink-800">
+        <div className="flex items-center gap-2 text-sm font-medium text-ink-800 dark:text-ink-200">
           {icon} {label}
         </div>
-        <div className="text-xs text-ink-500">{hint}</div>
+        <div className="text-xs text-ink-500 dark:text-ink-400">{hint}</div>
       </div>
       <button
         onClick={() => onChange(!value)}
@@ -384,7 +443,7 @@ function ToggleRow({
       >
         <span
           className={cn(
-            'absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform',
+            'absolute top-0.5 h-5 w-5 rounded-full bg-white dark:bg-ink-900 transition-transform',
             value ? 'translate-x-5' : 'translate-x-0.5',
           )}
         />

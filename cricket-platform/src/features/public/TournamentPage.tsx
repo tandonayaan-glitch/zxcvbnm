@@ -14,6 +14,7 @@ import {
   Award as AwardIcon,
   Download,
   FileJson,
+  Printer,
 } from 'lucide-react'
 import {
   Avatar,
@@ -199,8 +200,8 @@ export function TournamentPage() {
               <Trophy size={24} />
             </span>
             <div>
-              <h1 className="text-2xl font-bold text-ink-900">{t.name}</h1>
-              <div className="mt-0.5 flex items-center gap-2 text-sm text-ink-500">
+              <h1 className="text-2xl font-bold text-ink-900 dark:text-ink-50">{t.name}</h1>
+              <div className="mt-0.5 flex items-center gap-2 text-sm text-ink-500 dark:text-ink-400">
                 <Badge tone={t.status === 'ongoing' ? 'green' : 'gray'}>
                   {t.status}
                 </Badge>
@@ -239,13 +240,13 @@ export function TournamentPage() {
           )}
         </div>
         {t.description && (
-          <p className="mt-3 text-sm text-ink-600">{t.description}</p>
+          <p className="mt-3 text-sm text-ink-600 dark:text-ink-400">{t.description}</p>
         )}
       </Card>
 
       {hasExport && (
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium uppercase tracking-wide text-ink-400">
+          <span className="text-xs font-medium uppercase tracking-wide text-ink-400 dark:text-ink-500">
             Export
           </span>
           <button
@@ -256,7 +257,7 @@ export function TournamentPage() {
                 'text/csv;charset=utf-8',
               )
             }
-            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-ink-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
           >
             <Download size={15} /> CSV
           </button>
@@ -268,9 +269,16 @@ export function TournamentPage() {
                 'application/json',
               )
             }
-            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-ink-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
           >
             <FileJson size={15} /> JSON
+          </button>
+          <button
+            onClick={() => window.print()}
+            title="Opens the browser print dialog — choose &quot;Save as PDF&quot; as the destination for a PDF file"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
+          >
+            <Printer size={15} /> Print / Save as PDF
           </button>
         </div>
       )}
@@ -305,7 +313,7 @@ export function TournamentPage() {
         <div className="space-y-4">
           {groups.map((g) => (
             <div key={g.group}>
-              <div className="mb-1.5 text-sm font-semibold text-ink-800">
+              <div className="mb-1.5 text-sm font-semibold text-ink-800 dark:text-ink-200">
                 Group {g.group}
               </div>
               <StandingsTable rows={g.rows} teamNameById={teamNameById} />
@@ -318,7 +326,7 @@ export function TournamentPage() {
         <div className="space-y-4">
           {qualification.map((g) => (
             <div key={g.group}>
-              <div className="mb-1.5 text-sm font-semibold text-ink-800">
+              <div className="mb-1.5 text-sm font-semibold text-ink-800 dark:text-ink-200">
                 Group {g.group}
               </div>
               <QualificationTable rows={g.rows} teamNameById={teamNameById} />
@@ -339,7 +347,7 @@ export function TournamentPage() {
             <div className="flex gap-4 overflow-x-auto pb-2">
               {rounds.map((round) => (
                 <div key={round.stage} className="min-w-[220px] flex-1">
-                  <div className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-ink-500">
+                  <div className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-ink-500 dark:text-ink-400">
                     {round.label}
                   </div>
                   <div className="flex h-full flex-col justify-around gap-3">
@@ -363,10 +371,10 @@ export function TournamentPage() {
               <Link key={m.id} to={`/match/${m.id}`}>
                 <Card className="flex items-center justify-between p-3.5 hover:border-brand-300">
                   <div>
-                    <div className="font-medium text-ink-900">
+                    <div className="font-medium text-ink-900 dark:text-ink-50">
                       {m.teamA.name} vs {m.teamB.name}
                     </div>
-                    <div className="text-sm text-ink-500">
+                    <div className="text-sm text-ink-500 dark:text-ink-400">
                       {formatDate(m.scheduledAt ?? m.createdAt)}
                     </div>
                     {m.result && (
@@ -402,8 +410,8 @@ export function TournamentPage() {
               <Link key={ev.matchId} to={`/match/${ev.matchId}`}>
                 <Card className="flex items-center justify-between p-3.5 hover:border-brand-300">
                   <div>
-                    <div className="text-xs text-ink-400">{formatDate(ev.date)}</div>
-                    <div className="font-medium text-ink-900">
+                    <div className="text-xs text-ink-400 dark:text-ink-500">{formatDate(ev.date)}</div>
+                    <div className="font-medium text-ink-900 dark:text-ink-50">
                       {ev.teamAName} vs {ev.teamBName}
                     </div>
                     {ev.summary && (
@@ -572,7 +580,7 @@ export function TournamentPage() {
             />
           )}
           {Object.keys(records).length === 0 && (
-            <p className="text-sm text-ink-500 sm:col-span-2 lg:col-span-3">
+            <p className="text-sm text-ink-500 dark:text-ink-400 sm:col-span-2 lg:col-span-3">
               No completed matches yet — records will appear once matches finish.
             </p>
           )}
@@ -590,12 +598,12 @@ export function TournamentPage() {
                 >
                   {t2.shortName}
                 </div>
-                <span className="font-medium text-ink-900">{t2.name}</span>
+                <span className="font-medium text-ink-900 dark:text-ink-50">{t2.name}</span>
               </Card>
             </Link>
           ))}
           {tournamentTeams.length === 0 && (
-            <p className="text-sm text-ink-500">No teams added yet.</p>
+            <p className="text-sm text-ink-500 dark:text-ink-400">No teams added yet.</p>
           )}
         </div>
       )}
@@ -614,7 +622,7 @@ function StandingsTable({
     <Card className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-ink-100 bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
+          <tr className="border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 text-left text-xs uppercase tracking-wide text-ink-500 dark:text-ink-400">
             <th className="px-3 py-2.5 font-semibold">#</th>
             <th className="px-3 py-2.5 font-semibold">Team</th>
             <th className="px-2 py-2.5 text-right font-semibold">P</th>
@@ -627,27 +635,27 @@ function StandingsTable({
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={r.teamId} className="border-b border-ink-50">
-              <td className="px-3 py-2.5 text-ink-400">{i + 1}</td>
+            <tr key={r.teamId} className="border-b border-ink-50 dark:border-ink-800">
+              <td className="px-3 py-2.5 text-ink-400 dark:text-ink-500">{i + 1}</td>
               <td className="px-3 py-2.5">
                 <Link
                   to={`/team/${r.teamId}`}
-                  className="font-medium text-ink-900 hover:text-brand-700"
+                  className="font-medium text-ink-900 dark:text-ink-50 hover:text-brand-700"
                 >
                   {teamNameById.get(r.teamId) ?? r.teamName}
                 </Link>
               </td>
-              <td className="px-2 py-2.5 text-right text-ink-600">{r.played}</td>
-              <td className="px-2 py-2.5 text-right text-ink-600">{r.won}</td>
-              <td className="px-2 py-2.5 text-right text-ink-600">{r.lost}</td>
-              <td className="px-2 py-2.5 text-right text-ink-600">{r.tied}</td>
-              <td className="px-2 py-2.5 text-right font-bold text-ink-900">{r.points}</td>
-              <td className="px-3 py-2.5 text-right text-ink-600">{formatRate(r.nrr)}</td>
+              <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">{r.played}</td>
+              <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">{r.won}</td>
+              <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">{r.lost}</td>
+              <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">{r.tied}</td>
+              <td className="px-2 py-2.5 text-right font-bold text-ink-900 dark:text-ink-50">{r.points}</td>
+              <td className="px-3 py-2.5 text-right text-ink-600 dark:text-ink-400">{formatRate(r.nrr)}</td>
             </tr>
           ))}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={8} className="px-4 py-6 text-center text-ink-400">
+              <td colSpan={8} className="px-4 py-6 text-center text-ink-400 dark:text-ink-500">
                 No teams in this tournament yet.
               </td>
             </tr>
@@ -680,7 +688,7 @@ function QualificationTable({
     <Card className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-ink-100 bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
+          <tr className="border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 text-left text-xs uppercase tracking-wide text-ink-500 dark:text-ink-400">
             <th className="px-3 py-2.5 font-semibold">Team</th>
             <th className="px-2 py-2.5 text-right font-semibold">Pts</th>
             <th className="px-2 py-2.5 text-right font-semibold">Remaining</th>
@@ -690,18 +698,18 @@ function QualificationTable({
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.teamId} className="border-b border-ink-50">
+            <tr key={r.teamId} className="border-b border-ink-50 dark:border-ink-800">
               <td className="px-3 py-2.5">
                 <Link
                   to={`/team/${r.teamId}`}
-                  className="font-medium text-ink-900 hover:text-brand-700"
+                  className="font-medium text-ink-900 dark:text-ink-50 hover:text-brand-700"
                 >
                   {teamNameById.get(r.teamId) ?? r.teamId}
                 </Link>
               </td>
-              <td className="px-2 py-2.5 text-right font-bold text-ink-900">{r.points}</td>
-              <td className="px-2 py-2.5 text-right text-ink-600">{r.remainingGames}</td>
-              <td className="px-2 py-2.5 text-right text-ink-600">{r.maxPossiblePoints}</td>
+              <td className="px-2 py-2.5 text-right font-bold text-ink-900 dark:text-ink-50">{r.points}</td>
+              <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">{r.remainingGames}</td>
+              <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">{r.maxPossiblePoints}</td>
               <td className="px-3 py-2.5 text-right">
                 <Badge tone={QUAL_TONE[r.status]}>{QUAL_LABEL[r.status]}</Badge>
               </td>
@@ -709,7 +717,7 @@ function QualificationTable({
           ))}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={5} className="px-4 py-6 text-center text-ink-400">
+              <td colSpan={5} className="px-4 py-6 text-center text-ink-400 dark:text-ink-500">
                 No teams in this group yet.
               </td>
             </tr>
@@ -734,10 +742,10 @@ function BracketTeamRow({
       <span
         className={
           decided && isWinner
-            ? 'font-bold text-ink-900'
+            ? 'font-bold text-ink-900 dark:text-ink-50'
             : decided
-              ? 'text-ink-400'
-              : 'text-ink-800'
+              ? 'text-ink-400 dark:text-ink-500'
+              : 'text-ink-800 dark:text-ink-200'
         }
       >
         {name}
@@ -753,20 +761,20 @@ function BracketMatch({ match }: { match: Match }) {
   return (
     <Link
       to={`/match/${match.id}`}
-      className="block rounded-xl border border-ink-100 bg-white p-3 text-sm hover:border-brand-300 hover:bg-brand-50/40"
+      className="block rounded-xl border border-ink-100 dark:border-ink-800 bg-white dark:bg-ink-900 p-3 text-sm hover:border-brand-300 hover:bg-brand-50/40"
     >
       <BracketTeamRow
         name={match.teamA.shortName}
         isWinner={winnerId === match.teamA.id}
         decided={decided}
       />
-      <div className="my-1 h-px bg-ink-100" />
+      <div className="my-1 h-px bg-ink-100 dark:bg-ink-800" />
       <BracketTeamRow
         name={match.teamB.shortName}
         isWinner={winnerId === match.teamB.id}
         decided={decided}
       />
-      <div className="mt-2 truncate text-xs text-ink-500">
+      <div className="mt-2 truncate text-xs text-ink-500 dark:text-ink-400">
         {match.result?.summary ??
           (match.status === 'live' || match.status === 'innings_break'
             ? 'In progress'
@@ -794,7 +802,7 @@ function RecordCard({
   return (
     <Link
       to={`/match/${matchId}`}
-      className="flex items-center gap-3 rounded-xl border border-ink-100 bg-white p-4 hover:border-brand-300 hover:bg-brand-50/40"
+      className="flex items-center gap-3 rounded-xl border border-ink-100 dark:border-ink-800 bg-white dark:bg-ink-900 p-4 hover:border-brand-300 hover:bg-brand-50/40"
     >
       <span
         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg"
@@ -803,9 +811,9 @@ function RecordCard({
         {icon}
       </span>
       <div className="min-w-0">
-        <div className="text-xs uppercase tracking-wide text-ink-400">{label}</div>
-        <div className="truncate text-lg font-bold text-ink-900">{value}</div>
-        <div className="truncate text-xs text-ink-500">{sub}</div>
+        <div className="text-xs uppercase tracking-wide text-ink-400 dark:text-ink-500">{label}</div>
+        <div className="truncate text-lg font-bold text-ink-900 dark:text-ink-50">{value}</div>
+        <div className="truncate text-xs text-ink-500 dark:text-ink-400">{sub}</div>
       </div>
     </Link>
   )
@@ -832,7 +840,7 @@ function AwardCard({
       className={
         featured
           ? 'flex items-center gap-3 rounded-xl border border-amber-300 bg-gradient-to-br from-amber-50 to-white p-4 hover:border-amber-400 sm:col-span-2 lg:col-span-3'
-          : 'flex items-center gap-3 rounded-xl border border-ink-100 bg-white p-4 hover:border-brand-300 hover:bg-brand-50/40'
+          : 'flex items-center gap-3 rounded-xl border border-ink-100 dark:border-ink-800 bg-white dark:bg-ink-900 p-4 hover:border-brand-300 hover:bg-brand-50/40'
       }
     >
       <span
@@ -851,13 +859,13 @@ function AwardCard({
         <div
           className={
             featured
-              ? 'truncate text-xl font-bold text-ink-900'
-              : 'truncate text-base font-bold text-ink-900'
+              ? 'truncate text-xl font-bold text-ink-900 dark:text-ink-50'
+              : 'truncate text-base font-bold text-ink-900 dark:text-ink-50'
           }
         >
           {name}
         </div>
-        <div className="truncate text-xs text-ink-500">{sub}</div>
+        <div className="truncate text-xs text-ink-500 dark:text-ink-400">{sub}</div>
       </div>
       <Badge tone="amber">{value}</Badge>
     </Link>
@@ -875,12 +883,12 @@ function LeaderCard({
 }) {
   return (
     <Card className="overflow-hidden">
-      <div className="border-b border-ink-100 bg-ink-50 px-4 py-2.5 font-semibold text-ink-900">
+      <div className="border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 px-4 py-2.5 font-semibold text-ink-900 dark:text-ink-50">
         {title}
       </div>
       <div className="divide-y divide-ink-50">
         {rows.length === 0 && (
-          <p className="px-4 py-4 text-center text-sm text-ink-400">
+          <p className="px-4 py-4 text-center text-sm text-ink-400 dark:text-ink-500">
             No data yet.
           </p>
         )}
@@ -888,11 +896,11 @@ function LeaderCard({
           <Link
             key={r.id}
             to={`/player/${r.id}`}
-            className="flex items-center gap-3 px-4 py-2 hover:bg-ink-50"
+            className="flex items-center gap-3 px-4 py-2 hover:bg-ink-50 dark:hover:bg-ink-800"
           >
-            <span className="w-4 text-sm text-ink-400">{i + 1}</span>
+            <span className="w-4 text-sm text-ink-400 dark:text-ink-500">{i + 1}</span>
             <Avatar name={r.name} size={26} />
-            <span className="flex-1 text-sm text-ink-800">{r.name}</span>
+            <span className="flex-1 text-sm text-ink-800 dark:text-ink-200">{r.name}</span>
             <Badge tone={tone}>{r.value}</Badge>
           </Link>
         ))}

@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { User, Flag, Star, Award, Target, TrendingUp, Download, FileJson } from 'lucide-react'
+import { User, Flag, Star, Award, Target, TrendingUp, Download, FileJson, Printer } from 'lucide-react'
 import { Avatar, Badge, Card, PageLoader, EmptyState } from '@/components/ui/primitives'
 import { FollowButton } from '@/components/ui/FollowButton'
 import { Tabs } from '@/components/ui/Tabs'
@@ -166,10 +166,10 @@ export function PlayerPage() {
         <div className="flex items-center gap-4">
           <Avatar name={p.fullName} src={p.photoURL} size={72} />
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-bold text-ink-900">{p.fullName}</h1>
+            <h1 className="text-2xl font-bold text-ink-900 dark:text-ink-50">{p.fullName}</h1>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <Badge tone="blue">{PLAYER_ROLE_LABELS[p.role]}</Badge>
-              <span className="text-sm text-ink-500">
+              <span className="text-sm text-ink-500 dark:text-ink-400">
                 {p.battingStyle === 'right_hand' ? 'RHB' : 'LHB'}
                 {p.bowlingStyle !== 'none' &&
                   ` · ${BOWLING_STYLE_LABELS[p.bowlingStyle]}`}
@@ -201,16 +201,23 @@ export function PlayerPage() {
               <button
                 onClick={exportCSV}
                 title="Export CSV"
-                className="inline-flex items-center gap-1 rounded-lg border border-ink-300 px-2 py-1 text-xs font-medium text-ink-600 hover:bg-ink-50"
+                className="inline-flex items-center gap-1 rounded-lg border border-ink-300 dark:border-ink-700 px-2 py-1 text-xs font-medium text-ink-600 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800"
               >
                 <Download size={13} /> CSV
               </button>
               <button
                 onClick={exportJSON}
                 title="Export JSON"
-                className="inline-flex items-center gap-1 rounded-lg border border-ink-300 px-2 py-1 text-xs font-medium text-ink-600 hover:bg-ink-50"
+                className="inline-flex items-center gap-1 rounded-lg border border-ink-300 dark:border-ink-700 px-2 py-1 text-xs font-medium text-ink-600 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800"
               >
                 <FileJson size={13} /> JSON
+              </button>
+              <button
+                onClick={() => window.print()}
+                title="Print / Save as PDF"
+                className="inline-flex items-center gap-1 rounded-lg border border-ink-300 dark:border-ink-700 px-2 py-1 text-xs font-medium text-ink-600 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800"
+              >
+                <Printer size={13} /> PDF
               </button>
             </div>
           </div>
@@ -289,11 +296,11 @@ export function PlayerPage() {
                   <Link
                     key={r.label}
                     to="/stats"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-ink-200 bg-white px-3 py-1.5 text-sm hover:border-brand-300 hover:bg-brand-50/50"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-900 px-3 py-1.5 text-sm hover:border-brand-300 hover:bg-brand-50/50"
                   >
                     <span className="font-bold text-brand-700">#{r.rank}</span>
-                    <span className="text-ink-600">{r.label}</span>
-                    <span className="text-xs text-ink-400">of {r.total}</span>
+                    <span className="text-ink-600 dark:text-ink-400">{r.label}</span>
+                    <span className="text-xs text-ink-400 dark:text-ink-500">of {r.total}</span>
                   </Link>
                 ))}
               </div>
@@ -348,7 +355,7 @@ export function PlayerPage() {
         <Card className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-ink-100 bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
+              <tr className="border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 text-left text-xs uppercase tracking-wide text-ink-500 dark:text-ink-400">
                 <th className="px-4 py-2.5 font-semibold">Tournament</th>
                 <th className="px-2 py-2.5 text-right font-semibold">M</th>
                 <th className="px-2 py-2.5 text-right font-semibold">Runs</th>
@@ -365,47 +372,47 @@ export function PlayerPage() {
               {splits.map((sp) => {
                 const st = sp.stats
                 return (
-                  <tr key={sp.tournamentId ?? '__none__'} className="border-b border-ink-50">
+                  <tr key={sp.tournamentId ?? '__none__'} className="border-b border-ink-50 dark:border-ink-800">
                     <td className="px-4 py-2.5">
                       {sp.tournamentId ? (
                         <Link
                           to={`/tournament/${sp.tournamentId}`}
-                          className="font-medium text-ink-900 hover:text-brand-700"
+                          className="font-medium text-ink-900 dark:text-ink-50 hover:text-brand-700"
                         >
                           {splitName(sp)}
                         </Link>
                       ) : (
-                        <span className="font-medium text-ink-500">
+                        <span className="font-medium text-ink-500 dark:text-ink-400">
                           {splitName(sp)}
                         </span>
                       )}
                     </td>
-                    <td className="px-2 py-2.5 text-right text-ink-600">{st.matches}</td>
-                    <td className="px-2 py-2.5 text-right font-semibold text-ink-900">
+                    <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">{st.matches}</td>
+                    <td className="px-2 py-2.5 text-right font-semibold text-ink-900 dark:text-ink-50">
                       {st.runs}
                     </td>
-                    <td className="px-2 py-2.5 text-right text-ink-600">
+                    <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">
                       {sp.tournamentId && splitRunsRank.get(sp.tournamentId)
                         ? `#${splitRunsRank.get(sp.tournamentId)}`
                         : '—'}
                     </td>
-                    <td className="px-2 py-2.5 text-right text-ink-600">
+                    <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">
                       {st.highScore}
                       {st.highScoreNotOut ? '*' : ''}
                     </td>
-                    <td className="px-2 py-2.5 text-right text-ink-600">
+                    <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">
                       {battingAverage(st.runs, st.inningsBatted - st.notOuts)}
                     </td>
-                    <td className="px-2 py-2.5 text-right text-ink-600">
+                    <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">
                       {strikeRate(st.runs, st.ballsFaced)}
                     </td>
-                    <td className="px-2 py-2.5 text-right font-semibold text-ink-900">
+                    <td className="px-2 py-2.5 text-right font-semibold text-ink-900 dark:text-ink-50">
                       {st.wickets}
                     </td>
-                    <td className="px-2 py-2.5 text-right text-ink-600">
+                    <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">
                       {formatBestBowling(st.bestBowlingWkts, st.bestBowlingRuns)}
                     </td>
-                    <td className="px-3 py-2.5 text-right text-ink-600">{st.catches}</td>
+                    <td className="px-3 py-2.5 text-right text-ink-600 dark:text-ink-400">{st.catches}</td>
                   </tr>
                 )
               })}
@@ -418,7 +425,7 @@ export function PlayerPage() {
         <Card className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-ink-100 bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
+              <tr className="border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 text-left text-xs uppercase tracking-wide text-ink-500 dark:text-ink-400">
                 <th className="px-4 py-2.5 font-semibold">Season</th>
                 <th className="px-2 py-2.5 text-right font-semibold">M</th>
                 <th className="px-2 py-2.5 text-right font-semibold">Runs</th>
@@ -434,39 +441,39 @@ export function PlayerPage() {
               {seasonSplits.map((sp) => {
                 const st = sp.stats
                 return (
-                  <tr key={sp.seasonId ?? '__none__'} className="border-b border-ink-50">
+                  <tr key={sp.seasonId ?? '__none__'} className="border-b border-ink-50 dark:border-ink-800">
                     <td className="px-4 py-2.5">
                       <span
                         className={
                           sp.seasonId
-                            ? 'font-medium text-ink-900'
-                            : 'font-medium text-ink-500'
+                            ? 'font-medium text-ink-900 dark:text-ink-50'
+                            : 'font-medium text-ink-500 dark:text-ink-400'
                         }
                       >
                         {sp.seasonName}
                       </span>
                     </td>
-                    <td className="px-2 py-2.5 text-right text-ink-600">{st.matches}</td>
-                    <td className="px-2 py-2.5 text-right font-semibold text-ink-900">
+                    <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">{st.matches}</td>
+                    <td className="px-2 py-2.5 text-right font-semibold text-ink-900 dark:text-ink-50">
                       {st.runs}
                     </td>
-                    <td className="px-2 py-2.5 text-right text-ink-600">
+                    <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">
                       {st.highScore}
                       {st.highScoreNotOut ? '*' : ''}
                     </td>
-                    <td className="px-2 py-2.5 text-right text-ink-600">
+                    <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">
                       {battingAverage(st.runs, st.inningsBatted - st.notOuts)}
                     </td>
-                    <td className="px-2 py-2.5 text-right text-ink-600">
+                    <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">
                       {strikeRate(st.runs, st.ballsFaced)}
                     </td>
-                    <td className="px-2 py-2.5 text-right font-semibold text-ink-900">
+                    <td className="px-2 py-2.5 text-right font-semibold text-ink-900 dark:text-ink-50">
                       {st.wickets}
                     </td>
-                    <td className="px-2 py-2.5 text-right text-ink-600">
+                    <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">
                       {formatBestBowling(st.bestBowlingWkts, st.bestBowlingRuns)}
                     </td>
-                    <td className="px-3 py-2.5 text-right text-ink-600">{st.catches}</td>
+                    <td className="px-3 py-2.5 text-right text-ink-600 dark:text-ink-400">{st.catches}</td>
                   </tr>
                 )
               })}
@@ -477,16 +484,16 @@ export function PlayerPage() {
 
       {tab === 'timeline' && (
         <Card className="p-5">
-          <ol className="relative ml-1 space-y-5 border-l-2 border-ink-100 pl-5">
+          <ol className="relative ml-1 space-y-5 border-l-2 border-ink-100 dark:border-ink-800 pl-5">
             {timeline.map((e, i) => (
               <li key={`${e.matchId}-${e.title}-${i}`} className="relative">
                 <span className="absolute -left-[30px] flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-brand-700 ring-4 ring-white">
                   <TimelineIcon icon={e.icon} />
                 </span>
                 <Link to={`/match/${e.matchId}`} className="block hover:opacity-80">
-                  <div className="font-semibold text-ink-900">{e.title}</div>
-                  <div className="text-sm text-ink-600">{e.detail}</div>
-                  <div className="text-xs text-ink-400">{formatDate(e.date)}</div>
+                  <div className="font-semibold text-ink-900 dark:text-ink-50">{e.title}</div>
+                  <div className="text-sm text-ink-600 dark:text-ink-400">{e.detail}</div>
+                  <div className="text-xs text-ink-400 dark:text-ink-500">{formatDate(e.date)}</div>
                 </Link>
               </li>
             ))}
@@ -503,7 +510,7 @@ export function PlayerPage() {
           <Card className="overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-ink-100 bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
+                <tr className="border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 text-left text-xs uppercase tracking-wide text-ink-500 dark:text-ink-400">
                   <th className="px-4 py-2.5 font-semibold">Match</th>
                   <th className="px-4 py-2.5 font-semibold">Batting</th>
                   <th className="px-4 py-2.5 font-semibold">Bowling</th>
@@ -511,26 +518,26 @@ export function PlayerPage() {
               </thead>
               <tbody>
                 {(perfs.data ?? []).map((perf) => (
-                  <tr key={perf.matchId} className="border-b border-ink-50">
+                  <tr key={perf.matchId} className="border-b border-ink-50 dark:border-ink-800">
                     <td className="px-4 py-2.5">
                       <Link
                         to={`/match/${perf.matchId}`}
-                        className="font-medium text-ink-900 hover:text-brand-700"
+                        className="font-medium text-ink-900 dark:text-ink-50 hover:text-brand-700"
                       >
                         vs {perf.opponent}
                       </Link>
-                      <div className="text-xs text-ink-400">
+                      <div className="text-xs text-ink-400 dark:text-ink-500">
                         {formatDate(perf.date)}
                       </div>
                     </td>
-                    <td className="px-4 py-2.5 text-ink-700">
+                    <td className="px-4 py-2.5 text-ink-700 dark:text-ink-300">
                       {perf.batting
                         ? `${perf.batting.runs}${
                             perf.batting.out ? '' : '*'
                           } (${perf.batting.balls})`
                         : '—'}
                     </td>
-                    <td className="px-4 py-2.5 text-ink-700">
+                    <td className="px-4 py-2.5 text-ink-700 dark:text-ink-300">
                       {perf.bowling
                         ? `${perf.bowling.wickets}/${perf.bowling.runs} (${perf.bowling.overs})`
                         : '—'}
@@ -563,14 +570,14 @@ function StatBlock({
 }) {
   return (
     <Card className="overflow-hidden">
-      <div className="border-b border-ink-100 bg-ink-50 px-4 py-2.5 font-semibold text-ink-900">
+      <div className="border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 px-4 py-2.5 font-semibold text-ink-900 dark:text-ink-50">
         {title}
       </div>
       <div className="divide-y divide-ink-50">
         {rows.map(([label, value]) => (
           <div key={label} className="flex justify-between px-4 py-2 text-sm">
-            <span className="text-ink-500">{label}</span>
-            <span className="font-semibold text-ink-900">{value}</span>
+            <span className="text-ink-500 dark:text-ink-400">{label}</span>
+            <span className="font-semibold text-ink-900 dark:text-ink-50">{value}</span>
           </div>
         ))}
       </div>
