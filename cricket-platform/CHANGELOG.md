@@ -4,6 +4,25 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Wagon wheel & bowling line/length map (Phase 2)
+- **`BallMeta`** (`types/index.ts`): an optional per-delivery shot-zone (1-8) / bowling line /
+  bowling length tag, stored as a sibling doc (`matches/{id}/ballMeta/{deliveryId}`,
+  `services/ballMeta.service.ts`) rather than a field on `Delivery` — the scoring engine
+  (`domain/scoring.ts`) builds `Delivery` as one explicit object literal with no field-pass-through
+  and is off-limits to modification, so this is written separately, after `recordBall()` already
+  returned, and the engine never touches or depends on it.
+- **`ShotDetailPrompt`** on the Scoring page: a dismissible, fully optional add-on shown after each
+  ball — 8-zone shot placement plus bowling line/length quick-select chips. Tapping a chip saves
+  immediately (merge-write, so zone/line/length can be tagged independently); "Skip" or recording
+  the next ball closes it. Never blocks or slows the primary scoring flow.
+- **`domain/wagonWheel.ts`** / **`domain/pitchMap.ts`**: pure aggregation of deliveries + `BallMeta`
+  into per-zone run/ball counts and per-line×length ball/run/wicket counts.
+- **`WagonWheel`** (8-sector SVG, sector size scales with runs) and **`PitchMap`** (line×length
+  heatmap table) chart components, shown on the match page only once real tagged data exists for
+  that match — no fabricated placeholder when nothing's been tagged.
+- Verified live in the browser: scored a real ball in an in-progress match, tagged it "Long-on",
+  confirmed the wagon wheel rendered on the public match page with the 4 runs in that sector.
+
 ### Added — Password recovery verification quiz, rate limiting, audit (Phase 3)
 - **Verification quiz** on `/recover` (`domain/recoveryQuiz.ts` `buildRecoveryQuestions()`, wired
   into `RecoverPage.tsx`): once a matching account is found, its linked player's real role and

@@ -144,6 +144,12 @@ service cloud.firestore {
         allow read: if true;
         allow write: if canScore();
       }
+      // Optional shot-zone/line-length tags — same access shape as
+      // deliveries, but written separately from the scoring engine's batch.
+      match /ballMeta/{ballId} {
+        allow read: if true;
+        allow write: if canScore();
+      }
     }
 
     // ---- Cached stats -----------------------------------------

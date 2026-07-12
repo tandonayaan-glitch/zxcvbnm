@@ -174,6 +174,8 @@ function ColorRow({
       {onRemove && (
         <button
           onClick={onRemove}
+          aria-label="Remove color stop"
+          title="Remove color stop"
           className="shrink-0 rounded p-1 text-ink-400 hover:bg-ink-100 hover:text-red-500 dark:text-ink-500 dark:hover:bg-ink-800"
         >
           <X size={14} />

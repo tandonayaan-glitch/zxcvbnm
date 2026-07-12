@@ -269,6 +269,28 @@ export interface Delivery {
   scorerId?: string | null
 }
 
+/** 1-8 wagon-wheel shot-placement zones, clockwise from straight-down-the-ground. */
+export type ShotZone = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8
+
+export type BowlingLine = 'wide_off' | 'outside_off' | 'stump' | 'leg' | 'wide_leg'
+export type BowlingLength = 'full_toss' | 'yorker' | 'full' | 'good' | 'short' | 'bouncer'
+
+/**
+ * Optional per-ball shot-placement / line-length tag, keyed by delivery id.
+ * Deliberately NOT part of `Delivery` or `BallInput` — the scoring engine
+ * (`domain/scoring.ts`) is treated as verified/reliable and isn't touched by
+ * new features; this is a sibling doc the scoring UI writes to separately,
+ * after `recordBall()` already returned, so it can never affect scoring
+ * logic even if it's missing, malformed, or added long after the fact.
+ */
+export interface BallMeta {
+  id: string // == Delivery.id
+  zone?: ShotZone
+  line?: BowlingLine
+  length?: BowlingLength
+  createdAt: number
+}
+
 export interface ExtrasBreakdown {
   wides: number
   noBalls: number

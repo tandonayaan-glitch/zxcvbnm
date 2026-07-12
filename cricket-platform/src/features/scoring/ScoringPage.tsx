@@ -28,6 +28,8 @@ import {
   subscribeDeliveries,
 } from '@/services/scoring.service'
 import { recomputeAllStats, recomputeTournamentStandings } from '@/services/stats.service'
+import { recordBallMeta } from '@/services/ballMeta.service'
+import { ShotDetailPrompt } from './ShotDetailPrompt'
 import { ballsToOvers, runRate, requiredRate, formatRate } from '@/lib/format'
 import { useAuthStore } from '@/store/authStore'
 import { useBgStore } from '@/store/bgStore'
@@ -53,6 +55,9 @@ export function ScoringPage() {
   const [activeExtra, setActiveExtra] = useState<ExtraType | null>(null)
   const [wicketOpen, setWicketOpen] = useState(false)
   const [publishing, setPublishing] = useState(false)
+  const [pendingMeta, setPendingMeta] = useState<{ deliveryId: string; showZone: boolean } | null>(
+    null,
+  )
 
   useEffect(() => {
     const unsub = subscribeMatch(id, (m) => {
@@ -116,16 +121,22 @@ export function ScoringPage() {
 
   async function score(runs: number, extra?: ExtraType) {
     const m = match!
+    setPendingMeta(null)
     await guard(async () => {
       const input: BallInput = { runs, extra }
-      await recordBall(m, input, { sequence: nextSeq, scorerId: profile?.id })
+      const { delivery } = await recordBall(m, input, {
+        sequence: nextSeq,
+        scorerId: profile?.id,
+      })
       setActiveExtra(null)
+      setPendingMeta({ deliveryId: delivery.id, showZone: extra !== 'wide' })
     })
   }
 
   async function confirmWicket(r: WicketResult) {
     const m = match!
     setWicketOpen(false)
+    setPendingMeta(null)
     await guard(async () => {
       const input: BallInput = {
         runs: r.runs,
@@ -135,8 +146,23 @@ export function ScoringPage() {
           fielderId: r.fielderId,
         },
       }
-      await recordBall(m, input, { sequence: nextSeq, scorerId: profile?.id })
+      const { delivery } = await recordBall(m, input, {
+        sequence: nextSeq,
+        scorerId: profile?.id,
+      })
+      setPendingMeta({ deliveryId: delivery.id, showZone: r.type !== 'run_out' })
     })
+  }
+
+  async function saveShotMeta(patch: Parameters<typeof recordBallMeta>[2]) {
+    if (!pendingMeta) return
+    try {
+      // Merge-write, so tapping zone then line then length accumulates on
+      // the same doc rather than overwriting each other.
+      await recordBallMeta(match!.id, pendingMeta.deliveryId, patch)
+    } catch {
+      // best-effort — never interrupt scoring for an optional enrichment
+    }
   }
 
   async function publish() {
@@ -294,6 +320,16 @@ export function ScoringPage() {
             <BallToken key={i} d={d} />
           ))}
         </div>
+
+        {pendingMeta && (
+          <ShotDetailPrompt
+            showZone={pendingMeta.showZone}
+            onPickZone={(z) => saveShotMeta({ zone: z })}
+            onPickLine={(l) => saveShotMeta({ line: l })}
+            onPickLength={(l) => saveShotMeta({ length: l })}
+            onDismiss={() => setPendingMeta(null)}
+          />
+        )}
       </Card>
 
       {/* Prompts */}

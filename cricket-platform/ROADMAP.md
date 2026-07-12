@@ -49,14 +49,20 @@ changes or a human scopes the task down to something finite.
   `chaseWinProbability()`, a transparent required-rate/wickets-in-hand heuristic, explicitly labelled
   "heuristic estimate" rather than a trained model, since there's no historical ball-by-ball dataset
   in this app to fit one on)
-- 🚫 **Wagon wheel · pitch/bowling map** — both need shot-direction/line-length data that isn't
-  captured anywhere in the scoring flow today, and every ball's `Delivery` record is built by one
-  explicit field-by-field object literal inside `applyBall()` in `domain/scoring.ts` (verified by
-  reading it directly — no pass-through mechanism for extra fields exists), so capturing that data
-  means editing the one file this project's own instructions mark as verified/reliable and
-  off-limits to modification. Not a missing slice; a boundary this project has drawn around its
-  most safety-critical file. Would need either that constraint relaxed or a scoring-UI change
-  scoped and reviewed by a human before it's safe to build.
+- ✅ **Wagon wheel · pitch/bowling map** — the blocker was real (`applyBall()` in `domain/scoring.ts`
+  builds `Delivery` as one explicit field-by-field literal with no pass-through for extra fields,
+  and that file is off-limits), but the constraint only rules out extending `Delivery`/`BallInput`
+  themselves — it doesn't rule out a sibling record. `BallMeta` (`types/index.ts`) is a separate
+  optional doc keyed by delivery id, written by `services/ballMeta.service.ts` to a new
+  `matches/{id}/ballMeta/{deliveryId}` subcollection *after* `recordBall()` already returned — the
+  scoring engine never sees it, calls it, or is touched by it. On the Scoring page, a dismissible
+  `ShotDetailPrompt` appears after each ball (8-zone shot placement + bowling line/length, all
+  optional, tap-to-save, "Skip" or the next ball closes it — never blocks or slows down scoring).
+  `domain/wagonWheel.ts`/`domain/pitchMap.ts` are pure aggregations of deliveries + `BallMeta`;
+  `components/charts/WagonWheel.tsx` (8-sector SVG, sized by runs) and `PitchMap.tsx` (line×length
+  heatmap table) render on the match page only once real tagged data exists, else nothing (no
+  fabricated placeholder). Verified live: scored a real ball in an in-progress match, tagged it
+  "Long-on", confirmed the wagon wheel rendered the 4 runs in that sector on the public match page.
 - ✅ **Best bowling spell + boundary/wicket timeline + momentum + turning point** in Match Insights
   — tightest 2–4 over economy stretch per bowler; colour-coded ball-order timeline of every
   4/6/wicket; last-3-overs rate vs overall, accelerating/slowing/steady; the over with the largest
@@ -213,15 +219,16 @@ changes or a human scopes the task down to something finite.
   gained `aria-label`; the toast region gained `role="status" aria-live="polite"`; every icon-only
   edit/delete button on the Teams/Tournaments/Clubs & Seasons/Matches/Players list pages gained an
   `aria-label` naming the specific row — previously relied on `title` alone or had no accessible
-  name at all)
-- 🚫 **Exhaustive ARIA audit** (every interactive element in the app individually checked) — this
-  isn't a slice with a finish line, it's an open-ended activity: there is no fixed list of
-  "every interactive element," new ones are added every time a feature ships, and "diminishing
-  returns without a specific target" was true the first time this was written and stays true no
-  matter how many more passes run. The shared dialog/toast primitives (used everywhere) and every
-  concretely-missing icon-button label found by grepping for them are done; treating the open-ended
-  remainder as a checklist item to clear would mean inventing a stopping point that doesn't exist,
-  not finishing real work. Revisit if a specific screen-reader-flagged gap is reported.
+  name at all); **every icon-only control in the app has an accessible name** — scoped that open
+  claim down to a finite, verifiable one: every `<button>`/`<Link>` in all 43 files that import
+  `lucide-react` was checked for `aria-label`/`title`, the one gap found (the gradient editor's
+  "remove colour stop" button in `BackgroundControl.tsx`) was fixed. This is a real, bounded
+  completion of the icon-label sub-problem, not a claim of general WCAG compliance
+- 🚫 **Exhaustive accessibility audit** (contrast ratios, keyboard-trap testing, and screen-reader
+  flow individually verified on every page) — this remains open-ended by nature (no fixed list of
+  "every page/flow," and new ones are added every time a feature ships), unlike the icon-label
+  sub-problem above, which had a finite, greppable surface and is now done. Revisit if a specific
+  screen-reader-flagged gap is reported.
 - ✅ Performance: **lazy-loaded routes / code-splitting** (`React.lazy` + `Suspense` per route);
   **memoised TeamPage/PlayerPage/MatchPage/TournamentPage analytics** (`useMemo`, incl. the
   live-scoring MatchPage which re-renders every ball); **batched backup-export delivery reads**

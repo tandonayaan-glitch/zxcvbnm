@@ -30,6 +30,11 @@ import { setPlayerOfTheMatch, subscribeDeliveries } from '@/services/scoring.ser
 import { ScorecardView } from '@/features/scorecard/ScorecardView'
 import { MatchGraphs } from '@/components/charts/MatchGraphs'
 import { MatchInsights } from '@/components/charts/MatchInsights'
+import { WagonWheel } from '@/components/charts/WagonWheel'
+import { PitchMap } from '@/components/charts/PitchMap'
+import { listBallMeta } from '@/services/ballMeta.service'
+import { wagonWheelData, hasWagonWheelData } from '@/domain/wagonWheel'
+import { pitchMapData, hasPitchMapData } from '@/domain/pitchMap'
 import { ScorecardConfigModal } from '@/features/scorecard/ScorecardConfigModal'
 import { matchToCSV, matchToJSON, exportSlug } from '@/domain/matchExport'
 import { downloadBlob } from '@/lib/download'
@@ -54,6 +59,7 @@ export function MatchPage() {
   const profile = useAuthStore((s) => s.profile)
   const players = useAsync(listPlayers, [])
   const allMatches = useAsync(listAllMatches, [])
+  const ballMeta = useAsync(() => listBallMeta(id), [id])
 
   const [match, setMatch] = useState<Match | null>(null)
   const [deliveries, setDeliveries] = useState<Delivery[]>([])
@@ -378,6 +384,19 @@ export function MatchPage() {
       {deliveries.length > 0 && (
         <div className="mb-4">
           <MatchInsights match={match} deliveries={deliveries} name={name} />
+        </div>
+      )}
+
+      {/* Wagon wheel / bowling map — only when the scorer chose to tag shots
+          during scoring; this data isn't captured automatically. */}
+      {(ballMeta.data?.length ?? 0) > 0 && (
+        <div className="mb-4 grid gap-4 sm:grid-cols-2">
+          {hasWagonWheelData(ballMeta.data!) && (
+            <WagonWheel zones={wagonWheelData(deliveries, ballMeta.data!)} />
+          )}
+          {hasPitchMapData(ballMeta.data!) && (
+            <PitchMap cells={pitchMapData(deliveries, ballMeta.data!)} />
+          )}
         </div>
       )}
 
