@@ -4,6 +4,24 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Password recovery verification quiz, rate limiting, audit (Phase 3)
+- **Verification quiz** on `/recover` (`domain/recoveryQuiz.ts` `buildRecoveryQuestions()`, wired
+  into `RecoverPage.tsx`): once a matching account is found, its linked player's real role and
+  current team become multiple-choice questions with decoys drawn from other real roles/teams, so
+  they can't be guessed from the options' structure. Only after every question is answered
+  correctly does the page reveal the username — previously the fuzzy name match revealed it
+  immediately, a real account-enumeration gap for anyone else's real name.
+- **Client-side rate limiting**: 5 failed quiz attempts locks recovery on that browser for 15
+  minutes (`localStorage`-tracked). Explicitly scoped as a best-effort browser-level cooldown, not
+  a real rate limiter — there's no backend in this project to enforce one server-side (per-IP or
+  per-account), so a determined attacker rotating browsers/storage isn't stopped. It stops the
+  casual case.
+- **Recovery audit trail**: every attempt — quiz passed, quiz failed, rate-limited, or no quiz
+  available to build (accounts without a linked player) — is written to the new `recoveryAttempts`
+  Firestore collection (`services/recovery.service.ts`). `firestore.rules` allows public `create`
+  (the flow runs before login, so there's no authenticated actor to gate on) but restricts `read`
+  to the master admin, same shape as `adminRequests`.
+
 ### Added — Duplicate-player detection on the merge tool (Phase 9)
 - **"Suggested duplicates" panel** on `/admin/merge-players` (`domain/duplicateDetection.ts`
   `findDuplicateCandidates()`): pairwise Levenshtein-distance similarity over active players'

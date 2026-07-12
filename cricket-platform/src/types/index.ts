@@ -508,6 +508,16 @@ export interface AuditLog {
   createdAt: number
 }
 
+/** Audit trail entry for a /recover account-recovery attempt. */
+export interface RecoveryAttempt {
+  id: string
+  playerId?: string
+  playerName: string
+  outcome: 'quiz_passed' | 'quiz_failed' | 'no_quiz_available' | 'rate_limited'
+  usernameRevealed: boolean
+  createdAt: number
+}
+
 /** A user's request to be granted ADMIN access (to run a tournament). */
 export interface AdminRequest {
   id: string

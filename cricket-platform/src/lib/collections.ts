@@ -17,6 +17,7 @@ export const COL = {
   adminRequests: 'adminRequests',
   auditLogs: 'auditLogs',
   userPrefs: 'userPrefs', // per-user appearance/accessibility prefs (cross-device)
+  recoveryAttempts: 'recoveryAttempts', // audit trail for /recover quiz attempts
 } as const
 
 export const SETTINGS_DOC = 'app'

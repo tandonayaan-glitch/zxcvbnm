@@ -170,6 +170,16 @@ service cloud.firestore {
       allow update, delete: if isMasterAdmin();
     }
 
+    // ---- Recovery attempts --------------------------------------
+    match /recoveryAttempts/{id} {
+      // The /recover flow runs pre-login (no auth yet), so logging an attempt
+      // must be publicly writable — it only ever records a name/outcome, never
+      // credentials. Only the master admin can read the trail back.
+      allow read: if isMasterAdmin();
+      allow create: if true;
+      allow update, delete: if false;
+    }
+
     // ---- Audit logs -------------------------------------------
     match /auditLogs/{id} {
       // Only the master admin reads the audit trail; any admin can append.

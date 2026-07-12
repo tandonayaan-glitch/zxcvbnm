@@ -67,7 +67,19 @@ Legend: ✅ done · 🟡 partial / in progress · ⬜ planned
   so that verification could never complete. The assigned username is kept permanently instead;
   only the password (and display name) are chosen at activation. This is a platform constraint,
   not a shortcut — a real fix would need a backend (Admin SDK) this project doesn't have.
-- 🟡 Cricket-based password recovery (fuzzy name match exists at `/recover`; add match-history Q&A verification, rate limiting, cooldowns, recovery audit)
+- ✅ **Cricket-based password recovery** — `/recover`'s fuzzy name match now gates the username
+  reveal behind a **verification quiz** (`domain/recoveryQuiz.ts` `buildRecoveryQuestions()`): role
+  and current-team multiple-choice questions built from the requester's own real player data, with
+  decoy options drawn from other real players/teams so they can't be guessed structurally; both
+  must be answered correctly. **Client-side rate limiting/cooldown**: after 5 failed attempts from
+  one browser, recovery is paused there for 15 minutes (localStorage-tracked) — an honest,
+  bounded best-effort given there's no backend here to rate-limit server-side; it stops casual
+  brute-forcing from one browser, not a determined multi-IP attacker. **Recovery audit**: every
+  attempt (passed/failed/rate-limited/no-quiz-available) is logged to the new `recoveryAttempts`
+  collection (public create — the flow runs pre-login — master-admin-only read, enforced in
+  `firestore.rules`). Accounts with no linked player (e.g. the master admin) have no quiz to build
+  and fall back to the pre-quiz direct reveal, logged as `no_quiz_available` — a genuine limitation
+  of a client-only app with no server-side identity check to fall back to, not an oversight.
 - ✅ **Claim / merge duplicate player profiles** — master-admin-only page at `/admin/merge-players`
   (`services/playerMerge.service.ts`): rewrites every reference to the duplicate playerId — team
   rosters/captain/vice-captain, match squads, `playerOfTheMatchId`, every innings' batting/bowling
