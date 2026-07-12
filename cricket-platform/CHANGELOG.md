@@ -4,6 +4,17 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Fixed — Custom background now darkens in dark mode (Phase 4)
+- `BackgroundLayer.tsx` previously painted the user's chosen background gradient/solid/preset
+  (`bgStore`) at full brightness regardless of theme, so dark mode looked like a dark frame around
+  a still-light backdrop. Added a `mix-blend-mode: multiply` overlay whose opacity is derived from
+  `configLuminance()` (new helper in `store/bgStore.ts`, averages the relative luminance of the
+  config's colour stops): near-zero for an already-dark pick like the "Midnight" preset, up to 0.85
+  for light pastel ones (the default background, "Pitch", "Sunset", "Ocean"). A flat "always darken
+  by X in dark mode" would have either barely touched light presets or crushed Midnight to black;
+  this scales per-config instead. Verified in the browser: toggled the theme switch and confirmed
+  the overlay's opacity flips live between `0` and `0.85` with no reload.
+
 ### Added — Wagon wheel & bowling line/length map (Phase 2)
 - **`BallMeta`** (`types/index.ts`): an optional per-delivery shot-zone (1-8) / bowling line /
   bowling length tag, stored as a sibling doc (`matches/{id}/ballMeta/{deliveryId}`,

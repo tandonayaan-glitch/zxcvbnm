@@ -124,7 +124,14 @@ changes or a human scopes the task down to something finite.
   from the first pass since concurrent work was landing in those same files; finished once it
   settled). Verified via computed-style contrast sampling in the browser rather than screenshots
   (unreliable this session): 0 low-contrast text elements found across 465 sampled on the Match/
-  Player/Tournament/Settings pages, 157/158 on Stats
+  Player/Tournament/Settings pages, 157/158 on Stats. **Custom background darkens with the theme**
+  (`BackgroundLayer.tsx`): a `mix-blend-mode: multiply` overlay dims whatever gradient/solid/preset
+  the user picked, with opacity driven by `configLuminance()` (`store/bgStore.ts`) — an already-dark
+  pick (the "Midnight" preset) gets little to no extra darkening, light pastel ones (the default,
+  "Pitch", "Sunset", "Ocean") get dimmed close to black, rather than a flat dark-mode override that
+  would either wash out Midnight or leave light presets glaringly bright. Verified in the browser:
+  toggling the theme switch flips the overlay's inline `opacity` between `0` (light) and `0.85`
+  (dark, for the light-pastel default) live, no reload needed
 - ✅ Cross-device persistence of preferences (Firestore `userPrefs`) — pull/seed on sign-in (remote wins), debounced push on change, resets on sign-out
 - ✅ Global undo toasts for create/edit actions (Players, Teams, Tournaments)
 
