@@ -102,6 +102,30 @@ export function bgToCss(cfg: BgConfig): string {
   return `linear-gradient(${DEFAULT_BG.angle}deg, ${DEFAULT_BG.stops.join(', ')})`
 }
 
+/** Perceived (relative) luminance of a #rrggbb / #rgb hex colour, 0 (black) - 1 (white). */
+function hexLuminance(hex: string): number | null {
+  const m = /^#?([\da-f]{3}|[\da-f]{6})$/i.exec(hex.trim())
+  if (!m) return null
+  const h = m[1].length === 3 ? m[1].split('').map((c) => c + c).join('') : m[1]
+  const r = parseInt(h.slice(0, 2), 16) / 255
+  const g = parseInt(h.slice(2, 4), 16) / 255
+  const b = parseInt(h.slice(4, 6), 16) / 255
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+/**
+ * Average luminance of a background config's colour(s) — used to decide how
+ * much to darken it in dark mode. A config that's already dark (e.g. the
+ * "Midnight" preset) needs little to no extra darkening; a light pastel one
+ * needs a lot. Unparseable/custom values fall back to "assume light" (1) so
+ * they still get darkened rather than silently skipped.
+ */
+export function configLuminance(cfg: BgConfig): number {
+  const colors = cfg.mode === 'solid' ? [cfg.solid] : cfg.stops.length ? cfg.stops : [cfg.solid]
+  const values = colors.map((c) => hexLuminance(c) ?? 1)
+  return values.reduce((a, b) => a + b, 0) / values.length
+}
+
 /** Accent colour for the soft glow blobs, shifted by match-state tone. */
 export function toneAccent(tone: BgTone): { a: string; b: string } {
   switch (tone) {
