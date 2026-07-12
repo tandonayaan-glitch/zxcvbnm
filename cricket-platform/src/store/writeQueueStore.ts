@@ -29,7 +29,7 @@ const SYNCED_RETENTION_MS = 8_000
  * promise settles), just scoped to writes this app instruments rather than
  * every Firestore operation everywhere.
  */
-export const useWriteQueueStore = create<WriteQueueState>((set, get) => ({
+export const useWriteQueueStore = create<WriteQueueState>((set) => ({
   writes: [],
   track: (label) => {
     const id = `w${++seq}_${Date.now()}`
