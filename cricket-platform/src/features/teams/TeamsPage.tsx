@@ -22,6 +22,7 @@ import {
 } from '@/services/teams.service'
 import { listPlayers } from '@/services/players.service'
 import { listClubs } from '@/services/clubs.service'
+import { softDelete } from '@/services/trash.service'
 import { useAuthStore, ownerScope } from '@/store/authStore'
 import { TeamFormModal } from './TeamFormModal'
 import type { Team } from '@/types'
@@ -82,9 +83,9 @@ export function TeamsPage() {
   }
 
   async function handleDelete(t: Team) {
-    if (!confirm(`Delete ${t.name}?`)) return
-    await deleteTeam(t.id)
-    toast.success('Team deleted')
+    if (!confirm(`Move ${t.name} to Trash? You can restore it from Trash later.`)) return
+    await softDelete('team', t.id, profile)
+    toast.success('Team moved to Trash')
     teams.refetch()
   }
 

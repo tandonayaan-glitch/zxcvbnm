@@ -19,7 +19,9 @@ export type SeasonInput = Omit<Season, 'id' | 'createdAt' | 'updatedAt'>
 
 export async function listSeasons(): Promise<Season[]> {
   const snap = await getDocs(query(seasonsCol(), orderBy('createdAt', 'desc')))
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as object) }) as Season)
+  return snap.docs
+    .map((d) => ({ id: d.id, ...(d.data() as object) }) as Season)
+    .filter((s) => !s.deletedAt)
 }
 
 export async function getSeason(id: string): Promise<Season | null> {

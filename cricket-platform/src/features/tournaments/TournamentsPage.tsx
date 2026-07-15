@@ -23,6 +23,7 @@ import {
 import { listTeams } from '@/services/teams.service'
 import { listClubs } from '@/services/clubs.service'
 import { listSeasons } from '@/services/seasons.service'
+import { softDelete } from '@/services/trash.service'
 import { formatDate } from '@/lib/format'
 import { useAuthStore, ownerScope } from '@/store/authStore'
 import { TournamentFormModal } from './TournamentFormModal'
@@ -87,9 +88,9 @@ export function TournamentsPage() {
   }
 
   async function handleDelete(t: Tournament) {
-    if (!confirm(`Delete ${t.name}?`)) return
-    await deleteTournament(t.id)
-    toast.success('Tournament deleted')
+    if (!confirm(`Move ${t.name} to Trash? You can restore it from Trash later.`)) return
+    await softDelete('tournament', t.id, profile)
+    toast.success('Tournament moved to Trash')
     tournaments.refetch()
   }
 

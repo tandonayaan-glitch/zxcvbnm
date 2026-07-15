@@ -10,6 +10,7 @@ function defaults(): AppSettings {
     defaultScorecardConfig: defaultScorecardConfig(),
     defaultPublicMatches: true,
     defaultOvers: 20,
+    trashRetentionDays: 30,
     updatedAt: Date.now(),
   }
 }

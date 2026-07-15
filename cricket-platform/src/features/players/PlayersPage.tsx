@@ -39,6 +39,7 @@ import {
 import { listTeams } from '@/services/teams.service'
 import { listAllMatches } from '@/services/matches.service'
 import { createLinkedAccount } from '@/services/auth.service'
+import { softDelete } from '@/services/trash.service'
 import { aggregatePlayerStats, buildLeaderboards } from '@/domain/stats'
 import { LeaderboardCard } from '@/components/stats/LeaderboardCard'
 import { PLAYER_ROLE_LABELS, BOWLING_STYLE_LABELS } from '@/lib/format'
@@ -158,9 +159,9 @@ export function PlayersPage() {
   }
 
   async function handleDelete(p: Player) {
-    if (!confirm(`Delete ${p.fullName}? This cannot be undone.`)) return
-    await deletePlayer(p.id)
-    toast.success('Player deleted')
+    if (!confirm(`Move ${p.fullName} to Trash? You can restore it from Trash later.`)) return
+    await softDelete('player', p.id, profile)
+    toast.success('Player moved to Trash')
     players.refetch()
   }
 

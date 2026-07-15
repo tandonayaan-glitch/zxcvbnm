@@ -4,6 +4,24 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Data lifecycle management: Trash, restore, permanent delete (Phase 10)
+- Players, Teams, Clubs, Seasons, Tournaments and Matches gained optional `deletedAt`/`deletedBy`
+  fields. The "Delete" buttons on their list pages now soft-delete via the new
+  `services/trash.service.ts` instead of hard-deleting — the doc disappears from every list/browse
+  surface immediately but nothing referencing it is rewritten, so restoring is exact.
+- New **Trash** page (`/admin/trash`, nav entry for the same roles as `canManage`): every
+  soft-deleted doc across all six entity types, per-type filter chips, per-row and bulk
+  Restore/Permanently-delete, and a "Purge expired now" action once items pass the retention
+  window.
+- New `AppSettings.trashRetentionDays` (default 30), editable on Platform Settings — drives the
+  "expired" banner/badge on the Trash page and `purgeExpired()`. No backend cron exists in this
+  client-only app, so cleanup is an explicit manual trigger, matching `forceResync()`'s existing
+  honest-best-effort pattern rather than a fabricated schedule.
+- `purgeMatch()` (`scoring.service.ts`) now also cleans up the `ballMeta` subcollection alongside
+  `deliveries` when a match is permanently deleted — it previously only cleaned `deliveries`,
+  predating `ballMeta`'s introduction in Phase 2.
+- Every trash/restore/permanent-delete action is audit-logged.
+
 ### Fixed — Custom background now darkens in dark mode (Phase 4)
 - `BackgroundLayer.tsx` previously painted the user's chosen background gradient/solid/preset
   (`bgStore`) at full brightness regardless of theme, so dark mode looked like a dark frame around

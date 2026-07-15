@@ -16,17 +16,16 @@ import {
   listClubs,
   createClub,
   updateClub,
-  deleteClub,
   type ClubInput,
 } from '@/services/clubs.service'
 import {
   listSeasons,
   createSeason,
   updateSeason,
-  deleteSeason,
   type SeasonInput,
 } from '@/services/seasons.service'
 import { formatDate } from '@/lib/format'
+import { softDelete } from '@/services/trash.service'
 import { useAuthStore, ownerScope } from '@/store/authStore'
 import { ClubFormModal } from './ClubFormModal'
 import { SeasonFormModal } from './SeasonFormModal'
@@ -74,9 +73,9 @@ export function ClubsSeasonsPage() {
   }
 
   async function handleDeleteClub(c: Club) {
-    if (!confirm(`Delete ${c.name}? Teams/tournaments/seasons linked to it keep their club reference.`)) return
-    await deleteClub(c.id)
-    toast.success('Club deleted')
+    if (!confirm(`Move ${c.name} to Trash? Teams/tournaments/seasons linked to it keep their club reference. You can restore it from Trash later.`)) return
+    await softDelete('club', c.id, profile)
+    toast.success('Club moved to Trash')
     clubs.refetch()
   }
 
@@ -98,9 +97,9 @@ export function ClubsSeasonsPage() {
   }
 
   async function handleDeleteSeason(s: Season) {
-    if (!confirm(`Delete ${s.name}? Tournaments linked to it keep their season reference.`)) return
-    await deleteSeason(s.id)
-    toast.success('Season deleted')
+    if (!confirm(`Move ${s.name} to Trash? Tournaments linked to it keep their season reference. You can restore it from Trash later.`)) return
+    await softDelete('season', s.id, profile)
+    toast.success('Season moved to Trash')
     seasons.refetch()
   }
 

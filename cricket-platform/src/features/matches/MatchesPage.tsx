@@ -16,7 +16,7 @@ import { usePaginated } from '@/hooks/usePaginated'
 import { Pagination } from '@/components/ui/Pagination'
 import { useToast } from '@/components/ui/toast'
 import { listAllMatches, updateMatch } from '@/services/matches.service'
-import { purgeMatch } from '@/services/scoring.service'
+import { softDelete } from '@/services/trash.service'
 import { importMatch } from '@/services/matchImport.service'
 import { useAuthStore, canScore, ownerScope } from '@/store/authStore'
 import { formatDate, ballsToOvers } from '@/lib/format'
@@ -51,9 +51,9 @@ export function MatchesPage() {
     usePaginated(filtered, 15)
 
   async function handleDelete(m: Match) {
-    if (!confirm(`Delete "${m.title}" and all its scoring data?`)) return
-    await purgeMatch(m.id)
-    toast.success('Match deleted')
+    if (!confirm(`Move "${m.title}" to Trash? You can restore it from Trash later.`)) return
+    await softDelete('match', m.id, profile)
+    toast.success('Match moved to Trash')
     matches.refetch()
   }
 

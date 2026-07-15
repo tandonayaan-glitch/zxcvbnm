@@ -122,13 +122,17 @@ export async function listMatches(opts?: {
     ...(opts?.max ? [limit(opts.max)] : []),
   )
   const snap = await getDocs(q)
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Match)
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }) as Match)
+    .filter((m) => !m.deletedAt)
 }
 
 /** All matches, newest first (admin list, sorted client-side to avoid index needs). */
 export async function listAllMatches(): Promise<Match[]> {
   const snap = await getDocs(query(matchesCol(), orderBy('createdAt', 'desc')))
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Match)
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }) as Match)
+    .filter((m) => !m.deletedAt)
 }
 
 /** Real-time subscription to a single match document. */

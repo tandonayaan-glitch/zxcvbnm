@@ -20,6 +20,7 @@ import {
   Sliders,
   Building2,
   Users2,
+  Trash2,
 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { useAuthStore, isAdmin, canScore } from '@/store/authStore'
@@ -42,6 +43,12 @@ const NAV: NavItem[] = [
   { to: '/teams', label: 'Teams', icon: <Shield size={18} /> },
   { to: '/tournaments', label: 'Tournaments', icon: <Trophy size={18} /> },
   { to: '/clubs', label: 'Clubs & Seasons', icon: <Building2 size={18} /> },
+  {
+    to: '/admin/trash',
+    label: 'Trash',
+    icon: <Trash2 size={18} />,
+    roles: ['MASTER_ADMIN', 'ADMIN', 'TEAM_MANAGER', 'TOURNAMENT_MANAGER'],
+  },
   { to: '/stats', label: 'Stats', icon: <BarChart3 size={18} /> },
   {
     to: '/requests',

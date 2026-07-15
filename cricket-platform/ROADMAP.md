@@ -243,6 +243,33 @@ changes or a human scopes the task down to something finite.
   hook + shared `Pagination` component — Players table 20/page, Teams/Tournaments grids 12/page,
   Matches list 15/page; page clamps automatically when a filter shrinks the list)
 
+## Phase 10 — Data lifecycle management
+- ✅ **Soft delete / Trash / restore / permanent delete / bulk restore & delete / configurable
+  retention** for Players, Teams, Clubs, Seasons, Tournaments and Matches (`services/
+  trash.service.ts`): every entity gained optional `deletedAt`/`deletedBy` fields; the "Delete"
+  buttons on the Players/Teams/Tournaments/Clubs & Seasons/Matches list pages now soft-delete
+  (`softDelete()`) instead of hard-deleting — the doc is flagged and disappears from every list/
+  browse surface (`listPlayers`/`listTeams`/`listClubs`/`listSeasons`/`listTournaments`/
+  `listMatches`/`listAllMatches` all filter out `deletedAt`) but nothing referencing it is
+  rewritten, so restoring is exact and free of side effects. A new **Trash** page
+  (`/admin/trash`, available to the same roles as `canManage`) lists every soft-deleted doc across
+  all six entity types with per-type filter chips, per-row Restore/Permanently-delete, and
+  checkbox multi-select for bulk Restore/bulk Permanently-delete. Permanent delete reuses each
+  entity's existing `deleteX()` (matches route through `purgeMatch()`, extended to also clean up
+  the `ballMeta` subcollection it was previously missing, alongside `deliveries`) — deliberately
+  the *same* behaviour the old hard-delete buttons already had (dangling references in
+  teams/matches are tolerated exactly as before; this app already treats "referenced player/team
+  doc can vanish, readers fall back to denormalized data" as a standing convention). **Retention**
+  is a new `AppSettings.trashRetentionDays` field (default 30, editable on Platform Settings); a
+  "Purge expired now" button surfaces on the Trash page once items pass that window — there's no
+  backend cron in this client-only app, so "automatic cleanup" is an honest manual trigger
+  (`purgeExpired()`), consistent with `forceResync()`'s existing best-effort approach rather than
+  a fabricated schedule. Every trash/restore/permanent-delete action is audit-logged. Verified
+  live end-to-end in the browser: created a throwaway test player, soft-deleted it (disappeared
+  from the Players list), confirmed it appeared in Trash, restored it (reappeared in Players),
+  soft-deleted again, and permanently deleted it via the Trash page's confirm modal (gone for
+  good, confirmed via a direct Firestore read) — cleaned up after.
+
 ---
 
 ### Notes

@@ -19,7 +19,9 @@ export type PlayerInput = Omit<Player, 'id' | 'createdAt' | 'updatedAt'>
 
 export async function listPlayers(): Promise<Player[]> {
   const snap = await getDocs(query(playersCol(), orderBy('fullName')))
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as object) }) as Player)
+  return snap.docs
+    .map((d) => ({ id: d.id, ...(d.data() as object) }) as Player)
+    .filter((p) => !p.deletedAt)
 }
 
 export async function getPlayer(id: string): Promise<Player | null> {

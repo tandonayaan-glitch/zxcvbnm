@@ -74,6 +74,9 @@ export interface Player {
   ownerId?: string // managing admin (uid); master admin sees all
   createdAt: number
   updatedAt: number
+  /** Soft-deleted (Trash): hidden from lists, restorable until permanently purged. */
+  deletedAt?: number | null
+  deletedBy?: string | null
 }
 
 /* ------------------------- Clubs & Seasons ------------------------- */
@@ -89,6 +92,9 @@ export interface Club {
   ownerId?: string // managing admin (uid); master admin sees all
   createdAt: number
   updatedAt: number
+  /** Soft-deleted (Trash): hidden from lists, restorable until permanently purged. */
+  deletedAt?: number | null
+  deletedBy?: string | null
 }
 
 export type SeasonStatus = 'upcoming' | 'ongoing' | 'completed'
@@ -106,6 +112,9 @@ export interface Season {
   ownerId?: string // managing admin (uid); master admin sees all
   createdAt: number
   updatedAt: number
+  /** Soft-deleted (Trash): hidden from lists, restorable until permanently purged. */
+  deletedAt?: number | null
+  deletedBy?: string | null
 }
 
 /* ----------------------------- Teams ----------------------------- */
@@ -126,6 +135,9 @@ export interface Team {
   ownerId?: string // managing admin (uid); master admin sees all
   createdAt: number
   updatedAt: number
+  /** Soft-deleted (Trash): hidden from lists, restorable until permanently purged. */
+  deletedAt?: number | null
+  deletedBy?: string | null
 }
 
 /* -------------------------- Tournaments -------------------------- */
@@ -166,6 +178,9 @@ export interface Tournament {
   ownerId?: string // owning admin (uid); master admin sees all
   createdAt: number
   updatedAt: number
+  /** Soft-deleted (Trash): hidden from lists, restorable until permanently purged. */
+  deletedAt?: number | null
+  deletedBy?: string | null
 }
 
 /** Cached points-table row for a tournament. */
@@ -433,6 +448,9 @@ export interface Match {
   completedAt?: number | null
   /** Soft-archived: hidden from the default Matches list/count but not deleted. */
   archived?: boolean
+  /** Soft-deleted (Trash): hidden everywhere (incl. Archived tab), restorable until purged. */
+  deletedAt?: number | null
+  deletedBy?: string | null
 }
 
 /* --------------------------- Stats engine --------------------------- */
@@ -561,5 +579,7 @@ export interface AppSettings {
   defaultScorecardConfig: ScorecardConfig
   defaultPublicMatches: boolean
   defaultOvers: number
+  /** Days a soft-deleted item stays in Trash before "Purge expired" removes it for good. */
+  trashRetentionDays: number
   updatedAt: number
 }

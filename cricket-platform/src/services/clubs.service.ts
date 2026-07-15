@@ -19,7 +19,9 @@ export type ClubInput = Omit<Club, 'id' | 'createdAt' | 'updatedAt'>
 
 export async function listClubs(): Promise<Club[]> {
   const snap = await getDocs(query(clubsCol(), orderBy('name')))
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as object) }) as Club)
+  return snap.docs
+    .map((d) => ({ id: d.id, ...(d.data() as object) }) as Club)
+    .filter((c) => !c.deletedAt)
 }
 
 export async function getClub(id: string): Promise<Club | null> {

@@ -24,9 +24,9 @@ export type TournamentInput = Omit<
 
 export async function listTournaments(): Promise<Tournament[]> {
   const snap = await getDocs(query(tournamentsCol(), orderBy('createdAt', 'desc')))
-  return snap.docs.map(
-    (d) => ({ id: d.id, ...(d.data() as object) }) as Tournament,
-  )
+  return snap.docs
+    .map((d) => ({ id: d.id, ...(d.data() as object) }) as Tournament)
+    .filter((t) => !t.deletedAt)
 }
 
 export async function getTournament(id: string): Promise<Tournament | null> {

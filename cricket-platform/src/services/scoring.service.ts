@@ -373,9 +373,13 @@ export function subscribeDeliveries(
 
 /** Delete a match plus its deliveries (admin cleanup). */
 export async function purgeMatch(matchId: string): Promise<void> {
-  const snap = await getDocs(deliveriesCol(matchId))
+  const [deliveriesSnap, ballMetaSnap] = await Promise.all([
+    getDocs(deliveriesCol(matchId)),
+    getDocs(collection(db, COL.matches, matchId, COL.ballMeta)),
+  ])
   const batch = writeBatch(db)
-  snap.docs.forEach((d) => batch.delete(d.ref))
+  deliveriesSnap.docs.forEach((d) => batch.delete(d.ref))
+  ballMetaSnap.docs.forEach((d) => batch.delete(d.ref))
   await batch.commit()
   await deleteDoc(doc(db, COL.matches, matchId))
 }

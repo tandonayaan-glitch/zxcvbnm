@@ -21,7 +21,9 @@ export type TeamInput = Omit<Team, 'id' | 'createdAt' | 'updatedAt'>
 
 export async function listTeams(): Promise<Team[]> {
   const snap = await getDocs(query(teamsCol(), orderBy('name')))
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as object) }) as Team)
+  return snap.docs
+    .map((d) => ({ id: d.id, ...(d.data() as object) }) as Team)
+    .filter((t) => !t.deletedAt)
 }
 
 export async function getTeam(id: string): Promise<Team | null> {

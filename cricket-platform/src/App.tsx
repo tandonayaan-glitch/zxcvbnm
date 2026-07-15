@@ -88,6 +88,9 @@ const PlayerMergePage = lazy(() =>
     default: m.PlayerMergePage,
   })),
 )
+const TrashPage = lazy(() =>
+  import('@/features/admin/TrashPage').then((m) => ({ default: m.TrashPage })),
+)
 const AccountPage = lazy(() =>
   import('@/features/account/AccountPage').then((m) => ({ default: m.AccountPage })),
 )
@@ -204,6 +207,16 @@ export default function App() {
           <Route path="/teams" element={<TeamsPage />} />
           <Route path="/tournaments" element={<TournamentsPage />} />
           <Route path="/clubs" element={<ClubsSeasonsPage />} />
+          <Route
+            path="/admin/trash"
+            element={
+              <ProtectedRoute
+                roles={['MASTER_ADMIN', 'ADMIN', 'TEAM_MANAGER', 'TOURNAMENT_MANAGER']}
+              >
+                <TrashPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/users"
             element={

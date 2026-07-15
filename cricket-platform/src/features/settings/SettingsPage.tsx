@@ -87,6 +87,14 @@ export function SettingsPage() {
               <option value="private">Private by default</option>
             </Select>
           </Field>
+          <Field label="Trash retention (days)">
+            <Input
+              type="number"
+              min={1}
+              value={settings.trashRetentionDays}
+              onChange={(e) => set('trashRetentionDays', Number(e.target.value))}
+            />
+          </Field>
         </CardBody>
         <div className="flex justify-end border-t border-ink-100 dark:border-ink-800 px-5 py-3">
           <Button onClick={save} loading={saving}>
