@@ -4,6 +4,25 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Notification center (Phase 11)
+- New `services/notifications.service.ts` + `AppNotification`/`NotificationCategory` types: a
+  per-user `notifications` collection with `notify()`/`listNotifications()`/
+  `subscribeNotifications()`/`markRead()`/`markAllRead()`.
+- New header **bell** (`components/layout/NotificationBell.tsx`) with a live unread badge
+  (`onSnapshot`) and dropdown panel; clicking a notification marks it read and follows its link.
+- Wired into concrete existing actions rather than a generic event bus: admin request
+  approved/declined, role changed, account suspended/reinstated, player profile merged, match
+  completed/abandoned (every completion path — auto-complete, declare, explicit complete, and
+  abandon).
+- New **Notifications** card on Settings — per-category mute toggles (`Prefs.notifyMuted`, synced
+  cross-device); muting hides a category from the bell without deleting the underlying records.
+- `firestore.rules`: any signed-in user may create a notification (always for someone else, as the
+  side effect of an action they're already permitted to take); only the recipient or master admin
+  can read/update/delete it.
+- Queries filter by `userId` only and sort/cap client-side rather than adding `orderBy` — avoids
+  needing a composite Firestore index this project doesn't ship (matches `listAllMatches`'s
+  existing "sorted client-side" approach).
+
 ### Added — Data lifecycle management: Trash, restore, permanent delete (Phase 10)
 - Players, Teams, Clubs, Seasons, Tournaments and Matches gained optional `deletedAt`/`deletedBy`
   fields. The "Delete" buttons on their list pages now soft-delete via the new

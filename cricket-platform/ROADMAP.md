@@ -270,6 +270,34 @@ changes or a human scopes the task down to something finite.
   soft-deleted again, and permanently deleted it via the Trash page's confirm modal (gone for
   good, confirmed via a direct Firestore read) — cleaned up after.
 
+## Phase 11 — Notification center
+- ✅ **Persisted, per-user notification center** (`services/notifications.service.ts`,
+  `AppNotification`/`NotificationCategory` in `types/index.ts`): a `notifications` collection
+  (`notify()`/`listNotifications()`/`subscribeNotifications()`/`markRead()`/`markAllRead()`),
+  read live via `onSnapshot` by a new header **bell** (`components/layout/NotificationBell.tsx`,
+  in `AppShell`) showing an unread badge and a dropdown of recent notifications; clicking one
+  marks it read and follows its link. Queried by `where('userId','==', uid)` only, sorted/capped
+  client-side rather than adding `orderBy` — the combination needs a composite Firestore index
+  this project doesn't ship (same reasoning as `listAllMatches`'s "sorted client-side" comment).
+  No generic event bus (deliberately deferred — see `RESTRICTIONS.md` §4): concrete triggers are
+  wired directly into the service call that causes them — **admin request approved/declined**
+  (`requests.service.ts`), **role changed / account suspended-reinstated**
+  (`users.service.ts` `setUserRoleNotified()`/`setUserStatus()` — kept separate from the plain
+  `setUserRole()` the request-approval flow already calls, so approving a request doesn't fire two
+  overlapping notifications for the same event), **player profile merged**
+  (`playerMerge.service.ts`, to the merged-away player's linked account, if any), and **match
+  completed/abandoned** (`scoring.service.ts` `notifyMatchDone()`, called from every completion
+  path — auto-complete inside `recordBall()`, manual `endInnings()`, `completeMatch()`, and
+  `abandonMatch()` — notifying the match's scorer and owner, deduplicated). **Per-category mute
+  preferences** (`Prefs.notifyMuted`, synced cross-device like other appearance prefs) on a new
+  Notifications card on Settings — muting hides a category from the bell/badge without deleting
+  the underlying records. Firestore rules: any signed-in user may create a notification (it's
+  always written by whichever action triggers it, for someone else), only the recipient (or
+  master admin) can read/update/delete it. Verified live end-to-end: sent a real notification via
+  the service, watched the bell badge update with no reload (live `onSnapshot`), opened the panel,
+  used "Mark all read", confirmed the badge cleared; muted a category and confirmed a muted
+  notification stayed hidden while an unmuted one still showed; cleaned up all test data.
+
 ---
 
 ### Notes

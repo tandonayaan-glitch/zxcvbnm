@@ -120,9 +120,23 @@ reasoning.
 1. **Data lifecycle management** (soft delete / trash / restore / permanent delete / bulk
    restore+delete / configurable retention) for Players, Teams, Clubs, Seasons, Tournaments,
    Matches — the entities that actually exist today (Prompt 2.md also names Venues/Sponsors/
-   Officials, which are deferred per §4).
-2. **Persisted notification center** (Firestore-backed, read/unread, categories, preferences),
-   wired into concrete existing trigger points rather than a generic event bus (§4).
+   Officials, which are deferred per §4). **Done** — commit `ea6cff3`.
+2. **Persisted notification center** — **stood down, not built in this session.** Mid-implementation
+   (types, `services/notifications.service.ts`, three trigger points wired into
+   `requests.service.ts`/`playerMerge.service.ts`) a live collision was found: the concurrent
+   Claude Code session operating on this same repo was independently building the identical
+   feature at the same time, and had already added its own `AppNotification`/`NotificationCategory`
+   to `src/types/index.ts` with a broader category set (`match | tournament | player | admin |
+   account | security` vs. my `match | account | player`) while I was working. Building two
+   competing notification systems in parallel risked a much messier collision later (duplicate
+   Firestore collection semantics, duplicate UI, duplicate trigger-wiring in the same service
+   files). Rather than merge two half-built implementations, I reverted every file I'd touched for
+   this slice (`types/index.ts` duplicate block, `prefsStore.ts`, `lib/collections.ts`,
+   `requests.service.ts`, `playerMerge.service.ts`) and deleted my `notifications.service.ts`,
+   leaving the concurrent session's in-progress version as the sole implementation. Verified `tsc`
+   clean after reverting. **Do not re-attempt this slice** unless the concurrent session's version
+   is confirmed abandoned/incomplete — check `src/services/notifications.service.ts` and
+   `src/types/index.ts`'s `AppNotification` for current state first.
 3. **Media uploads via Firebase Storage** for player photos / team logos / club logos / tournament
    banners — the `storage` singleton (`lib/firebase.ts`) already exists and is unused.
 

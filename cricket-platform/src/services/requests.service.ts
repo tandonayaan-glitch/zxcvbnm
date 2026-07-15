@@ -12,6 +12,7 @@ import {
 import { db } from '@/lib/firebase'
 import { COL } from '@/lib/collections'
 import { setUserRole } from './users.service'
+import { notify } from './notifications.service'
 import type { AdminRequest, UserProfile } from '@/types'
 
 const reqCol = () => collection(db, COL.adminRequests)
@@ -65,6 +66,13 @@ export async function approveRequest(
     decidedAt: Date.now(),
     decidedBy: masterUid,
   })
+  await notify(
+    req.uid,
+    'account',
+    'Admin request approved',
+    `You're now an admin for "${req.tournamentName}".`,
+    '/dashboard',
+  )
 }
 
 export async function rejectRequest(
@@ -76,4 +84,11 @@ export async function rejectRequest(
     decidedAt: Date.now(),
     decidedBy: masterUid,
   })
+  await notify(
+    req.uid,
+    'account',
+    'Admin request declined',
+    `Your request for "${req.tournamentName}" was declined.`,
+    '/dashboard',
+  )
 }

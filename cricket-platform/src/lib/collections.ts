@@ -19,6 +19,7 @@ export const COL = {
   userPrefs: 'userPrefs', // per-user appearance/accessibility prefs (cross-device)
   recoveryAttempts: 'recoveryAttempts', // audit trail for /recover quiz attempts
   ballMeta: 'ballMeta', // subcollection under matches/{id}; optional shot-zone/line-length tags
+  notifications: 'notifications', // per-user notification center entries
 } as const
 
 export const SETTINGS_DOC = 'app'

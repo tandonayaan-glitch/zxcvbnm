@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { create } from 'zustand'
+import type { NotificationCategory } from '@/types'
 
 export type TextScale = 'small' | 'normal' | 'large' | 'xlarge'
 export type Density = 'comfortable' | 'compact'
@@ -12,6 +13,8 @@ export interface Prefs {
   highContrast: boolean
   theme: ThemeMode
   colorBlind: boolean
+  /** Notification categories the user has muted — still recorded, just hidden from the bell/panel. */
+  notifyMuted: NotificationCategory[]
 }
 
 const STORAGE_KEY = 'crickethub.prefs'
@@ -23,6 +26,7 @@ const DEFAULT_PREFS: Prefs = {
   highContrast: false,
   theme: 'system',
   colorBlind: false,
+  notifyMuted: [],
 }
 
 const SCALE_PX: Record<TextScale, string> = {

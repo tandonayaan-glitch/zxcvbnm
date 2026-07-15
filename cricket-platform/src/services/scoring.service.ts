@@ -12,6 +12,7 @@ import {
 import { db } from '@/lib/firebase'
 import { COL } from '@/lib/collections'
 import { trackedWrite } from '@/store/writeQueueStore'
+import { notify } from './notifications.service'
 import {
   applyBall,
   newInnings,
@@ -25,6 +26,14 @@ import type {
   Match,
   MatchResult,
 } from '@/types'
+
+/** Notify whoever scored/owns the match that it's finished — deduped if the same person. */
+function notifyMatchDone(match: Match, result: MatchResult) {
+  const recipients = new Set([match.scorerId, match.ownerId].filter((id): id is string => !!id))
+  for (const uid of recipients) {
+    void notify(uid, 'match', 'Match completed', `${match.teamA.name} vs ${match.teamB.name}: ${result.summary}`, `/match/${match.id}`)
+  }
+}
 
 /* -------------------------- helpers -------------------------- */
 
@@ -197,6 +206,8 @@ export async function recordBall(
   batch.update(doc(db, COL.matches, match.id), patch as Record<string, unknown>)
   await trackedWrite(`Ball ${args.sequence}`, batch.commit())
 
+  if (patch.status === 'completed' && patch.result) notifyMatchDone(match, patch.result)
+
   return { delivery, innings: state }
 }
 
@@ -272,30 +283,35 @@ export async function endInnings(match: Match): Promise<void> {
     patch.result = computeResult(match, innings)
   }
   await updateDoc(doc(db, COL.matches, match.id), patch as Record<string, unknown>)
+  if (patch.status === 'completed' && patch.result) notifyMatchDone(match, patch.result)
 }
 
 export async function completeMatch(
   match: Match,
   result?: MatchResult,
 ): Promise<void> {
+  const finalResult = result ?? computeResult(match, match.innings)
   await updateDoc(doc(db, COL.matches, match.id), {
     status: 'completed',
     completedAt: Date.now(),
-    result: result ?? computeResult(match, match.innings),
+    result: finalResult,
     updatedAt: Date.now(),
   })
+  notifyMatchDone(match, finalResult)
 }
 
 export async function abandonMatch(match: Match): Promise<void> {
+  const result: MatchResult = {
+    outcome: 'abandoned',
+    summary: 'Match abandoned — no result',
+  }
   await updateDoc(doc(db, COL.matches, match.id), {
     status: 'abandoned',
     completedAt: Date.now(),
-    result: {
-      outcome: 'abandoned',
-      summary: 'Match abandoned — no result',
-    } as MatchResult,
+    result,
     updatedAt: Date.now(),
   })
+  notifyMatchDone(match, result)
 }
 
 export async function setPlayerOfTheMatch(matchId: string, playerId: string) {

@@ -6,6 +6,7 @@ import { listAllMatches } from './matches.service'
 import { getPlayer } from './players.service'
 import { logAudit } from './audit.service'
 import { recomputeAllStats } from './stats.service'
+import { notify } from './notifications.service'
 import type { BatterCard, BowlerCard, FallOfWicket, InningsState, UserProfile } from '@/types'
 
 const BATCH_LIMIT = 400
@@ -170,4 +171,14 @@ export async function mergePlayers(
     'player.merge',
     `Merged player "${mergePlayer.fullName}" (${mergeId}) into "${keepPlayer.fullName}" (${keepId})`,
   )
+
+  if (mergePlayer.linkedUserId) {
+    await notify(
+      mergePlayer.linkedUserId,
+      'player',
+      'Your player profile was merged',
+      `"${mergePlayer.fullName}" was merged into "${keepPlayer.fullName}" — your stats and match history moved over.`,
+      `/player/${keepId}`,
+    )
+  }
 }

@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/primitives'
 import { useAsync } from '@/hooks/useAsync'
 import { useToast } from '@/components/ui/toast'
-import { listUsers, setUserRole, setUserStatus } from '@/services/users.service'
+import { listUsers, setUserRoleNotified, setUserStatus } from '@/services/users.service'
 import { logAudit } from '@/services/audit.service'
 import { useAuthStore } from '@/store/authStore'
 import { formatDate } from '@/lib/format'
@@ -39,7 +39,7 @@ export function UsersPage() {
   async function changeRole(uid: string, role: Role) {
     setSavingId(uid)
     try {
-      await setUserRole(uid, role)
+      await setUserRoleNotified(uid, role)
       const target = (users.data ?? []).find((u) => u.id === uid)
       await logAudit(me, 'Changed user role', `${target?.username ?? uid} → ${role}`)
       toast.success('Role updated')

@@ -16,7 +16,9 @@ import {
   Eye,
   ShieldCheck,
   LogOut,
+  Bell,
 } from 'lucide-react'
+import type { NotificationCategory } from '@/types'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
   Avatar,
@@ -144,6 +146,20 @@ export function UserSettingsPage() {
     { key: 'dark', label: 'Dark', icon: <Moon size={15} /> },
     { key: 'system', label: 'System', icon: <MonitorSmartphone size={15} /> },
   ]
+
+  const notifyCategories: { key: NotificationCategory; label: string; hint: string }[] = [
+    { key: 'match', label: 'Match updates', hint: 'A match you scored or own has finished.' },
+    { key: 'tournament', label: 'Tournament updates', hint: 'Fixtures, standings and results.' },
+    { key: 'player', label: 'Player profile changes', hint: 'Your linked player profile was merged or claimed.' },
+    { key: 'account', label: 'Account & access', hint: 'Admin requests, invitations.' },
+    { key: 'security', label: 'Security alerts', hint: 'Role changes, account suspension.' },
+  ]
+  function toggleNotifyCategory(cat: NotificationCategory, enabled: boolean) {
+    const next = enabled
+      ? prefs.notifyMuted.filter((c) => c !== cat)
+      : [...prefs.notifyMuted, cat]
+    setPref('notifyMuted', next)
+  }
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -305,6 +321,30 @@ export function UserSettingsPage() {
               Reset appearance
             </Button>
           </div>
+        </CardBody>
+      </Card>
+
+      {/* Notifications */}
+      <Card className="mb-4">
+        <CardHeader
+          title={
+            <span className="flex items-center gap-2">
+              <Bell size={18} /> Notifications
+            </span>
+          }
+          subtitle="Choose what shows up in your notification bell. Muted categories are still recorded, just hidden."
+        />
+        <CardBody className="space-y-4">
+          {notifyCategories.map((c) => (
+            <ToggleRow
+              key={c.key}
+              icon={<Bell size={15} />}
+              label={c.label}
+              hint={c.hint}
+              value={!prefs.notifyMuted.includes(c.key)}
+              onChange={(v) => toggleNotifyCategory(c.key, v)}
+            />
+          ))}
         </CardBody>
       </Card>
 

@@ -537,6 +537,29 @@ export interface ActivityLog {
   createdAt: number
 }
 
+/* -------------------------- Notifications -------------------------- */
+
+export type NotificationCategory =
+  | 'match'
+  | 'tournament'
+  | 'player'
+  | 'admin'
+  | 'account'
+  | 'security'
+
+/** In-app notification for one recipient. Written directly by whichever client
+ * action triggers it (this app has no backend to dispatch these centrally). */
+export interface AppNotification {
+  id: string
+  userId: string
+  category: NotificationCategory
+  title: string
+  body: string
+  link?: string | null
+  read: boolean
+  createdAt: number
+}
+
 /* ----------------------------- Settings ----------------------------- */
 
 /** An audit-log record of a privileged / administrative action. */

@@ -200,5 +200,16 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isMasterAdmin();
     }
+
+    // ---- Notifications ------------------------------------------
+    match /notifications/{id} {
+      // The recipient reads/marks their own; the master admin can too (support).
+      allow read, update, delete: if isSignedIn()
+        && (resource.data.userId == request.auth.uid || isMasterAdmin());
+      // Written by whichever client action triggers it (approving a request,
+      // completing a match, merging a player) — always for someone other than
+      // the writer, so this can't be scoped to "own uid only".
+      allow create: if isSignedIn();
+    }
   }
 }
