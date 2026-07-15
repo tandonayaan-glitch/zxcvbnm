@@ -1,0 +1,21 @@
+rules_version = '2';
+
+// ==================================================================
+// CricketHub Firebase Storage security rules
+//  - Public read (player photos / team & club logos / tournament
+//    banners need to render on the public viewer site, same policy
+//    as Firestore's public-read cricket data).
+//  - Writes require sign-in; capped at 5MB and image-only content
+//    type, mirroring the client-side validation in
+//    services/media.service.ts — never trust client validation alone.
+// ==================================================================
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+  }
+}
