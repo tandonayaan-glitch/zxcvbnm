@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { COL, pruneUndefined } from '@/lib/collections'
+import { logActivity } from './activity.service'
 import type { Club } from '@/types'
 
 const clubsCol = () => collection(db, COL.clubs)
@@ -34,6 +35,7 @@ export async function createClub(input: ClubInput): Promise<string> {
   const ref = doc(clubsCol())
   const data: Club = { ...input, id: ref.id, createdAt: now, updatedAt: now }
   await setDoc(ref, pruneUndefined(data))
+  await logActivity('club_created', `Club "${data.name}" was created`, { refId: ref.id })
   return ref.id
 }
 

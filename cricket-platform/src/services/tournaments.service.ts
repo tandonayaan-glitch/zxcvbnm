@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { COL, pruneUndefined } from '@/lib/collections'
+import { logActivity } from './activity.service'
 import type { Tournament, StandingsRow } from '@/types'
 
 const tournamentsCol = () => collection(db, COL.tournaments)
@@ -46,6 +47,9 @@ export async function createTournament(
     updatedAt: now,
   }
   await setDoc(ref, pruneUndefined(data))
+  await logActivity('tournament_created', `Tournament "${data.name}" was created`, {
+    refId: ref.id,
+  })
   return ref.id
 }
 

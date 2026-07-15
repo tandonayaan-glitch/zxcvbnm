@@ -150,5 +150,9 @@ reasoning.
    +`firebase.json` sized to match my client-side validation. Net result: one shared upload
    component/service, no duplication. Tournament banner support, `storage.rules`, and
    `firebase.json` are the concurrent session's work, not documented as mine.
+4. **Command palette** (`Ctrl`/`Cmd`+`K`) — **Done**, no collision this time.
+   `components/layout/CommandPalette.tsx`, mounted in `AppShell`, reuses the existing
+   `search.service.ts` `globalSearch()` rather than a new search backend, plus a role-filtered nav
+   command list. Verified in the browser.
 
 (Appended to as further slices are picked up.)

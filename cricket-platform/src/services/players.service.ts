@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { COL, pruneUndefined } from '@/lib/collections'
+import { logActivity } from './activity.service'
 import type { Player } from '@/types'
 
 const playersCol = () => collection(db, COL.players)
@@ -40,6 +41,9 @@ export async function createPlayer(input: PlayerInput): Promise<string> {
   const ref = doc(playersCol())
   const data: Player = { ...input, id: ref.id, createdAt: now, updatedAt: now }
   await setDoc(ref, pruneUndefined(data))
+  await logActivity('player_created', `${data.fullName} joined the platform`, {
+    refId: ref.id,
+  })
   return ref.id
 }
 

@@ -318,6 +318,40 @@ changes or a human scopes the task down to something finite.
   automation (no file-upload capability in the available tooling) — the upload path itself
   (`uploadImage()`) uses standard, well-established Storage-SDK/canvas APIs reviewed by hand.
 
+## Phase 13 — Command palette
+- ✅ **Global Ctrl/Cmd+K command palette** (`components/layout/CommandPalette.tsx`): a keyboard-
+  triggered overlay available on every signed-in page (mounted once in `AppShell`), reusing the
+  existing `services/search.service.ts` `globalSearch()` for live player/team/tournament/match
+  results rather than building a second search backend. Also lists every nav destination as a
+  quick "command" (Dashboard, Matches, Players, Teams, Clubs & Seasons, Trash, Stats, and the
+  master-admin-only pages), role-filtered the same way `AppShell`'s sidebar already is, so typing
+  "settings" or "trash" jumps straight there even with no matching entity. Arrow keys move the
+  selection, Enter navigates, Escape (or clicking outside) closes; a visible "Search ⌘K"/"Search
+  Ctrl K" button in the header (`openCommandPalette()`) triggers it too, for anyone who doesn't
+  know the shortcut. Verified in the browser: `Ctrl+K` opens the palette from the Trash page,
+  typing a real player's name surfaced them with a working link, typing "settings" surfaced the
+  Settings command, Escape closed it; `tsc`/`npm run build` clean.
+
+## Phase 14 — Activity feeds
+- ✅ **Platform activity timeline** wired up the previously-dead `ActivityLog` type
+  (`services/activity.service.ts` `logActivity()`/`listActivity()`, `activity` collection —
+  already had a type and a `COL` entry but no writer, reader or UI behind either): create-time
+  loggers on `players.service.ts`, `teams.service.ts`, `clubs.service.ts` (new `club_created`
+  type), `tournaments.service.ts` and `matches.service.ts`, plus `match_started`/`match_completed`
+  in `scoring.service.ts` (the latter folded into the existing `notifyMatchDone()` helper so it
+  fires from every completion path — auto-complete, declare, explicit complete, abandon — for
+  free). New reusable `components/activity/ActivityFeed.tsx` — pass a `refId` to scope it to one
+  team/player/tournament/club, omit it for the platform-wide feed; queries by `refId` only and
+  sorts/caps client-side for the same composite-index reason as `notifications.service.ts`.
+  Embedded on the Dashboard as "Recent activity" this pass; the component takes a `refId` so
+  embedding it on individual Club/Team/Player/Tournament pages is a small, natural follow-up, not
+  done yet. `firestore.rules`: public read (these are meant to be visible, like the rest of the
+  cricket data), any signed-in user can create (always a side effect of an action they're already
+  permitted to take), never updatable/deletable. Out of scope this pass, deliberately: detecting
+  "content" events (century scored, hat-trick, record broken, award won) — these need scanning
+  scorecards/stats at completion time, a bigger, separate analysis step, not just wiring an
+  existing writer to an existing action.
+
 ---
 
 ### Notes

@@ -11,6 +11,7 @@ import {
   Wifi,
   WifiOff,
   RotateCw,
+  Bug,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
@@ -36,6 +37,7 @@ import { clearLeaderboards, gatherPlatformBackup } from '@/services/admin.servic
 import { getPlatformDiagnostics, forceResync } from '@/services/diagnostics.service'
 import { SyncQueuePanel } from '@/components/ui/SyncQueuePanel'
 import { logAudit, listAuditLogs } from '@/services/audit.service'
+import { listClientErrors } from '@/services/errorLog.service'
 import { platformBackupToJSON } from '@/domain/platformExport'
 import { downloadBlob } from '@/lib/download'
 import { formatDateTime } from '@/lib/format'
@@ -47,6 +49,7 @@ export function PlatformToolsPage() {
   const profile = useAuthStore((s) => s.profile)
   const online = useOnlineStatus()
   const audits = useAsync(() => listAuditLogs(50), [])
+  const errors = useAsync(() => listClientErrors(50), [])
   const diagnostics = useAsync(getPlatformDiagnostics, [])
   const [rebuilding, setRebuilding] = useState(false)
   const [exporting, setExporting] = useState(false)
@@ -230,6 +233,44 @@ export function PlatformToolsPage() {
           >
             <Trash2 size={16} /> Clear leaderboards…
           </Button>
+        </CardBody>
+      </Card>
+
+      <Card className="mb-4">
+        <CardHeader
+          title={
+            <span className="flex items-center gap-2">
+              <Bug size={18} /> Client errors
+            </span>
+          }
+          subtitle="Runtime errors caught by the app's error boundary, most recent first."
+        />
+        <CardBody className="p-0">
+          {errors.loading ? (
+            <PageLoader />
+          ) : (errors.data ?? []).length === 0 ? (
+            <div className="p-5">
+              <EmptyState title="No errors logged" description="Nothing's crashed recently." />
+            </div>
+          ) : (
+            <div className="divide-y divide-ink-50 dark:divide-ink-800">
+              {(errors.data ?? []).map((e) => (
+                <div key={e.id} className="px-4 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium text-ink-900 dark:text-ink-50">
+                        {e.message}
+                      </div>
+                      <div className="mt-0.5 text-xs text-ink-400 dark:text-ink-500">
+                        {e.route} · {formatDateTime(e.createdAt)}
+                      </div>
+                    </div>
+                    <Badge tone="red">{e.referenceId}</Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardBody>
       </Card>
 

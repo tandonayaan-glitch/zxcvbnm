@@ -15,6 +15,7 @@ import {
 import { db } from '@/lib/firebase'
 import { COL, pruneUndefined } from '@/lib/collections'
 import { defaultScorecardConfig } from '@/lib/defaults'
+import { logActivity } from './activity.service'
 import type {
   Match,
   MatchStatus,
@@ -82,6 +83,11 @@ export async function createMatch(input: CreateMatchInput): Promise<string> {
     completedAt: null,
   }
   await setDoc(ref, pruneUndefined(data))
+  await logActivity(
+    'match_created',
+    `${data.teamA.name} vs ${data.teamB.name} was scheduled`,
+    { refId: ref.id },
+  )
   return ref.id
 }
 

@@ -532,8 +532,10 @@ export interface ActivityLog {
     | 'player_created'
     | 'team_created'
     | 'tournament_created'
+    | 'club_created'
   message: string
   actorId?: string
+  /** The created/affected entity's own id — lets a feed scope to one team/player/tournament/club. */
   refId?: string
   createdAt: number
 }
@@ -581,6 +583,18 @@ export interface RecoveryAttempt {
   playerName: string
   outcome: 'quiz_passed' | 'quiz_failed' | 'no_quiz_available' | 'rate_limited'
   usernameRevealed: boolean
+  createdAt: number
+}
+
+/** A runtime error caught by `ErrorBoundary`, logged best-effort for admin diagnostics. */
+export interface ClientErrorLog {
+  id: string
+  referenceId: string
+  message: string
+  stack?: string
+  route: string
+  userId?: string | null
+  userAgent: string
   createdAt: number
 }
 

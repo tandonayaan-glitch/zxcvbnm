@@ -24,6 +24,7 @@ import {
   StatCard,
 } from '@/components/ui/primitives'
 import { useAsync } from '@/hooks/useAsync'
+import { ActivityFeed } from '@/components/activity/ActivityFeed'
 import { listAllMatches } from '@/services/matches.service'
 import { listPlayers } from '@/services/players.service'
 import { listTeams } from '@/services/teams.service'
@@ -185,6 +186,19 @@ export function DashboardPage() {
                   </Link>
                 ))
               )}
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader
+              title={
+                <span className="flex items-center gap-2">
+                  <Activity size={18} className="text-ink-500" /> Recent activity
+                </span>
+              }
+            />
+            <CardBody>
+              <ActivityFeed max={12} />
             </CardBody>
           </Card>
         </div>

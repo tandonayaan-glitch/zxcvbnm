@@ -21,6 +21,7 @@ import {
   Building2,
   Users2,
   Trash2,
+  Search,
 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { useAuthStore, isAdmin, canScore } from '@/store/authStore'
@@ -28,6 +29,7 @@ import { Avatar } from '@/components/ui/primitives'
 import { BackgroundControl } from '@/components/background/BackgroundControl'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { NotificationBell } from '@/components/layout/NotificationBell'
+import { CommandPalette, openCommandPalette } from '@/components/layout/CommandPalette'
 import type { Role } from '@/types'
 
 interface NavItem {
@@ -36,6 +38,8 @@ interface NavItem {
   icon: React.ReactNode
   roles?: Role[]
 }
+
+const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform)
 
 const NAV: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
@@ -180,6 +184,7 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-screen">
+      <CommandPalette />
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-brand-600 focus:px-4 focus:py-2 focus:font-semibold focus:text-white"
@@ -217,6 +222,18 @@ export function AppShell() {
           </button>
           <div className="flex-1" />
           <div className="flex items-center gap-3">
+            <button
+              onClick={openCommandPalette}
+              aria-label="Search (Ctrl+K)"
+              title="Search (Ctrl+K)"
+              className="hidden items-center gap-2 rounded-lg border border-ink-200 px-3 py-1.5 text-sm text-ink-500 hover:bg-ink-50 sm:flex dark:border-ink-700 dark:text-ink-400 dark:hover:bg-ink-800"
+            >
+              <Search size={15} />
+              <span>Search</span>
+              <kbd className="rounded border border-ink-200 px-1 text-xs dark:border-ink-700">
+                {isMac ? '⌘K' : 'Ctrl K'}
+              </kbd>
+            </button>
             <BackgroundControl />
             <ThemeToggle />
             <NotificationBell />

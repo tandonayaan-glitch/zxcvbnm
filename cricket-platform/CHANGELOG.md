@@ -4,6 +4,22 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Activity feeds (Phase 14)
+- New `services/activity.service.ts` (`logActivity()`/`listActivity()`) wires up the previously
+  unused `ActivityLog` type/`activity` collection — writers on player/team/club/tournament/match
+  creation and match start/completion, a new `club_created` type.
+- New reusable `components/activity/ActivityFeed.tsx` (platform-wide, or scoped to one entity via
+  `refId`), embedded on the Dashboard as "Recent activity".
+- `firestore.rules`: public read, signed-in create, immutable once written.
+
+### Added — Command palette (Phase 13)
+- Global `Ctrl+K`/`Cmd+K` overlay (`components/layout/CommandPalette.tsx`), mounted once in
+  `AppShell` so it's available from any signed-in page. Reuses `services/search.service.ts`'s
+  `globalSearch()` for live player/team/tournament/match results, plus a role-filtered list of
+  every nav destination as a jump-to "command" (same set `AppShell`'s sidebar already shows).
+  Arrow keys/Enter/Escape navigate; a "Search ⌘K" button in the header opens it for anyone who
+  doesn't know the shortcut.
+
 ### Added — Media uploads for player photos / team & club logos (Phase 12)
 - New `services/storage.service.ts`: validates type (JPEG/PNG/WebP/GIF) and size (5MB max),
   downscales/re-encodes to a max-800px JPEG client-side before upload (GIFs pass through

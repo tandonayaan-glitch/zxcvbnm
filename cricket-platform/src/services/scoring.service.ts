@@ -13,6 +13,7 @@ import { db } from '@/lib/firebase'
 import { COL } from '@/lib/collections'
 import { trackedWrite } from '@/store/writeQueueStore'
 import { notify } from './notifications.service'
+import { logActivity } from './activity.service'
 import {
   applyBall,
   newInnings,
@@ -33,6 +34,11 @@ function notifyMatchDone(match: Match, result: MatchResult) {
   for (const uid of recipients) {
     void notify(uid, 'match', 'Match completed', `${match.teamA.name} vs ${match.teamB.name}: ${result.summary}`, `/match/${match.id}`)
   }
+  void logActivity(
+    'match_completed',
+    `${match.teamA.name} vs ${match.teamB.name}: ${result.summary}`,
+    { refId: match.id },
+  )
 }
 
 /* -------------------------- helpers -------------------------- */
@@ -86,6 +92,9 @@ export async function startMatch(match: Match): Promise<void> {
     currentInnings: 0,
     startedAt: Date.now(),
     updatedAt: Date.now(),
+  })
+  await logActivity('match_started', `${match.teamA.name} vs ${match.teamB.name} began`, {
+    refId: match.id,
   })
 }
 

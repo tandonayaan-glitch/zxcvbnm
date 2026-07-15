@@ -186,6 +186,17 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // ---- Client error log ---------------------------------------
+    match /clientErrors/{id} {
+      // A render error can happen on any page, signed in or not, so logging
+      // one must be publicly writable — it only ever records an error
+      // message/stack/route, never user input or credentials. Only the
+      // master admin can read the log back (Platform Tools diagnostics).
+      allow read: if isMasterAdmin();
+      allow create: if true;
+      allow update, delete: if false;
+    }
+
     // ---- Audit logs -------------------------------------------
     match /auditLogs/{id} {
       // Only the master admin reads the audit trail; any admin can append.
@@ -210,6 +221,15 @@ service cloud.firestore {
       // completing a match, merging a player) — always for someone other than
       // the writer, so this can't be scoped to "own uid only".
       allow create: if isSignedIn();
+    }
+
+    // ---- Activity feed --------------------------------------------
+    match /activity/{id} {
+      // Public read, like the rest of the cricket data — activity feeds are
+      // meant to be visible on public club/team/player/tournament pages.
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if false;
     }
   }
 }

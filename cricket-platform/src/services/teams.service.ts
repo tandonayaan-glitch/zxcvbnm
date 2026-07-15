@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { COL, pruneUndefined } from '@/lib/collections'
+import { logActivity } from './activity.service'
 import type { Team } from '@/types'
 
 const teamsCol = () => collection(db, COL.teams)
@@ -42,6 +43,7 @@ export async function createTeam(input: TeamInput): Promise<string> {
   const ref = doc(teamsCol())
   const data: Team = { ...input, id: ref.id, createdAt: now, updatedAt: now }
   await setDoc(ref, pruneUndefined(data))
+  await logActivity('team_created', `Team "${data.name}" was created`, { refId: ref.id })
   return ref.id
 }
 
