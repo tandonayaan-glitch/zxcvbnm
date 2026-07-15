@@ -4,6 +4,14 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Media uploads for player photos / team & club logos (Phase 12)
+- New `services/storage.service.ts`: validates type (JPEG/PNG/WebP/GIF) and size (5MB max),
+  downscales/re-encodes to a max-800px JPEG client-side before upload (GIFs pass through
+  unresized), uploads to Firebase Storage, returns the download URL.
+- New reusable `components/ui/ImageUploadField.tsx` — URL text input (existing manual-entry
+  behaviour preserved) plus an "Upload" button; wired into `PlayerFormModal`, `TeamFormModal`
+  (which previously had no logo field in its UI at all), and `ClubFormModal`.
+
 ### Added — Notification center (Phase 11)
 - New `services/notifications.service.ts` + `AppNotification`/`NotificationCategory` types: a
   per-user `notifications` collection with `notify()`/`listNotifications()`/

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Avatar, Button, Field, Input, Select } from '@/components/ui/primitives'
+import { ImageUploadField } from '@/components/ui/ImageUploadField'
 import type { Club, Player, Team } from '@/types'
 import type { TeamInput } from '@/services/teams.service'
 
@@ -24,6 +25,7 @@ export function TeamFormModal({
     team?.secondaryColor ?? '#1e293b',
   )
   const [homeVenue, setHomeVenue] = useState(team?.homeVenue ?? '')
+  const [logoURL, setLogoURL] = useState(team?.logoURL ?? '')
   const [clubId, setClubId] = useState(team?.clubId ?? '')
   const [playerIds, setPlayerIds] = useState<string[]>(team?.playerIds ?? [])
   const [captainId, setCaptainId] = useState(team?.captainId ?? '')
@@ -54,7 +56,7 @@ export function TeamFormModal({
       playerIds,
       captainId: captainId || null,
       viceCaptainId: viceCaptainId || null,
-      logoURL: team?.logoURL ?? null,
+      logoURL: logoURL.trim() || null,
     }
     try {
       await onSave(input, team?.id)
@@ -129,6 +131,11 @@ export function TeamFormModal({
             ))}
           </Select>
         </Field>
+        <div className="sm:col-span-2">
+          <Field label="Logo (optional)">
+            <ImageUploadField value={logoURL} onChange={setLogoURL} folder="teams" shape="square" />
+          </Field>
+        </div>
       </div>
 
       <div className="mt-4">

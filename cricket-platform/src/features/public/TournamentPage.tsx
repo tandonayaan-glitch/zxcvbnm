@@ -193,6 +193,13 @@ export function TournamentPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
+      {t.bannerURL && (
+        <img
+          src={t.bannerURL}
+          alt={`${t.name} banner`}
+          className="mb-4 h-40 w-full rounded-xl object-cover sm:h-56"
+        />
+      )}
       <Card className="mb-4 p-5">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">

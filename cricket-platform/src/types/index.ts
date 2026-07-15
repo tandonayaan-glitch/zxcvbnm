@@ -168,6 +168,7 @@ export interface Tournament {
   startDate?: number | null
   endDate?: number | null
   description?: string
+  bannerURL?: string | null
   /** Optional — clubs/seasons are opt-in, existing tournaments have neither. */
   clubId?: string | null
   seasonId?: string | null

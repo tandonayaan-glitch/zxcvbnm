@@ -31,6 +31,7 @@ import {
   Input,
   Textarea,
 } from '@/components/ui/primitives'
+import { ImageUploadField } from '@/components/ui/ImageUploadField'
 import { useToast } from '@/components/ui/toast'
 import { useAuthStore } from '@/store/authStore'
 import { auth } from '@/lib/firebase'
@@ -178,7 +179,7 @@ export function UserSettingsPage() {
           <div className="flex items-center gap-3">
             <Avatar name={displayName || profile.username} src={photoURL || null} size={56} />
             <div className="text-sm text-ink-500 dark:text-ink-400">
-              Your avatar comes from the photo URL below (or your initials).
+              Your avatar comes from the photo below (or your initials).
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -189,8 +190,8 @@ export function UserSettingsPage() {
               <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
             </Field>
             <div className="sm:col-span-2">
-              <Field label="Photo URL (optional)">
-                <Input value={photoURL} onChange={(e) => setPhotoURL(e.target.value)} placeholder="https://…" />
+              <Field label="Photo">
+                <ImageUploadField value={photoURL} onChange={setPhotoURL} folder="users" />
               </Field>
             </div>
             <div className="sm:col-span-2">

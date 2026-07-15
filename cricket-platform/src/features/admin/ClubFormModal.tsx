@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Button, Field, Input, Textarea } from '@/components/ui/primitives'
+import { ImageUploadField } from '@/components/ui/ImageUploadField'
 import type { Club } from '@/types'
 import type { ClubInput } from '@/services/clubs.service'
 
@@ -65,8 +66,8 @@ export function ClubFormModal({
         <Field label="Home venue">
           <Input value={homeVenue} onChange={(e) => setHomeVenue(e.target.value)} />
         </Field>
-        <Field label="Logo URL">
-          <Input value={logoURL ?? ''} onChange={(e) => setLogoURL(e.target.value)} placeholder="https://…" />
+        <Field label="Logo">
+          <ImageUploadField value={logoURL ?? ''} onChange={setLogoURL} folder="clubs" shape="square" />
         </Field>
       </div>
       <div className="mt-4">

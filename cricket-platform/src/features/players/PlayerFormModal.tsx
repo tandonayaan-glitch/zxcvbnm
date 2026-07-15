@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Button, Field, Input, Select } from '@/components/ui/primitives'
+import { ImageUploadField } from '@/components/ui/ImageUploadField'
 import { PLAYER_ROLE_LABELS, BOWLING_STYLE_LABELS } from '@/lib/format'
 import type {
   BattingStyle,
@@ -136,12 +137,8 @@ export function PlayerFormModal({
             ))}
           </Select>
         </Field>
-        <Field label="Photo URL (optional)">
-          <Input
-            value={photoURL}
-            onChange={(e) => setPhotoURL(e.target.value)}
-            placeholder="https://…"
-          />
+        <Field label="Photo (optional)">
+          <ImageUploadField value={photoURL} onChange={setPhotoURL} folder="players" />
         </Field>
         <Field label="Status">
           <Select

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Button, Field, Input, Select, Textarea } from '@/components/ui/primitives'
+import { ImageUploadField } from '@/components/ui/ImageUploadField'
 import type {
   Club,
   Season,
@@ -44,6 +45,7 @@ export function TournamentFormModal({
   const [startDate, setStartDate] = useState(toDateInput(tournament?.startDate))
   const [endDate, setEndDate] = useState(toDateInput(tournament?.endDate))
   const [description, setDescription] = useState(tournament?.description ?? '')
+  const [bannerURL, setBannerURL] = useState(tournament?.bannerURL ?? '')
   const [teamIds, setTeamIds] = useState<string[]>(tournament?.teamIds ?? [])
   const [clubId, setClubId] = useState(tournament?.clubId ?? '')
   const [seasonId, setSeasonId] = useState(tournament?.seasonId ?? '')
@@ -80,6 +82,7 @@ export function TournamentFormModal({
       startDate: startDate ? new Date(startDate).getTime() : null,
       endDate: endDate ? new Date(endDate).getTime() : null,
       description: description.trim() || undefined,
+      bannerURL: bannerURL.trim() || null,
       teamIds,
       clubId: clubId || null,
       seasonId: seasonId || null,
@@ -198,6 +201,17 @@ export function TournamentFormModal({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Optional notes about the tournament…"
+          />
+        </Field>
+      </div>
+
+      <div className="mt-4">
+        <Field label="Banner (optional)">
+          <ImageUploadField
+            value={bannerURL}
+            onChange={setBannerURL}
+            folder="tournaments"
+            shape="square"
           />
         </Field>
       </div>

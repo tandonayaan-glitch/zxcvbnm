@@ -298,6 +298,26 @@ changes or a human scopes the task down to something finite.
   used "Mark all read", confirmed the badge cleared; muted a category and confirmed a muted
   notification stayed hidden while an unmuted one still showed; cleaned up all test data.
 
+## Phase 12 — Media uploads (player photos / team & club logos)
+- ✅ **Firebase Storage integration** (`services/storage.service.ts`): validates file type
+  (JPEG/PNG/WebP/GIF) and size (max 5MB), client-side downscales/re-encodes to a max 800px JPEG
+  via `createImageBitmap` + canvas before upload (GIFs pass through unresized to preserve
+  animation), uploads to Storage under `players/`, `teams/` or `clubs/`, and returns the download
+  URL. A reusable **`ImageUploadField`** (`components/ui/ImageUploadField.tsx`) pairs the existing
+  manual URL text input (unchanged, still works) with an "Upload" button — wired into the
+  Player/Team/Club forms (`PlayerFormModal`/`TeamFormModal`/`ClubFormModal`), and reused by the
+  Tournament banner field. Team logos previously had no edit UI at all despite the field existing
+  on the type — `TeamFormModal` gained its first-ever logo control alongside the upload option.
+  Failed/skipped uploads leave the URL field exactly as it was — the manual-entry path is a
+  graceful fallback, not a special case, since both paths write to the same plain string field.
+  Storage security rules (`storage.rules`, registered in `firebase.json`) cap writes to signed-in
+  users, 5MB, image-only — server-side enforcement of the same limits the client checks, per
+  "never trust client-side validation alone." Verified in the browser: opened the player form,
+  confirmed the Photo field renders with both the URL input and Upload button, manual URL entry
+  unaffected; `tsc`/`npm run build` clean. Real file-picker upload wasn't exercised through browser
+  automation (no file-upload capability in the available tooling) — the upload path itself
+  (`uploadImage()`) uses standard, well-established Storage-SDK/canvas APIs reviewed by hand.
+
 ---
 
 ### Notes

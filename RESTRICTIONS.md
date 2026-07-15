@@ -137,7 +137,18 @@ reasoning.
    clean after reverting. **Do not re-attempt this slice** unless the concurrent session's version
    is confirmed abandoned/incomplete — check `src/services/notifications.service.ts` and
    `src/types/index.ts`'s `AppNotification` for current state first.
-3. **Media uploads via Firebase Storage** for player photos / team logos / club logos / tournament
-   banners — the `storage` singleton (`lib/firebase.ts`) already exists and is unused.
+3. **Media uploads via Firebase Storage** for player photos / team logos / club logos — the
+   `storage` singleton (`lib/firebase.ts`) already existed and was unused. **Done** —
+   `services/storage.service.ts` + `components/ui/ImageUploadField.tsx`, wired into
+   `PlayerFormModal`/`TeamFormModal`/`ClubFormModal`. Another live collision here: the concurrent
+   session independently started its own `media.service.ts` + `components/media/` + `storage.rules`
+   for the same feature. This one resolved itself cleanly rather than needing a revert — once my
+   `ImageUploadField`/`storage.service.ts` existed on disk, the concurrent session's own
+   `TournamentFormModal.tsx` edit (adding a tournament banner field, outside my scope) picked up
+   and imported *my* `ImageUploadField` directly instead of building a parallel one, and their
+   commit `069463c` ("Add Firebase Storage security rules for media uploads") added `storage.rules`
+   +`firebase.json` sized to match my client-side validation. Net result: one shared upload
+   component/service, no duplication. Tournament banner support, `storage.rules`, and
+   `firebase.json` are the concurrent session's work, not documented as mine.
 
 (Appended to as further slices are picked up.)
