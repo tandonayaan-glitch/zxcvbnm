@@ -242,5 +242,14 @@ service cloud.firestore {
       allow create: if canManage();
       allow update, delete: if false;
     }
+
+    // ---- Feature flags ----------------------------------------------
+    match /featureFlags/{id} {
+      // Public read — the client needs to evaluate flags for signed-out
+      // viewers too (public-site gating), and a flag's on/off state isn't
+      // sensitive. Only the master admin manages them.
+      allow read: if true;
+      allow write: if isMasterAdmin();
+    }
   }
 }

@@ -22,6 +22,7 @@ import {
   Users2,
   Trash2,
   Search,
+  Flag,
 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { useAuthStore, isAdmin, canScore } from '@/store/authStore'
@@ -77,6 +78,12 @@ const NAV: NavItem[] = [
     to: '/admin/merge-players',
     label: 'Merge Players',
     icon: <Users2 size={18} />,
+    roles: ['MASTER_ADMIN'],
+  },
+  {
+    to: '/admin/feature-flags',
+    label: 'Feature Flags',
+    icon: <Flag size={18} />,
     roles: ['MASTER_ADMIN'],
   },
   {

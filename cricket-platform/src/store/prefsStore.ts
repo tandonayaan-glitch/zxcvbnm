@@ -15,6 +15,8 @@ export interface Prefs {
   colorBlind: boolean
   /** Notification categories the user has muted — still recorded, just hidden from the bell/panel. */
   notifyMuted: NotificationCategory[]
+  /** Opted into beta/experimental features — gates `betaOnly` feature flags. */
+  betaFeatures: boolean
 }
 
 const STORAGE_KEY = 'crickethub.prefs'
@@ -27,6 +29,7 @@ const DEFAULT_PREFS: Prefs = {
   theme: 'system',
   colorBlind: false,
   notifyMuted: [],
+  betaFeatures: false,
 }
 
 const SCALE_PX: Record<TextScale, string> = {

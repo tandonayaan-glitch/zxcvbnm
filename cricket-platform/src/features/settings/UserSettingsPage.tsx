@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   LogOut,
   Bell,
+  FlaskConical,
 } from 'lucide-react'
 import type { NotificationCategory } from '@/types'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -310,6 +311,13 @@ export function UserSettingsPage() {
             hint="Swaps the green 'win' accent for teal, which stays distinct from red."
             value={prefs.colorBlind}
             onChange={(v) => setPref('colorBlind', v)}
+          />
+          <ToggleRow
+            icon={<FlaskConical size={15} />}
+            label="Beta features"
+            hint="Opt into experimental features the platform team is trying out early."
+            value={prefs.betaFeatures}
+            onChange={(v) => setPref('betaFeatures', v)}
           />
 
           <div className="flex items-center justify-between border-t border-ink-100 dark:border-ink-800 pt-4">
