@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Trophy, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Trophy, Pencil, History, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
   Badge,
@@ -9,6 +9,7 @@ import {
   EmptyState,
   PageLoader,
 } from '@/components/ui/primitives'
+import { VersionHistoryModal } from '@/components/ui/VersionHistoryModal'
 import { useAsync } from '@/hooks/useAsync'
 import { usePaginated } from '@/hooks/usePaginated'
 import { Pagination } from '@/components/ui/Pagination'
@@ -24,6 +25,7 @@ import { listTeams } from '@/services/teams.service'
 import { listClubs } from '@/services/clubs.service'
 import { listSeasons } from '@/services/seasons.service'
 import { softDelete } from '@/services/trash.service'
+import { snapshotVersion, changedKeys } from '@/services/versionHistory.service'
 import { formatDate } from '@/lib/format'
 import { useAuthStore, ownerScope } from '@/store/authStore'
 import { TournamentFormModal } from './TournamentFormModal'
@@ -45,6 +47,7 @@ export function TournamentsPage() {
   const seasons = useAsync(listSeasons, [])
   const [editing, setEditing] = useState<Tournament | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [historyTournamentId, setHistoryTournamentId] = useState<string | null>(null)
 
   const scopedTournaments = (tournaments.data ?? []).filter(
     (t) => !scope || t.ownerId === scope,
@@ -64,6 +67,9 @@ export function TournamentsPage() {
       if (id) {
         const prev = editing // pre-edit snapshot for undo
         await updateTournament(id, input)
+        if (prev) {
+          await snapshotVersion('tournament', id, prev, changedKeys(prev, input), profile)
+        }
         toast.undo('Tournament updated', async () => {
           if (!prev) return
           const { id: _i, createdAt: _c, updatedAt: _u, ...prevInput } = prev
@@ -182,6 +188,14 @@ export function TournamentsPage() {
                   <Pencil size={15} />
                 </button>
                 <button
+                  onClick={() => setHistoryTournamentId(t.id)}
+                  aria-label={`Edit history for ${t.name}`}
+                  title="Edit history"
+                  className="rounded-md p-1.5 text-ink-500 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800"
+                >
+                  <History size={15} />
+                </button>
+                <button
                   onClick={() => handleDelete(t)}
                   aria-label={`Delete ${t.name}`}
                   title="Delete"
@@ -218,6 +232,15 @@ export function TournamentsPage() {
             setEditing(null)
           }}
           onSave={handleSave}
+        />
+      )}
+
+      {historyTournamentId && (
+        <VersionHistoryModal
+          entityType="tournament"
+          entityId={historyTournamentId}
+          onClose={() => setHistoryTournamentId(null)}
+          onRestored={() => tournaments.refetch()}
         />
       )}
     </div>

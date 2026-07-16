@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Shield, Pencil, Trash2, Users } from 'lucide-react'
+import { Plus, Shield, Pencil, History, Trash2, Users } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
   Avatar,
@@ -9,6 +9,7 @@ import {
   EmptyState,
   PageLoader,
 } from '@/components/ui/primitives'
+import { VersionHistoryModal } from '@/components/ui/VersionHistoryModal'
 import { useAsync } from '@/hooks/useAsync'
 import { usePaginated } from '@/hooks/usePaginated'
 import { Pagination } from '@/components/ui/Pagination'
@@ -23,6 +24,7 @@ import {
 import { listPlayers } from '@/services/players.service'
 import { listClubs } from '@/services/clubs.service'
 import { softDelete } from '@/services/trash.service'
+import { snapshotVersion, changedKeys } from '@/services/versionHistory.service'
 import { useAuthStore, ownerScope } from '@/store/authStore'
 import { TeamFormModal } from './TeamFormModal'
 import type { Team } from '@/types'
@@ -36,6 +38,7 @@ export function TeamsPage() {
   const clubs = useAsync(listClubs, [])
   const [editing, setEditing] = useState<Team | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [historyTeamId, setHistoryTeamId] = useState<string | null>(null)
 
   const scopedTeams = useMemo(
     () => (teams.data ?? []).filter((t) => !scope || t.ownerId === scope),
@@ -59,6 +62,7 @@ export function TeamsPage() {
       if (id) {
         const prev = editing // pre-edit snapshot for undo
         await updateTeam(id, input)
+        if (prev) await snapshotVersion('team', id, prev, changedKeys(prev, input), profile)
         toast.undo('Team updated', async () => {
           if (!prev) return
           const { id: _i, createdAt: _c, updatedAt: _u, ...prevInput } = prev
@@ -175,6 +179,14 @@ export function TeamsPage() {
                     <Pencil size={15} />
                   </button>
                   <button
+                    onClick={() => setHistoryTeamId(t.id)}
+                    aria-label={`Edit history for ${t.name}`}
+                    title="Edit history"
+                    className="rounded-md p-1.5 text-ink-500 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800"
+                  >
+                    <History size={15} />
+                  </button>
+                  <button
                     onClick={() => handleDelete(t)}
                     aria-label={`Delete ${t.name}`}
                     title="Delete"
@@ -217,6 +229,15 @@ export function TeamsPage() {
             setEditing(null)
           }}
           onSave={handleSave}
+        />
+      )}
+
+      {historyTeamId && (
+        <VersionHistoryModal
+          entityType="team"
+          entityId={historyTeamId}
+          onClose={() => setHistoryTeamId(null)}
+          onRestored={() => teams.refetch()}
         />
       )}
     </div>

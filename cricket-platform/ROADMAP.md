@@ -423,6 +423,31 @@ changes or a human scopes the task down to something finite.
   to force through in an automated verification pass. Detection is proven live; the repair
   functions themselves are plain, reviewed `updateDoc`/`deleteDoc` calls with no dynamic risk.
 
+## Phase 18 — Version history for edits
+- ✅ **Pre-edit snapshots + restore** for Players, Teams, Clubs, Tournaments and Matches
+  (`services/versionHistory.service.ts` `snapshotVersion()`/`listVersions()`/`restoreVersion()`,
+  `EntityVersion` in `types/index.ts`, new `entityVersions` collection): each entity's edit-save
+  handler snapshots the doc's pre-edit state plus a `changedFields` summary (diffed via
+  `changedKeys()`) before calling its `updateX()`, tagged with the editor's name/uid and, for
+  restores, an auto-generated reason. **Restoring a version first snapshots the entity's *current*
+  state as its own new version**, so a restore is itself always undoable, then writes the old
+  snapshot back over the live doc. New reusable `components/ui/VersionHistoryModal.tsx` — a
+  "History" icon button next to Edit on the Players/Teams/Tournaments/Clubs list pages opens it,
+  listing every edit (editor, timestamp, changed-field summary, optional reason) with a per-entry
+  Restore button. Match top-level fields (title/venue/teams/toss/etc., edited via
+  `MatchSetupPage`'s `?edit=` flow) are covered too; ball-by-ball scoring already has its own
+  dedicated undo (`undoLastBall`/`rebuildInnings`), so this deliberately doesn't duplicate that —
+  it's for the match *setup* fields, not deliveries. Out of scope this pass: an "optional edit
+  reason" prompt in the edit forms themselves (restores auto-generate a reason; manual reasons on
+  regular edits would need a form-level UI change across five different modals, deferred as a
+  small, bounded follow-up) and Season version history (not in the originally prioritized entity
+  list). `firestore.rules`: public read (an edit-history diff of already-public fields isn't
+  sensitive), `canManage()`-gated create, immutable once written. Verified live end-to-end: edited
+  a real player's display name, opened its History panel, confirmed the change-summary entry
+  ("Changed: Display Name") with the correct editor/timestamp, clicked Restore, confirmed the
+  field reverted, confirmed the restore itself created a second, undoable history entry — cleaned
+  up all test data (player + both version docs) after.
+
 ---
 
 ### Notes

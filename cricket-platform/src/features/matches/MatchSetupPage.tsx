@@ -31,6 +31,7 @@ import {
   getMatch,
   updateMatch,
 } from '@/services/matches.service'
+import { snapshotVersion, changedKeys } from '@/services/versionHistory.service'
 import { useAuthStore, ownerScope } from '@/store/authStore'
 import { cn } from '@/lib/cn'
 import { MATCH_FORMAT_LABELS, MATCH_FORMAT_OVERS } from '@/lib/format'
@@ -294,7 +295,17 @@ export function MatchSetupPage() {
 
     try {
       if (editId) {
+        const prevMatch = await getMatch(editId)
         await updateMatch(editId, payload)
+        if (prevMatch) {
+          await snapshotVersion(
+            'match',
+            editId,
+            prevMatch,
+            changedKeys(prevMatch, payload),
+            profile,
+          )
+        }
         toast.success('Match updated')
         navigate(`/match/${editId}`)
       } else {

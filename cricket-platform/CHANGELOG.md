@@ -4,6 +4,17 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Version history for edits (Phase 18)
+- New `services/versionHistory.service.ts` (`snapshotVersion()`/`listVersions()`/
+  `restoreVersion()`) + `EntityVersion` type + `entityVersions` collection: Players, Teams, Clubs,
+  Tournaments and Matches now snapshot their pre-edit state (with a diffed `changedFields`
+  summary) before every save; restoring a version snapshots the current state first too, so
+  restores are themselves undoable.
+- New reusable `components/ui/VersionHistoryModal.tsx` — a "History" button next to Edit on the
+  Players/Teams/Tournaments/Clubs list pages shows every past edit (editor, timestamp, what
+  changed, optional reason) with a per-entry Restore action.
+- `firestore.rules`: public read, `canManage()`-gated create, immutable once written.
+
 ### Added — Data integrity tools (Phase 17)
 - New `domain/dataIntegrity.ts` (pure) + `services/dataIntegrity.service.ts`: detects broken team
   rosters/captain refs, orphaned tournament team lists, broken club/season links, and orphaned

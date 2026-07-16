@@ -231,5 +231,16 @@ service cloud.firestore {
       allow create: if isSignedIn();
       allow update, delete: if false;
     }
+
+    // ---- Entity version history -----------------------------------
+    match /entityVersions/{id} {
+      // Public read, same tier as the entities themselves — an edit history
+      // isn't sensitive, it's a diff of already-public player/team/etc fields.
+      allow read: if true;
+      // Only written as the side effect of an edit someone with manage rights
+      // is already making; immutable once written (it's a historical record).
+      allow create: if canManage();
+      allow update, delete: if false;
+    }
   }
 }

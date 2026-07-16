@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Building2, CalendarRange, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Building2, CalendarRange, Pencil, History, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Tabs } from '@/components/ui/Tabs'
 import {
@@ -10,6 +10,7 @@ import {
   EmptyState,
   PageLoader,
 } from '@/components/ui/primitives'
+import { VersionHistoryModal } from '@/components/ui/VersionHistoryModal'
 import { useAsync } from '@/hooks/useAsync'
 import { useToast } from '@/components/ui/toast'
 import {
@@ -26,6 +27,7 @@ import {
 } from '@/services/seasons.service'
 import { formatDate } from '@/lib/format'
 import { softDelete } from '@/services/trash.service'
+import { snapshotVersion, changedKeys } from '@/services/versionHistory.service'
 import { useAuthStore, ownerScope } from '@/store/authStore'
 import { ClubFormModal } from './ClubFormModal'
 import { SeasonFormModal } from './SeasonFormModal'
@@ -49,6 +51,7 @@ export function ClubsSeasonsPage() {
   const [showClubForm, setShowClubForm] = useState(false)
   const [editingSeason, setEditingSeason] = useState<Season | null>(null)
   const [showSeasonForm, setShowSeasonForm] = useState(false)
+  const [historyClubId, setHistoryClubId] = useState<string | null>(null)
 
   const scopedClubs = (clubs.data ?? []).filter((c) => !scope || c.ownerId === scope)
   const scopedSeasons = (seasons.data ?? []).filter((s) => !scope || s.ownerId === scope)
@@ -58,7 +61,9 @@ export function ClubsSeasonsPage() {
   async function handleSaveClub(input: ClubInput, id?: string) {
     try {
       if (id) {
+        const prev = editingClub
         await updateClub(id, input)
+        if (prev) await snapshotVersion('club', id, prev, changedKeys(prev, input), profile)
         toast.success('Club updated')
       } else {
         await createClub({ ...input, ownerId: profile?.id })
@@ -197,6 +202,14 @@ export function ClubsSeasonsPage() {
                     <Pencil size={15} />
                   </button>
                   <button
+                    onClick={() => setHistoryClubId(c.id)}
+                    aria-label={`Edit history for ${c.name}`}
+                    title="Edit history"
+                    className="rounded-md p-1.5 text-ink-500 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800"
+                  >
+                    <History size={15} />
+                  </button>
+                  <button
                     onClick={() => handleDeleteClub(c)}
                     aria-label={`Delete ${c.name}`}
                     title="Delete"
@@ -295,6 +308,15 @@ export function ClubsSeasonsPage() {
             setEditingSeason(null)
           }}
           onSave={handleSaveSeason}
+        />
+      )}
+
+      {historyClubId && (
+        <VersionHistoryModal
+          entityType="club"
+          entityId={historyClubId}
+          onClose={() => setHistoryClubId(null)}
+          onRestored={() => clubs.refetch()}
         />
       )}
     </div>
