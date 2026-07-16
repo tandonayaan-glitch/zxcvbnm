@@ -352,6 +352,47 @@ changes or a human scopes the task down to something finite.
   scorecards/stats at completion time, a bigger, separate analysis step, not just wiring an
   existing writer to an existing action.
 
+## Phase 15 — Error recovery & client diagnostics
+- ✅ **Professional error-recovery UI** (`components/ErrorBoundary.tsx`): every caught render error
+  now gets a short **reference id** (`err_...`, shown to the user, e.g. "quote this if you report
+  it"), a **Reload page** button (`window.location.reload()`, distinct from the existing "Try
+  again" in-place React reset — useful when the error is stale JS from a since-redeployed
+  lazy-loaded chunk, which an in-place reset can't fix but a hard reload can) and a **Copy
+  diagnostics** button (reference id, URL, timestamp, message and stack, to the clipboard). Also
+  picked up `dark:` variants it had missed from the Phase 4 theme pass (it's not a "page" so the
+  earlier file-by-file sweep skipped it).
+- ✅ **Best-effort client error log** (`services/errorLog.service.ts`, new `clientErrors`
+  collection): `ErrorBoundary.componentDidCatch` fire-and-forgets a `logClientError()` with the
+  same reference id, message, stack, route and (if signed in) actor uid — logging failure is
+  swallowed so a broken logger can never mask the real error or crash the recovery screen itself.
+  `firestore.rules`: publicly writable (errors can happen pre-login, same reasoning as
+  `recoveryAttempts`), master-admin-only read.
+- ✅ **"Client errors" card on Platform Tools** (`features/admin/PlatformToolsPage.tsx`): the last
+  50 logged errors, message/route/timestamp/reference id, newest first — gives the master admin
+  the "Runtime errors ... surfaced to administrators" visibility this client-only app has no real
+  server-side crash reporting for otherwise. Verified live: logged a real error via the service,
+  confirmed it appeared on Platform Tools with the right reference id/message/route; `tsc`/
+  `npm run build` clean. Triggering an actual in-browser render crash to exercise the
+  Reload/Copy-diagnostics buttons visually wasn't done — no way to inject a real render failure
+  without editing source, and the button handlers themselves are plain, reviewed DOM/clipboard/
+  `location.reload()` calls with no dynamic risk.
+
+## Phase 16 — Saved filters
+- ✅ **Saved filter presets** (`store/savedFiltersStore.ts` + `components/ui/SavedFiltersBar.tsx`):
+  name and restore the current combination of filter dropdowns on a page, localStorage-only
+  (matches `favStore`'s existing local-only convenience-state pattern — no cross-device sync
+  needed for this). 
+  - **Stats page** (`StatsPage.tsx`): wired to competition/venue/team/club/season/year filters —
+    the richest filter set in the app (ROADMAP Phase 6) and the one the "My Club" / "Current Season"
+    examples map onto directly.
+  - **Players page** (`PlayersPage.tsx`): wired to search + role filters, restores both atomically.
+  
+  "Save current filter" only appears once at least one filter differs from "all"; saved chips
+  restore the exact combination in one click and can be removed individually. Verified end-to-end
+  in the browser: created and saved a filter on the Players page, navigated away, returned and
+  clicked the saved filter, confirmed the search and role filter both restored; created a Stats
+  filter for a specific competition, saved it, and verified restoration — both pages work correctly.
+
 ---
 
 ### Notes

@@ -11,6 +11,7 @@ import {
   KeyRound,
   Copy,
   Check,
+  History,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
@@ -24,6 +25,8 @@ import {
   Select,
 } from '@/components/ui/primitives'
 import { Modal } from '@/components/ui/Modal'
+import { SavedFiltersBar } from '@/components/ui/SavedFiltersBar'
+import { VersionHistoryModal } from '@/components/ui/VersionHistoryModal'
 import { useAsync } from '@/hooks/useAsync'
 import { usePaginated } from '@/hooks/usePaginated'
 import { Pagination } from '@/components/ui/Pagination'
@@ -40,6 +43,7 @@ import { listTeams } from '@/services/teams.service'
 import { listAllMatches } from '@/services/matches.service'
 import { createLinkedAccount } from '@/services/auth.service'
 import { softDelete } from '@/services/trash.service'
+import { snapshotVersion, changedKeys } from '@/services/versionHistory.service'
 import { aggregatePlayerStats, buildLeaderboards } from '@/domain/stats'
 import { LeaderboardCard } from '@/components/stats/LeaderboardCard'
 import { PLAYER_ROLE_LABELS, BOWLING_STYLE_LABELS } from '@/lib/format'
@@ -76,11 +80,18 @@ export function PlayersPage() {
     username: string
     password: string
   } | null>(null)
+  const [historyPlayerId, setHistoryPlayerId] = useState<string | null>(null)
 
   const teamName = useMemo(() => {
     const map = new Map((teams.data ?? []).map((t) => [t.id, t.shortName]))
     return (id: string) => map.get(id) ?? '—'
   }, [teams.data])
+
+  const currentFilter = { search, roleFilter }
+  function applySavedFilter(f: Record<string, string>) {
+    setSearch(f.search ?? '')
+    setRoleFilter(f.roleFilter ?? '')
+  }
 
   const filtered = useMemo(() => {
     const list = players.data ?? []
@@ -104,6 +115,15 @@ export function PlayersPage() {
       if (id) {
         const prev = editing // pre-edit snapshot for undo
         await updatePlayer(id, input)
+        if (prev) {
+          await snapshotVersion(
+            'player',
+            id,
+            prev,
+            changedKeys(prev, input),
+            profile,
+          )
+        }
         toast.undo('Player updated', async () => {
           if (!prev) return
           await updatePlayer(id, {
@@ -230,6 +250,14 @@ export function PlayersPage() {
         </div>
       </Card>
 
+      <div className="mb-4">
+        <SavedFiltersBar
+          pageKey="players"
+          current={currentFilter}
+          onApply={applySavedFilter}
+        />
+      </div>
+
       {players.loading ? (
         <PageLoader />
       ) : filtered.length === 0 ? (
@@ -306,6 +334,14 @@ export function PlayersPage() {
                           <Pencil size={16} />
                         </button>
                         <button
+                          title="Edit history"
+                          aria-label={`Edit history for ${p.fullName}`}
+                          onClick={() => setHistoryPlayerId(p.id)}
+                          className="rounded-md p-1.5 text-ink-500 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800 hover:text-ink-800 dark:hover:text-ink-200"
+                        >
+                          <History size={16} />
+                        </button>
+                        <button
                           title={p.active ? 'Archive' : 'Restore'}
                           aria-label={`${p.active ? 'Archive' : 'Restore'} ${p.fullName}`}
                           onClick={() => toggleActive(p)}
@@ -358,6 +394,15 @@ export function PlayersPage() {
         <CredentialsDialog
           credentials={credentials}
           onClose={() => setCredentials(null)}
+        />
+      )}
+
+      {historyPlayerId && (
+        <VersionHistoryModal
+          entityType="player"
+          entityId={historyPlayerId}
+          onClose={() => setHistoryPlayerId(null)}
+          onRestored={() => players.refetch()}
         />
       )}
     </div>
