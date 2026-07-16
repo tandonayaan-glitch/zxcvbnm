@@ -194,5 +194,17 @@ reasoning.
    Verified live: both pages render, correct empty state (dev DB only has one club/season so the
    populated table itself wasn't visually exercised — the arithmetic is a straightforward reuse
    of already-verified aggregation code), cross-link chain navigates correctly, no console errors.
+9. **Maintenance mode** — **Done**, no collision. `AppSettings.maintenance` +
+   `MaintenanceScreen.tsx` + a gate in `App.tsx` (checked once at app root, bypassed for
+   `isMasterAdmin()`). Deliberately one mechanism for both "scheduled" and "emergency" maintenance
+   (an ETA field is informational only — there's no backend to auto-start a maintenance window at
+   a future time in this client-only app). No read-only mode built — Prompt 2.md listed it as "if
+   appropriate," and retrofitting a read-only guard across every mutation in the app is a much
+   bigger, separate undertaking than the gate itself, which already covers the real use case
+   (stop non-admins using the app during a deploy/fix). Verified live: the toggle/message field on
+   Platform Settings render and respond correctly. **Did not save `maintenance.enabled: true`** —
+   the harness's permission system correctly blocked persisting that to the live settings doc,
+   since it would have actually taken the real app offline for every non-master visitor with no
+   user request or authorization; the `App.tsx` gate itself was verified by code review.
 
 (Appended to as further slices are picked up.)

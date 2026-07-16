@@ -11,6 +11,7 @@ function defaults(): AppSettings {
     defaultPublicMatches: true,
     defaultOvers: 20,
     trashRetentionDays: 30,
+    maintenance: { enabled: false, message: '', estimatedEndAt: null },
     updatedAt: Date.now(),
   }
 }

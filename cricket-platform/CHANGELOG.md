@@ -4,6 +4,23 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Feature flags framework (Phase 21)
+- New `FeatureFlag` type + `services/featureFlags.service.ts` + `domain/featureFlags.ts`
+  `isFlagEnabledFor()` (pure): global on/off (`enabled` — the emergency-disable path), a
+  deterministic percentage rollout (`rolloutPercent`, hashed per user so it's stable across
+  reloads, not random each time), and beta-only gating (`betaOnly`, tied to a new "Beta features"
+  toggle in `Prefs`/Settings).
+- New `hooks/useFeatureFlag(key)` + admin page `/admin/feature-flags` (master-admin, nav entry):
+  create/edit/delete flags, one-click enable/disable per row. Audit-logged.
+- Club-specific flags deferred (see `RESTRICTIONS.md`); no flags gate an actual feature yet — this
+  is prepared architecture for the next experimental feature to opt into.
+
+### Added — Maintenance mode (Phase 20)
+- New `AppSettings.maintenance` (`enabled`/`message`/`estimatedEndAt`) + "Maintenance mode" card
+  on Platform Settings. When enabled, every visitor except the master admin sees a full-screen
+  `MaintenanceScreen` (custom message, optional ETA) instead of the app — checked once at the
+  `App.tsx` root, gated on `isMasterAdmin()` so the admin can always get back in to disable it.
+
 ### Added — Compare clubs & seasons (Phase 19)
 - New `/compare/clubs` and `/compare/seasons` pages complete the compare-mode set (player/team
   comparisons already existed). `domain/clubCompare.ts` rolls up a club's teams' `TeamStats`;

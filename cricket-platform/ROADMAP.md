@@ -467,6 +467,52 @@ changes or a human scopes the task down to something finite.
   already-verified `aggregateTeamStats`, reviewed by hand); confirmed the new
   players→teams→clubs→seasons→players cross-link chain navigates correctly with no console errors.
 
+## Phase 20 — Maintenance mode
+- ✅ **Site-wide maintenance gate** (`AppSettings.maintenance: { enabled, message,
+  estimatedEndAt }`, new "Maintenance mode" card on Platform Settings): when enabled, every
+  visitor except the master admin sees `MaintenanceScreen` (custom message + optional ETA)
+  instead of the app — checked once at the `App.tsx` root via `getSettings()`, gated on
+  `isMasterAdmin(profile)` so the admin can always get back in to turn it off. Covers both
+  "scheduled" (set an ETA ahead of time) and "emergency" (just flip it on) maintenance with one
+  honest mechanism rather than two — there's no backend in this client-only app to actually
+  *start* a scheduled maintenance window automatically at a future time, so "scheduled" here means
+  "the ETA is informational," not "it turns itself on." **No read-only mode** — Prompt 2.md listed
+  this as "if appropriate"; retrofitting a read-only guard across every mutation in the app is a
+  much bigger, separate undertaking than a maintenance gate, and the existing gate (block
+  non-admins entirely) already covers the actual use case of "stop non-admins from using the app
+  during a deploy/fix." Verified live on Platform Settings: the toggle and message field render
+  and respond correctly (confirmed the toggle's `aria-pressed` flips). **Did not save
+  `maintenance.enabled: true`** to the live settings doc — the harness's permission system
+  correctly blocked it, since that would have actually taken the real app offline for every
+  non-master visitor with no user request or authorization to do so; the `App.tsx` gate logic
+  itself was verified by code review rather than by actually triggering it live.
+
+## Phase 21 — Feature flags framework
+- ✅ **`FeatureFlag`** (`types/index.ts`) + `services/featureFlags.service.ts`
+  (`listFlags()`/`upsertFlag()`/`disableFlag()`/`deleteFlag()`, new `featureFlags` collection, doc
+  id == the flag's `key`) + `domain/featureFlags.ts` `isFlagEnabledFor()` (pure): a flag's
+  `enabled` is the master on/off — flipping it off is the "emergency disable," always wins over
+  everything else. When enabled, `rolloutPercent` (0–100) gates a **deterministic** percentage of
+  users in — a simple string hash of `key:uid` bucketed 0–99, so the same user always lands on the
+  same side of the rollout instead of flipping randomly on reload — and `betaOnly` further
+  restricts it to users who've opted into a new **"Beta features"** toggle
+  (`Prefs.betaFeatures`, on the Appearance card, synced cross-device like other prefs). New
+  `hooks/useFeatureFlag(key)` evaluates a flag for the signed-in user (or bucket-0 for signed-out
+  viewers, so only 100%-rollout non-beta flags reach the public site). New admin page
+  (`/admin/feature-flags`, master-admin-only, nav entry): create/edit/delete flags, plus a
+  one-click enable/disable pill on each row for the fast "kill it now" path distinct from opening
+  the full edit form. Every save/delete is audit-logged. **Club-specific flags** (also named in the
+  source spec) deferred — resolving "which clubs does this user manage" reliably for flag
+  evaluation is more scope than the rest of this framework combined; global + rollout% + beta-only
+  covers the other three asks (global flags, gradual rollout, user beta testing) plus emergency
+  disable. No flags are wired to gate any actual feature yet — this is prepared architecture (like
+  the notification-category groundwork before triggers existed), ready for the next experimental
+  feature to opt in. Verified live end-to-end: created a real flag via the admin UI, enabled it
+  with a 50% rollout, confirmed `isFlagEnabledFor()` returns a genuinely mixed true/false split
+  across sample uids (not stuck all-on or all-off) and that a signed-in user gets a *consistent*
+  result across repeated calls; confirmed `enabled: false` overrides a 100% rollout and `betaOnly`
+  correctly gates on `betaOptIn`; cleaned up the test flag after.
+
 ---
 
 ### Notes

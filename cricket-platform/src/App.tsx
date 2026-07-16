@@ -1,15 +1,18 @@
-import { useEffect, lazy, Suspense } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { isFirebaseConfigured } from '@/lib/firebase'
-import { useAuthStore } from '@/store/authStore'
+import { useAuthStore, isMasterAdmin } from '@/store/authStore'
 import { usePrefsStore, applyPrefs } from '@/store/prefsStore'
 import { ProtectedRoute } from '@/components/guards/guards'
 import { AppShell } from '@/components/layout/AppShell'
 import { PublicLayout } from '@/components/layout/PublicLayout'
 import { FirebaseNotice } from '@/features/misc/FirebaseNotice'
+import { MaintenanceScreen } from '@/features/misc/MaintenanceScreen'
+import { getSettings } from '@/services/settings.service'
 import { BackgroundLayer } from '@/components/background/BackgroundLayer'
 import { OfflineBanner } from '@/components/ui/OfflineBanner'
 import { PageLoader } from '@/components/ui/primitives'
+import type { MaintenanceConfig } from '@/types'
 
 /* Route pages are lazy-loaded so the initial bundle stays small; each page
  * ships in its own chunk fetched on navigation. Named exports are adapted to
@@ -91,6 +94,11 @@ const PlayerMergePage = lazy(() =>
 const TrashPage = lazy(() =>
   import('@/features/admin/TrashPage').then((m) => ({ default: m.TrashPage })),
 )
+const FeatureFlagsPage = lazy(() =>
+  import('@/features/admin/FeatureFlagsPage').then((m) => ({
+    default: m.FeatureFlagsPage,
+  })),
+)
 const AccountPage = lazy(() =>
   import('@/features/account/AccountPage').then((m) => ({ default: m.AccountPage })),
 )
@@ -151,7 +159,9 @@ const MatchPage = lazy(() =>
 
 export default function App() {
   const init = useAuthStore((s) => s.init)
+  const profile = useAuthStore((s) => s.profile)
   const prefs = usePrefsStore((s) => s.prefs)
+  const [maintenance, setMaintenance] = useState<MaintenanceConfig | null>(null)
 
   useEffect(() => {
     init()
@@ -161,7 +171,18 @@ export default function App() {
     applyPrefs(prefs)
   }, [prefs])
 
+  useEffect(() => {
+    if (!isFirebaseConfigured) return
+    getSettings()
+      .then((s) => setMaintenance(s.maintenance))
+      .catch(() => {})
+  }, [])
+
   if (!isFirebaseConfigured) return <FirebaseNotice />
+
+  if (maintenance?.enabled && !isMasterAdmin(profile)) {
+    return <MaintenanceScreen config={maintenance} />
+  }
 
   return (
     <>
@@ -256,6 +277,14 @@ export default function App() {
             element={
               <ProtectedRoute roles={['MASTER_ADMIN']}>
                 <PlayerMergePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/feature-flags"
+            element={
+              <ProtectedRoute roles={['MASTER_ADMIN']}>
+                <FeatureFlagsPage />
               </ProtectedRoute>
             }
           />

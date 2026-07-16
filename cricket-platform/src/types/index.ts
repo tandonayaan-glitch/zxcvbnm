@@ -618,6 +618,24 @@ export interface EntityVersion {
   createdAt: number
 }
 
+/**
+ * A togglable feature flag. `enabled` is the master on/off (flip to `false` for an emergency
+ * disable). When `enabled`, `rolloutPercent` gates a deterministic percentage of users in (100 =
+ * everyone); `betaOnly` further restricts it to users who've opted into beta features
+ * (`Prefs.betaFeatures`), for staged testing before a wider rollout.
+ */
+export interface FeatureFlag {
+  id: string // == key
+  key: string
+  name: string
+  description?: string
+  enabled: boolean
+  rolloutPercent: number // 0-100
+  betaOnly: boolean
+  updatedAt: number
+  updatedBy?: string | null
+}
+
 /** A user's request to be granted ADMIN access (to run a tournament). */
 export interface AdminRequest {
   id: string
@@ -632,6 +650,15 @@ export interface AdminRequest {
   decidedBy?: string | null
 }
 
+/** Site-wide maintenance gate. When `enabled`, every signed-in/public visitor except the master
+ *  admin sees a maintenance screen instead of the app. */
+export interface MaintenanceConfig {
+  enabled: boolean
+  message: string
+  /** Optional ETA shown on the maintenance screen; purely informational, nothing waits on it. */
+  estimatedEndAt: number | null
+}
+
 export interface AppSettings {
   appName: string
   defaultScorecardConfig: ScorecardConfig
@@ -639,6 +666,7 @@ export interface AppSettings {
   defaultOvers: number
   /** Days a soft-deleted item stays in Trash before "Purge expired" removes it for good. */
   trashRetentionDays: number
+  maintenance: MaintenanceConfig
   updatedAt: number
 }
 
