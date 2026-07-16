@@ -4,6 +4,11 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Legal & compliance pages (Phase 24)
+- New `/privacy` and `/terms` pages with project-specific content (not boilerplate) describing what
+  CricketHub actually stores/shows, each carrying an explicit "template, needs real legal review"
+  disclaimer. Linked from the public-site footer and a new consent notice on `/signup`.
+
 ### Added — Scoring keyboard shortcuts (Phase 23)
 - Live Scoring page: `0`/`1`/`2`/`3`/`4`/`6` for runs, `W` Wicket, `Q`/`N`/`B`/`L` for Wide/No
   ball/Bye/Leg bye, `U` Undo, `E` End innings, `Esc` cancels a selected extra. Ignored while

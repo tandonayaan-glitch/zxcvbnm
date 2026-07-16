@@ -153,6 +153,12 @@ export function PublicLayout() {
             <Link to="/search" className="hover:text-ink-800 dark:hover:text-ink-200">
               Search
             </Link>
+            <Link to="/privacy" className="hover:text-ink-800 dark:hover:text-ink-200">
+              Privacy
+            </Link>
+            <Link to="/terms" className="hover:text-ink-800 dark:hover:text-ink-200">
+              Terms
+            </Link>
           </div>
         </div>
       </footer>

@@ -20,6 +20,16 @@ import type { MaintenanceConfig } from '@/types'
 const NotFoundPage = lazy(() =>
   import('@/features/misc/NotFoundPage').then((m) => ({ default: m.NotFoundPage })),
 )
+const PrivacyPolicyPage = lazy(() =>
+  import('@/features/misc/PrivacyPolicyPage').then((m) => ({
+    default: m.PrivacyPolicyPage,
+  })),
+)
+const TermsOfServicePage = lazy(() =>
+  import('@/features/misc/TermsOfServicePage').then((m) => ({
+    default: m.TermsOfServicePage,
+  })),
+)
 const LoginPage = lazy(() =>
   import('@/features/auth/LoginPage').then((m) => ({ default: m.LoginPage })),
 )
@@ -103,6 +113,14 @@ const FeatureFlagsPage = lazy(() =>
   import('@/features/admin/FeatureFlagsPage').then((m) => ({
     default: m.FeatureFlagsPage,
   })),
+)
+const InvitationsPage = lazy(() =>
+  import('@/features/admin/InvitationsPage').then((m) => ({
+    default: m.InvitationsPage,
+  })),
+)
+const InvitePage = lazy(() =>
+  import('@/features/misc/InvitePage').then((m) => ({ default: m.InvitePage })),
 )
 const AccountPage = lazy(() =>
   import('@/features/account/AccountPage').then((m) => ({ default: m.AccountPage })),
@@ -302,6 +320,14 @@ export default function App() {
             }
           />
           <Route
+            path="/admin/invitations"
+            element={
+              <ProtectedRoute roles={['MASTER_ADMIN']}>
+                <InvitationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/settings"
             element={
               <ProtectedRoute>
@@ -343,6 +369,8 @@ export default function App() {
           <Route path="/club/:id" element={<ClubPage />} />
           <Route path="/season/:id" element={<SeasonPage />} />
           <Route path="/match/:id" element={<MatchPage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms" element={<TermsOfServicePage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
 

@@ -217,5 +217,10 @@ reasoning.
     matching Phase 0's "resilience to legacy/foreign docs" convention. Caught live by this
     session's own Phase 15 error-recovery work: reproduced the crash, confirmed the error boundary
     + `clientErrors` log worked correctly, then fixed it and confirmed the page renders real data.
+11. **Legal & compliance pages** — **Done**, no collision. `/privacy` + `/terms`, project-specific
+    content (not generic boilerplate) reflecting this app's real data practices, each with an
+    explicit "template, not a substitute for legal review" disclaimer — accurate framing rather
+    than a false claim of legal sufficiency. Linked from the public footer and a new `/signup`
+    consent notice. Verified live: both pages render, footer links present, signup notice renders.
 
 (Appended to as further slices are picked up.)

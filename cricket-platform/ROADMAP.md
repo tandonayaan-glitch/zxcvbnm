@@ -561,6 +561,18 @@ changes or a human scopes the task down to something finite.
   dispatched `u`, confirmed `undoLastBall()` reverted the score back to 0/0; cleaned up the test
   match after.
 
+## Phase 24 — Legal & compliance pages
+- ✅ **Privacy Policy** (`/privacy`) and **Terms of Service** (`/terms`) — real, project-specific
+  content describing what this app actually stores/shows (cricket data is public by design;
+  account data is private, visible only to other admins for access-management purposes; passwords
+  are Firebase-managed and never visible to anyone; self-service JSON export already exists), not
+  generic boilerplate. Both carry an explicit disclaimer that they're a starting template requiring
+  real legal review before commercial/at-scale operation — accurate framing rather than a false
+  claim of legal sufficiency. Linked from the public-site footer (`PublicLayout.tsx`) and from a
+  new consent notice on `/signup` ("By creating an account, you agree to the Terms of Service and
+  Privacy Policy"). Verified live: both pages render with real content, footer links present,
+  signup notice renders and links correctly; `tsc`/`npm run build` clean.
+
 ---
 
 ### Notes
