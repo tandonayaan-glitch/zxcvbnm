@@ -206,5 +206,16 @@ reasoning.
    the harness's permission system correctly blocked persisting that to the live settings doc,
    since it would have actually taken the real app offline for every non-master visitor with no
    user request or authorization; the `App.tsx` gate itself was verified by code review.
+10. **Platform analytics** — **Done**, no collision. `domain/platformAnalytics.ts` + new
+    `/admin/analytics` page + `components/charts/GrowthChart.tsx`. True DAU/MAU is **not**
+    tracked — no session/login log exists in this client-only app, and building one (hooking
+    `auth.service.ts`'s login) was judged out of scope for this slice; every number is derived
+    from existing `createdAt`/`scorerId` fields instead, with an explicit "what this doesn't
+    measure" disclosure on the page itself. **Found and fixed a real bug during verification**:
+    `bucketByDay()` crashed (`RangeError: Invalid time value`) on a real malformed `createdAt` in
+    the live `users` collection — fixed with a `Number.isFinite` guard (skip, don't crash),
+    matching Phase 0's "resilience to legacy/foreign docs" convention. Caught live by this
+    session's own Phase 15 error-recovery work: reproduced the crash, confirmed the error boundary
+    + `clientErrors` log worked correctly, then fixed it and confirmed the page renders real data.
 
 (Appended to as further slices are picked up.)

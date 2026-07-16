@@ -513,6 +513,54 @@ changes or a human scopes the task down to something finite.
   result across repeated calls; confirmed `enabled: false` overrides a 100% rollout and `betaOnly`
   correctly gates on `betaOptIn`; cleaned up the test flag after.
 
+## Phase 22 — Platform analytics
+- ✅ **Growth/activity dashboard beyond cricket stats** (`domain/platformAnalytics.ts`, pure; new
+  `/admin/analytics` page, linked from Platform Tools): headline totals (users/players/teams/
+  matches), 30-day new-signup/new-match/new-tournament
+  counts, "active clubs"/"active scorers" in the last 30 days, and two `GrowthChart` bar charts
+  (new-user signups and matches created, per day, trailing 30 days) — a new generic
+  `components/charts/GrowthChart.tsx` SVG bar chart, no external chart deps, matching the existing
+  `TeamForm`/`PlayerForm` pattern. **True DAU/MAU (unique people who opened the app) is honestly
+  not measured** — there's no session/login event log in this client-only app, and inventing one
+  (hooking `auth.service.ts`'s login to write a session doc per day) was judged more scope and
+  more collision risk with the concurrent session's own active work than this slice needed; every
+  number shown is instead derived straight from existing timestamped records (`createdAt` on
+  users/players/teams/tournaments/matches, `scorerId` on matches), and the page says so explicitly
+  in a "What this doesn't measure" card so the numbers aren't mistaken for something they're not.
+  "Active club" = a club with a team that played a match in the window; "active scorer" = a
+  distinct scorer credited on a match in the window — real proxies from real data, not logins.
+  **Found and fixed a real bug during verification**: `bucketByDay()` crashed with `RangeError:
+  Invalid time value` on real data — at least one existing `users` doc has a missing/malformed
+  `createdAt`, and `Date(NaN).toISOString()` throws. Fixed by skipping non-finite timestamps
+  (`Number.isFinite` guard) rather than crashing, consistent with this app's established
+  "resilience to legacy/foreign docs" convention (Phase 0). This crash was caught immediately by
+  this session's own error-recovery work (Phase 15) — reproduced live, confirmed the error boundary
+  showed a reference id and the error was logged to `clientErrors`, then fixed and confirmed the
+  page renders real numbers correctly on reload.
+
+## Phase 23 — Scoring keyboard shortcuts
+- ✅ **Keyboard shortcuts on the live Scoring page**: `0`/`1`/`2`/`3`/`4`/`6` score that many runs
+  (matching exactly the six quick-tap run buttons already on the score pad — no shortcut for 5,
+  since the tap UI itself has never offered one either), `W` opens the Wicket dialog, `Q`/`N`/`B`/`L`
+  toggle Wide/No ball/Bye/Leg bye (press a run key after, same two-step flow as tapping), `U` undoes
+  the last ball, `E` ends the current innings (same confirm dialog as the existing "End innings"
+  button), `Esc` cancels a selected extra. Implemented as a small mount-scoped `ScoringShortcuts`
+  child component (`ScoringPage.tsx`) rather than a hook on the page itself — `ScoringPage` has
+  several early `return`s before the score pad is reached, which rules out placing a `useEffect`
+  there directly without breaking the rules of hooks; a child only rendered alongside the score pad
+  sidesteps that cleanly. Ignored while Ctrl/Cmd/Alt is held or focus is in a text input (so it
+  never fights browser shortcuts or an open text field), and disabled while a write is in flight
+  (`busy`). **Discoverable, not hidden**: every score-pad button now shows its key as a small corner
+  `<kbd>` badge, plus a "Shortcuts" button opens a full reference modal (`ShortcutsHelpModal`) — the
+  spec's "throughout the platform" ask for this pass is scoped to scoring specifically, where the
+  hotkey requirement was explicit and the productivity win is real (rapid-fire ball-by-ball entry);
+  other pages weren't retrofitted with hotkeys speculatively. Verified live end-to-end against a
+  real in-progress match: dispatched a real `4` keydown, confirmed the score updated 0/0 → 4/0 with
+  the striker's card and run-rate updating correctly (the existing post-ball `ShotDetailPrompt` even
+  appeared, confirming the shortcut goes through the exact same `recordBall()` path as a tap);
+  dispatched `u`, confirmed `undoLastBall()` reverted the score back to 0/0; cleaned up the test
+  match after.
+
 ---
 
 ### Notes

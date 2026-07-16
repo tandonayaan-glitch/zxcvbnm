@@ -81,6 +81,11 @@ const PlatformToolsPage = lazy(() =>
     default: m.PlatformToolsPage,
   })),
 )
+const PlatformAnalyticsPage = lazy(() =>
+  import('@/features/admin/PlatformAnalyticsPage').then((m) => ({
+    default: m.PlatformAnalyticsPage,
+  })),
+)
 const ClubsSeasonsPage = lazy(() =>
   import('@/features/admin/ClubsSeasonsPage').then((m) => ({
     default: m.ClubsSeasonsPage,
@@ -269,6 +274,14 @@ export default function App() {
             element={
               <ProtectedRoute roles={['MASTER_ADMIN']}>
                 <PlatformToolsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/analytics"
+            element={
+              <ProtectedRoute roles={['MASTER_ADMIN']}>
+                <PlatformAnalyticsPage />
               </ProtectedRoute>
             }
           />

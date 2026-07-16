@@ -7,8 +7,10 @@ import {
   Trophy,
   RefreshCw,
   Eye,
+  Keyboard,
 } from 'lucide-react'
 import { Button, Card, PageLoader, Spinner } from '@/components/ui/primitives'
+import { Modal } from '@/components/ui/Modal'
 import { SyncQueuePanel } from '@/components/ui/SyncQueuePanel'
 import { useToast } from '@/components/ui/toast'
 import { useAsync } from '@/hooks/useAsync'
@@ -58,6 +60,7 @@ export function ScoringPage() {
   const [pendingMeta, setPendingMeta] = useState<{ deliveryId: string; showZone: boolean } | null>(
     null,
   )
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
   useEffect(() => {
     const unsub = subscribeMatch(id, (m) => {
@@ -368,15 +371,31 @@ export function ScoringPage() {
 
       {/* Score pad */}
       {!needOpeners && !needBatter && !needBowler && !inn.isComplete && (
-        <ScorePad
-          activeExtra={activeExtra}
-          busy={busy}
-          onRun={(r) => score(r, activeExtra ?? undefined)}
-          onToggleExtra={(e) => setActiveExtra((cur) => (cur === e ? null : e))}
-          onWicket={() => setWicketOpen(true)}
-          onUndo={() => guard(() => undoLastBall(match))}
-          canUndo={curDeliveries.length > 0}
-        />
+        <>
+          <ScoringShortcuts
+            busy={busy}
+            activeExtra={activeExtra}
+            canUndo={curDeliveries.length > 0}
+            onRun={(r) => score(r, activeExtra ?? undefined)}
+            onToggleExtra={(e) => setActiveExtra((cur) => (cur === e ? null : e))}
+            onClearExtra={() => setActiveExtra(null)}
+            onWicket={() => setWicketOpen(true)}
+            onUndo={() => guard(() => undoLastBall(match))}
+            onEndInnings={() => {
+              if (confirm('End the current innings now?')) guard(() => endInnings(match))
+            }}
+          />
+          <ScorePad
+            activeExtra={activeExtra}
+            busy={busy}
+            onRun={(r) => score(r, activeExtra ?? undefined)}
+            onToggleExtra={(e) => setActiveExtra((cur) => (cur === e ? null : e))}
+            onWicket={() => setWicketOpen(true)}
+            onUndo={() => guard(() => undoLastBall(match))}
+            canUndo={curDeliveries.length > 0}
+            onShowShortcuts={() => setShortcutsOpen(true)}
+          />
+        </>
       )}
 
       {inn.isComplete && (
@@ -439,11 +458,141 @@ export function ScoringPage() {
           onClose={() => setWicketOpen(false)}
         />
       )}
+
+      <ShortcutsHelpModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
     </div>
   )
 }
 
 /* ============================ sub-components ============================ */
+
+/**
+ * Keyboard shortcuts for live scoring. Renders nothing — a child component so its
+ * `useEffect` can be mounted/unmounted exactly when the score pad is (the parent
+ * has early returns before this point in the render, which rules out placing a
+ * hook here directly without breaking the rules-of-hooks).
+ */
+function ScoringShortcuts({
+  busy,
+  activeExtra,
+  canUndo,
+  onRun,
+  onToggleExtra,
+  onClearExtra,
+  onWicket,
+  onUndo,
+  onEndInnings,
+}: {
+  busy: boolean
+  activeExtra: ExtraType | null
+  canUndo: boolean
+  onRun: (r: number) => void
+  onToggleExtra: (e: ExtraType) => void
+  onClearExtra: () => void
+  onWicket: () => void
+  onUndo: () => void
+  onEndInnings: () => void
+}) {
+  useEffect(() => {
+    function isTypingTarget(el: Element | null): boolean {
+      const tag = el?.tagName
+      return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      if (isTypingTarget(document.activeElement)) return
+      const key = e.key.toLowerCase()
+      if (key === 'escape') {
+        if (activeExtra) {
+          e.preventDefault()
+          onClearExtra()
+        }
+        return
+      }
+      if (busy) return
+      if (['0', '1', '2', '3', '4', '6'].includes(key)) {
+        e.preventDefault()
+        onRun(Number(key))
+        return
+      }
+      switch (key) {
+        case 'w':
+          e.preventDefault()
+          onWicket()
+          break
+        case 'q':
+          e.preventDefault()
+          onToggleExtra('wide')
+          break
+        case 'n':
+          e.preventDefault()
+          onToggleExtra('no_ball')
+          break
+        case 'b':
+          e.preventDefault()
+          onToggleExtra('bye')
+          break
+        case 'l':
+          e.preventDefault()
+          onToggleExtra('leg_bye')
+          break
+        case 'u':
+          if (canUndo) {
+            e.preventDefault()
+            onUndo()
+          }
+          break
+        case 'e':
+          e.preventDefault()
+          onEndInnings()
+          break
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [busy, activeExtra, canUndo, onRun, onToggleExtra, onClearExtra, onWicket, onUndo, onEndInnings])
+
+  return null
+}
+
+const SHORTCUT_LIST: { keys: string; label: string }[] = [
+  { keys: '0 1 2 3 4 6', label: 'Score that many runs' },
+  { keys: 'W', label: 'Wicket' },
+  { keys: 'Q', label: 'Wide (toggle, then tap/press a run key)' },
+  { keys: 'N', label: 'No ball (toggle, then tap/press a run key)' },
+  { keys: 'B', label: 'Bye' },
+  { keys: 'L', label: 'Leg bye' },
+  { keys: 'U', label: 'Undo last ball' },
+  { keys: 'E', label: 'End innings' },
+  { keys: 'Esc', label: 'Cancel a selected extra' },
+]
+
+function ShortcutsHelpModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  return (
+    <Modal open={open} onClose={onClose} title="Keyboard shortcuts" size="sm">
+      <div className="space-y-2">
+        {SHORTCUT_LIST.map((s) => (
+          <div key={s.keys} className="flex items-center justify-between gap-3 text-sm">
+            <span className="text-ink-700 dark:text-ink-300">{s.label}</span>
+            <span className="flex shrink-0 gap-1">
+              {s.keys.split(' ').map((k) => (
+                <kbd
+                  key={k}
+                  className="rounded border border-ink-300 bg-ink-50 px-1.5 py-0.5 font-mono text-xs text-ink-700 dark:border-ink-700 dark:bg-ink-800 dark:text-ink-300"
+                >
+                  {k}
+                </kbd>
+              ))}
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-xs text-ink-400 dark:text-ink-500">
+        Disabled while typing in a text field, and ignored with Ctrl/Cmd/Alt held down.
+      </p>
+    </Modal>
+  )
+}
 
 function playerOption(p: Player | undefined, id: string) {
   return { id, name: p?.displayName ?? 'Player', photoURL: p?.photoURL }
@@ -586,6 +735,7 @@ function ScorePad({
   onWicket,
   onUndo,
   canUndo,
+  onShowShortcuts,
 }: {
   activeExtra: ExtraType | null
   busy: boolean
@@ -594,16 +744,32 @@ function ScorePad({
   onWicket: () => void
   onUndo: () => void
   canUndo: boolean
+  onShowShortcuts?: () => void
 }) {
   const runs = [0, 1, 2, 3, 4, 6]
-  const extras: { key: ExtraType; label: string }[] = [
-    { key: 'wide', label: 'Wide' },
-    { key: 'no_ball', label: 'No ball' },
-    { key: 'bye', label: 'Bye' },
-    { key: 'leg_bye', label: 'Leg bye' },
+  const extras: { key: ExtraType; label: string; shortcut: string }[] = [
+    { key: 'wide', label: 'Wide', shortcut: 'Q' },
+    { key: 'no_ball', label: 'No ball', shortcut: 'N' },
+    { key: 'bye', label: 'Bye', shortcut: 'B' },
+    { key: 'leg_bye', label: 'Leg bye', shortcut: 'L' },
   ]
   return (
     <Card className="p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-xs font-medium uppercase tracking-wide text-ink-400 dark:text-ink-500">
+          Score pad
+        </span>
+        {onShowShortcuts && (
+          <button
+            onClick={onShowShortcuts}
+            aria-label="Keyboard shortcuts"
+            title="Keyboard shortcuts"
+            className="flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-ink-400 hover:bg-ink-100 hover:text-ink-600 dark:text-ink-500 dark:hover:bg-ink-800 dark:hover:text-ink-300"
+          >
+            <Keyboard size={13} /> Shortcuts
+          </button>
+        )}
+      </div>
       {activeExtra && (
         <div className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
           <b className="capitalize">{activeExtra.replace('_', ' ')}</b> selected —
@@ -617,13 +783,16 @@ function ScorePad({
             disabled={busy}
             onClick={() => onRun(r)}
             className={cn(
-              'flex h-16 items-center justify-center rounded-xl text-2xl font-bold transition active:scale-95 disabled:opacity-50',
+              'relative flex h-16 items-center justify-center rounded-xl text-2xl font-bold transition active:scale-95 disabled:opacity-50',
               r === 4 || r === 6
                 ? 'bg-pitch-600 text-white hover:bg-pitch-700'
                 : 'bg-ink-100 dark:bg-ink-800 text-ink-800 dark:text-ink-200 hover:bg-ink-200',
             )}
           >
             {r}
+            <kbd className="absolute right-1.5 top-1.5 text-[10px] font-normal opacity-60">
+              {r}
+            </kbd>
           </button>
         ))}
       </div>
@@ -634,13 +803,16 @@ function ScorePad({
             key={e.key}
             onClick={() => onToggleExtra(e.key)}
             className={cn(
-              'h-11 rounded-lg border text-sm font-semibold',
+              'relative h-11 rounded-lg border text-sm font-semibold',
               activeExtra === e.key
                 ? 'border-amber-500 bg-amber-100 text-amber-800'
                 : 'border-ink-300 dark:border-ink-700 text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800',
             )}
           >
             {e.label}
+            <kbd className="absolute right-1 top-1 text-[9px] font-normal opacity-60">
+              {e.shortcut}
+            </kbd>
           </button>
         ))}
       </div>
@@ -649,16 +821,18 @@ function ScorePad({
         <button
           onClick={onWicket}
           disabled={busy}
-          className="h-12 rounded-lg bg-red-600 font-bold text-white hover:bg-red-700 disabled:opacity-50"
+          className="relative h-12 rounded-lg bg-red-600 font-bold text-white hover:bg-red-700 disabled:opacity-50"
         >
           Wicket
+          <kbd className="absolute right-1.5 top-1.5 text-[10px] font-normal opacity-70">W</kbd>
         </button>
         <button
           onClick={onUndo}
           disabled={busy || !canUndo}
-          className="flex h-12 items-center justify-center gap-2 rounded-lg border border-ink-300 dark:border-ink-700 font-semibold text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800 disabled:opacity-40"
+          className="relative flex h-12 items-center justify-center gap-2 rounded-lg border border-ink-300 dark:border-ink-700 font-semibold text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800 disabled:opacity-40"
         >
           <Undo2 size={18} /> Undo
+          <kbd className="absolute right-1.5 top-1.5 text-[10px] font-normal opacity-60">U</kbd>
         </button>
       </div>
     </Card>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
+import { Link } from 'react-router-dom'
 import {
   RefreshCw,
   Trash2,
@@ -14,6 +15,7 @@ import {
   Bug,
   Wrench,
   CheckCircle2,
+  BarChart3,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
@@ -138,6 +140,14 @@ export function PlatformToolsPage() {
       <PageHeader
         title="Platform tools"
         subtitle="Master-admin only — maintenance, leaderboard controls and audit log."
+        actions={
+          <Link
+            to="/admin/analytics"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-2 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
+          >
+            <BarChart3 size={16} /> Platform analytics
+          </Link>
+        }
       />
 
       <Card className="mb-4">

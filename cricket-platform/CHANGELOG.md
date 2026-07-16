@@ -4,6 +4,23 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Scoring keyboard shortcuts (Phase 23)
+- Live Scoring page: `0`/`1`/`2`/`3`/`4`/`6` for runs, `W` Wicket, `Q`/`N`/`B`/`L` for Wide/No
+  ball/Bye/Leg bye, `U` Undo, `E` End innings, `Esc` cancels a selected extra. Ignored while
+  Ctrl/Cmd/Alt is held or a text field is focused; disabled mid-write.
+- Every score-pad button now shows its key as a corner badge; a new "Shortcuts" button opens a
+  full reference modal. Scoped to the Scoring page specifically (where the productivity win is
+  real), not retrofitted onto every page speculatively.
+
+### Added — Platform analytics (Phase 22)
+- New `/admin/analytics` page (`domain/platformAnalytics.ts`, pure) + `components/charts/
+  GrowthChart.tsx`: headline totals, 30-day growth counts, active-clubs/active-scorers (both
+  derived from real match data, not logins), and daily signup/match bar charts.
+- True DAU/MAU isn't tracked (no session log in this client-only app) — the page says so directly
+  rather than implying something it doesn't measure.
+- Fixed a real crash found during verification: `bucketByDay()` threw on a malformed `createdAt`
+  in existing data; now skips non-finite timestamps instead of crashing.
+
 ### Added — Feature flags framework (Phase 21)
 - New `FeatureFlag` type + `services/featureFlags.service.ts` + `domain/featureFlags.ts`
   `isFlagEnabledFor()` (pure): global on/off (`enabled` — the emergency-disable path), a
