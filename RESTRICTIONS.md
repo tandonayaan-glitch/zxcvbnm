@@ -77,7 +77,7 @@ does not conflict with a still-standing "do not":
 | Full internationalization (multi-language, locale-formatted dates/numbers) | Deferred | No second locale is required today; `lib/format.ts` already centralizes date/number formatting so this remains a bounded follow-up, not urgent. |
 | Automated test suite (unit/integration/e2e/emulator tests), CI/CD pipeline | Deferred | `CLAUDE.md` states explicitly: "There is no test suite — verification is done by type-checking, building, and exercising the running app in a browser preview." This is a standing project convention, not an oversight. Introducing a test framework/CI pipeline is an infrastructure decision for the user to make, not one to bootstrap unasked inside a feature-slice pass. |
 | New first-class entities: Venue, Sponsor, Official | Deferred | These don't exist as entities today — "venue" is a free-text field on `Match`/`Tournament`/`Team`. Promoting them to full entities (with their own CRUD, ownership, public pages) is a schema-expanding decision bigger than a slice; flagged for a future milestone rather than invented speculatively. |
-| Command palette (Ctrl/Cmd+K), saved filters, dashboard widget customization | Deferred (not yet scheduled) | Real, bounded, non-conflicting features — legitimate candidates for a future slice, just not picked up in this pass. Not blocked by any restriction. |
+| Dashboard widget customization (rearrange/hide/resize/save layouts) | Deferred (not yet scheduled) | Real, bounded, non-conflicting feature — a legitimate candidate for a future slice, just not picked up yet. Not blocked by any restriction. Command palette and saved filters (the other two originally listed here) are now done — see the slice log. |
 | Exhaustive accessibility audit | Already `🚫` in ROADMAP.md (Phase 9) | Open-ended by nature; unchanged. |
 
 Anything not listed above and not explicitly excluded is fair game for slicing — see
@@ -154,5 +154,37 @@ reasoning.
    `components/layout/CommandPalette.tsx`, mounted in `AppShell`, reuses the existing
    `search.service.ts` `globalSearch()` rather than a new search backend, plus a role-filtered nav
    command list. Verified in the browser.
+5. **Error recovery & client diagnostics** — **Done**, no collision. `components/ErrorBoundary.tsx`
+   gained a reference id, a real "Reload page" (`location.reload()`, distinct from the existing
+   in-place "Try again"), and "Copy diagnostics"; `services/errorLog.service.ts` + new
+   `clientErrors` collection best-effort-logs every catch (never throws, so a broken logger can't
+   mask the real error); a "Client errors" card on Platform Tools surfaces the last 50 to the
+   master admin. Picked up `dark:` variants `ErrorBoundary.tsx` had missed from the Phase 4 theme
+   pass (not a "page," so the earlier sweep skipped it). Verified: logged a real error via the
+   service, confirmed it appeared correctly on Platform Tools. Not verified: an actual in-browser
+   render crash exercising the Reload/Copy-diagnostics buttons visually — no way to inject one
+   without editing source; the handlers themselves are plain, reviewed `location.reload()`/
+   clipboard calls with no dynamic risk.
+6. **Saved filter presets** — **Done**, no collision. `store/savedFiltersStore.ts` (localStorage,
+   mirrors `favStore`'s local-only pattern) + `components/ui/SavedFiltersBar.tsx`, wired into the
+   Stats page's competition/venue/team/club/season/year filters. "Junior Players"/"Women's League"
+   from Prompt 2.md's own examples aren't achievable as-is — `Player` has no age/gender field, and
+   inventing one speculatively to hit a naming example was out of scope; the feature itself
+   (name/restore/delete a filter combination) is generic and applies to whichever concrete filters
+   a page already has.
+7. **Data integrity tools** — **Done**, no collision. `domain/dataIntegrity.ts` (pure) +
+   `services/dataIntegrity.service.ts`, a new "Data integrity" card on Platform Tools. Checks
+   references against full (trashed-inclusive) id sets so a link to a merely-*trashed* doc is
+   never flagged — only ids that never existed or were hard-deleted. Every repairable issue is
+   metadata/cache-only (roster arrays, `clubId`/`seasonId`/captain refs, orphaned stats cache
+   docs); match-squad references are informational-only with no repair button, since rewriting
+   historical scorecards is exactly what a repair tool must never do. Verified live: the scan
+   found two real orphaned `playerStats` docs in the running dev database. **Did not click "Fix"**
+   — the harness's permission system correctly blocked a blind repair click against live shared
+   data with no specific user go-ahead; that's a human's call on Platform Tools, not something to
+   force through in automated verification. Also surfaced, incidentally, via the Client-errors
+   card while testing: a real `Maximum update depth exceeded` render-loop error on `/stats`,
+   logged today — not mine to fix (outside this slice, and `StatsPage.tsx`/`savedFiltersStore.ts`
+   are the concurrent session's active files), flagged to the user instead.
 
 (Appended to as further slices are picked up.)

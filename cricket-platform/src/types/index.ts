@@ -598,6 +598,26 @@ export interface ClientErrorLog {
   createdAt: number
 }
 
+export type VersionedEntity = 'player' | 'team' | 'club' | 'tournament' | 'match'
+
+/**
+ * A snapshot of an entity's fields immediately *before* an edit was applied — so "restore"
+ * means "write this snapshot back over the current doc." Field names, not full before/after
+ * values, are stored in `changedFields` for a scannable summary; the full previous state lives
+ * in `snapshot` for the actual restore.
+ */
+export interface EntityVersion {
+  id: string
+  entityType: VersionedEntity
+  entityId: string
+  snapshot: Record<string, unknown>
+  changedFields: string[]
+  editedBy?: string | null
+  editedByName?: string | null
+  reason?: string | null
+  createdAt: number
+}
+
 /** A user's request to be granted ADMIN access (to run a tournament). */
 export interface AdminRequest {
   id: string
@@ -620,4 +640,30 @@ export interface AppSettings {
   /** Days a soft-deleted item stays in Trash before "Purge expired" removes it for good. */
   trashRetentionDays: number
   updatedAt: number
+}
+
+/* -------------------------- Data integrity -------------------------- */
+
+export type IntegrityIssueType =
+  | 'orphaned_roster_entry' // team.playerIds references a player that no longer exists at all
+  | 'broken_captain_ref' // team.captainId/viceCaptainId points outside its own roster
+  | 'orphaned_tournament_team' // tournament.teamIds references a team that no longer exists at all
+  | 'broken_club_ref' // team/tournament.clubId points to a club that no longer exists at all
+  | 'broken_season_ref' // tournament.seasonId points to a season that no longer exists at all
+  | 'orphaned_player_stats' // playerStats/{id} with no matching player doc at all
+  | 'orphaned_team_stats' // teamStats/{id} with no matching team doc at all
+  | 'dangling_match_squad_ref' // match squad references a player that no longer exists at all (informational — match data is never auto-rewritten)
+
+/** One detected data-integrity problem, found by `domain/dataIntegrity.ts`. */
+export interface IntegrityIssue {
+  /** Stable key so the same issue re-scans to the same id (`type:entityId[:extra]`). */
+  id: string
+  type: IntegrityIssueType
+  /** `repairable` issues have a safe one-click fix; `informational` ones are reported only —
+   *  typically because "fixing" them would mean rewriting historical match/scoring data. */
+  severity: 'repairable' | 'informational'
+  entityType: 'team' | 'tournament' | 'match' | 'playerStats' | 'teamStats'
+  entityId: string
+  label: string
+  description: string
 }

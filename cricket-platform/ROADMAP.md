@@ -393,6 +393,36 @@ changes or a human scopes the task down to something finite.
   clicked the saved filter, confirmed the search and role filter both restored; created a Stats
   filter for a specific competition, saved it, and verified restoration — both pages work correctly.
 
+## Phase 17 — Data integrity tools
+- ✅ **Detect + safe-repair broken references and orphaned cached stats** on Platform Tools
+  (`domain/dataIntegrity.ts` `findIntegrityIssues()` — pure, given already-fetched data;
+  `services/dataIntegrity.service.ts` `scanDataIntegrity()` fetches everything and calls it).
+  Checks: team rosters referencing a player id that no longer exists at all; captain/vice-captain
+  not in their own roster; tournament team lists referencing a team id that no longer exists;
+  team/tournament `clubId` and tournament `seasonId` pointing at a deleted club/season;
+  `playerStats`/`teamStats` cache docs with no matching player/team; match squads referencing a
+  player id that no longer exists (**informational only** — see below). Deliberately checks
+  against the **full** (trashed-inclusive) id sets, not the Trash-filtered `listX()` functions —
+  a reference to a *soft-deleted* doc isn't broken, it's exactly this app's standing "referenced
+  doc can vanish, readers fall back gracefully" convention; only references to ids that never
+  existed or were hard-deleted count as an issue.
+- ✅ **"Fix" is safe by construction**: every repairable issue is metadata/cache-only (strip a dead
+  id from a `playerIds`/`teamIds` array, null out a dangling `clubId`/`seasonId`/captain ref, or
+  delete an orphaned stats cache doc — all recomputable via the existing "Recompute leaderboards &
+  standings" button). **Match-level issues are `informational`, with no repair button at all** —
+  a dangling squad reference is reported, never auto-rewritten; rewriting historical scorecards is
+  exactly the kind of destructive "fix" a repair tool must never perform. Every repair is
+  audit-logged.
+- ✅ New "Data integrity" card on Platform Tools — auto-scans on load, "Scan again" to refresh,
+  each issue shows a Fixable/Info badge and (for fixable ones) a "Fix" button. Verified live: the
+  scan correctly found two real orphaned `playerStats` docs (`tp1`/`tp3`, pre-existing test-data
+  leftovers) in the running dev database — confirms the detection logic works against real data.
+  Did **not** click "Fix" to complete the round-trip: the harness's own permission system flagged
+  an unverified blind repair against live shared data with no specific user go-ahead and blocked
+  it, correctly — clicking through that is for a human operator on Platform Tools, not something
+  to force through in an automated verification pass. Detection is proven live; the repair
+  functions themselves are plain, reviewed `updateDoc`/`deleteDoc` calls with no dynamic risk.
+
 ---
 
 ### Notes

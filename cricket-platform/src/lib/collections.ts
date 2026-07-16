@@ -21,6 +21,7 @@ export const COL = {
   ballMeta: 'ballMeta', // subcollection under matches/{id}; optional shot-zone/line-length tags
   notifications: 'notifications', // per-user notification center entries
   clientErrors: 'clientErrors', // runtime errors caught by ErrorBoundary, for admin diagnostics
+  entityVersions: 'entityVersions', // pre-edit snapshots of players/teams/clubs/tournaments/matches
 } as const
 
 export const SETTINGS_DOC = 'app'

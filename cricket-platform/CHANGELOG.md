@@ -4,6 +4,35 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Data integrity tools (Phase 17)
+- New `domain/dataIntegrity.ts` (pure) + `services/dataIntegrity.service.ts`: detects broken team
+  rosters/captain refs, orphaned tournament team lists, broken club/season links, and orphaned
+  `playerStats`/`teamStats` cache docs — checked against full (trashed-inclusive) id sets, so a
+  reference to a merely-trashed doc is never flagged, only ids that never existed or were
+  hard-deleted.
+- Every repairable issue is metadata/cache-only (safe to fix with one click); dangling match-squad
+  references are reported as informational only, with no repair button — historical scorecards are
+  never auto-rewritten.
+- New "Data integrity" card on Platform Tools with a "Fix" button per repairable issue, audit-logged.
+
+### Added — Saved filter presets on Stats (Phase 16)
+- New `store/savedFiltersStore.ts` (localStorage, mirrors `favStore`'s local-only pattern) +
+  `components/ui/SavedFiltersBar.tsx`: name and restore the current competition/venue/team/club/
+  season/year filter combination on the Stats page in one click. "Save current filter" only shows
+  once at least one filter is non-default; restoring bypasses the normal scope-change reset so the
+  saved combination applies atomically.
+
+### Added — Error recovery & client diagnostics (Phase 15)
+- `components/ErrorBoundary.tsx`: every caught error now gets a short reference id, a "Reload
+  page" button (full reload, distinct from the existing in-place "Try again" reset) and a "Copy
+  diagnostics" button (reference id/URL/timestamp/message/stack to clipboard). Picked up the
+  `dark:` variants it had missed from the Phase 4 theme pass.
+- New `services/errorLog.service.ts` + `clientErrors` collection: `ErrorBoundary` best-effort logs
+  every catch (never throws, never blocks the recovery UI) with the same reference id, message,
+  stack, route and actor uid if signed in.
+- New "Client errors" card on Platform Tools — last 50 logged errors for the master admin.
+  `firestore.rules`: publicly writable (errors can happen pre-login), master-admin-only read.
+
 ### Added — Activity feeds (Phase 14)
 - New `services/activity.service.ts` (`logActivity()`/`listActivity()`) wires up the previously
   unused `ActivityLog` type/`activity` collection — writers on player/team/club/tournament/match

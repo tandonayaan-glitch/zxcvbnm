@@ -12,6 +12,8 @@ import {
   WifiOff,
   RotateCw,
   Bug,
+  Wrench,
+  CheckCircle2,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
@@ -38,9 +40,11 @@ import { getPlatformDiagnostics, forceResync } from '@/services/diagnostics.serv
 import { SyncQueuePanel } from '@/components/ui/SyncQueuePanel'
 import { logAudit, listAuditLogs } from '@/services/audit.service'
 import { listClientErrors } from '@/services/errorLog.service'
+import { scanDataIntegrity, repairIssue } from '@/services/dataIntegrity.service'
 import { platformBackupToJSON } from '@/domain/platformExport'
 import { downloadBlob } from '@/lib/download'
 import { formatDateTime } from '@/lib/format'
+import type { IntegrityIssue } from '@/types'
 
 const CONFIRM_PHRASE = 'CLEAR LEADERBOARDS'
 
@@ -50,11 +54,27 @@ export function PlatformToolsPage() {
   const online = useOnlineStatus()
   const audits = useAsync(() => listAuditLogs(50), [])
   const errors = useAsync(() => listClientErrors(50), [])
+  const integrity = useAsync(scanDataIntegrity, [])
   const diagnostics = useAsync(getPlatformDiagnostics, [])
   const [rebuilding, setRebuilding] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [resyncing, setResyncing] = useState(false)
   const [showClear, setShowClear] = useState(false)
+  const [repairingId, setRepairingId] = useState<string | null>(null)
+
+  async function repair(issue: IntegrityIssue) {
+    setRepairingId(issue.id)
+    try {
+      await repairIssue(issue, profile)
+      toast.success('Issue fixed')
+      integrity.refetch()
+      audits.refetch()
+    } catch {
+      toast.error('Repair failed')
+    } finally {
+      setRepairingId(null)
+    }
+  }
 
   async function resync() {
     setResyncing(true)
@@ -203,6 +223,71 @@ export function PlatformToolsPage() {
           <Button variant="outline" onClick={exportBackup} loading={exporting}>
             <DatabaseBackup size={16} /> Export platform backup (JSON)
           </Button>
+        </CardBody>
+      </Card>
+
+      <Card className="mb-4">
+        <CardHeader
+          title={
+            <span className="flex items-center gap-2">
+              <Wrench size={18} /> Data integrity
+            </span>
+          }
+          subtitle="Detects broken references and orphaned cached stats; only offers a fix where it's safe (never rewrites match/scorecard data)."
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => integrity.refetch()}
+              loading={integrity.loading}
+            >
+              <RefreshCw size={14} /> Scan again
+            </Button>
+          }
+        />
+        <CardBody className="p-0">
+          {integrity.loading ? (
+            <PageLoader />
+          ) : (integrity.data ?? []).length === 0 ? (
+            <div className="p-5">
+              <EmptyState
+                icon={<CheckCircle2 size={40} />}
+                title="No issues found"
+                description="Every roster, tournament and stats reference checks out."
+              />
+            </div>
+          ) : (
+            <div className="divide-y divide-ink-50 dark:divide-ink-800">
+              {(integrity.data ?? []).map((issue) => (
+                <div key={issue.id} className="flex items-start justify-between gap-3 px-4 py-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate text-sm font-medium text-ink-900 dark:text-ink-50">
+                        {issue.label}
+                      </span>
+                      <Badge tone={issue.severity === 'repairable' ? 'amber' : 'gray'}>
+                        {issue.severity === 'repairable' ? 'Fixable' : 'Info'}
+                      </Badge>
+                    </div>
+                    <div className="mt-0.5 text-xs text-ink-500 dark:text-ink-400">
+                      {issue.description}
+                    </div>
+                  </div>
+                  {issue.severity === 'repairable' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0"
+                      onClick={() => repair(issue)}
+                      loading={repairingId === issue.id}
+                    >
+                      Fix
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </CardBody>
       </Card>
 
