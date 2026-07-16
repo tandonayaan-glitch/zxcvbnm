@@ -4,6 +4,17 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Invitation system (Phase 25)
+- New `/admin/invitations` (master-admin): offer an existing user a role (`ADMIN`, `SCORER`,
+  `TEAM_MANAGER`, `TOURNAMENT_MANAGER`) via a shareable link (`/invite/{code}`, public route),
+  with an optional note and configurable expiry. Replaces having to notice a self-serve admin
+  request — the master admin can proactively grant a role and the target user just accepts.
+- Accept grants the role immediately and notifies the inviter; decline/cancel/resend all
+  supported. Expiry is resolved lazily (`effectiveStatus()`), matching the Trash retention
+  pattern — no backend cron in this client-only app.
+- New `invitations` Firestore collection + rules (invitee can respond to their own pending
+  invite; only the master admin can create/cancel/read-all).
+
 ### Added — Legal & compliance pages (Phase 24)
 - New `/privacy` and `/terms` pages with project-specific content (not boilerplate) describing what
   CricketHub actually stores/shows, each carrying an explicit "template, needs real legal review"

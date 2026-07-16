@@ -79,6 +79,7 @@ does not conflict with a still-standing "do not":
 | New first-class entities: Venue, Sponsor, Official | Deferred | These don't exist as entities today — "venue" is a free-text field on `Match`/`Tournament`/`Team`. Promoting them to full entities (with their own CRUD, ownership, public pages) is a schema-expanding decision bigger than a slice; flagged for a future milestone rather than invented speculatively. |
 | Dashboard widget customization (rearrange/hide/resize/save layouts) | Deferred (not yet scheduled) | Real, bounded, non-conflicting feature — a legitimate candidate for a future slice, just not picked up yet. Not blocked by any restriction. Command palette and saved filters (the other two originally listed here) are now done — see the slice log. |
 | Exhaustive accessibility audit | Already `🚫` in ROADMAP.md (Phase 9) | Open-ended by nature; unchanged. |
+| Real email/SMS delivery for invitations | Deferred | This is a client-only Firebase app with no backend to send mail from (no Cloud Functions, no SMTP/SES key). The invitation system (Phase 25) is fully functional via an in-app shareable link and the existing notification center instead — an invitee sees it in-app or gets a copy-able link from the master admin. Wiring a real transactional-email provider is a bounded future add-on, not invented speculatively. |
 
 Anything not listed above and not explicitly excluded is fair game for slicing — see
 `cricket-platform/ROADMAP.md` for the live phase list.
@@ -222,5 +223,17 @@ reasoning.
     explicit "template, not a substitute for legal review" disclaimer — accurate framing rather
     than a false claim of legal sufficiency. Linked from the public footer and a new `/signup`
     consent notice. Verified live: both pages render, footer links present, signup notice renders.
+12. **Invitation system** — **Done**, no collision (the `/admin/invitations` lazy import + route
+    had already been folded into the concurrent session's Phase 24 commit since it was sitting on
+    disk at the time; only the `/invite/:code` public route remained to be added to `App.tsx`).
+    New `invitations.service.ts` + `/admin/invitations` (master-admin) + public `/invite/:code`.
+    Real email delivery deferred (§4) — the invite is a shareable in-app link plus a notification,
+    not an email. Expiry resolved lazily (`effectiveStatus()`), same pattern as Trash retention —
+    no backend cron in this client-only app. Verified live end-to-end against the real database:
+    created an invitation via the UI, confirmed list badges/expiry, confirmed the public page's
+    wrong-account branch for a mismatched signed-in user, then exercised accept (role actually
+    flipped `VIEWER`→`SCORER`, inviter notified), decline, cancel, and resend (expiry extended) via
+    direct service calls, and confirmed `effectiveStatus()` returns `expired` for a past-due doc.
+    All test invitations, the test notification, and the test user's role were cleaned up after.
 
 (Appended to as further slices are picked up.)

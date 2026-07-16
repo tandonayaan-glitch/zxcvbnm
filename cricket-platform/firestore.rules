@@ -251,5 +251,25 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isMasterAdmin();
     }
+
+    // ---- Invitations ------------------------------------------------
+    match /invitations/{id} {
+      // The invited user reads their own; the master admin reads all.
+      allow read: if isSignedIn()
+        && (resource.data.invitedUid == request.auth.uid || isMasterAdmin());
+      // Granting a role via invitation is as sensitive as granting it
+      // directly (Users & Roles), so creation/cancel/resend is master-only.
+      allow create, delete: if isMasterAdmin();
+      // The invited user may only flip their own still-pending invite to
+      // accepted/declined — not touch its role or target. Master admin can
+      // do anything (cancel/resend included, both just an update).
+      allow update: if isSignedIn() && (
+        isMasterAdmin()
+        || (resource.data.invitedUid == request.auth.uid
+            && resource.data.status == 'pending'
+            && request.resource.data.role == resource.data.role
+            && request.resource.data.invitedUid == resource.data.invitedUid)
+      );
+    }
   }
 }

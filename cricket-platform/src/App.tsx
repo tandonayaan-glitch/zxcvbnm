@@ -369,6 +369,7 @@ export default function App() {
           <Route path="/club/:id" element={<ClubPage />} />
           <Route path="/season/:id" element={<SeasonPage />} />
           <Route path="/match/:id" element={<MatchPage />} />
+          <Route path="/invite/:code" element={<InvitePage />} />
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/terms" element={<TermsOfServicePage />} />
           <Route path="*" element={<NotFoundPage />} />

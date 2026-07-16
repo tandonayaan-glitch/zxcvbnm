@@ -23,6 +23,7 @@ export const COL = {
   clientErrors: 'clientErrors', // runtime errors caught by ErrorBoundary, for admin diagnostics
   entityVersions: 'entityVersions', // pre-edit snapshots of players/teams/clubs/tournaments/matches
   featureFlags: 'featureFlags',
+  invitations: 'invitations',
 } as const
 
 export const SETTINGS_DOC = 'app'

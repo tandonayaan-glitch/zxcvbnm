@@ -23,6 +23,7 @@ import {
   Trash2,
   Search,
   Flag,
+  Mail,
 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { useAuthStore, isAdmin, canScore } from '@/store/authStore'
@@ -84,6 +85,12 @@ const NAV: NavItem[] = [
     to: '/admin/feature-flags',
     label: 'Feature Flags',
     icon: <Flag size={18} />,
+    roles: ['MASTER_ADMIN'],
+  },
+  {
+    to: '/admin/invitations',
+    label: 'Invitations',
+    icon: <Mail size={18} />,
     roles: ['MASTER_ADMIN'],
   },
   {

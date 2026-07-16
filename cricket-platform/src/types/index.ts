@@ -636,6 +636,30 @@ export interface FeatureFlag {
   updatedBy?: string | null
 }
 
+export type InvitationStatus = 'pending' | 'accepted' | 'declined' | 'cancelled' | 'expired'
+
+/**
+ * An invitation offering an existing user a role (Scorer/Team Manager/Tournament Manager/Admin),
+ * requiring their explicit accept rather than an admin forcing the change immediately
+ * (`users.service.ts` `setUserRoleNotified()` still exists for that direct path). This app can't
+ * send real email, so "sending" an invitation means sharing its `/invite/{code}` link — doc id
+ * and `code` are the same value.
+ */
+export interface Invitation {
+  id: string // == code
+  code: string
+  role: Role
+  invitedUid: string
+  invitedUsername: string
+  message?: string
+  status: InvitationStatus
+  createdBy: string
+  createdByName: string
+  createdAt: number
+  expiresAt: number
+  respondedAt?: number | null
+}
+
 /** A user's request to be granted ADMIN access (to run a tournament). */
 export interface AdminRequest {
   id: string

@@ -573,6 +573,33 @@ changes or a human scopes the task down to something finite.
   Privacy Policy"). Verified live: both pages render with real content, footer links present,
   signup notice renders and links correctly; `tsc`/`npm run build` clean.
 
+## Phase 25 — Invitation system
+- ✅ **Invite-an-existing-user-to-a-role flow**, replacing the old pattern where a user had to
+  self-serve an "admin request" and wait for a master admin to notice it. Master admin picks any
+  existing non-master user from `/admin/invitations`, offers them a role (`ADMIN`, `SCORER`,
+  `TEAM_MANAGER`, or `TOURNAMENT_MANAGER`), with an optional note and a configurable expiry (days).
+  The invitee gets a shareable link (`/invite/{code}`, a public route) that renders one of seven
+  states: not-found, accepted, declined, cancelled, expired, pending-while-signed-out (prompts
+  sign-in), or pending-for-a-different-account (tells them which account to switch to) — resolving
+  cleanly regardless of who's currently signed in on the device that opens the link. Accepting
+  calls `setUserRole` (immediate effect, same role-grant path used elsewhere) and notifies the
+  inviter; declining just closes it out. Master admin can cancel a pending invite or resend an
+  expired/declined/cancelled one (issues a fresh code + expiry, same doc id).
+  **Lazy expiry**, matching the pattern already used for Trash retention: no backend cron exists in
+  this client-only app, so `isExpired()`/`effectiveStatus()` compute "is this actually expired now"
+  from `expiresAt` at read time rather than a stored status field flipping in the background — a
+  pending invite past its expiry reads as `expired` everywhere without any scheduled job.
+  New `invitations` Firestore collection + rules (invitee can read/update their own pending
+  invitation to respond; only the master admin can create/cancel/read-all). Verified live
+  end-to-end: created a real invitation for a test user via the UI (list showed the correct
+  role/status badges and expiry), confirmed the public invite page correctly shows the
+  wrong-account state for a mismatched signed-in user, then exercised accept (role actually flipped
+  `VIEWER` → `SCORER`, inviter got a notification), decline, cancel, and resend (expiry visibly
+  extended) via direct service calls against the live database, and confirmed `effectiveStatus()`
+  computes `expired` correctly for a past-`expiresAt` doc. All test invitations, the test
+  notification, and the test user's role were cleaned up afterward. `tsc`/`npm run build`/lint clean
+  (no new warnings).
+
 ---
 
 ### Notes
