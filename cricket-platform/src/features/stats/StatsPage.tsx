@@ -14,6 +14,7 @@ import {
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, PageLoader, StatCard, EmptyState } from '@/components/ui/primitives'
 import { Tabs } from '@/components/ui/Tabs'
+import { SavedFiltersBar } from '@/components/ui/SavedFiltersBar'
 import { LeaderboardCard } from '@/components/stats/LeaderboardCard'
 import { usePlatformStats } from '@/hooks/usePlatformStats'
 import { useAsync } from '@/hooks/useAsync'
@@ -178,6 +179,16 @@ export function StatsPage() {
     setClub('all')
     setSeason('all')
     setYear('all')
+  }
+
+  const currentFilter = { scope, venue, team, club, season, year }
+  function applySavedFilter(f: Record<string, string>) {
+    setScope(f.scope ?? 'all')
+    setVenue(f.venue ?? 'all')
+    setTeam(f.team ?? 'all')
+    setClub(f.club ?? 'all')
+    setSeason(f.season ?? 'all')
+    setYear(f.year ?? 'all')
   }
 
   // Recompute leaderboards/stats for the selected scope (or reuse platform-wide).
@@ -422,6 +433,14 @@ export function StatsPage() {
               )}
             </div>
           )}
+
+          <div className="mb-4">
+            <SavedFiltersBar
+              pageKey="stats"
+              current={currentFilter}
+              onApply={applySavedFilter}
+            />
+          </div>
 
           <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
             <StatCard label="Runs scored" value={totals.runs} icon={<Activity size={20} />} tone="blue" />
