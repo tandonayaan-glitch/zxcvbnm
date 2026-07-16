@@ -4,6 +4,13 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Compare clubs & seasons (Phase 19)
+- New `/compare/clubs` and `/compare/seasons` pages complete the compare-mode set (player/team
+  comparisons already existed). `domain/clubCompare.ts` rolls up a club's teams' `TeamStats`;
+  `domain/seasonCompare.ts` rolls up every match inside any tournament under that season.
+- The four compare pages now cross-link in a loop: players → teams → clubs → seasons → players.
+- Venue vs Venue not built — Venue isn't a first-class entity in this app (see `RESTRICTIONS.md`).
+
 ### Added — Version history for edits (Phase 18)
 - New `services/versionHistory.service.ts` (`snapshotVersion()`/`listVersions()`/
   `restoreVersion()`) + `EntityVersion` type + `entityVersions` collection: Players, Teams, Clubs,

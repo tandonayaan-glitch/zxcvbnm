@@ -105,6 +105,16 @@ const CompareTeamsPage = lazy(() =>
     default: m.CompareTeamsPage,
   })),
 )
+const CompareClubsPage = lazy(() =>
+  import('@/features/public/CompareClubsPage').then((m) => ({
+    default: m.CompareClubsPage,
+  })),
+)
+const CompareSeasonsPage = lazy(() =>
+  import('@/features/public/CompareSeasonsPage').then((m) => ({
+    default: m.CompareSeasonsPage,
+  })),
+)
 const PublicHomePage = lazy(() =>
   import('@/features/public/PublicHomePage').then((m) => ({
     default: m.PublicHomePage,
@@ -282,6 +292,8 @@ export default function App() {
           <Route path="/stats" element={<StatsPage />} />
           <Route path="/compare" element={<ComparePage />} />
           <Route path="/compare/teams" element={<CompareTeamsPage />} />
+          <Route path="/compare/clubs" element={<CompareClubsPage />} />
+          <Route path="/compare/seasons" element={<CompareSeasonsPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/player/:id" element={<PlayerPage />} />
           <Route path="/team/:id" element={<TeamPage />} />

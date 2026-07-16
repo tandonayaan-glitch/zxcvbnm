@@ -448,6 +448,25 @@ changes or a human scopes the task down to something finite.
   field reverted, confirmed the restore itself created a second, undoable history entry — cleaned
   up all test data (player + both version docs) after.
 
+## Phase 19 — Compare clubs & seasons
+- ✅ **Club vs Club** (`/compare/clubs`) and **Season vs Season** (`/compare/seasons`) comparison
+  pages, completing the compare-mode set alongside the existing player/team comparisons.
+  `domain/clubCompare.ts` `aggregateClubStats()` sums a club's teams' `TeamStats` (reusing
+  `aggregateTeamStats` — no new aggregation logic for the per-team numbers, just rolled up by
+  `clubId`); `domain/seasonCompare.ts` `aggregateSeasonStats()` rolls up every match played inside
+  any tournament under that season (tournaments count, teams involved, matches, completed matches,
+  runs/wickets). Same picker-plus-stat-rows layout as the existing `CompareTeamsPage`, and the four
+  compare pages now cross-link in a loop (players → teams → clubs → seasons → players) instead of
+  the previous players⇄teams-only pair. **Venue vs Venue** (also listed under "Compare Mode" in
+  the source spec) is *not* built — Venue isn't a first-class entity in this app (it's a free-text
+  field on `Match`/`Tournament`/`Team`), and promoting it to one just to enable this comparison was
+  already flagged out of scope in `RESTRICTIONS.md` §4. Verified live: `/compare/clubs` and
+  `/compare/seasons` both render correctly and show the right empty state (this dev database only
+  has one club and one/zero seasons, so the populated two-up comparison table itself wasn't
+  visually exercised with real data — the underlying arithmetic is a straightforward reuse of the
+  already-verified `aggregateTeamStats`, reviewed by hand); confirmed the new
+  players→teams→clubs→seasons→players cross-link chain navigates correctly with no console errors.
+
 ---
 
 ### Notes

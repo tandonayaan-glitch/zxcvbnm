@@ -186,5 +186,13 @@ reasoning.
    card while testing: a real `Maximum update depth exceeded` render-loop error on `/stats`,
    logged today — not mine to fix (outside this slice, and `StatsPage.tsx`/`savedFiltersStore.ts`
    are the concurrent session's active files), flagged to the user instead.
+8. **Compare clubs & seasons** — **Done**, no collision. `domain/clubCompare.ts`/
+   `domain/seasonCompare.ts` (both reuse existing aggregation — `aggregateTeamStats` for clubs,
+   plain match rollup for seasons — no new stats math), new `/compare/clubs`/`/compare/seasons`
+   pages mirroring the existing `CompareTeamsPage` layout, cross-link chain extended to a
+   4-page loop. Venue vs Venue deliberately not built — Venue isn't a first-class entity (§4).
+   Verified live: both pages render, correct empty state (dev DB only has one club/season so the
+   populated table itself wasn't visually exercised — the arithmetic is a straightforward reuse
+   of already-verified aggregation code), cross-link chain navigates correctly, no console errors.
 
 (Appended to as further slices are picked up.)
