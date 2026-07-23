@@ -751,6 +751,27 @@ changes or a human scopes the task down to something finite.
   click-tested live — same master-admin-auth-loss caveat as Phases 26/28/29. `tsc`/`npm run
   build`/lint clean.
 
+## Phase 32 — Dashboard widget customization
+- ✅ **Rearrange, hide, and save the Dashboard's widget layout** (`store/dashboardLayoutStore.ts`,
+  localStorage-only — mirrors `favStore`/`savedFiltersStore`'s local-only pattern rather than
+  syncing via Firestore like appearance prefs, since this is a personal display preference, not
+  data worth round-tripping across devices). The Dashboard's 6 widgets (Live matches, Recent
+  results, Recent activity, Upcoming, Top run scorers, Top wicket takers) are keyed and rendered
+  from an `order`/`hidden` layout instead of being hardcoded inline; a "Customize" toggle in the
+  header reveals per-widget move-up/move-down/hide controls, plus "Reset layout." The two-column
+  split (match-related widgets on the left, leaderboard-related on the right) stays fixed —
+  widgets reorder *within* their column rather than across, which keeps the layout coherent
+  instead of allowing e.g. "Top wicket takers" to land between "Live matches" and "Recent
+  results." **No true drag-and-drop and no resize**: this app has zero UI drag/drop anywhere and
+  no external DnD library, so move-up/move-down buttons deliver the same reordering outcome
+  without adding a new dependency; resize wasn't built since every widget here is a variable-height
+  content list (0 to N rows) where an arbitrary fixed size wouldn't be meaningful — natural height
+  already is the right size. This is the one item from `RESTRICTIONS.md` §4's deferred table that
+  was flagged "not blocked, just not picked up yet"; it's done now. **Not click-tested live** —
+  same master-admin-auth-loss the last several phases have hit (no working login on any origin
+  this session can reach); `tsc`/`npm run build` clean, and the widget JSX itself is unchanged
+  from the already-live-verified original (only relocated into a keyed map, no logic touched).
+
 ---
 
 ### Notes

@@ -4,6 +4,13 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Dashboard widget customization (Phase 32)
+- New `store/dashboardLayoutStore.ts` (localStorage-only): the Dashboard's 6 widgets are now
+  ordered/hidden via saved state instead of hardcoded; a "Customize" toggle reveals per-widget
+  move-up/move-down/hide controls plus "Reset layout." Reordering stays within each of the two
+  existing columns (match-related left, leaderboard-related right) rather than across, so the
+  layout can't end up incoherent.
+
 ### Added — Error monitoring dashboard (Phase 31)
 - Platform Tools' "Client errors" card now shows a 14-day trend chart, a 7-day total, and the
   most frequent error messages/routes — aggregated from the same `clientErrors` collection every

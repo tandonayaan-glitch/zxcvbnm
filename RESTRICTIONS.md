@@ -77,7 +77,6 @@ does not conflict with a still-standing "do not":
 | Full internationalization (multi-language, locale-formatted dates/numbers) | Deferred | No second locale is required today; `lib/format.ts` already centralizes date/number formatting so this remains a bounded follow-up, not urgent. |
 | Automated test suite (unit/integration/e2e/emulator tests), CI/CD pipeline | Deferred | `CLAUDE.md` states explicitly: "There is no test suite — verification is done by type-checking, building, and exercising the running app in a browser preview." This is a standing project convention, not an oversight. Introducing a test framework/CI pipeline is an infrastructure decision for the user to make, not one to bootstrap unasked inside a feature-slice pass. |
 | New first-class entities: Venue, Sponsor, Official | Deferred | These don't exist as entities today — "venue" is a free-text field on `Match`/`Tournament`/`Team`. Promoting them to full entities (with their own CRUD, ownership, public pages) is a schema-expanding decision bigger than a slice; flagged for a future milestone rather than invented speculatively. |
-| Dashboard widget customization (rearrange/hide/resize/save layouts) | Deferred (not yet scheduled) | Real, bounded, non-conflicting feature — a legitimate candidate for a future slice, just not picked up yet. Not blocked by any restriction. Command palette and saved filters (the other two originally listed here) are now done — see the slice log. |
 | Exhaustive accessibility audit | Already `🚫` in ROADMAP.md (Phase 9) | Open-ended by nature; unchanged. |
 | Real email/SMS delivery for invitations | Deferred | This is a client-only Firebase app with no backend to send mail from (no Cloud Functions, no SMTP/SES key). The invitation system (Phase 25) is fully functional via an in-app shareable link and the existing notification center instead — an invitee sees it in-app or gets a copy-able link from the master admin. Wiring a real transactional-email provider is a bounded future add-on, not invented speculatively. |
 | Background job system (async queue + progress UI for stats recompute, exports, reports) | Deferred | Same reasoning as the event-bus deferral above: no Cloud Functions/Admin SDK here, so a real job queue needs a server to survive a closed tab; a fake client-side one would silently drop in-flight work. Existing long operations (recompute stats, exports) already run synchronously and complete quickly at this app's scale. |
@@ -341,5 +340,16 @@ reasoning.
     confirmed exact top-message/top-route counts. No test data to clean up (pure computation, no
     writes). UI composition wasn't click-tested live — same master-admin-auth-loss caveat as
     Phases 26/28/29.
+- **Dashboard widget customization** — **Done**, no collision. `store/dashboardLayoutStore.ts`
+  (localStorage-only, mirrors `favStore`/`savedFiltersStore`). This was the one item in the §4
+  deferred table explicitly flagged "not blocked, just not picked up yet" — it's picked up now,
+  and the table entry above has been removed accordingly. Move-up/move-down buttons instead of
+  real drag-and-drop (no DnD library anywhere in this app, and adding one for one feature wasn't
+  worth the new dependency); no resize (every widget is a variable-height content list — natural
+  height is already the right size, an arbitrary fixed size wouldn't be meaningful here).
+  Reordering stays within each of the two existing columns rather than mixing across them, so the
+  match-related and leaderboard-related widgets can't end up interleaved. Not click-tested live —
+  same master-admin-auth-loss the last several phases have hit; the widget JSX itself is unchanged
+  from the already-live-verified original, only relocated into a keyed map.
 
 (Appended to as further slices are picked up.)
