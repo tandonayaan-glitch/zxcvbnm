@@ -786,7 +786,7 @@ changes or a human scopes the task down to something finite.
   `tsc`/`npm run build`/lint clean, no new warnings.
 
 ## Phase 34 — Activity feeds on entity detail pages
-- `ActivityFeed` already supported a `refId` prop to scope to one entity, but only the Dashboard's
+- ✅ `ActivityFeed` already supported a `refId` prop to scope to one entity, but only the Dashboard's
   platform-wide feed (`refId` omitted) was ever wired up. Added `<ActivityFeed refId={id} />` to all
   four detail pages: `ClubPage` (new "Activity" section below Tournaments), `TeamPage` (new card
   below the Squad/Recent-matches grid), and `PlayerPage`/`TournamentPage` (both tab-based — added as
@@ -803,9 +803,12 @@ changes or a human scopes the task down to something finite.
   `scoring.service.ts` (e.g. a match's activity also referencing both team ids and the tournament
   id) — a broader change than "wire up the existing prop," so it's flagged in `RESTRICTIONS.md` §4
   as a genuine follow-up rather than expanded into here.
-- `tsc`/`npm run build` clean. Not click-tested live — same master-admin-auth-loss this session has
-  hit on every recent phase (no working login on any reachable origin); each addition reuses the
-  already-verified `ActivityFeed` component unmodified, only the `refId` prop and placement are new.
+- `tsc`/`npm run build` clean. **Click-tested live** against the real public pages (no auth
+  needed — these are public routes, unlike the master-admin pages this session has repeatedly lost
+  login access to): `/player/prs4`'s Activity tab, `/tournament/seedT1`'s Activity tab, and
+  `/team/{id}`'s Activity card all rendered the expected "No activity yet." empty state, correctly
+  scoped to that entity (`computer.left_click` didn't register on the tab buttons — a JS-dispatched
+  click worked instead, a known tooling quirk this session, not an app bug).
 
 ## Phase 35 — Tournament vs Tournament comparison 🔧
 - Phase 19 built Club vs Club and Season vs Season comparison but not Tournament vs Tournament,
