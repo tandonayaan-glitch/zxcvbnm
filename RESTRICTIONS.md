@@ -89,6 +89,7 @@ does not conflict with a still-standing "do not":
 | Disaster recovery: restore-from-backup / rollback tooling | Deferred, explicitly flagged as high-risk | Phase 1's JSON platform-backup export already exists. An automated one-click *restore* (overwrite/merge live Firestore data from an uploaded JSON file) is a destructive, hard-to-reverse operation with no dry-run/diff preview and no undo beyond Trash's soft-delete (which doesn't cover overwrites) — building this speculatively inside an autonomous slice pass, without the user explicitly scoping the exact safety mechanism first (dry-run diff, confirmation gates, partial-restore scoping), risks catastrophic, unrecoverable data loss if ever misused. Requires explicit user sign-off before any implementation. |
 | Database migration tooling (schema-evolution, rollback, migration history, validation) | Deferred | The project already avoids needing this via an additive-optional-fields convention for every schema change made this session (new fields are always optional, old docs read fine without them). Building dedicated migration tooling is an infrastructure decision for the user to make, not one to bootstrap unasked. |
 | Invitation system extended to new-player / "club member" invites | Deferred | Phase 25 covers inviting an *existing* user to an admin-side role. Inviting a brand-new person (no account yet) to become a player, or a "club member" concept, doesn't exist in the data model today (`Club` has no membership list) and is a different feature (self-service account creation/claiming tied to a `Player` record) — bigger scope than a bounded follow-up to Phase 25; flagged for a future milestone. |
+| Security response headers (CSP, `X-Frame-Options`, etc.) in `firebase.json` hosting config | Deferred, recommended follow-up (Phase 30 finding) | Genuinely missing today — no headers configured at all. Not authored blind: this app uses inline `style={{...}}` extensively (31 occurrences, 18 files — team colors, charts, background themes), which needs `style-src 'unsafe-inline'` to keep working, and `firebase.json`'s `headers` only take effect on a real Firebase Hosting deploy — there's no way to verify a CSP against the production origin from local dev. Shipping one unverified risks silently breaking styling or Firebase SDK connectivity with no way to catch it here. Author + verify this against a real deploy, not inside an autonomous local pass. |
 
 Anything not listed above and not explicitly excluded is fair game for slicing — see
 `cricket-platform/ROADMAP.md` for the live phase list.
@@ -312,5 +313,18 @@ reasoning.
     itself lives inside the signed-in `AppShell`, so a live click-through wasn't possible without
     master-admin auth (same caveat as Phases 26/28) — it only composes already-verified
     primitives (`Modal`) and passed `tsc`/build clean.
+18. **Security hardening review (Phase 30)** — **Done**, no collision. A documentation pass, no
+    new code. Grepped `src/` for `dangerouslySetInnerHTML`, `eval(`/`new Function(`,
+    `.innerHTML =`/`document.write`, and `target="_blank"` — zero matches on all four, so no XSS
+    escape-hatch and no reverse-tabnabbing risk exist today. Confirmed CSRF doesn't apply (bearer-
+    token auth, no cookies). Confirmed `.env.local` is correctly gitignored (only `.env.example`
+    placeholders are tracked). **Found one genuine new gap**: no security response headers (CSP,
+    `X-Frame-Options`) configured anywhere in `firebase.json`. Deliberately **not implemented**
+    this pass and added to §4's deferred table instead — this app uses inline `style={{...}}`
+    extensively (31 occurrences, 18 files), so a CSP needs careful `style-src` scoping, and
+    `firebase.json`'s `headers` only take effect on a real Firebase Hosting deploy with no way to
+    verify from local dev; authoring one blind risks silently breaking production styling or
+    Firebase connectivity with no way to catch it here. Flagged as a recommended follow-up for the
+    user's own deploy-and-verify cycle.
 
 (Appended to as further slices are picked up.)

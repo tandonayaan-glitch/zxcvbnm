@@ -4,6 +4,16 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Security review (Phase 30)
+- Documentation pass, no code changes: confirmed no XSS escape hatches
+  (`dangerouslySetInnerHTML`/`eval`/`innerHTML =`) and no reverse-tabnabbing risk
+  (`target="_blank"`) exist anywhere in `src/`; confirmed CSRF doesn't apply to this app's
+  bearer-token auth model; confirmed `.env.local` is properly gitignored.
+- Found one real gap: no CSP/security response headers configured in `firebase.json`. Recorded as
+  a deferred, recommended follow-up rather than implemented blind — this app's heavy use of inline
+  `style={{}}` needs careful `style-src` scoping, and headers can only be verified against a real
+  Firebase Hosting deploy, not local dev.
+
 ### Added — In-app release notes (Phase 29)
 - New "What's new" button in the header opens a small panel of curated highlights, with a dot
   badge that clears once viewed. Bumped `package.json` off the placeholder `0.0.0` to `1.0.0`.

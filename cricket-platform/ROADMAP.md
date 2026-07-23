@@ -698,14 +698,33 @@ changes or a human scopes the task down to something finite.
   already-verified primitives (`Modal`, the same one `InvitationsPage` already exercises live) and
   is otherwise straightforward, type-checked JSX. `tsc`/`npm run build`/lint clean.
 
-## Phase 30 — Security hardening review 🔧
-- A documentation pass, not new code: confirms no `dangerouslySetInnerHTML` exists anywhere in
-  `src/` (grepped — none found; React's default JSX escaping already covers XSS for this app), and
-  records that CSRF doesn't apply to this app's auth model (Firebase Auth bearer tokens, not
-  cookies — there's no ambient credential for a forged cross-site request to ride on). Rate
-  limiting, account lockout, and suspicious-activity detection are recorded as deferred in
-  `RESTRICTIONS.md` §4 — a client-only implementation of any of these is trivially bypassable
-  (clear localStorage/reload) and would be a false sense of security, worse than not building it.
+## Phase 30 — Security hardening review
+- ✅ A documentation pass, not new code — findings recorded in `RESTRICTIONS.md` §7 (slice log):
+  - **XSS**: no `dangerouslySetInnerHTML`, no `eval`/`new Function`, no direct `.innerHTML =`/
+    `document.write` anywhere in `src/` (grepped — zero matches on all four). React's default JSX
+    text escaping is this app's actual XSS defense, and it's intact everywhere.
+  - **Reverse tabnabbing**: no `target="_blank"` links anywhere in `src/` (grepped — zero
+    matches), so there's currently nothing that needs a `rel="noopener noreferrer"` fix.
+  - **CSRF**: doesn't apply to this app's auth model — Firebase Auth uses bearer tokens attached
+    per-request by the SDK, not cookies, so there's no ambient credential for a forged cross-site
+    request to ride on.
+  - **Secrets**: `.env.local` (real Firebase config) is correctly `.gitignore`d (`*.local`); only
+    `.env.example` (placeholder values) is tracked. Firebase Web SDK config values are meant to be
+    public regardless (the real access boundary is `firestore.rules`/`storage.rules`, not hiding
+    the API key), so this was a hygiene check, not a live vulnerability either way.
+  - **Found a new, genuine gap**: no security response headers (CSP, `X-Frame-Options`, etc.) are
+    configured in `firebase.json`'s hosting config. **Deliberately not implemented in this pass**
+    — this app makes heavy use of inline `style={{...}}` (31 occurrences across 18 files: team
+    colors, chart rendering, background themes), which a CSP needs `style-src 'unsafe-inline'` to
+    not break, and `firebase.json`'s `headers` config only takes effect on an actual Firebase
+    Hosting deploy — there's no way to verify a CSP against the real production origin from this
+    local dev environment, and shipping one unverified risks silently breaking styling or Firebase
+    SDK connectivity in production with no way to catch it here first. Recorded as a deferred,
+    recommended follow-up in `RESTRICTIONS.md` §4 for the user's own deploy-and-verify cycle,
+    rather than authored blind.
+  - Rate limiting, account lockout, and suspicious-activity detection remain deferred (already
+    recorded in §4 from the Phase 26-31 audit) — a client-only implementation of any of these is
+    trivially bypassable (clear localStorage/reload) and would be a false sense of security.
 
 ## Phase 31 — Error monitoring dashboard 🔧
 - A small aggregation layer on top of the `clientErrors` collection Phase 15 already writes to
