@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Search, User, Shield, Trophy, Swords } from 'lucide-react'
+import { Search, User, Shield, Trophy, Swords, Building2 } from 'lucide-react'
 import {
   Avatar,
   Card,
@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/primitives'
 import { globalSearch, type SearchResults } from '@/services/search.service'
 
-type SearchFilter = 'all' | 'players' | 'teams' | 'tournaments' | 'matches'
+type SearchFilter = 'all' | 'players' | 'teams' | 'tournaments' | 'matches' | 'clubs'
 
 export function SearchPage() {
   const [params, setParams] = useSearchParams()
@@ -43,7 +43,8 @@ export function SearchPage() {
     ? results.players.length +
       results.teams.length +
       results.tournaments.length +
-      results.matches.length
+      results.matches.length +
+      results.clubs.length
     : 0
 
   return (
@@ -88,6 +89,7 @@ export function SearchPage() {
                 ['teams', 'Teams', results.teams.length],
                 ['tournaments', 'Tournaments', results.tournaments.length],
                 ['matches', 'Matches', results.matches.length],
+                ['clubs', 'Clubs', results.clubs.length],
               ] as [SearchFilter, string, number][]
             )
               .filter(([key, , count]) => key === 'all' || count > 0)
@@ -156,6 +158,21 @@ export function SearchPage() {
                 >
                   <Trophy size={20} className="text-amber-500" />
                   <span className="font-medium text-ink-900 dark:text-ink-50">{t.name}</span>
+                </Link>
+              ))}
+            </Section>
+          )}
+
+          {show('clubs') && results.clubs.length > 0 && (
+            <Section title="Clubs" icon={<Building2 size={16} />}>
+              {results.clubs.map((c) => (
+                <Link
+                  key={c.id}
+                  to={`/club/${c.id}`}
+                  className="flex items-center gap-3 rounded-lg border border-ink-200 dark:border-ink-800 p-3 hover:border-brand-300"
+                >
+                  <Avatar name={c.name} src={c.logoURL} size={36} />
+                  <span className="font-medium text-ink-900 dark:text-ink-50">{c.name}</span>
                 </Link>
               ))}
             </Section>

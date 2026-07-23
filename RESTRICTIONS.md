@@ -89,6 +89,9 @@ does not conflict with a still-standing "do not":
 | Database migration tooling (schema-evolution, rollback, migration history, validation) | Deferred | The project already avoids needing this via an additive-optional-fields convention for every schema change made this session (new fields are always optional, old docs read fine without them). Building dedicated migration tooling is an infrastructure decision for the user to make, not one to bootstrap unasked. |
 | Invitation system extended to new-player / "club member" invites | Deferred | Phase 25 covers inviting an *existing* user to an admin-side role. Inviting a brand-new person (no account yet) to become a player, or a "club member" concept, doesn't exist in the data model today (`Club` has no membership list) and is a different feature (self-service account creation/claiming tied to a `Player` record) — bigger scope than a bounded follow-up to Phase 25; flagged for a future milestone. |
 | Security response headers (CSP, `X-Frame-Options`, etc.) in `firebase.json` hosting config | Deferred, recommended follow-up (Phase 30 finding) | Genuinely missing today — no headers configured at all. Not authored blind: this app uses inline `style={{...}}` extensively (31 occurrences, 18 files — team colors, charts, background themes), which needs `style-src 'unsafe-inline'` to keep working, and `firebase.json`'s `headers` only take effect on a real Firebase Hosting deploy — there's no way to verify a CSP against the production origin from local dev. Shipping one unverified risks silently breaking styling or Firebase SDK connectivity with no way to catch it here. Author + verify this against a real deploy, not inside an autonomous local pass. |
+| Hat-trick / award-won / record-broken activity + notification triggers | Deferred, beyond Phase 26's century/half-century/five-wicket-haul | Hat-trick needs consecutive-wicket-ball parsing across the delivery log (meaningfully more complex and risk-prone than a threshold check on a denormalized card). "Record broken" would need comparing this match's figures against every other completed match's, an expensive cross-match query with no existing precedent. "Award won" (Player of the Match) is set manually by an admin post-game, not at a single automatic trigger point like match completion — there's no clean hook for it. All three flagged for a future milestone rather than rushed into Phase 26. |
+| Feature-flag club-specific scoping | Deferred, beyond Phase 21 | Phase 21 built global on/off + percentage rollout + beta-only gating; no flags gate an actual per-club feature yet (no experimental feature exists that would need it) — prepared architecture for the next one, not a current need. |
+| Platform analytics: retention, feature-usage tracking | Deferred, beyond Phase 22/31 | Same root cause as the already-documented DAU/MAU gap — no session/login log exists to compute return-visit retention from, and per-feature usage needs an event-tracking pipeline this app has never had. Phase 22 already discloses what it doesn't measure rather than fabricating a number; the same honesty applies here. |
 
 Anything not listed above and not explicitly excluded is fair game for slicing — see
 `cricket-platform/ROADMAP.md` for the live phase list.
@@ -351,5 +354,19 @@ reasoning.
   match-related and leaderboard-related widgets can't end up interleaved. Not click-tested live —
   same master-admin-auth-loss the last several phases have hit; the widget JSX itself is unchanged
   from the already-live-verified original, only relocated into a keyed map.
+20. **Global search: Clubs (Phase 33)** — **Done**, no collision. A second-pass audit of
+    `fps/add_these.md` against the (now-updated) slice log/deferred table found Clubs was the one
+    first-class entity missing from `search.service.ts`'s `globalSearch()`, despite the Command
+    Palette's own original spec listing it as searchable. Added `clubs` to `SearchResults`, wired
+    into `CommandPalette.tsx` and the public `SearchPage.tsx`. Also formalized several previously-
+    undocumented deferrals into §4 during this same audit pass: hat-trick/award-won/record-broken
+    activity triggers (beyond Phase 26's threshold-based century/five-wicket-haul), feature-flag
+    club-specific scoping (beyond Phase 21), and platform-analytics retention/feature-usage
+    tracking (beyond Phase 22/31) — all three were already implicitly out of scope per their
+    respective phases' own text but hadn't been cross-referenced into the deferred table. Verified
+    live end-to-end via the real public `/search` page (no auth needed): created a real test club,
+    searched for it, confirmed "1 result" + a working "Clubs 1" filter chip + correct rendering,
+    hard-deleted the test club after (`deleteClub()` isn't the Trash soft-delete). `tsc`/`npm run
+    build`/lint clean.
 
 (Appended to as further slices are picked up.)

@@ -4,6 +4,10 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Global search: Clubs (Phase 33)
+- Clubs are now searchable from both the Command Palette and the public search page — previously
+  the only first-class entity missing from `globalSearch()`.
+
 ### Added — Dashboard widget customization (Phase 32)
 - New `store/dashboardLayoutStore.ts` (localStorage-only): the Dashboard's 6 widgets are now
   ordered/hidden via saved state instead of hardcoded; a "Customize" toggle reveals per-widget

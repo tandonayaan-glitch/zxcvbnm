@@ -772,6 +772,41 @@ changes or a human scopes the task down to something finite.
   this session can reach); `tsc`/`npm run build` clean, and the widget JSX itself is unchanged
   from the already-live-verified original (only relocated into a keyed map, no logic touched).
 
+## Phase 33 — Global search: add Clubs
+- ✅ `search.service.ts`'s `globalSearch()` and the Command Palette searched players/teams/
+  tournaments/matches but not Clubs, despite Clubs being a first-class entity since Phase 8 and
+  the Command Palette's own original spec listing them as searchable. Added `clubs` to
+  `SearchResults`, wired into both `CommandPalette.tsx` (new `Club` entity items, `/club/:id`)
+  and the public `SearchPage.tsx` (new filter chip + results section, matching the existing
+  Teams-section style). Verified live end-to-end against the real database via the actual public
+  `/search` page (no auth needed — a genuinely public route): created a real test club, searched
+  for it, confirmed the page showed "1 result", a working "Clubs 1" filter chip, and the club
+  rendered correctly with avatar-initials fallback and its name. Test club hard-deleted after
+  (`deleteClub()` is a real `deleteDoc`, not the Trash soft-delete, so nothing lingered).
+  `tsc`/`npm run build`/lint clean, no new warnings.
+
+## Phase 34 — Activity feeds on entity detail pages 🔧
+- `ActivityFeed` already supports a `refId` prop to scope to one entity (its own doc comment says
+  so), but only the Dashboard's platform-wide feed (`refId` omitted) was ever wired up — Phase 14
+  flagged embedding it on Club/Team/Player/Tournament pages as not done, and it was never picked
+  up since. Add a scoped `<ActivityFeed refId={id} />` to each of those four detail pages.
+
+## Phase 35 — Tournament vs Tournament comparison 🔧
+- Phase 19 built Club vs Club and Season vs Season comparison but not Tournament vs Tournament,
+  even though Tournament is a first-class entity (unlike Venue, deliberately skipped there).
+  `domain/tournamentCompare.ts` + `/compare/tournaments` page, following the same pattern.
+
+## Phase 36 — Audit log: login events + search 🔧
+- No sign-in is currently audit-logged, and the audit card has no way to filter/search its list
+  beyond the raw last-N entries. Add a `logAudit()` call on successful sign-in
+  (`auth.service.ts`), and a client-side search box over the already-fetched audit list on
+  Platform Tools.
+
+## Phase 37 — Optional edit reason on regular edits 🔧
+- Phase 18 explicitly scoped this out as "a small, bounded follow-up": restores auto-generate a
+  reason, but a manual edit through the Player/Team/Club/Tournament/Match-setup forms doesn't
+  prompt for one. Add an optional reason field to `snapshotVersion()`'s call sites.
+
 ---
 
 ### Notes

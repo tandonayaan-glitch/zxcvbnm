@@ -87,6 +87,10 @@ function entityItems(results: SearchResults | null): EntityItem[] {
       kind: 'entity', key: `match-${m.id}`, label: `${m.teamA.name} vs ${m.teamB.name}`, sub: 'Match',
       icon: <Swords size={16} />, to: `/match/${m.id}`,
     })),
+    ...results.clubs.map((c): EntityItem => ({
+      kind: 'entity', key: `club-${c.id}`, label: c.name, sub: 'Club',
+      icon: <Building2 size={16} />, to: `/club/${c.id}`,
+    })),
   ]
 }
 
