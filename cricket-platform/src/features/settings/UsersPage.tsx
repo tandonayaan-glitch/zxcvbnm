@@ -41,7 +41,10 @@ export function UsersPage() {
     try {
       await setUserRoleNotified(uid, role)
       const target = (users.data ?? []).find((u) => u.id === uid)
-      await logAudit(me, 'Changed user role', `${target?.username ?? uid} → ${role}`)
+      await logAudit(me, 'Changed user role', `${target?.username ?? uid} → ${role}`, {
+        before: target?.role,
+        after: role,
+      })
       toast.success('Role updated')
       users.refetch()
     } catch {
@@ -62,6 +65,7 @@ export function UsersPage() {
         me,
         ban ? 'Suspended user' : 'Reinstated user',
         target?.username ?? uid,
+        { before: target?.status, after: ban ? 'banned' : 'active' },
       )
       toast.success(ban ? 'User suspended' : 'User reinstated')
       users.refetch()

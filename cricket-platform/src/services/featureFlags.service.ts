@@ -35,6 +35,10 @@ export async function upsertFlag(input: FlagInput, actor: UserProfile | null): P
 /** Emergency disable — flips `enabled` off without touching rollout/beta settings. */
 export async function disableFlag(flag: FeatureFlag, actor: UserProfile | null): Promise<void> {
   await upsertFlag({ ...flag, enabled: false }, actor)
+  await logAudit(actor, 'featureFlag.emergencyDisable', flag.key, {
+    before: flag.enabled,
+    after: false,
+  })
 }
 
 export async function deleteFlag(key: string, actor: UserProfile | null): Promise<void> {

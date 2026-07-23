@@ -45,7 +45,7 @@ import { listClientErrors } from '@/services/errorLog.service'
 import { scanDataIntegrity, repairIssue } from '@/services/dataIntegrity.service'
 import { platformBackupToJSON } from '@/domain/platformExport'
 import { downloadBlob } from '@/lib/download'
-import { formatDateTime } from '@/lib/format'
+import { formatDateTime, briefUA } from '@/lib/format'
 import type { IntegrityIssue } from '@/types'
 
 const CONFIRM_PHRASE = 'CLEAR LEADERBOARDS'
@@ -396,8 +396,14 @@ export function PlatformToolsPage() {
                     {a.details && (
                       <div className="text-xs text-ink-500 dark:text-ink-400">{a.details}</div>
                     )}
+                    {(a.before !== undefined || a.after !== undefined) && (
+                      <div className="mt-0.5 font-mono text-xs text-ink-500 dark:text-ink-400">
+                        {String(a.before ?? '—')} → {String(a.after ?? '—')}
+                      </div>
+                    )}
                     <div className="mt-0.5 text-xs text-ink-400 dark:text-ink-500">
                       {a.actorName} · {formatDateTime(a.createdAt)}
+                      {a.userAgent && <span title={a.userAgent}> · {briefUA(a.userAgent)}</span>}
                     </div>
                   </div>
                   <Badge tone="gray">{a.actorRole.replace('_', ' ').toLowerCase()}</Badge>

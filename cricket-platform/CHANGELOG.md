@@ -4,6 +4,13 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Audit log detail (Phase 28)
+- Audit entries can now carry a `before`/`after` value and the acting client's `userAgent`. Wired
+  into user role changes, suspend/reinstate, and feature-flag emergency-disable. Platform Tools'
+  audit card shows the diff and a compact "Browser on OS" device summary.
+- IP address deliberately not captured — no backend to observe a real request IP from, and a
+  third-party geo/IP lookup isn't proportionate for this.
+
 ### Added — Media library (Phase 27)
 - New `/admin/media` page: browse every image uploaded to Storage across players/teams/clubs/
   tournaments/users, with a running total (count + size) and delete. Flags images no longer

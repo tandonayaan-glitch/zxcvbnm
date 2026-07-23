@@ -176,6 +176,32 @@ export function formatDateTime(ms?: number | null): string {
   })
 }
 
+/** Collapse a full `navigator.userAgent` string down to "Browser on OS" for compact display —
+ *  the full string is still available via a `title` tooltip wherever this is used. */
+export function briefUA(ua: string): string {
+  const browser = /Edg\//.test(ua)
+    ? 'Edge'
+    : /Chrome\//.test(ua)
+      ? 'Chrome'
+      : /Firefox\//.test(ua)
+        ? 'Firefox'
+        : /Safari\//.test(ua)
+          ? 'Safari'
+          : 'Browser'
+  const os = /Windows/.test(ua)
+    ? 'Windows'
+    : /Mac OS X/.test(ua)
+      ? 'macOS'
+      : /Android/.test(ua)
+        ? 'Android'
+        : /iPhone|iPad/.test(ua)
+          ? 'iOS'
+          : /Linux/.test(ua)
+            ? 'Linux'
+            : 'unknown OS'
+  return `${browser} on ${os}`
+}
+
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   const units = ['KB', 'MB', 'GB']

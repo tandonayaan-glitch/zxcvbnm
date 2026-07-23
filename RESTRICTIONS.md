@@ -290,5 +290,18 @@ reasoning.
     request (a test-harness artifact, not a reproduced app bug; Phase 12's real upload path via an
     actual file picker was already verified when that phase shipped). No test data was created (no
     Storage object exists to clean up — confirmed via a fresh list call after the stuck attempt).
+16. **Audit log detail (Phase 28)** — **Done**, no collision. `AuditLog` gained optional
+    `before`/`after` and `userAgent`; `logAudit()` takes an optional `{before, after}` arg, pruned
+    via the existing `pruneUndefined()` convention when omitted. Wired into the two call sites
+    with a genuine before/after value already in hand at no extra read cost (`UsersPage.tsx`'s
+    role change and suspend/reinstate; `featureFlags.service.ts`'s emergency-disable, now its own
+    `featureFlag.emergencyDisable` audit action). Other callers left as-is — their `details`
+    message already states the full new value, or there's no single before/after field to
+    capture. IP address deferred (§4) — no backend to observe a real request IP from. Verified
+    live via direct service calls against the real database (same master-admin-auth-loss caveat
+    as Phase 26 — Platform Tools needs auth the preview session didn't have): a `logAudit()` call
+    with a diff writes both fields correctly with no Firestore `undefined`-field rejection, a call
+    with no diff correctly omits both while still capturing `userAgent`, and the new `briefUA()`
+    helper parses a real user-agent string into `"Chrome on Windows"`. Test entries cleaned up.
 
 (Appended to as further slices are picked up.)

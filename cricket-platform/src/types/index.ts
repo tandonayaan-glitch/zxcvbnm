@@ -573,6 +573,14 @@ export interface AuditLog {
   id: string
   action: string
   details?: string
+  /** Prior/new value, for actions where a single field changed (e.g. a role or status).
+   *  Free-form (string, number, or plain object) — kept simple since audit entries cover many
+   *  unrelated action types. Omitted for actions with no single before/after value. */
+  before?: string | number | boolean | null
+  after?: string | number | boolean | null
+  /** Client `navigator.userAgent` at the time of the action. IP address is deliberately not
+   *  captured — this is a client-only app with no backend to observe the real request IP. */
+  userAgent?: string
   actorId: string
   actorName: string
   actorRole: Role

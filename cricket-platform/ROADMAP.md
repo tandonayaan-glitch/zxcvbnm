@@ -657,12 +657,30 @@ changes or a human scopes the task down to something finite.
   12's real upload path, exercised through an actual file-picker, was already verified when that
   phase shipped). `tsc`/`npm run build`/lint clean.
 
-## Phase 28 — Audit log detail (before/after, device) 🔧
-- Extend `AuditLog` with optional `before`/`after` snapshot fields and `userAgent`, populated by
-  the existing `logAudit()` callers where a before/after state is already available at the call
-  site. IP address deferred (§4 of `RESTRICTIONS.md`) — a client-only app has no reliable way to
+## Phase 28 — Audit log detail (before/after, device)
+- ✅ `AuditLog` gained optional `before`/`after` (single-field snapshot) and `userAgent`.
+  `logAudit()` takes an optional 4th `{ before, after }` arg — pruned via the existing
+  `pruneUndefined()` convention when omitted, `userAgent` (`navigator.userAgent`) captured
+  automatically on every entry. Wired into the two highest-value call sites where a before/after
+  value was already sitting at the call site with no extra read needed: `UsersPage.tsx`'s role
+  change and suspend/reinstate actions, and `featureFlags.service.ts`'s emergency-disable path
+  (now its own `featureFlag.emergencyDisable` audit action, distinct from a regular save). Other
+  `logAudit()` callers were left as-is — their existing `details` message already states the full
+  new value, and several (Trash move/restore/purge, invitation lifecycle) don't have a genuine
+  single before/after field to capture.
+  IP address deferred (§4 of `RESTRICTIONS.md`) — a client-only app has no reliable way to
   capture a request's real IP without a backend or a third-party geo/IP lookup, and calling out to
   one would leak the acting admin's IP to a third party for no proportionate benefit.
+- Platform Tools' audit log card now shows the before/after diff (monospace, `old → new`) and a
+  compact `Browser on OS` device summary (new `lib/format.ts` `briefUA()`, full string on hover)
+  when present.
+- Verified live against the real database via direct service calls (Platform Tools needs
+  master-admin auth the preview browser's session didn't have, same auth-loss caveat as Phase 26):
+  confirmed a `logAudit()` call with `{before, after}` writes both fields correctly with no
+  `undefined`-field Firestore rejection, confirmed a call with no diff correctly omits both fields
+  while still capturing `userAgent`, and confirmed `briefUA()` parses a real captured user-agent
+  string into `"Chrome on Windows"`. Both test audit entries deleted after. `tsc`/`npm run
+  build`/lint clean.
 
 ## Phase 29 — In-app release notes 🔧
 - A small "What's new" panel (master-admin nav or dashboard) surfacing a curated, hand-written
