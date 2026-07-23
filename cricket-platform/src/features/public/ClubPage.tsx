@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { Building2, Trophy, CalendarRange, Shield } from 'lucide-react'
+import { Building2, Trophy, CalendarRange, Shield, Activity } from 'lucide-react'
 import {
   Avatar,
   Badge,
@@ -7,6 +7,7 @@ import {
   EmptyState,
   PageLoader,
 } from '@/components/ui/primitives'
+import { ActivityFeed } from '@/components/activity/ActivityFeed'
 import { useAsync } from '@/hooks/useAsync'
 import { getClub } from '@/services/clubs.service'
 import { listTeams } from '@/services/teams.service'
@@ -127,6 +128,13 @@ export function ClubPage() {
           ))}
         </div>
       )}
+
+      <div className="mb-3 mt-6 flex items-center gap-2 text-sm font-semibold text-ink-800 dark:text-ink-200">
+        <Activity size={16} /> Activity
+      </div>
+      <Card className="p-4">
+        <ActivityFeed refId={id} max={10} />
+      </Card>
     </div>
   )
 }

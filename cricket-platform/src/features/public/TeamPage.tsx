@@ -21,6 +21,7 @@ import {
   StatCard,
 } from '@/components/ui/primitives'
 import { FollowButton } from '@/components/ui/FollowButton'
+import { ActivityFeed } from '@/components/activity/ActivityFeed'
 import { useAsync } from '@/hooks/useAsync'
 import { getTeam } from '@/services/teams.service'
 import { getPlayersByIds, listPlayers } from '@/services/players.service'
@@ -510,6 +511,13 @@ export function TeamPage() {
           </CardBody>
         </Card>
       </div>
+
+      <Card className="mt-4">
+        <CardHeader title="Activity" />
+        <CardBody>
+          <ActivityFeed refId={id} max={10} />
+        </CardBody>
+      </Card>
     </div>
   )
 }

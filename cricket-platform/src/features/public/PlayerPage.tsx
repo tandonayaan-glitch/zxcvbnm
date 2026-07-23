@@ -2,6 +2,7 @@ import { useParams, Link } from 'react-router-dom'
 import { User, Flag, Star, Award, Target, TrendingUp, Download, FileJson, Printer } from 'lucide-react'
 import { Avatar, Badge, Card, PageLoader, EmptyState } from '@/components/ui/primitives'
 import { FollowButton } from '@/components/ui/FollowButton'
+import { ActivityFeed } from '@/components/activity/ActivityFeed'
 import { Tabs } from '@/components/ui/Tabs'
 import { useMemo, useState } from 'react'
 import { useAsync } from '@/hooks/useAsync'
@@ -239,6 +240,7 @@ export function PlayerPage() {
             : []),
           { key: 'achievements', label: 'Achievements' },
           { key: 'matches', label: 'Match log' },
+          { key: 'activity', label: 'Activity' },
         ]}
       />
 
@@ -548,6 +550,12 @@ export function PlayerPage() {
             </table>
           </Card>
         ))}
+
+      {tab === 'activity' && (
+        <Card className="p-4">
+          <ActivityFeed refId={id} max={15} />
+        </Card>
+      )}
     </div>
   )
 }

@@ -4,6 +4,15 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Activity feeds on entity detail pages (Phase 34)
+- Club, Team, Player, and Tournament pages now embed a scoped `<ActivityFeed refId={id} />` (Team as
+  its own card, Player/Tournament as a new "Activity" tab, Club as a new section) — previously this
+  component's `refId` scoping was only ever used by the Dashboard's platform-wide feed.
+- Documented a real limitation rather than overselling the feature: activity events only tag the
+  *creation* event's own entity id, so a scoped feed today shows mainly its own "X was created"
+  entry, not related match activity — see `ROADMAP.md` Phase 34 and `RESTRICTIONS.md` §4 for the
+  follow-up this opens up.
+
 ### Added — Global search: Clubs (Phase 33)
 - Clubs are now searchable from both the Command Palette and the public search page — previously
   the only first-class entity missing from `globalSearch()`.

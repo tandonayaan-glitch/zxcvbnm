@@ -785,11 +785,27 @@ changes or a human scopes the task down to something finite.
   (`deleteClub()` is a real `deleteDoc`, not the Trash soft-delete, so nothing lingered).
   `tsc`/`npm run build`/lint clean, no new warnings.
 
-## Phase 34 — Activity feeds on entity detail pages 🔧
-- `ActivityFeed` already supports a `refId` prop to scope to one entity (its own doc comment says
-  so), but only the Dashboard's platform-wide feed (`refId` omitted) was ever wired up — Phase 14
-  flagged embedding it on Club/Team/Player/Tournament pages as not done, and it was never picked
-  up since. Add a scoped `<ActivityFeed refId={id} />` to each of those four detail pages.
+## Phase 34 — Activity feeds on entity detail pages
+- `ActivityFeed` already supported a `refId` prop to scope to one entity, but only the Dashboard's
+  platform-wide feed (`refId` omitted) was ever wired up. Added `<ActivityFeed refId={id} />` to all
+  four detail pages: `ClubPage` (new "Activity" section below Tournaments), `TeamPage` (new card
+  below the Squad/Recent-matches grid), and `PlayerPage`/`TournamentPage` (both tab-based — added as
+  a new "Activity" tab alongside their existing tabs, consistent with how each page already
+  presents secondary content).
+- **Known limitation, documented rather than silently shipped**: `logActivity()`'s `refId` is only
+  ever the *creation* event's own entity id (`club_created` → clubId, `team_created` → teamId,
+  etc.) — match lifecycle events (`match_created`/`match_started`/`match_completed`) and milestones
+  (century/half-century/five-wicket-haul) are tagged with the *match* id, not the participating
+  team/tournament id, and milestones use `actorId` for the player rather than `refId` (which
+  `listActivity()` doesn't filter by). So today a scoped feed will typically show just its own
+  single "X was created" entry rather than a live rollup of related match activity. Making these
+  feeds richer would mean multi-tagging every `logActivity()` call site in `matches.service.ts` and
+  `scoring.service.ts` (e.g. a match's activity also referencing both team ids and the tournament
+  id) — a broader change than "wire up the existing prop," so it's flagged in `RESTRICTIONS.md` §4
+  as a genuine follow-up rather than expanded into here.
+- `tsc`/`npm run build` clean. Not click-tested live — same master-admin-auth-loss this session has
+  hit on every recent phase (no working login on any reachable origin); each addition reuses the
+  already-verified `ActivityFeed` component unmodified, only the `refId` prop and placement are new.
 
 ## Phase 35 — Tournament vs Tournament comparison 🔧
 - Phase 19 built Club vs Club and Season vs Season comparison but not Tournament vs Tournament,

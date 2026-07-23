@@ -92,6 +92,7 @@ does not conflict with a still-standing "do not":
 | Hat-trick / award-won / record-broken activity + notification triggers | Deferred, beyond Phase 26's century/half-century/five-wicket-haul | Hat-trick needs consecutive-wicket-ball parsing across the delivery log (meaningfully more complex and risk-prone than a threshold check on a denormalized card). "Record broken" would need comparing this match's figures against every other completed match's, an expensive cross-match query with no existing precedent. "Award won" (Player of the Match) is set manually by an admin post-game, not at a single automatic trigger point like match completion — there's no clean hook for it. All three flagged for a future milestone rather than rushed into Phase 26. |
 | Feature-flag club-specific scoping | Deferred, beyond Phase 21 | Phase 21 built global on/off + percentage rollout + beta-only gating; no flags gate an actual per-club feature yet (no experimental feature exists that would need it) — prepared architecture for the next one, not a current need. |
 | Platform analytics: retention, feature-usage tracking | Deferred, beyond Phase 22/31 | Same root cause as the already-documented DAU/MAU gap — no session/login log exists to compute return-visit retention from, and per-feature usage needs an event-tracking pipeline this app has never had. Phase 22 already discloses what it doesn't measure rather than fabricating a number; the same honesty applies here. |
+| Multi-tagging `logActivity()` so scoped detail-page feeds (Phase 34) show related match activity, not just the entity's own creation event | Deferred, beyond Phase 34 | `refId` is a single field; making a match's activity entries also reference both team ids and the tournament id (and milestones filterable by player) means touching every call site in `matches.service.ts`/`scoring.service.ts` plus deciding whether `ActivityLog` needs a `refIds: string[]` shape change — a schema/call-site change across already-verified services, bigger than "wire up the existing prop." |
 
 Anything not listed above and not explicitly excluded is fair game for slicing — see
 `cricket-platform/ROADMAP.md` for the live phase list.
@@ -368,5 +369,17 @@ reasoning.
     searched for it, confirmed "1 result" + a working "Clubs 1" filter chip + correct rendering,
     hard-deleted the test club after (`deleteClub()` isn't the Trash soft-delete). `tsc`/`npm run
     build`/lint clean.
+21. **Activity feeds on entity detail pages (Phase 34)** — **Done**, no collision. Wired the
+    already-existing `ActivityFeed refId` scoping onto `ClubPage`/`TeamPage`/`PlayerPage`/
+    `TournamentPage`. **Judgment call documented, not silently shipped**: `logActivity()`'s `refId`
+    is only ever set to the *creating* entity's own id — match lifecycle events and milestones are
+    tagged with the match id (milestones use `actorId` for the player, which `listActivity()`
+    doesn't filter on) — so a scoped feed today mostly shows its own single creation entry rather
+    than related match activity. Extending every `logActivity()` call site in `matches.service.ts`/
+    `scoring.service.ts` to multi-tag (team ids, tournament id) would make this richer, but is a
+    broader change than "wire up the existing prop" and is added to §4 below rather than expanded
+    into here. `tsc`/`npm run build` clean; not click-tested live (same master-admin-auth-loss
+    caveat as the last several phases) — every change reuses the already-verified `ActivityFeed`
+    component unmodified.
 
 (Appended to as further slices are picked up.)

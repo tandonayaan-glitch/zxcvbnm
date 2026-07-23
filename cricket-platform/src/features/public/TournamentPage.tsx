@@ -25,6 +25,7 @@ import {
   PageLoader,
 } from '@/components/ui/primitives'
 import { Tabs } from '@/components/ui/Tabs'
+import { ActivityFeed } from '@/components/activity/ActivityFeed'
 import { useAsync } from '@/hooks/useAsync'
 import { useToast } from '@/components/ui/toast'
 import { getTournament } from '@/services/tournaments.service'
@@ -309,6 +310,7 @@ export function TournamentPage() {
           { key: 'awards', label: 'Awards' },
           { key: 'records', label: 'Records' },
           { key: 'teams', label: 'Teams' },
+          { key: 'activity', label: 'Activity' },
         ]}
       />
 
@@ -613,6 +615,12 @@ export function TournamentPage() {
             <p className="text-sm text-ink-500 dark:text-ink-400">No teams added yet.</p>
           )}
         </div>
+      )}
+
+      {tab === 'activity' && (
+        <Card className="p-4">
+          <ActivityFeed refId={id} max={15} />
+        </Card>
       )}
     </div>
   )
