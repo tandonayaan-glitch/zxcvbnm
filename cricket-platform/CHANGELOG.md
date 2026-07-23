@@ -4,6 +4,11 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Error monitoring dashboard (Phase 31)
+- Platform Tools' "Client errors" card now shows a 14-day trend chart, a 7-day total, and the
+  most frequent error messages/routes — aggregated from the same `clientErrors` collection every
+  client already writes to, no new instrumentation.
+
 ### Security review (Phase 30)
 - Documentation pass, no code changes: confirmed no XSS escape hatches
   (`dangerouslySetInnerHTML`/`eval`/`innerHTML =`) and no reverse-tabnabbing risk

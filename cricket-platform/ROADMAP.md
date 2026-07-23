@@ -726,11 +726,30 @@ changes or a human scopes the task down to something finite.
     recorded in §4 from the Phase 26-31 audit) — a client-only implementation of any of these is
     trivially bypassable (clear localStorage/reload) and would be a false sense of security.
 
-## Phase 31 — Error monitoring dashboard 🔧
-- A small aggregation layer on top of the `clientErrors` collection Phase 15 already writes to
-  from every client (not per-session — genuinely cross-user data, no new instrumentation needed):
-  error counts by day and by route, most frequent messages. Added to the existing "Client errors"
-  card on Platform Tools rather than a new page, since the raw list is already there.
+## Phase 31 — Error monitoring dashboard
+- ✅ New pure `domain/errorMonitoring.ts` (`summarizeErrors`) aggregates the `clientErrors`
+  collection Phase 15 already writes to from every client (not per-session — genuinely cross-user
+  data, zero new instrumentation): a 14-day daily count (reuses `platformAnalytics.ts`'s
+  `bucketByDay`, now exported, rather than duplicating the bucketing logic), the 5 most frequent
+  error messages, the 5 most frequent routes, and a 7-day total. Added directly onto the existing
+  "Client errors" card on Platform Tools (raised its fetch cap 50 → 200 for a more representative
+  aggregate) rather than a new page — reuses `GrowthChart`, the same chart component Platform
+  Analytics already uses.
+- This closes the one genuinely-buildable slice of the broader "operational monitoring" ask from
+  the Phase 26-31 audit — storage %, Firestore read counts, cache/render performance, and sync
+  latency remain deferred (§4) since none of them have a data source in this app today and would
+  need new instrumentation with no established payoff, unlike error visibility which was already
+  being collected.
+- Verified the aggregation logic directly against both the real `clientErrors` collection (5
+  total, 1 in the last 7 days, matching expectations) and fabricated edge-case data: confirmed the
+  14-day window correctly excludes an error from 20 days ago, confirmed a malformed (`NaN`)
+  `createdAt` is skipped rather than crashing the day-bucketing (same guard as Phase 22's
+  `bucketByDay` fix) while still being counted in the message/route frequency tallies, and
+  confirmed top-message/top-route counts were exactly right for the fabricated set. No test data
+  was written — this is pure computation over fetched + in-memory fabricated data, nothing to
+  clean up. The UI composition itself (Badge/GrowthChart, all already-verified primitives) wasn't
+  click-tested live — same master-admin-auth-loss caveat as Phases 26/28/29. `tsc`/`npm run
+  build`/lint clean.
 
 ---
 

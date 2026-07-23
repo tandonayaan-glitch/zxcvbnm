@@ -9,7 +9,7 @@ export interface DailyCount {
 
 /** Buckets timestamps into one count per calendar day for the trailing `days` window
  *  (oldest first), including days with zero activity so charts don't have gaps. */
-function bucketByDay(timestamps: number[], days: number): DailyCount[] {
+export function bucketByDay(timestamps: number[], days: number): DailyCount[] {
   const now = Date.now()
   const buckets = new Map<string, number>()
   for (let i = days - 1; i >= 0; i--) {

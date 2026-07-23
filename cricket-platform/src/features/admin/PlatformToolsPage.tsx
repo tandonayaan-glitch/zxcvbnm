@@ -44,6 +44,8 @@ import { logAudit, listAuditLogs } from '@/services/audit.service'
 import { listClientErrors } from '@/services/errorLog.service'
 import { scanDataIntegrity, repairIssue } from '@/services/dataIntegrity.service'
 import { platformBackupToJSON } from '@/domain/platformExport'
+import { summarizeErrors } from '@/domain/errorMonitoring'
+import { GrowthChart } from '@/components/charts/GrowthChart'
 import { downloadBlob } from '@/lib/download'
 import { formatDateTime, briefUA } from '@/lib/format'
 import type { IntegrityIssue } from '@/types'
@@ -55,7 +57,7 @@ export function PlatformToolsPage() {
   const profile = useAuthStore((s) => s.profile)
   const online = useOnlineStatus()
   const audits = useAsync(() => listAuditLogs(50), [])
-  const errors = useAsync(() => listClientErrors(50), [])
+  const errors = useAsync(() => listClientErrors(200), [])
   const integrity = useAsync(scanDataIntegrity, [])
   const diagnostics = useAsync(getPlatformDiagnostics, [])
   const [rebuilding, setRebuilding] = useState(false)
@@ -348,8 +350,48 @@ export function PlatformToolsPage() {
               <EmptyState title="No errors logged" description="Nothing's crashed recently." />
             </div>
           ) : (
-            <div className="divide-y divide-ink-50 dark:divide-ink-800">
-              {(errors.data ?? []).map((e) => (
+            <>
+              {(() => {
+                const summary = summarizeErrors(errors.data ?? [])
+                return (
+                  <div className="space-y-3 border-b border-ink-50 p-4 dark:border-ink-800">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Badge tone={summary.totalLast7Days > 0 ? 'amber' : 'gray'}>
+                        {summary.totalLast7Days} in the last 7 days
+                      </Badge>
+                      {summary.topRoutes.slice(0, 3).map((r) => (
+                        <span
+                          key={r.route}
+                          className="text-xs text-ink-500 dark:text-ink-400"
+                        >
+                          {r.route} ({r.count})
+                        </span>
+                      ))}
+                    </div>
+                    <GrowthChart title="Errors — last 14 days" data={summary.errorsPerDay} />
+                    {summary.topMessages.length > 0 && (
+                      <div>
+                        <div className="mb-1 text-xs font-semibold text-ink-500 dark:text-ink-400">
+                          Most frequent
+                        </div>
+                        <ul className="space-y-1">
+                          {summary.topMessages.map((m) => (
+                            <li
+                              key={m.message}
+                              className="flex items-center justify-between gap-3 text-xs text-ink-600 dark:text-ink-300"
+                            >
+                              <span className="truncate">{m.message}</span>
+                              <Badge tone="gray">{m.count}×</Badge>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+              <div className="divide-y divide-ink-50 dark:divide-ink-800">
+                {(errors.data ?? []).map((e) => (
                 <div key={e.id} className="px-4 py-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -363,8 +405,9 @@ export function PlatformToolsPage() {
                     <Badge tone="red">{e.referenceId}</Badge>
                   </div>
                 </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </>
           )}
         </CardBody>
       </Card>

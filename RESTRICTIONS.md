@@ -326,5 +326,20 @@ reasoning.
     verify from local dev; authoring one blind risks silently breaking production styling or
     Firebase connectivity with no way to catch it here. Flagged as a recommended follow-up for the
     user's own deploy-and-verify cycle.
+19. **Error monitoring dashboard (Phase 31)** — **Done**, no collision. New pure
+    `domain/errorMonitoring.ts` (`summarizeErrors`) aggregates the existing `clientErrors`
+    collection: 14-day daily trend (reused `platformAnalytics.ts`'s `bucketByDay`, exported rather
+    than duplicated), top 5 messages, top 5 routes, 7-day total. Wired onto Platform Tools'
+    existing "Client errors" card (raised its fetch cap 50→200), reusing `GrowthChart`. This
+    closes the one genuinely-buildable piece of the broader "operational monitoring" ask from the
+    Phase 26-31 audit — the rest (storage %, Firestore read counts, cache/render performance, sync
+    latency) stays deferred in §4, no data source for any of it today. Verified the aggregation
+    logic directly: against the real `clientErrors` collection (5 total, 1 in last 7 days) and
+    fabricated edge-case data — confirmed the 14-day window correctly excludes an old error,
+    confirmed a malformed `NaN` timestamp is skipped in day-bucketing without crashing (same guard
+    as Phase 22's `bucketByDay` fix) while still counting toward message/route frequency, and
+    confirmed exact top-message/top-route counts. No test data to clean up (pure computation, no
+    writes). UI composition wasn't click-tested live — same master-admin-auth-loss caveat as
+    Phases 26/28/29.
 
 (Appended to as further slices are picked up.)
