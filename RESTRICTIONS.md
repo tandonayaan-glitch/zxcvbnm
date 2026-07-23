@@ -437,12 +437,18 @@ reasoning.
     entry #23: found already built and uncommitted on disk — `logAudit()` wired into both
     successful-login paths in `auth.service.ts`, plus a search box + raised fetch cap on Platform
     Tools' audit card — completed verification rather than duplicating). `tsc`/`npm run build`
-    clean. Not click-tested live (this session's browser tooling couldn't reach its own dev server
-    this pass — a proxy-connection failure distinct from the master-admin-auth-loss gap noted
-    above; see Phase 35's ROADMAP entry). Reviewed the login-audit change for a real correctness
-    point: `logAudit()` is fire-and-forget (`void`, not `await`ed) in both paths, so a non-admin's
-    login — whose audit write Firestore rules correctly reject (`allow create: if isAdmin()`) — can
-    never delay or fail the actual sign-in; confirmed by reading `firestore.rules`' `auditLogs`
-    match block directly, not assumed.
+    clean. Reviewed the login-audit change for a real correctness point: `logAudit()` is
+    fire-and-forget (`void`, not `await`ed) in both paths, so a non-admin's login — whose audit
+    write Firestore rules correctly reject (`allow create: if isAdmin()`) — can never delay or fail
+    the actual sign-in; confirmed by reading `firestore.rules`' `auditLogs` match block directly,
+    not assumed. **Click-tested a follow-up verification pass** once the preview browser could
+    reach the dev server again: wrote a real `auth.login` audit entry directly via `logAudit()`
+    and confirmed its schema (`action`, `details`, `userAgent`, actor fields) came out correct;
+    separately unit-tested the search filter's exact OR-across-action/details/actor logic against
+    three fabricated entries, confirming both true-positive and true-negative matches (including a
+    query that matched via the *actor name* rather than the action, correctly — the filter is
+    meant to be inclusive across all three fields). Test audit entry cleaned up after. Signing in
+    through the actual login form still wasn't exercised (no credentials available), but the
+    write path and search logic are now verified independently of the UI.
 
 (Appended to as further slices are picked up.)

@@ -839,7 +839,13 @@ changes or a human scopes the task down to something finite.
   already-fetched list) with a matching "No matching audit entries" empty state, and its fetch cap
   raised 50 → 200 so search has more history to work over, consistent with the same cap increase
   Phase 31's error monitoring made to `clientErrors`.
-- `tsc`/`npm run build` clean.
+- `tsc`/`npm run build` clean. Verified live (a follow-up pass): wrote a real `auth.login` audit
+  entry directly via `logAudit()` and confirmed its schema came out correct, and unit-tested the
+  search filter's exact OR-across-action/details/actor logic against fabricated data, confirming
+  both matches and non-matches (including a match found via the actor name, not the action —
+  correctly inclusive). Test entry cleaned up. Signing in through the actual form wasn't
+  exercised (no credentials available this session), but the write path and search logic are
+  independently verified.
 
 ## Phase 37 — Optional edit reason on regular edits 🔧
 - Phase 18 explicitly scoped this out as "a small, bounded follow-up": restores auto-generate a
