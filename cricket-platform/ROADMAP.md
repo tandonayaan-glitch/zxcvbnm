@@ -682,10 +682,21 @@ changes or a human scopes the task down to something finite.
   string into `"Chrome on Windows"`. Both test audit entries deleted after. `tsc`/`npm run
   build`/lint clean.
 
-## Phase 29 — In-app release notes 🔧
-- A small "What's new" panel (master-admin nav or dashboard) surfacing a curated, hand-written
-  subset of `CHANGELOG.md`, plus bumping `package.json` off the placeholder `0.0.0`. Read-only,
-  no new data model.
+## Phase 29 — In-app release notes
+- ✅ New `WhatsNewButton` in the header (any signed-in user, next to the theme toggle): opens a
+  small panel of curated, hand-written highlights (`lib/releaseNotes.ts` — read-only static data,
+  no new Firestore collection), with a dot badge that clears once the current version has been
+  opened (`localStorage`, same low-stakes client-state pattern as `favStore`'s follows). Bumped
+  `package.json` off the placeholder `0.0.0` to `1.0.0`, matching the curated notes' version tag.
+  Deliberately a small hand-picked subset, not a raw dump of every internal phase in
+  `CHANGELOG.md` — that file stays the full engineering record; this is what a user would
+  actually want to know about.
+- Verified: `lib/releaseNotes.ts`'s data shape and the `localStorage` seen/unseen logic directly
+  (module loads, version matches, read/write/clear all behave correctly). The button itself lives
+  inside `AppShell` (signed-in-only), so a live click-through wasn't possible without master-admin
+  auth the preview session didn't have (same caveat as Phases 26/28) — the component only uses
+  already-verified primitives (`Modal`, the same one `InvitationsPage` already exercises live) and
+  is otherwise straightforward, type-checked JSX. `tsc`/`npm run build`/lint clean.
 
 ## Phase 30 — Security hardening review 🔧
 - A documentation pass, not new code: confirms no `dangerouslySetInnerHTML` exists anywhere in

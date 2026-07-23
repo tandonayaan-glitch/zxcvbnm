@@ -303,5 +303,14 @@ reasoning.
     with a diff writes both fields correctly with no Firestore `undefined`-field rejection, a call
     with no diff correctly omits both while still capturing `userAgent`, and the new `briefUA()`
     helper parses a real user-agent string into `"Chrome on Windows"`. Test entries cleaned up.
+17. **In-app release notes (Phase 29)** — **Done**, no collision. New header `WhatsNewButton`
+    (any signed-in user) opening a panel of curated highlights (`lib/releaseNotes.ts`, static,
+    read-only — no new Firestore collection), with a `localStorage`-backed seen/unseen dot badge.
+    `package.json` bumped `0.0.0` → `1.0.0`. Deliberately a small hand-picked subset of
+    `CHANGELOG.md`, not a raw dump of every internal phase — that file remains the full
+    engineering record. Verified the data module and localStorage logic directly; the button
+    itself lives inside the signed-in `AppShell`, so a live click-through wasn't possible without
+    master-admin auth (same caveat as Phases 26/28) — it only composes already-verified
+    primitives (`Modal`) and passed `tsc`/build clean.
 
 (Appended to as further slices are picked up.)

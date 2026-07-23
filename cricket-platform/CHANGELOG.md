@@ -4,6 +4,10 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — In-app release notes (Phase 29)
+- New "What's new" button in the header opens a small panel of curated highlights, with a dot
+  badge that clears once viewed. Bumped `package.json` off the placeholder `0.0.0` to `1.0.0`.
+
 ### Added — Audit log detail (Phase 28)
 - Audit entries can now carry a `before`/`after` value and the acting client's `userAgent`. Wired
   into user role changes, suspend/reinstate, and feature-flag emergency-disable. Platform Tools'

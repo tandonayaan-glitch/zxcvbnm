@@ -32,6 +32,7 @@ import { Avatar } from '@/components/ui/primitives'
 import { BackgroundControl } from '@/components/background/BackgroundControl'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { NotificationBell } from '@/components/layout/NotificationBell'
+import { WhatsNewButton } from '@/components/layout/WhatsNewButton'
 import { CommandPalette, openCommandPalette } from '@/components/layout/CommandPalette'
 import type { Role } from '@/types'
 
@@ -257,6 +258,7 @@ export function AppShell() {
             </button>
             <BackgroundControl />
             <ThemeToggle />
+            <WhatsNewButton />
             <NotificationBell />
             <div className="text-right">
               <div className="text-sm font-semibold text-ink-900 dark:text-ink-50">
