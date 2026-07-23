@@ -24,6 +24,7 @@ import {
   Search,
   Flag,
   Mail,
+  Image,
 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { useAuthStore, isAdmin, canScore } from '@/store/authStore'
@@ -91,6 +92,12 @@ const NAV: NavItem[] = [
     to: '/admin/invitations',
     label: 'Invitations',
     icon: <Mail size={18} />,
+    roles: ['MASTER_ADMIN'],
+  },
+  {
+    to: '/admin/media',
+    label: 'Media Library',
+    icon: <Image size={18} />,
     roles: ['MASTER_ADMIN'],
   },
   {
