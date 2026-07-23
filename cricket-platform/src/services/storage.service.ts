@@ -1,4 +1,4 @@
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
+import { ref, uploadBytes, getDownloadURL, deleteObject, listAll, getMetadata } from 'firebase/storage'
 import { storage } from '@/lib/firebase'
 import { genId } from '@/lib/collections'
 
@@ -60,4 +60,30 @@ export async function deleteUploadedImage(url: string): Promise<void> {
   } catch {
     /* ignore */
   }
+}
+
+export interface StoredImage {
+  path: string
+  url: string
+  size: number
+  createdAt: number
+}
+
+/** List every image under a given upload folder (`players`, `teams`, `clubs`, `tournaments`,
+ *  `users`), for the media library's housekeeping view. */
+export async function listFolderImages(folder: string): Promise<StoredImage[]> {
+  const folderRef = ref(storage, folder)
+  const { items } = await listAll(folderRef)
+  const results = await Promise.all(
+    items.map(async (item) => {
+      const [url, meta] = await Promise.all([getDownloadURL(item), getMetadata(item)])
+      return {
+        path: item.fullPath,
+        url,
+        size: meta.size,
+        createdAt: new Date(meta.timeCreated).getTime(),
+      }
+    }),
+  )
+  return results.sort((a, b) => b.createdAt - a.createdAt)
 }
