@@ -2,9 +2,16 @@
 
 Single source of truth for implementation constraints, instruction precedence, architectural
 decisions, deferred work, and guidance for future sessions on **CricketHub**
-(`cricket-platform/`). Keep this file synchronized with `cricket-platform/ROADMAP.md` and
-`cricket-platform/CHANGELOG.md` — update it the moment a new restriction, conflict, deferral, or
-architectural decision is made, without pausing implementation work to do so.
+(`cricket-platform/`). Keep this file synchronized with `cricket-platform/ROADMAP.md`,
+`cricket-platform/ROADMAP_V2.md`, and `cricket-platform/CHANGELOG.md` — update it the moment a new
+restriction, conflict, deferral, or architectural decision is made, without pausing implementation
+work to do so.
+
+**Two roadmaps exist**: `ROADMAP.md` is the original "commercial platform" feature expansion (32
+phases, all done). `ROADMAP_V2.md` (started per explicit user request) is a follow-on
+cleanup/hardening/polish pass — not new feature surface, but making the existing surface more
+solid (repo cleanup, media management, notification polish, UI/UX, performance, production
+hardening, dev tooling). Every constraint/precedent below applies to both equally.
 
 ---
 
@@ -378,8 +385,24 @@ reasoning.
     than related match activity. Extending every `logActivity()` call site in `matches.service.ts`/
     `scoring.service.ts` to multi-tag (team ids, tournament id) would make this richer, but is a
     broader change than "wire up the existing prop" and is added to §4 below rather than expanded
-    into here. `tsc`/`npm run build` clean; not click-tested live (same master-admin-auth-loss
-    caveat as the last several phases) — every change reuses the already-verified `ActivityFeed`
-    component unmodified.
+    into here. `tsc`/`npm run build` clean. **Click-tested live** (a follow-up verification pass,
+    since these four pages are public routes and don't need the master-admin auth this session has
+    repeatedly lost): `/player/prs4`'s Activity tab, `/tournament/seedT1`'s Activity tab, and
+    `/team/{id}`'s Activity card all rendered correctly, each showing the expected "No activity
+    yet." empty state scoped to that entity. `computer.left_click` didn't register on the tab
+    buttons (a JS-dispatched `.click()` worked instead) — a tooling quirk, not an app bug.
+22. **`ROADMAP_V2.md` Phase 1 — Repository cleanup** — **Done**, no collision. Removed the dead
+    `listMatches(opts)` from `matches.service.ts` (verified zero callers anywhere, including its
+    own file) whose shape — equality `where()` filters combined with `orderBy` on a different
+    field — would have thrown a missing-composite-index error the first time anyone actually
+    called it; also removed its now-unused `limit`/`MatchStatus` imports. New
+    `firestore.indexes.json` (empty, registered in `firebase.json`) makes "this app needs zero
+    composite indexes" a checked-in decision rather than a silent absence. **A broader grep-based
+    dead-export sweep was attempted and abandoned** — same-file-excluding text matching flagged 22
+    "unused" functions, but spot-checking showed most are false positives (called internally by a
+    sibling exported function in the same file, e.g. `trash.service.ts`'s `bulkRestore()` calling
+    `restoreFromTrash()`). Nothing from that list was deleted. A trustworthy version of this sweep
+    needs a real TS usage analyzer (e.g. `ts-prune`), not a grep script — noted as a real gap, not
+    attempted this pass since introducing a new dev-tooling dependency wasn't itself in scope yet.
 
 (Appended to as further slices are picked up.)

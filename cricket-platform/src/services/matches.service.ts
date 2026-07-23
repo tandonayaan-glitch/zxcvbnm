@@ -9,7 +9,6 @@ import {
   query,
   where,
   orderBy,
-  limit,
   onSnapshot,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
@@ -18,7 +17,6 @@ import { defaultScorecardConfig } from '@/lib/defaults'
 import { logActivity } from './activity.service'
 import type {
   Match,
-  MatchStatus,
   MatchTeamRef,
   ScorecardConfig,
   TossInfo,
@@ -108,29 +106,6 @@ export async function updateMatch(
 
 export async function deleteMatch(id: string): Promise<void> {
   await deleteDoc(doc(db, COL.matches, id))
-}
-
-export async function listMatches(opts?: {
-  status?: MatchStatus
-  tournamentId?: string
-  publicOnly?: boolean
-  max?: number
-}): Promise<Match[]> {
-  const clauses = []
-  if (opts?.status) clauses.push(where('status', '==', opts.status))
-  if (opts?.tournamentId)
-    clauses.push(where('tournamentId', '==', opts.tournamentId))
-  if (opts?.publicOnly) clauses.push(where('isPublic', '==', true))
-  const q = query(
-    matchesCol(),
-    ...clauses,
-    orderBy('createdAt', 'desc'),
-    ...(opts?.max ? [limit(opts.max)] : []),
-  )
-  const snap = await getDocs(q)
-  return snap.docs
-    .map((d) => ({ id: d.id, ...d.data() }) as Match)
-    .filter((m) => !m.deletedAt)
 }
 
 /** All matches, newest first (admin list, sorted client-side to avoid index needs). */
