@@ -80,6 +80,15 @@ does not conflict with a still-standing "do not":
 | Dashboard widget customization (rearrange/hide/resize/save layouts) | Deferred (not yet scheduled) | Real, bounded, non-conflicting feature — a legitimate candidate for a future slice, just not picked up yet. Not blocked by any restriction. Command palette and saved filters (the other two originally listed here) are now done — see the slice log. |
 | Exhaustive accessibility audit | Already `🚫` in ROADMAP.md (Phase 9) | Open-ended by nature; unchanged. |
 | Real email/SMS delivery for invitations | Deferred | This is a client-only Firebase app with no backend to send mail from (no Cloud Functions, no SMTP/SES key). The invitation system (Phase 25) is fully functional via an in-app shareable link and the existing notification center instead — an invitee sees it in-app or gets a copy-able link from the master admin. Wiring a real transactional-email provider is a bounded future add-on, not invented speculatively. |
+| Background job system (async queue + progress UI for stats recompute, exports, reports) | Deferred | Same reasoning as the event-bus deferral above: no Cloud Functions/Admin SDK here, so a real job queue needs a server to survive a closed tab; a fake client-side one would silently drop in-flight work. Existing long operations (recompute stats, exports) already run synchronously and complete quickly at this app's scale. |
+| Full operational/performance monitoring (storage usage %, Firestore read counts, cache efficiency, render performance, sync latency, "platform health score") | Deferred, beyond a scoped error dashboard (Phase 31) | Real APM needs either a backend to aggregate across clients or a third-party vendor (Sentry/Datadog) this project has no key for. The one piece of this ask that *is* genuinely buildable without new infra — error-rate aggregation from the `clientErrors` collection Phase 15 already writes to from every client — is scoped into Phase 31. The rest (storage %, read-count instrumentation, cache/render metrics) has no data source today and would need new instrumentation added throughout the app for uncertain payoff. |
+| Rate limiting, CSRF protection, account lockout, suspicious-activity detection | Deferred (documented instead, Phase 30) | A client-only implementation of any of these (e.g. a localStorage-based lockout counter) is trivially bypassable by clearing storage or reloading, and would be a false sense of security — worse than not building it, same reasoning as the financial-ledger deferral. CSRF specifically doesn't apply here: Firebase Auth uses bearer tokens, not cookies, so there's no ambient credential for a forged cross-site request to ride on. XSS is covered by React's default JSX escaping — confirmed via grep, no `dangerouslySetInnerHTML` anywhere in `src/`. Real rate limiting/lockout needs a backend (Cloud Functions + Firestore security rules working together, or a WAF) to be tamper-proof — revisit if/when this project gets one. |
+| Custom tournament registration forms (custom fields, payment-status tracking, notes/attachments) | Deferred | Payment-status tracking is financial (already deferred above). The custom-field builder itself is a sizable new subsystem (dynamic field types + a validation engine) with no existing self-serve tournament-registration flow to attach it to today — bigger than a bounded slice; flagged for a future milestone with the user rather than invented speculatively. |
+| Media library scope beyond a housekeeping view (galleries, sponsor-graphic categories, document storage, duplicate-upload prevention) | Deferred, beyond Phase 27 | Phase 27 covers the concrete, bounded ask (browse/delete already-uploaded images in one place). A full DAM-style content library with categorization and document storage has no current content type driving it — nothing in this app produces sponsor graphics or documents today. |
+| Push notification (FCM) architecture ("prepare for future push notifications") | Deferred | Building unused scaffolding (service worker, VAPID keys) with no backend to send *from* and nothing wired to trigger it would be exactly the kind of half-finished implementation `CLAUDE.md` warns against. Revisit only when a concrete push-sending mechanism (a backend, or a third-party push service) is actually being added. |
+| Disaster recovery: restore-from-backup / rollback tooling | Deferred, explicitly flagged as high-risk | Phase 1's JSON platform-backup export already exists. An automated one-click *restore* (overwrite/merge live Firestore data from an uploaded JSON file) is a destructive, hard-to-reverse operation with no dry-run/diff preview and no undo beyond Trash's soft-delete (which doesn't cover overwrites) — building this speculatively inside an autonomous slice pass, without the user explicitly scoping the exact safety mechanism first (dry-run diff, confirmation gates, partial-restore scoping), risks catastrophic, unrecoverable data loss if ever misused. Requires explicit user sign-off before any implementation. |
+| Database migration tooling (schema-evolution, rollback, migration history, validation) | Deferred | The project already avoids needing this via an additive-optional-fields convention for every schema change made this session (new fields are always optional, old docs read fine without them). Building dedicated migration tooling is an infrastructure decision for the user to make, not one to bootstrap unasked. |
+| Invitation system extended to new-player / "club member" invites | Deferred | Phase 25 covers inviting an *existing* user to an admin-side role. Inviting a brand-new person (no account yet) to become a player, or a "club member" concept, doesn't exist in the data model today (`Club` has no membership list) and is a different feature (self-service account creation/claiming tied to a `Player` record) — bigger scope than a bounded follow-up to Phase 25; flagged for a future milestone. |
 
 Anything not listed above and not explicitly excluded is fair game for slicing — see
 `cricket-platform/ROADMAP.md` for the live phase list.
@@ -235,5 +244,34 @@ reasoning.
     flipped `VIEWER`→`SCORER`, inviter notified), decline, cancel, and resend (expiry extended) via
     direct service calls, and confirmed `effectiveStatus()` returns `expired` for a past-due doc.
     All test invitations, the test notification, and the test user's role were cleaned up after.
+13. **Re-audit (post slices 2-12) → Phases 26-31 planned** — Cross-referenced `fps/add_these.md`
+    against `RESTRICTIONS.md` §7 and `ROADMAP.md`'s ✅ markers (delegated the raw diff to an
+    Explore agent to keep the 1792-line spec file out of the main context window; judgment on what
+    to build vs. defer stayed with me). Found 12 genuinely-unaddressed areas; scoped 6 into bounded
+    Phase 26-31 slices (activity milestones, media library, audit log detail, in-app release notes,
+    a security-hardening documentation pass, error monitoring) and explicitly deferred the rest to
+    §4's table (background job system, full ops/performance monitoring beyond a scoped error
+    dashboard, rate limiting/CSRF/lockout, custom tournament registration forms, push notification
+    architecture, disaster-recovery restore tooling, database migrations, player/club-member
+    invites) — each with its own reasoning, mostly "needs a real backend this client-only app
+    doesn't have" or "would be a false sense of security if faked client-side."
+14. **Activity feed milestones + type filter (Phase 26)** — **Done**, no collision. New
+    `domain/milestones.ts` (pure) detects centuries/half-centuries/five-wicket hauls from a
+    completed match's `battingCard`/`bowlingCard`; wired into `scoring.service.ts`'s
+    `notifyMatchDone()`. **Found and fixed a real bug while wiring this in**: `notifyMatchDone` was
+    reading `match.innings`, but at two of its four call sites the just-computed final innings
+    state lives in a local variable not yet reflected on `match` — a milestone on the innings-
+    ending ball would have been silently missed. Fixed by threading the fresher local array through
+    explicitly. `ActivityFeed` gained an optional `filterable` chip row, enabled on the Dashboard.
+    Verified live end-to-end against the real database via the actual `completeMatch()` service
+    call (not a reimplementation): both milestone types logged correctly with real player
+    names/values, and the linked-user notification fired with the right copy. All test data cleaned
+    up. **Note**: the `filterable` chip UI itself was verified by code review + `tsc`'s
+    exhaustiveness check on the two new `Record<ActivityLog['type'], …>` maps, not a live click-
+    through — the preview browser's authenticated session was lost when the dev server restarted
+    mid-slice, and no login credentials were available to re-establish it. Per the standing safety
+    rules (`Creating accounts` is a prohibited action-category, not something to route around),
+    self-registering a new account via the signup form to work around this was correctly not
+    attempted.
 
 (Appended to as further slices are picked up.)

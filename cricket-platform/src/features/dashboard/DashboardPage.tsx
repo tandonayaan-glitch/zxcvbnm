@@ -198,7 +198,7 @@ export function DashboardPage() {
               }
             />
             <CardBody>
-              <ActivityFeed max={12} />
+              <ActivityFeed max={12} filterable />
             </CardBody>
           </Card>
         </div>

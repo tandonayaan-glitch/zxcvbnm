@@ -14,6 +14,8 @@ import { COL } from '@/lib/collections'
 import { trackedWrite } from '@/store/writeQueueStore'
 import { notify } from './notifications.service'
 import { logActivity } from './activity.service'
+import { getPlayersByIds } from './players.service'
+import { detectMilestones, type MilestoneType } from '@/domain/milestones'
 import {
   applyBall,
   newInnings,
@@ -28,8 +30,17 @@ import type {
   MatchResult,
 } from '@/types'
 
-/** Notify whoever scored/owns the match that it's finished — deduped if the same person. */
-function notifyMatchDone(match: Match, result: MatchResult) {
+const MILESTONE_LABEL: Record<MilestoneType, (value: number) => string> = {
+  century: (v) => `scored a century (${v} runs)`,
+  half_century: (v) => `scored a half-century (${v} runs)`,
+  five_wicket_haul: (v) => `took a five-wicket haul (${v}/-)`,
+}
+
+/** Notify whoever scored/owns the match that it's finished — deduped if the same person.
+ *  Also detects batting/bowling milestones from the final innings state and logs/notifies
+ *  those. `innings` should be the just-updated innings array when the caller has one locally
+ *  (it may not yet be reflected on `match.innings`); falls back to `match.innings` otherwise. */
+async function notifyMatchDone(match: Match, result: MatchResult, innings?: InningsState[]) {
   const recipients = new Set([match.scorerId, match.ownerId].filter((id): id is string => !!id))
   for (const uid of recipients) {
     void notify(uid, 'match', 'Match completed', `${match.teamA.name} vs ${match.teamB.name}: ${result.summary}`, `/match/${match.id}`)
@@ -39,6 +50,32 @@ function notifyMatchDone(match: Match, result: MatchResult) {
     `${match.teamA.name} vs ${match.teamB.name}: ${result.summary}`,
     { refId: match.id },
   )
+
+  const milestones = detectMilestones({ ...match, innings: innings ?? match.innings })
+  if (milestones.length === 0) return
+  try {
+    const players = await getPlayersByIds(milestones.map((m) => m.playerId))
+    const nameOf = (id: string) => players.find((p) => p.id === id)?.displayName ?? 'A player'
+    for (const m of milestones) {
+      const name = nameOf(m.playerId)
+      void logActivity(m.type, `${name} ${MILESTONE_LABEL[m.type](m.value)}`, {
+        actorId: m.playerId,
+        refId: match.id,
+      })
+      const player = players.find((p) => p.id === m.playerId)
+      if (player?.linkedUserId) {
+        void notify(
+          player.linkedUserId,
+          'player',
+          m.type === 'five_wicket_haul' ? 'Five-wicket haul!' : 'Milestone reached!',
+          `You ${MILESTONE_LABEL[m.type](m.value)} in ${match.teamA.name} vs ${match.teamB.name}.`,
+          `/match/${match.id}`,
+        )
+      }
+    }
+  } catch (e) {
+    console.error('milestone detection failed', e)
+  }
 }
 
 /* -------------------------- helpers -------------------------- */
@@ -215,7 +252,7 @@ export async function recordBall(
   batch.update(doc(db, COL.matches, match.id), patch as Record<string, unknown>)
   await trackedWrite(`Ball ${args.sequence}`, batch.commit())
 
-  if (patch.status === 'completed' && patch.result) notifyMatchDone(match, patch.result)
+  if (patch.status === 'completed' && patch.result) void notifyMatchDone(match, patch.result, innings)
 
   return { delivery, innings: state }
 }
@@ -292,7 +329,7 @@ export async function endInnings(match: Match): Promise<void> {
     patch.result = computeResult(match, innings)
   }
   await updateDoc(doc(db, COL.matches, match.id), patch as Record<string, unknown>)
-  if (patch.status === 'completed' && patch.result) notifyMatchDone(match, patch.result)
+  if (patch.status === 'completed' && patch.result) void notifyMatchDone(match, patch.result, innings)
 }
 
 export async function completeMatch(
@@ -306,7 +343,7 @@ export async function completeMatch(
     result: finalResult,
     updatedAt: Date.now(),
   })
-  notifyMatchDone(match, finalResult)
+  void notifyMatchDone(match, finalResult)
 }
 
 export async function abandonMatch(match: Match): Promise<void> {
@@ -320,7 +357,7 @@ export async function abandonMatch(match: Match): Promise<void> {
     result,
     updatedAt: Date.now(),
   })
-  notifyMatchDone(match, result)
+  void notifyMatchDone(match, result)
 }
 
 export async function setPlayerOfTheMatch(matchId: string, playerId: string) {

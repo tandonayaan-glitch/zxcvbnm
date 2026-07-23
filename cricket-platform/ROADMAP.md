@@ -600,6 +600,69 @@ changes or a human scopes the task down to something finite.
   notification, and the test user's role were cleaned up afterward. `tsc`/`npm run build`/lint clean
   (no new warnings).
 
+## Phase 26 — Activity feed milestones + type filter
+- ✅ Detect centuries, half-centuries, and five-wicket hauls from a completed match's denormalized
+  innings state (`domain/milestones.ts`, pure — scans `battingCard`/`bowlingCard`, no new I/O),
+  wired into `scoring.service.ts`'s existing `notifyMatchDone()` hook. Fixed a real staleness bug
+  found while wiring this in: `notifyMatchDone` was reading `match.innings`, but at two of its four
+  call sites (`recordBall`, `endInnings`) the just-computed final innings state lives in a local
+  variable, not yet reflected on the `match` object passed in — a milestone reached on the very
+  last ball of an innings would have been silently missed. Fixed by threading the fresher local
+  `innings` array through explicitly. Logs a new `ActivityLog` entry per milestone and notifies the
+  player directly if they have a `linkedUserId`. Hat-trick detection deferred (needs consecutive-
+  wicket-ball parsing across the delivery log — meaningfully more complex and risk-prone than a
+  threshold check; not worth rushing into this pass).
+- `ActivityFeed` gains an optional `filterable` chip row (per-type filter, client-side over the
+  already-fetched page), enabled on the Dashboard's feed — addresses the "allow filtering" ask
+  without inventing a new dedicated activity page.
+- Verified live end-to-end against the real database: created a throwaway test player with a
+  `linkedUserId`, fabricated a completed match with a 105-run not-out innings for that player and
+  a 5-wicket bowling spell for a real existing player, called the actual `completeMatch()` service
+  function (not a reimplementation), and confirmed both a `century` and `five_wicket_haul`
+  activity entry were logged with the correct player names/values, and that the century notified
+  the linked user correctly ("You scored a century (105 runs)..."). All test data (player, match,
+  activity entries, notification) cleaned up after. **The `filterable` chip UI itself was verified
+  by code review + `tsc`'s exhaustiveness check on `TYPE_ICON`/`TYPE_LABEL`** (both are
+  `Record<ActivityLog['type'], …>`, so a missing key for the new types would already be a compile
+  error) rather than a live click-through — the preview browser's authenticated session was lost
+  when the dev server restarted mid-session and no login credentials were available to re-establish
+  it; per the standing safety rules, creating a new account via the signup form to work around that
+  wasn't an appropriate substitute. `tsc`/`npm run build`/lint all clean.
+
+## Phase 27 — Media library 🔧
+- New `/admin/media` page: a browsable list of every image already uploaded to Firebase Storage
+  across players/teams/clubs/tournaments (Phase 12's inline upload fields), with delete. Reuses
+  existing Storage upload infra — no new upload UI. Closes the "centralized media manager" ask at
+  the scope this app actually needs (a housekeeping/cleanup view), not a full DAM with galleries/
+  sponsor-graphic categories/document storage, which nothing in this app currently produces.
+
+## Phase 28 — Audit log detail (before/after, device) 🔧
+- Extend `AuditLog` with optional `before`/`after` snapshot fields and `userAgent`, populated by
+  the existing `logAudit()` callers where a before/after state is already available at the call
+  site. IP address deferred (§4 of `RESTRICTIONS.md`) — a client-only app has no reliable way to
+  capture a request's real IP without a backend or a third-party geo/IP lookup, and calling out to
+  one would leak the acting admin's IP to a third party for no proportionate benefit.
+
+## Phase 29 — In-app release notes 🔧
+- A small "What's new" panel (master-admin nav or dashboard) surfacing a curated, hand-written
+  subset of `CHANGELOG.md`, plus bumping `package.json` off the placeholder `0.0.0`. Read-only,
+  no new data model.
+
+## Phase 30 — Security hardening review 🔧
+- A documentation pass, not new code: confirms no `dangerouslySetInnerHTML` exists anywhere in
+  `src/` (grepped — none found; React's default JSX escaping already covers XSS for this app), and
+  records that CSRF doesn't apply to this app's auth model (Firebase Auth bearer tokens, not
+  cookies — there's no ambient credential for a forged cross-site request to ride on). Rate
+  limiting, account lockout, and suspicious-activity detection are recorded as deferred in
+  `RESTRICTIONS.md` §4 — a client-only implementation of any of these is trivially bypassable
+  (clear localStorage/reload) and would be a false sense of security, worse than not building it.
+
+## Phase 31 — Error monitoring dashboard 🔧
+- A small aggregation layer on top of the `clientErrors` collection Phase 15 already writes to
+  from every client (not per-session — genuinely cross-user data, no new instrumentation needed):
+  error counts by day and by route, most frequent messages. Added to the existing "Client errors"
+  card on Platform Tools rather than a new page, since the raw list is already there.
+
 ---
 
 ### Notes

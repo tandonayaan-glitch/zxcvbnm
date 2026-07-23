@@ -4,6 +4,15 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Activity feed milestones + filter (Phase 26)
+- Completed matches now detect centuries, half-centuries, and five-wicket hauls
+  (`domain/milestones.ts`, pure) and log them to the activity feed, notifying the player directly
+  if their player record has a linked user account.
+- Fixed a real staleness bug found during wiring: match-completion notifications were reading a
+  stale `match.innings` at two of four call sites, which could have silently missed a milestone
+  reached on the innings-ending ball.
+- `ActivityFeed` gained an optional per-type filter chip row, enabled on the Dashboard.
+
 ### Added — Invitation system (Phase 25)
 - New `/admin/invitations` (master-admin): offer an existing user a role (`ADMIN`, `SCORER`,
   `TEAM_MANAGER`, `TOURNAMENT_MANAGER`) via a shareable link (`/invite/{code}`, public route),

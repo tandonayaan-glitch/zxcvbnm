@@ -533,6 +533,9 @@ export interface ActivityLog {
     | 'team_created'
     | 'tournament_created'
     | 'club_created'
+    | 'century'
+    | 'half_century'
+    | 'five_wicket_haul'
   message: string
   actorId?: string
   /** The created/affected entity's own id — lets a feed scope to one team/player/tournament/club. */
