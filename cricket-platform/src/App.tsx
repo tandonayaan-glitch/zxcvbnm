@@ -122,6 +122,11 @@ const InvitationsPage = lazy(() =>
 const InvitePage = lazy(() =>
   import('@/features/misc/InvitePage').then((m) => ({ default: m.InvitePage })),
 )
+const MediaLibraryPage = lazy(() =>
+  import('@/features/admin/MediaLibraryPage').then((m) => ({
+    default: m.MediaLibraryPage,
+  })),
+)
 const AccountPage = lazy(() =>
   import('@/features/account/AccountPage').then((m) => ({ default: m.AccountPage })),
 )
@@ -324,6 +329,14 @@ export default function App() {
             element={
               <ProtectedRoute roles={['MASTER_ADMIN']}>
                 <InvitationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/media"
+            element={
+              <ProtectedRoute roles={['MASTER_ADMIN']}>
+                <MediaLibraryPage />
               </ProtectedRoute>
             }
           />
