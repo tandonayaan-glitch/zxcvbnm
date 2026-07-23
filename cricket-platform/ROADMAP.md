@@ -810,10 +810,23 @@ changes or a human scopes the task down to something finite.
   scoped to that entity (`computer.left_click` didn't register on the tab buttons — a JS-dispatched
   click worked instead, a known tooling quirk this session, not an app bug).
 
-## Phase 35 — Tournament vs Tournament comparison 🔧
+## Phase 35 — Tournament vs Tournament comparison
 - Phase 19 built Club vs Club and Season vs Season comparison but not Tournament vs Tournament,
-  even though Tournament is a first-class entity (unlike Venue, deliberately skipped there).
-  `domain/tournamentCompare.ts` + `/compare/tournaments` page, following the same pattern.
+  even though Tournament is a first-class entity (unlike Venue, deliberately skipped there). Added
+  `domain/tournamentCompare.ts` (`aggregateTournamentStats` — teams involved, matches, completed,
+  runs scored, wickets taken, all rolled up from `Match.tournamentId`) and a new
+  `/compare/tournaments` page, mirroring `CompareSeasonsPage`'s picker + stat-rows layout exactly.
+  Extended the compare cross-link loop: `/compare` (players) → teams → clubs → seasons →
+  **tournaments** → back to players.
+- `tsc`/`npm run build` clean. **Click-tested live** (a follow-up verification pass, once the
+  preview browser could reach the dev server again — `/compare/tournaments` is a public route,
+  no auth needed): with only one real tournament (`seedT1`) in the dev database, first confirmed
+  the correct "Not enough tournaments to compare" empty state, then created a real throwaway
+  second tournament and confirmed the comparison table populated with genuine aggregated
+  stats — the new empty tournament read `0 teams / 0 matches / 0 runs / 0 wickets` against
+  `seedT1`'s real `2 teams / 1 match / 117 runs / 7 wickets` — and both dropdown pickers listed
+  both tournaments correctly. Test tournament hard-deleted after (`deleteTournament()` is a real
+  `deleteDoc`; confirmed no orphaned activity-log entry either).
 
 ## Phase 36 — Audit log: login events + search 🔧
 - No sign-in is currently audit-logged, and the audit card has no way to filter/search its list

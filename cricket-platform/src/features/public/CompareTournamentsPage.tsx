@@ -1,13 +1,12 @@
 import { useSearchParams, Link } from 'react-router-dom'
-import { CalendarRange } from 'lucide-react'
+import { Trophy } from 'lucide-react'
 import { Card, EmptyState, PageLoader } from '@/components/ui/primitives'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { useAsync } from '@/hooks/useAsync'
-import { listSeasons } from '@/services/seasons.service'
 import { listTournaments } from '@/services/tournaments.service'
 import { listAllMatches } from '@/services/matches.service'
-import { aggregateSeasonStats } from '@/domain/seasonCompare'
-import type { Season } from '@/types'
+import { aggregateTournamentStats } from '@/domain/tournamentCompare'
+import type { Tournament } from '@/types'
 
 type Dir = 'high' | 'low'
 interface Row {
@@ -17,26 +16,25 @@ interface Row {
   dir: Dir
 }
 
-export function CompareSeasonsPage() {
+export function CompareTournamentsPage() {
   const [params, setParams] = useSearchParams()
-  const seasons = useAsync(listSeasons, [])
   const tournaments = useAsync(listTournaments, [])
   const matches = useAsync(listAllMatches, [])
 
-  const loading = seasons.loading || tournaments.loading || matches.loading
-  const list = seasons.data ?? []
+  const loading = tournaments.loading || matches.loading
+  const list = tournaments.data ?? []
 
   if (loading) return <PageLoader />
   if (list.length < 2)
     return (
       <div className="mx-auto max-w-2xl px-4 py-6">
-        <PageHeader title="Compare seasons" />
-        <EmptyState icon={<CalendarRange size={40} />} title="Not enough seasons to compare" />
+        <PageHeader title="Compare tournaments" />
+        <EmptyState icon={<Trophy size={40} />} title="Not enough tournaments to compare" />
       </div>
     )
 
   const aId = params.get('a') || list[0].id
-  const bId = params.get('b') || list.find((s) => s.id !== aId)!.id
+  const bId = params.get('b') || list.find((t) => t.id !== aId)!.id
   const setSide = (side: 'a' | 'b', id: string) => {
     const next = new URLSearchParams(params)
     next.set('a', side === 'a' ? id : aId)
@@ -44,13 +42,12 @@ export function CompareSeasonsPage() {
     setParams(next)
   }
 
-  const sa1 = list.find((s) => s.id === aId)
-  const sb1 = list.find((s) => s.id === bId)
-  const sa = aggregateSeasonStats(aId, tournaments.data ?? [], matches.data ?? [])
-  const sb = aggregateSeasonStats(bId, tournaments.data ?? [], matches.data ?? [])
+  const ta1 = list.find((t) => t.id === aId)
+  const tb1 = list.find((t) => t.id === bId)
+  const sa = aggregateTournamentStats(aId, matches.data ?? [])
+  const sb = aggregateTournamentStats(bId, matches.data ?? [])
 
   const rows: Row[] = [
-    { label: 'Tournaments', a: sa.tournaments, b: sb.tournaments, dir: 'high' },
     { label: 'Teams involved', a: sa.teams, b: sb.teams, dir: 'high' },
     { label: 'Matches', a: sa.matches, b: sb.matches, dir: 'high' },
     { label: 'Completed', a: sa.completedMatches, b: sb.completedMatches, dir: 'high' },
@@ -61,21 +58,21 @@ export function CompareSeasonsPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
       <PageHeader
-        title="Compare seasons"
-        subtitle="Every tournament and match under each season, side by side."
+        title="Compare tournaments"
+        subtitle="Every team and match within each tournament, side by side."
         actions={
           <Link
-            to="/compare/tournaments"
+            to="/compare"
             className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-2 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
           >
-            Compare tournaments
+            Compare players
           </Link>
         }
       />
 
       <div className="mb-4 grid grid-cols-2 gap-3">
-        <SeasonPicker side="a" value={aId} seasons={list} season={sa1} onChange={(id) => setSide('a', id)} />
-        <SeasonPicker side="b" value={bId} seasons={list} season={sb1} onChange={(id) => setSide('b', id)} />
+        <TournamentPicker side="a" value={aId} tournaments={list} tournament={ta1} onChange={(id) => setSide('a', id)} />
+        <TournamentPicker side="b" value={bId} tournaments={list} tournament={tb1} onChange={(id) => setSide('b', id)} />
       </div>
 
       <Card className="overflow-hidden">
@@ -116,39 +113,39 @@ export function CompareSeasonsPage() {
   )
 }
 
-function SeasonPicker({
+function TournamentPicker({
   side,
   value,
-  seasons,
-  season,
+  tournaments,
+  tournament,
   onChange,
 }: {
   side: 'a' | 'b'
   value: string
-  seasons: Season[]
-  season?: Season
+  tournaments: Tournament[]
+  tournament?: Tournament
   onChange: (id: string) => void
 }) {
   return (
     <Card className="p-4">
       <div className="mb-2 truncate font-semibold text-ink-900 dark:text-ink-50">
-        {season ? (
-          <Link to={`/season/${season.id}`} className="hover:text-brand-700">
-            {season.name}
+        {tournament ? (
+          <Link to={`/tournament/${tournament.id}`} className="hover:text-brand-700">
+            {tournament.name}
           </Link>
         ) : (
-          <span className="text-ink-500 dark:text-ink-400">Select a season</span>
+          <span className="text-ink-500 dark:text-ink-400">Select a tournament</span>
         )}
       </div>
       <select
-        aria-label={`Season ${side.toUpperCase()}`}
+        aria-label={`Tournament ${side.toUpperCase()}`}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="w-full rounded-lg border border-ink-300 dark:border-ink-700 bg-white dark:bg-ink-900 px-3 py-2 text-sm text-ink-800 dark:text-ink-200 focus:border-brand-500 focus:outline-none"
       >
-        {seasons.map((s) => (
-          <option key={s.id} value={s.id}>
-            {s.name}
+        {tournaments.map((t) => (
+          <option key={t.id} value={t.id}>
+            {t.name}
           </option>
         ))}
       </select>

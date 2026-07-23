@@ -109,6 +109,11 @@ const PlayerMergePage = lazy(() =>
 const TrashPage = lazy(() =>
   import('@/features/admin/TrashPage').then((m) => ({ default: m.TrashPage })),
 )
+const NotificationsPage = lazy(() =>
+  import('@/features/notifications/NotificationsPage').then((m) => ({
+    default: m.NotificationsPage,
+  })),
+)
 const FeatureFlagsPage = lazy(() =>
   import('@/features/admin/FeatureFlagsPage').then((m) => ({
     default: m.FeatureFlagsPage,
@@ -149,6 +154,11 @@ const CompareClubsPage = lazy(() =>
 const CompareSeasonsPage = lazy(() =>
   import('@/features/public/CompareSeasonsPage').then((m) => ({
     default: m.CompareSeasonsPage,
+  })),
+)
+const CompareTournamentsPage = lazy(() =>
+  import('@/features/public/CompareTournamentsPage').then((m) => ({
+    default: m.CompareTournamentsPage,
   })),
 )
 const PublicHomePage = lazy(() =>
@@ -375,6 +385,8 @@ export default function App() {
           <Route path="/compare/teams" element={<CompareTeamsPage />} />
           <Route path="/compare/clubs" element={<CompareClubsPage />} />
           <Route path="/compare/seasons" element={<CompareSeasonsPage />} />
+          <Route path="/compare/tournaments" element={<CompareTournamentsPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/player/:id" element={<PlayerPage />} />
           <Route path="/team/:id" element={<TeamPage />} />

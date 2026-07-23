@@ -69,8 +69,21 @@ to enumerate every finding up front.
   actual TS AST/usage analyzer (e.g. `ts-prune` or similar), not a grep script; not run this pass.
 
 ## Phase 2 — Notification history page
-- ⬜ `/notifications` page reusing the already-existing `listNotifications()` — full list beyond
-  the bell dropdown's 50-item cap, per-category filter, mark-as-read from the list.
+- ✅ New `/notifications` page reusing the already-existing (previously unused)
+  `listNotifications(userId, max)` — raised the effective cap to 500 for a "history" view, with
+  client-side read/unread and per-category filter pills (mirroring the filter-chip pattern already
+  used on the Trash and Data-integrity pages) plus `usePaginated` for the list itself, matching
+  every other admin list page's pagination convention rather than inventing a new one. "Mark all
+  read" reuses `markAllRead()`, already built for the bell dropdown. The bell dropdown
+  (`NotificationBell.tsx`) gained a "View all notifications" footer link to the new page — the one
+  UI change to existing code this slice needed. **A real concurrent-edit race hit mid-slice**: the
+  first attempt to add the `/notifications` lazy import + route to `App.tsx` was silently lost —
+  the concurrent session's own edit to the same file (adding `CompareTournamentsPage`) landed based
+  on a pre-my-edit read, overwriting mine without either side erroring. Caught it by grepping for
+  `NotificationsPage` in `App.tsx` right after a build that should have included it and finding
+  nothing; re-applied the edit against the then-current file and committed immediately afterward
+  to minimize the next race window. `tsc`/`npm run build` clean after the fix. Not click-tested
+  live — same master-admin-auth-loss caveat as recent `ROADMAP.md` phases.
 
 ## Phase 3 — Match photo galleries
 - ⬜ Firebase Storage uploads scoped to `matches/{id}/`, gallery display on the public match page,

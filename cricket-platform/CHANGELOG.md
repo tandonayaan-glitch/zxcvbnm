@@ -4,6 +4,17 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Notification history page (ROADMAP_V2 Phase 2)
+- New `/notifications` page reusing the already-existing `listNotifications()`: every notification
+  you've ever received (not just the bell dropdown's 50-item cap), with read/unread and
+  per-category filters, pagination, and "Mark all read." The bell dropdown gained a "View all
+  notifications" footer link.
+
+### Added — Tournament vs Tournament comparison (Phase 35)
+- New `/compare/tournaments` page, mirroring the existing Club/Season comparison layout: teams
+  involved, matches, completed matches, runs scored, wickets taken, side by side. Extends the
+  compare cross-link loop (players → teams → clubs → seasons → tournaments → back to players).
+
 ### Added — Activity feeds on entity detail pages (Phase 34)
 - Club, Team, Player, and Tournament pages now embed a scoped `<ActivityFeed refId={id} />` (Team as
   its own card, Player/Tournament as a new "Activity" tab, Club as a new section) — previously this

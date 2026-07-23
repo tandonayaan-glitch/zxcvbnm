@@ -404,5 +404,34 @@ reasoning.
     `restoreFromTrash()`). Nothing from that list was deleted. A trustworthy version of this sweep
     needs a real TS usage analyzer (e.g. `ts-prune`), not a grep script — noted as a real gap, not
     attempted this pass since introducing a new dev-tooling dependency wasn't itself in scope yet.
+23. **Tournament vs Tournament comparison (Phase 35)** — **Done**, no collision (found already
+    built and uncommitted on disk mid-verification; completed the live check rather than
+    duplicating). New `domain/tournamentCompare.ts` (`aggregateTournamentStats`) + `/compare/
+    tournaments`, mirroring `CompareSeasonsPage`'s picker + stat-rows layout exactly. `tsc`/`npm
+    run build` clean. **Click-tested live** against the real public page: with only one real
+    tournament in the dev database, confirmed the correct "Not enough tournaments to compare"
+    empty state; created a real throwaway second tournament, confirmed the comparison table
+    populated with genuine aggregated stats (the new empty one read `0/0/0/0` against the real
+    seed tournament's `2 teams/1 match/117 runs/7 wickets`), and both dropdown pickers listed both
+    tournaments correctly. Test tournament hard-deleted after, confirmed no orphaned activity-log
+    entry either.
+24. **`ROADMAP_V2.md` Phase 2 — Notification history page** — **Done**, no collision on the
+    feature itself. New `/notifications` page reusing the already-existing (previously unused)
+    `listNotifications()`, with read/unread + category filter chips and pagination, plus a "View
+    all notifications" link added to the bell dropdown. **Hit and documented a new failure mode**:
+    a genuine silent concurrent-edit race on `App.tsx` — my first attempt to add the route was
+    overwritten by the other session's own `App.tsx` edit (adding `CompareTournamentsPage`), which
+    had read the file *before* my edit landed and wrote back based on that stale read, erasing mine
+    with no error on either side. Caught only by explicitly grepping for the new symbol after the
+    fact rather than trusting the edit succeeded. **New standing practice, recorded here because
+    it generalizes beyond this one slice**: after editing a hot, frequently-contended shared file
+    (`App.tsx`, `AppShell.tsx`, `types/index.ts`, `collections.ts`, `ROADMAP.md`) — especially the
+    kind edited by both sessions in most slices — grep for the specific new symbol/line immediately
+    after the edit and before considering the slice's file changes "done," not just after `tsc`
+    (which wouldn't have caught this: the file was still syntactically valid and type-safe without
+    my route, just missing the route). `tsc`/`npm run build` clean after the fix; not click-tested
+    live (no master-admin auth on this session's browser origin — the concurrent session's own
+    entry #23 above notes it *does* still have live access, so this is a per-browser-session gap,
+    not a project-wide one).
 
 (Appended to as further slices are picked up.)
