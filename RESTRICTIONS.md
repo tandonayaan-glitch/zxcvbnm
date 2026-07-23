@@ -433,5 +433,16 @@ reasoning.
     live (no master-admin auth on this session's browser origin — the concurrent session's own
     entry #23 above notes it *does* still have live access, so this is a per-browser-session gap,
     not a project-wide one).
+25. **Audit log: login events + search (Phase 36)** — **Done**, no collision (same pattern as
+    entry #23: found already built and uncommitted on disk — `logAudit()` wired into both
+    successful-login paths in `auth.service.ts`, plus a search box + raised fetch cap on Platform
+    Tools' audit card — completed verification rather than duplicating). `tsc`/`npm run build`
+    clean. Not click-tested live (this session's browser tooling couldn't reach its own dev server
+    this pass — a proxy-connection failure distinct from the master-admin-auth-loss gap noted
+    above; see Phase 35's ROADMAP entry). Reviewed the login-audit change for a real correctness
+    point: `logAudit()` is fire-and-forget (`void`, not `await`ed) in both paths, so a non-admin's
+    login — whose audit write Firestore rules correctly reject (`allow create: if isAdmin()`) — can
+    never delay or fail the actual sign-in; confirmed by reading `firestore.rules`' `auditLogs`
+    match block directly, not assumed.
 
 (Appended to as further slices are picked up.)

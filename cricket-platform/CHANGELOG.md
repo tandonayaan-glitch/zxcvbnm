@@ -4,6 +4,11 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Audit log: login events + search (Phase 36)
+- Successful sign-ins are now audit-logged (`auth.service.ts`'s `login()`, fire-and-forget so a
+  rejected write for a non-admin login never blocks sign-in). Platform Tools' audit card gained a
+  search box over action/details/actor and a raised 200-entry fetch cap.
+
 ### Added — Notification history page (ROADMAP_V2 Phase 2)
 - New `/notifications` page reusing the already-existing `listNotifications()`: every notification
   you've ever received (not just the bell dropdown's 50-item cap), with read/unread and

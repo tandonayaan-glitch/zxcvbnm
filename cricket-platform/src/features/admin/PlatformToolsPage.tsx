@@ -16,6 +16,7 @@ import {
   Wrench,
   CheckCircle2,
   BarChart3,
+  Search,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
@@ -27,6 +28,7 @@ import {
   Badge,
   EmptyState,
   StatCard,
+  Input,
 } from '@/components/ui/primitives'
 import { useToast } from '@/components/ui/toast'
 import { useAsync } from '@/hooks/useAsync'
@@ -56,7 +58,8 @@ export function PlatformToolsPage() {
   const toast = useToast()
   const profile = useAuthStore((s) => s.profile)
   const online = useOnlineStatus()
-  const audits = useAsync(() => listAuditLogs(50), [])
+  const audits = useAsync(() => listAuditLogs(200), [])
+  const [auditSearch, setAuditSearch] = useState('')
   const errors = useAsync(() => listClientErrors(200), [])
   const integrity = useAsync(scanDataIntegrity, [])
   const diagnostics = useAsync(getPlatformDiagnostics, [])
@@ -429,30 +432,68 @@ export function PlatformToolsPage() {
               <EmptyState title="No audit entries yet" />
             </div>
           ) : (
-            <div className="divide-y divide-ink-50">
-              {(audits.data ?? []).map((a) => (
-                <div key={a.id} className="flex items-start justify-between gap-3 px-4 py-3">
-                  <div>
-                    <div className="text-sm font-medium text-ink-900 dark:text-ink-50">
-                      {a.action}
-                    </div>
-                    {a.details && (
-                      <div className="text-xs text-ink-500 dark:text-ink-400">{a.details}</div>
-                    )}
-                    {(a.before !== undefined || a.after !== undefined) && (
-                      <div className="mt-0.5 font-mono text-xs text-ink-500 dark:text-ink-400">
-                        {String(a.before ?? '—')} → {String(a.after ?? '—')}
-                      </div>
-                    )}
-                    <div className="mt-0.5 text-xs text-ink-400 dark:text-ink-500">
-                      {a.actorName} · {formatDateTime(a.createdAt)}
-                      {a.userAgent && <span title={a.userAgent}> · {briefUA(a.userAgent)}</span>}
-                    </div>
-                  </div>
-                  <Badge tone="gray">{a.actorRole.replace('_', ' ').toLowerCase()}</Badge>
+            <>
+              <div className="border-b border-ink-50 p-3 dark:border-ink-800">
+                <div className="relative">
+                  <Search
+                    size={15}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400 dark:text-ink-500"
+                  />
+                  <Input
+                    value={auditSearch}
+                    onChange={(e) => setAuditSearch(e.target.value)}
+                    placeholder="Search action, details, or actor…"
+                    className="pl-9"
+                  />
                 </div>
-              ))}
-            </div>
+              </div>
+              {(() => {
+                const q = auditSearch.trim().toLowerCase()
+                const shown = q
+                  ? (audits.data ?? []).filter(
+                      (a) =>
+                        a.action.toLowerCase().includes(q) ||
+                        (a.details ?? '').toLowerCase().includes(q) ||
+                        a.actorName.toLowerCase().includes(q),
+                    )
+                  : (audits.data ?? [])
+                if (shown.length === 0) {
+                  return (
+                    <div className="p-5">
+                      <EmptyState title="No matching audit entries" />
+                    </div>
+                  )
+                }
+                return (
+                  <div className="divide-y divide-ink-50">
+                    {shown.map((a) => (
+                      <div key={a.id} className="flex items-start justify-between gap-3 px-4 py-3">
+                        <div>
+                          <div className="text-sm font-medium text-ink-900 dark:text-ink-50">
+                            {a.action}
+                          </div>
+                          {a.details && (
+                            <div className="text-xs text-ink-500 dark:text-ink-400">{a.details}</div>
+                          )}
+                          {(a.before !== undefined || a.after !== undefined) && (
+                            <div className="mt-0.5 font-mono text-xs text-ink-500 dark:text-ink-400">
+                              {String(a.before ?? '—')} → {String(a.after ?? '—')}
+                            </div>
+                          )}
+                          <div className="mt-0.5 text-xs text-ink-400 dark:text-ink-500">
+                            {a.actorName} · {formatDateTime(a.createdAt)}
+                            {a.userAgent && (
+                              <span title={a.userAgent}> · {briefUA(a.userAgent)}</span>
+                            )}
+                          </div>
+                        </div>
+                        <Badge tone="gray">{a.actorRole.replace('_', ' ').toLowerCase()}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
+            </>
           )}
         </CardBody>
       </Card>

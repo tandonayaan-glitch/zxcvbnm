@@ -828,11 +828,18 @@ changes or a human scopes the task down to something finite.
   both tournaments correctly. Test tournament hard-deleted after (`deleteTournament()` is a real
   `deleteDoc`; confirmed no orphaned activity-log entry either).
 
-## Phase 36 — Audit log: login events + search 🔧
-- No sign-in is currently audit-logged, and the audit card has no way to filter/search its list
-  beyond the raw last-N entries. Add a `logAudit()` call on successful sign-in
-  (`auth.service.ts`), and a client-side search box over the already-fetched audit list on
-  Platform Tools.
+## Phase 36 — Audit log: login events + search
+- No sign-in was audit-logged before, and the audit card had no way to filter/search its list
+  beyond the raw last-N entries. Added a fire-and-forget `logAudit(profile, 'auth.login', ...)`
+  call to both successful-login paths in `auth.service.ts`'s `login()` (the normal path and the
+  self-healing "profile missing, create a fallback" path) — not awaited, so a slow/rejected audit
+  write (e.g. a non-admin's login, which Firestore rules correctly reject since only
+  `ADMIN`/`MASTER_ADMIN` can write `auditLogs`) never delays or blocks the actual sign-in.
+- Platform Tools' audit card now has a search box (action/details/actor, client-side over the
+  already-fetched list) with a matching "No matching audit entries" empty state, and its fetch cap
+  raised 50 → 200 so search has more history to work over, consistent with the same cap increase
+  Phase 31's error monitoring made to `clientErrors`.
+- `tsc`/`npm run build` clean.
 
 ## Phase 37 — Optional edit reason on regular edits 🔧
 - Phase 18 explicitly scoped this out as "a small, bounded follow-up": restores auto-generate a

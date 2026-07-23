@@ -34,6 +34,7 @@ import {
 import { auth, db, app, usernameToEmail } from '@/lib/firebase'
 import { COL, pruneUndefined } from '@/lib/collections'
 import { MASTER_ADMIN_USERNAME } from '@/lib/constants'
+import { logAudit } from './audit.service'
 import type { Role, UserProfile } from '@/types'
 
 const USERNAME_RE = /^[a-z0-9_]{3,20}$/
@@ -314,8 +315,10 @@ export async function login(
       username: u,
       createdAt: now,
     })
+    void logAudit(fallback, 'auth.login', `@${fallback.username} signed in`)
     return fallback
   }
+  void logAudit(profile, 'auth.login', `@${profile.username} signed in`)
   return profile
 }
 
