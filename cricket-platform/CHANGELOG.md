@@ -4,6 +4,15 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Media library (Phase 27)
+- New `/admin/media` page: browse every image uploaded to Storage across players/teams/clubs/
+  tournaments/users, with a running total (count + size) and delete. Flags images no longer
+  referenced by any live entity as **Unused**, so cleanup targets are obvious at a glance.
+- Fixed a real bug found while building this: Firebase Storage's `listAll()` hangs indefinitely on
+  a folder that's never had an upload (every folder in this dev database, currently) — a raw REST
+  call to the same prefix returns instantly, but the SDK call just never settles. Fixed with a
+  client-side timeout that resolves to an empty list instead.
+
 ### Added — Activity feed milestones + filter (Phase 26)
 - Completed matches now detect centuries, half-centuries, and five-wicket hauls
   (`domain/milestones.ts`, pure) and log them to the activity feed, notifying the player directly

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Image as ImageIcon, Trash2, HardDrive } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Badge, Button, Card, EmptyState, PageLoader } from '@/components/ui/primitives'
@@ -74,7 +74,7 @@ export function MediaLibraryPage() {
 
   const images = data.data?.images ?? []
   const used = data.data?.used ?? new Set<string>()
-  const unusedCount = useMemo(() => images.filter((i) => !used.has(i.url)).length, [images, used])
+  const unusedCount = images.filter((i) => !used.has(i.url)).length
 
   return (
     <div className="mx-auto max-w-5xl">

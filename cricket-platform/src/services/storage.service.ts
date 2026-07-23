@@ -69,11 +69,22 @@ export interface StoredImage {
   createdAt: number
 }
 
+/** `listAll()` can hang indefinitely (rather than resolving to an empty list, or rejecting)
+ *  when a prefix has never had an object uploaded to it — observed directly against this
+ *  project's Storage bucket. Race it against a timeout so a never-touched folder shows as
+ *  empty instead of hanging the media library page forever. */
+async function listAllWithTimeout(folderRef: ReturnType<typeof ref>) {
+  const timeout = new Promise<{ items: []; prefixes: [] }>((resolve) =>
+    setTimeout(() => resolve({ items: [], prefixes: [] }), 8000),
+  )
+  return Promise.race([listAll(folderRef), timeout])
+}
+
 /** List every image under a given upload folder (`players`, `teams`, `clubs`, `tournaments`,
  *  `users`), for the media library's housekeeping view. */
 export async function listFolderImages(folder: string): Promise<StoredImage[]> {
   const folderRef = ref(storage, folder)
-  const { items } = await listAll(folderRef)
+  const { items } = await listAllWithTimeout(folderRef)
   const results = await Promise.all(
     items.map(async (item) => {
       const [url, meta] = await Promise.all([getDownloadURL(item), getMetadata(item)])

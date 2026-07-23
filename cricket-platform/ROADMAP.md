@@ -629,12 +629,33 @@ changes or a human scopes the task down to something finite.
   it; per the standing safety rules, creating a new account via the signup form to work around that
   wasn't an appropriate substitute. `tsc`/`npm run build`/lint all clean.
 
-## Phase 27 — Media library 🔧
-- New `/admin/media` page: a browsable list of every image already uploaded to Firebase Storage
-  across players/teams/clubs/tournaments (Phase 12's inline upload fields), with delete. Reuses
-  existing Storage upload infra — no new upload UI. Closes the "centralized media manager" ask at
-  the scope this app actually needs (a housekeeping/cleanup view), not a full DAM with galleries/
-  sponsor-graphic categories/document storage, which nothing in this app currently produces.
+## Phase 27 — Media library
+- ✅ New `/admin/media` page (master-admin): a browsable, per-folder list of every image already
+  uploaded to Firebase Storage (players/teams/clubs/tournaments/users — Phase 12's upload fields),
+  with a running total (count + size, `lib/format.ts`'s new `formatBytes()`) and delete. Cross-
+  references each folder's images against the live `photoURL`/`logoURL`/`bannerURL` fields on the
+  matching collection to flag uploads no longer referenced by anything (a deleted entity, or an
+  old photo left behind after a replacement) as **Unused** — the concrete, low-risk cleanup signal
+  this ask actually needed. Reuses existing Storage upload infra — no new upload UI. Closes the
+  "centralized media manager" ask at the scope this app needs (a housekeeping/cleanup view), not a
+  full DAM with galleries/sponsor-graphic categories/document storage, which nothing in this app
+  produces (§4).
+- **Found and fixed a real bug while building this**: Firebase Storage's `listAll()` hangs
+  indefinitely — never resolves, never rejects — when called against a folder prefix that has
+  never had an object uploaded to it (confirmed directly: the equivalent raw REST call to the same
+  prefix returns a fast 404, but the SDK's `listAll()` promise just never settles). Every one of
+  this dev database's five upload folders is currently in exactly that state, which would have
+  made the media library page hang on an infinite spinner on first load. Fixed with a client-side
+  timeout race (`listAllWithTimeout`, 8s) that resolves to an empty list instead of hanging —
+  `storage.service.ts`.
+- Verified live against the real Storage bucket: reproduced the `listAll()` hang directly (10-15s
+  wait, never resolved) before the fix, confirmed the fix resolves within the timeout window
+  (`{status: 'ok', count: 0}`) across all five real folders after. **Did not get a full round-trip
+  verification with a real uploaded image** — a programmatically-constructed `File`/canvas upload
+  from a raw eval context hung with no network request ever issued (a test-harness limitation, not
+  a reproduced app bug — no Storage write request appeared in the network log at all, and Phase
+  12's real upload path, exercised through an actual file-picker, was already verified when that
+  phase shipped). `tsc`/`npm run build`/lint clean.
 
 ## Phase 28 — Audit log detail (before/after, device) 🔧
 - Extend `AuditLog` with optional `before`/`after` snapshot fields and `userAgent`, populated by

@@ -273,5 +273,22 @@ reasoning.
     rules (`Creating accounts` is a prohibited action-category, not something to route around),
     self-registering a new account via the signup form to work around this was correctly not
     attempted.
+15. **Media library (Phase 27)** — **Done**, no collision. New `/admin/media` (master-admin):
+    per-folder browsable list of Storage uploads across players/teams/clubs/tournaments/users,
+    with a running total and delete, cross-referencing each image's URL against the live entity
+    collections to flag orphaned/unused uploads. **Found and fixed a real bug**: Firebase
+    Storage's `listAll()` hangs indefinitely (never resolves, never rejects) on a folder prefix
+    that's never had an object uploaded — confirmed directly against this project's live bucket
+    (a raw REST call to the same prefix returned a 404 in under a second; the SDK call sat for
+    15+ seconds with no resolution and no network request even visible for a later, unrelated
+    upload attempt). Every one of this dev database's five folders is in that never-touched state
+    today, so this would have shipped as an infinite spinner on first load. Fixed with an 8s
+    client-side timeout race in `storage.service.ts` that treats a hang as "empty folder."
+    Verified live: reproduced the hang pre-fix, confirmed the fix resolves correctly across all
+    five real folders post-fix. **Did not get a full round-trip test with a real uploaded image**
+    — constructing a `File` from a canvas in a raw eval context hung before issuing any network
+    request (a test-harness artifact, not a reproduced app bug; Phase 12's real upload path via an
+    actual file picker was already verified when that phase shipped). No test data was created (no
+    Storage object exists to clean up — confirmed via a fresh list call after the stuck attempt).
 
 (Appended to as further slices are picked up.)
