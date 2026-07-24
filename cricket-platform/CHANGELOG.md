@@ -4,6 +4,12 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Fixed — Overlay motion consistency (ROADMAP_V2 Phase 4)
+- Full-screen overlay backdrops (the shared `Modal`, the mobile nav drawer, the "Clear all
+  leaderboards" danger dialog) now fade in instead of appearing instantly, matching the panel
+  transitions they already had. The mobile nav drawer itself now slides in rather than snapping
+  open. Respects the existing reduced-motion preference automatically.
+
 ### Added — Developer docs (ROADMAP_V2 Phase 7)
 - New `CONTRIBUTING.md` for human contributors (dev loop, verification convention, off-limits
   list). Refreshed `README.md`'s stale role list (missing `MASTER_ADMIN`) and bootstrap description.

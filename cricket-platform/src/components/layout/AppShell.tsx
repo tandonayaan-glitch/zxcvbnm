@@ -222,10 +222,10 @@ export function AppShell() {
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div
-            className="absolute inset-0 bg-ink-950/60"
+            className="animate-fade-in-opacity absolute inset-0 bg-ink-950/60"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="absolute inset-y-0 left-0 w-64 bg-ink-900">
+          <aside className="animate-slide-in-left absolute inset-y-0 left-0 w-64 bg-ink-900">
             {SidebarInner}
           </aside>
         </div>

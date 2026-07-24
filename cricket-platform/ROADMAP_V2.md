@@ -107,8 +107,32 @@ to enumerate every finding up front.
   master-admin-auth-loss caveat as recent phases.
 
 ## Phase 4 — UI/UX polish pass
-- ⬜ Targeted consistency + motion pass — scope determined by a focused audit at slice time rather
-  than promised up front.
+- ✅ Audited the shared UI kit first (`components/ui/primitives.tsx`, `Modal.tsx`): `Button`,
+  `Input`/`Select`/`Textarea` already have consistent focus-visible rings, disabled states, and
+  dark-mode variants — no gap there. The concrete, real gap was **motion**: every full-screen
+  overlay's backdrop appeared instantly with no transition at all, while its panel (where one
+  existed) faded in — an inconsistency, not a cosmetic nitpick, since it made the same interaction
+  pattern feel different across surfaces.
+- Added two small reusable keyframes to `index.css` (`animate-fade-in-opacity` for backdrops,
+  `animate-slide-in-left` for the mobile nav drawer) alongside the existing `animate-fade-in`.
+  Applied them to the three real instances found: `Modal.tsx`'s backdrop, `AppShell.tsx`'s mobile
+  nav drawer (backdrop + the drawer panel itself, which previously just appeared with no slide),
+  and `PlatformToolsPage.tsx`'s "Clear all leaderboards" danger-confirmation overlay (backdrop +
+  panel). All three already fall under the existing `.reduce-motion` accessibility rule (global
+  `animation-duration: 0.001ms !important` override), so no extra a11y wiring was needed.
+- Deliberately did **not** do a page-by-page sweep for every conceivable inconsistency —
+  `TeamPage.tsx`'s `backdrop-blur` hit on the same grep was a decorative frosted-glass badge, not
+  an overlay, and was correctly left alone; `CommandPalette.tsx` (also has a backdrop) was
+  deliberately skipped since the concurrent session had very recently and actively edited it
+  (Phase 33) — touching it now risked exactly the kind of concurrent-edit race already hit and
+  documented earlier this session, for a purely cosmetic gain not worth that risk.
+- `tsc`/`npm run build` clean. **Verified directly against the running browser's CSS engine** —
+  injected a throwaway element with each new class via the built `vite preview` bundle and read
+  back `getComputedStyle().animationName`/`animationDuration`, confirming both keyframes are
+  registered and applied exactly as named (not just present in the CSS source). The two auth-gated
+  surfaces (`AppShell`'s drawer, `PlatformToolsPage`'s dialog) weren't click-tested through their
+  real trigger — same master-admin-auth-loss caveat as recent phases — but the animation mechanism
+  itself is now independently proven, not assumed.
 
 ## Phase 5 — Performance: bundle chunking
 - ✅ `vite.config.ts` gained a `build.rolldownOptions.output.manualChunks` function (this Vite 8 /

@@ -549,12 +549,12 @@ function ClearLeaderboardsDialog({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-red-950/70 p-4 backdrop-blur-sm">
+    <div className="animate-fade-in-opacity fixed inset-0 z-[80] flex items-center justify-center bg-red-950/70 p-4 backdrop-blur-sm">
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="clear-leaderboards-title"
-        className="w-full max-w-lg rounded-2xl border border-red-200 bg-white dark:bg-ink-900 p-6 shadow-2xl"
+        className="animate-fade-in w-full max-w-lg rounded-2xl border border-red-200 bg-white dark:bg-ink-900 p-6 shadow-2xl"
       >
         <div className="mb-3 flex items-center gap-3 text-red-700">
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">

@@ -135,6 +135,30 @@ body {
   animation: fade-in-up 0.25s ease-out;
 }
 
+@keyframes fade-in-opacity {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-fade-in-opacity {
+  animation: fade-in-opacity 0.2s ease-out;
+}
+
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+.animate-slide-in-left {
+  animation: slide-in-left 0.2s ease-out;
+}
+
 /* Ball pop animation for scoring feedback */
 @keyframes ball-pop {
   0% {

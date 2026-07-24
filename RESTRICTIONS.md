@@ -533,5 +533,24 @@ reasoning.
     covered by §4's standing deferral of automated test/CI infrastructure ("an infrastructure
     decision for the user to make"); this phase's scope was documentation, not new tooling. Docs-
     only change, `tsc`/`npm run build` unaffected.
+31. **UI/UX polish pass (`ROADMAP_V2.md` Phase 4)** — **Done**, no collision. Audited the shared UI
+    kit (`primitives.tsx`, `Modal.tsx`) first — `Button`/`Input`/`Select`/`Textarea` already have
+    consistent focus/disabled states, no gap there. Real gap found: every full-screen overlay's
+    backdrop appeared instantly with no transition while its panel faded in (where a panel
+    transition existed at all) — genuinely inconsistent, not a nitpick. Added
+    `animate-fade-in-opacity`/`animate-slide-in-left` to `index.css` and applied to the three real
+    instances: `Modal.tsx`'s backdrop, `AppShell.tsx`'s mobile nav drawer (backdrop + the drawer
+    panel, previously snapping open with no slide), `PlatformToolsPage.tsx`'s "Clear all
+    leaderboards" dialog (backdrop + panel). Both new keyframes fall under the existing
+    `.reduce-motion` rule automatically, no extra a11y work needed. **Deliberately skipped
+    `CommandPalette.tsx`** despite it having the same backdrop pattern — the concurrent session had
+    very recently and actively edited that exact file (Phase 33); touching it for a cosmetic gain
+    risked exactly the concurrent-edit-race class of incident already documented twice this session
+    (entries #24, #26) for no real benefit. `tsc`/`npm run build` clean. **Verified the animation
+    mechanism directly against the running browser's CSS engine** (not just presence in the CSS
+    source): injected a throwaway element with each new class via a real `vite preview` tab and read
+    back `getComputedStyle().animationName`/`animationDuration`, confirming both fire correctly. The
+    two auth-gated surfaces weren't click-tested through their real trigger — same master-admin-
+    auth-loss caveat as recent phases.
 
 (Appended to as further slices are picked up.)
