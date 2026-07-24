@@ -522,5 +522,16 @@ reasoning.
     build` clean. Not click-tested live — both are auth-gated admin forms; confirmed via a fresh
     `vite preview` tab that no session/credentials are available this pass (loaded the sign-in
     screen, as expected — consistent with every other master-admin-gated phase this session).
+30. **Developer tooling (`ROADMAP_V2.md` Phase 7)** — **Done**, no collision. Scoped directly from
+    Phase 1's own audit finding ("no `CONTRIBUTING.md`... `README.md` status unconfirmed"): read
+    the existing `README.md` and found it's a real, accurate setup doc (not a placeholder), just
+    stale in two spots — a 5-role list missing `MASTER_ADMIN`, and a "first admin" bootstrap
+    description instead of the actual reserved-username mechanism — both fixed. New
+    `CONTRIBUTING.md`: a short, human-facing dev-loop doc (run/verify commands, the "no test suite"
+    convention, where things live, the off-limits list restated briefly with a pointer here for the
+    full detail). Deliberately **not** built: CI/CD, pre-commit hooks, or a test framework — already
+    covered by §4's standing deferral of automated test/CI infrastructure ("an infrastructure
+    decision for the user to make"); this phase's scope was documentation, not new tooling. Docs-
+    only change, `tsc`/`npm run build` unaffected.
 
 (Appended to as further slices are picked up.)

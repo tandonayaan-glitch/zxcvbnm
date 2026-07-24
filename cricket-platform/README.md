@@ -3,9 +3,10 @@
 A production-style cricket **scoring + management + public viewer** platform built with
 **React + TypeScript + Vite + Firebase**.
 
-- Username/password auth (over Firebase Auth) with first-time admin setup
-- Roles: `ADMIN`, `SCORER`, `VIEWER`, `TEAM_MANAGER`, `TOURNAMENT_MANAGER`
-- Player / team / tournament / match management
+- Username/password auth (over Firebase Auth) with first-time master-admin setup
+- Roles: `MASTER_ADMIN`, `ADMIN`, `SCORER`, `VIEWER`, `TEAM_MANAGER`, `TOURNAMENT_MANAGER`
+- Player / team / club / season / tournament / match management, with Trash (soft delete),
+  version history, and platform-wide admin tools (audit log, data integrity checks, analytics)
 - GullyScore-style match setup wizard + ball-by-ball live scoring engine
 - Real-time public match centre, scorecards, and ball-by-ball commentary
 - Player / team / tournament public pages with a real stats engine
@@ -108,6 +109,15 @@ src/
 ### Security note
 
 The included rules give public read access to cricket data and gate writes by
-role. Self-signup creates a `VIEWER`; the first admin is bootstrapped via
-self-create at `/setup`. For a hardened production deployment, gate first-admin
-creation with a Cloud Function and remove open profile self-create.
+role. Self-signup creates a `VIEWER`; the master admin is bootstrapped once by
+registering a reserved username (`VITE_MASTER_ADMIN_USERNAME`, default `ayaan`)
+while no master admin exists yet, at `/setup`. For a hardened production
+deployment, gate that bootstrap with a Cloud Function and remove open profile
+self-create.
+
+## Contributing
+
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for dev-loop conventions (how changes
+are verified — there's no test suite) and where things live in the codebase.
+[`CLAUDE.md`](./CLAUDE.md) has the fuller architectural reference (written for
+AI coding agents, but equally useful for a human).

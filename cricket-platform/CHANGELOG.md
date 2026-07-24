@@ -4,6 +4,10 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Developer docs (ROADMAP_V2 Phase 7)
+- New `CONTRIBUTING.md` for human contributors (dev loop, verification convention, off-limits
+  list). Refreshed `README.md`'s stale role list (missing `MASTER_ADMIN`) and bootstrap description.
+
 ### Fixed — Form validation audit (ROADMAP_V2 Phase 6)
 - Match setup and Tournament forms could previously accept `0` or negative overs-per-innings (and,
   for tournaments, an invalid teams-advancing-per-group count) all the way through to a real save —

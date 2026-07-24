@@ -163,7 +163,24 @@ to enumerate every finding up front.
   log in with; the fix itself is a boolean-gate/early-return change with no new UI surface.
 
 ## Phase 7 — Developer tooling
-- ⬜ Scope determined at slice time based on what Phase 1's audit actually finds missing.
+- ✅ Scoped from Phase 1's own audit finding: "no `CONTRIBUTING.md` / developer-setup doc beyond
+  `CLAUDE.md`... `README.md` status unconfirmed." Read the existing `README.md` (113 lines, dated
+  before this whole session's work) — it's a real, accurate setup doc, not a placeholder, just
+  stale in a couple of specific spots: it listed 5 roles, missing `MASTER_ADMIN` (now central to
+  the app per `CLAUDE.md`), and described bootstrap as "the first admin" rather than the actual
+  reserved-username master-admin mechanism. Fixed both, and added a line about Trash/version
+  history/admin tools that didn't exist when the README was written.
+- New `CONTRIBUTING.md` — a concise, human-facing dev-loop doc (run/verify commands, "no test
+  suite" convention, where things live, the off-limits list restated briefly with a pointer to
+  `RESTRICTIONS.md` for the full detail, and the environment gotchas from `CLAUDE.md`). Deliberately
+  short and non-duplicative — `CLAUDE.md` remains the fuller reference; this is the human-onboarding
+  front door to it, not a second copy of it.
+- Deliberately **not** built: CI/CD pipeline, pre-commit hooks, a test framework, or any other
+  "developer tooling" that would imply an automated test suite exists — `RESTRICTIONS.md` §4
+  already deferred that in full ("an infrastructure decision for the user to make, not one to
+  bootstrap unasked"), and this phase's own scope (from Phase 1's audit) was specifically the
+  missing *documentation*, not new tooling infrastructure.
+- Docs-only change; `tsc`/`npm run build` unaffected (confirmed clean anyway, no regressions).
 
 ---
 
