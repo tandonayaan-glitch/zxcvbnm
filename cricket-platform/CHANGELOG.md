@@ -4,6 +4,12 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Fixed — Form validation audit (ROADMAP_V2 Phase 6)
+- Match setup and Tournament forms could previously accept `0` or negative overs-per-innings (and,
+  for tournaments, an invalid teams-advancing-per-group count) all the way through to a real save —
+  the numeric inputs' `min`/`max` attributes weren't actually enforced anywhere. Both now reject
+  out-of-range values with a real error message before saving.
+
 ### Performance — Bundle chunking (ROADMAP_V2 Phase 5)
 - `vite.config.ts` now splits vendor code into `vendor-firebase`/`vendor-react`/`vendor` chunks,
   separate from the app's own code. The Firebase SDK (by far the largest dependency) can now be

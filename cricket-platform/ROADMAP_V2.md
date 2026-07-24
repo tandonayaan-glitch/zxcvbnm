@@ -137,8 +137,30 @@ to enumerate every finding up front.
   between chunks, not just on first load.
 
 ## Phase 6 — Production hardening: form validation audit
-- ⬜ Audit required/numeric/range validation across the highest-traffic forms (match setup,
-  scoring, player/team forms) for gaps a real user could hit.
+- ✅ Audited match setup, scoring, and Player/Team/Club/Tournament forms for numeric/range gaps a
+  real user could actually hit. Scoring itself (`ScoringPage.tsx`) turned out clean — every run
+  value is a discrete button (0/1/2/3/4/6), not free-text input, so there's nothing to bound there
+  by construction. Player/Team/Club forms have no numeric fields at all.
+- **Found and fixed two real gaps**, both of the same shape: a numeric `<Input min={1}>` whose
+  `min`/`max` HTML attributes look like validation but aren't enforced anywhere (this app has no
+  wrapping `<form>`/`reportValidity()` call), combined with a `Number(x) || fallbackValue` pattern
+  at submit time that silently swaps in the fallback for `0` (falsy) but lets negative numbers
+  straight through unchanged:
+  1. `MatchSetupPage.tsx`'s wizard: `canAdvance()`'s step-0 gate only checked the title, never
+     `oversPerInnings`/`ballsPerOver` — a user could type `0` or a negative number into either
+     field and still click through every step to a real `createMatch()`/`updateMatch()` call.
+     Added bounds (`1–120` overs, `1–12` balls/over, matching the existing `max={12}` already on
+     the balls-per-over input) directly into the gate.
+  2. `TournamentFormModal.tsx`'s `submit()`: `oversPerInnings` used the same silent-fallback
+     pattern, and `qualifiersPerGroup` (only relevant for the `group_knockout` format) had no
+     validation at all. Replaced both with explicit `setError(...)` early-returns instead of
+     silently substituting a different number than what the user typed — consistent with how
+     `!name.trim()` is already handled in the same function. Added a matching `max={120}` to the
+     tournament form's overs input (mirrors the match-setup one) for the same reason.
+- `tsc`/`npm run build` clean. Not click-tested live — both are auth-gated admin forms, and this
+  session's browser tooling has no stored session on a fresh `vite preview` origin (confirmed: a
+  fresh preview tab loaded the sign-in screen, not an authenticated view) and no credentials to
+  log in with; the fix itself is a boolean-gate/early-return change with no new UI surface.
 
 ## Phase 7 — Developer tooling
 - ⬜ Scope determined at slice time based on what Phase 1's audit actually finds missing.

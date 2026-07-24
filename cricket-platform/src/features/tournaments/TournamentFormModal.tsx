@@ -71,6 +71,14 @@ export function TournamentFormModal({
 
   async function submit() {
     if (!name.trim()) return setError('Tournament name is required.')
+    const overs = Number(oversPerInnings)
+    if (!Number.isFinite(overs) || overs < 1 || overs > 120) {
+      return setError('Overs per innings must be between 1 and 120.')
+    }
+    const qualifiers = Number(qualifiersPerGroup)
+    if (format === 'group_knockout' && (!Number.isFinite(qualifiers) || qualifiers < 1)) {
+      return setError('Teams advancing per group must be at least 1.')
+    }
     setSaving(true)
     setError(null)
     const input: TournamentInput = {
@@ -78,7 +86,7 @@ export function TournamentFormModal({
       shortName: shortName.trim() || undefined,
       format,
       status,
-      oversPerInnings: Number(oversPerInnings) || 20,
+      oversPerInnings: overs,
       venue: venue.trim() || undefined,
       startDate: startDate ? new Date(startDate).getTime() : null,
       endDate: endDate ? new Date(endDate).getTime() : null,
@@ -95,8 +103,7 @@ export function TournamentFormModal({
                 .filter(([, g]) => g),
             )
           : undefined,
-      qualifiersPerGroup:
-        format === 'group_knockout' ? Number(qualifiersPerGroup) || 2 : undefined,
+      qualifiersPerGroup: format === 'group_knockout' ? qualifiers : undefined,
     }
     try {
       await onSave(input, tournament?.id, reason.trim() || undefined)
@@ -153,6 +160,7 @@ export function TournamentFormModal({
           <Input
             type="number"
             min={1}
+            max={120}
             value={oversPerInnings}
             onChange={(e) => setOvers(Number(e.target.value))}
           />

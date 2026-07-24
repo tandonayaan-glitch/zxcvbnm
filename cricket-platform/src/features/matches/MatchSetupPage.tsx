@@ -229,7 +229,14 @@ export function MatchSetupPage() {
 
   // step validation
   function canAdvance(): boolean {
-    if (step === 0) return form.title.trim().length > 0
+    if (step === 0)
+      return (
+        form.title.trim().length > 0 &&
+        form.oversPerInnings >= 1 &&
+        form.oversPerInnings <= 120 &&
+        form.ballsPerOver >= 1 &&
+        form.ballsPerOver <= 12
+      )
     if (step === 1)
       return !!form.teamAId && !!form.teamBId && form.teamAId !== form.teamBId
     if (step === 2) return form.squadA.length >= 2 && form.squadB.length >= 2
@@ -433,6 +440,7 @@ export function MatchSetupPage() {
               <Input
                 type="number"
                 min={1}
+                max={120}
                 value={form.oversPerInnings}
                 onChange={(e) => set('oversPerInnings', Number(e.target.value))}
                 disabled={form.format !== 'CUSTOM'}

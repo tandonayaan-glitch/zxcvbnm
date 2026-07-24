@@ -506,5 +506,21 @@ reasoning.
     fetched with zero console errors), then navigated to the separately lazy-loaded `/stats` route
     and confirmed it rendered correctly too, proving the split survives real chunk-to-chunk
     navigation, not just first load.
+29. **Production hardening: form validation audit (`ROADMAP_V2.md` Phase 6)** — **Done**, no
+    collision. Scoring (`ScoringPage.tsx`) needed no fix — every run value is a discrete button
+    (0/1/2/3/4/6), not free-text, so there's no numeric range to violate by construction.
+    Player/Team/Club forms have no numeric fields. **Found and fixed two real gaps in
+    `MatchSetupPage.tsx` and `TournamentFormModal.tsx`**: both had a numeric `<Input min={1}>`
+    whose HTML `min`/`max` attributes aren't actually enforced (no wrapping `<form>` or
+    `reportValidity()` call anywhere in this app), paired with a `Number(x) || fallback` pattern at
+    submit time that silently swaps in the fallback for `0` but lets negative numbers straight
+    through unchanged — a user really could click through the match-setup wizard with `0` or
+    negative overs/balls-per-over, or save a tournament with an invalid teams-advancing-per-group
+    count, all the way to a real Firestore write. Fixed with explicit range checks (`canAdvance()`
+    gate for match setup, `setError(...)` early-returns for the tournament form, matching how
+    `!name.trim()` was already handled there) rather than silent substitution. `tsc`/`npm run
+    build` clean. Not click-tested live — both are auth-gated admin forms; confirmed via a fresh
+    `vite preview` tab that no session/credentials are available this pass (loaded the sign-in
+    screen, as expected — consistent with every other master-admin-gated phase this session).
 
 (Appended to as further slices are picked up.)
