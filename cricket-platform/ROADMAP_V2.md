@@ -86,15 +86,55 @@ to enumerate every finding up front.
   live — same master-admin-auth-loss caveat as recent `ROADMAP.md` phases.
 
 ## Phase 3 — Match photo galleries
-- ⬜ Firebase Storage uploads scoped to `matches/{id}/`, gallery display on the public match page,
-  upload control on the match management side (owner/scorer only).
+- ✅ New `components/media/MatchGallery.tsx`, built entirely on the already-existing
+  `storage.service.ts` exports (`uploadImage`, `deleteUploadedImage`, `listFolderImages`) — no
+  service-layer changes needed. Uploads go to a `matches/{id}/` Storage folder, following the same
+  convention as `players/{id}`, `teams/{id}`, etc.; `storage.rules`' wildcard rule already covers it,
+  so no rules deploy was needed either. Wired into the public `MatchPage.tsx` right after the
+  scorecard, passing the page's existing `canScore(profile)` boolean through as `canManage` — so
+  only the match's scorer/owner (or master admin) gets the upload control and per-photo delete
+  button; everyone else sees a read-only grid. Multi-file upload (loops `uploadImage()` per file,
+  one toast per batch, per-file error toasts on partial failure), lazy-loaded grid thumbnails, and a
+  built-in lightbox (no new dependency). If there are zero photos and the viewer can't manage them,
+  the card renders nothing rather than an empty "Match photos" placeholder on every match page.
+  `tsc` clean for both new/changed files (pre-existing, unrelated `PlayerFormModal.tsx` type error
+  from the concurrent session's in-flight edit — not touched). **Click-tested live** against a real
+  completed match (`/match/seedRSvTK1`) on a second dev-server instance (auth-independent, since a
+  public visitor is exactly the `canManage=false` case): confirmed the Storage SDK loaded, the
+  section showed "Loading photos…" then correctly resolved to fully hidden once it settled on zero
+  photos for a read-only visitor (the `!canManage && !loading && empty → render nothing` branch),
+  and no console/network errors. The admin upload/delete controls weren't exercised — same
+  master-admin-auth-loss caveat as recent phases.
 
 ## Phase 4 — UI/UX polish pass
 - ⬜ Targeted consistency + motion pass — scope determined by a focused audit at slice time rather
   than promised up front.
 
 ## Phase 5 — Performance: bundle chunking
-- ⬜ `vite.config.ts` manual chunk splitting to separate Firebase SDK vendor code from app code.
+- ✅ `vite.config.ts` gained a `build.rolldownOptions.output.manualChunks` function (this Vite 8 /
+  Rolldown build's config surface — `rollupOptions` still works but is deprecated in favor of
+  `rolldownOptions` here, confirmed by reading `node_modules/vite`'s own type definitions rather
+  than assuming Rollup-era config carries over unchanged) splitting `node_modules` code into
+  `vendor-firebase` (the Firebase SDK — by far the largest dependency), `vendor-react`
+  (react/react-dom/react-router-dom), and a catch-all `vendor` (lucide-react, zustand, date-fns,
+  etc.), separate from the app's own `index` entry chunk.
+- **Real effect, not just reshuffling**: the previous single `collections-*.js` chunk (680kB,
+  named after `lib/collections.ts` since every service imports it and therefore every service's
+  code plus the entire Firebase SDK got bundled together) is gone. The app's own `index` entry
+  chunk dropped from ~305kB to ~72kB — the win is that a future app-only code change no longer
+  forces every returning visitor to re-download the Firebase SDK too; `vendor-firebase` (~518kB)
+  can now be cached long-term across deploys since it almost never changes. The 500kB+ chunk
+  build warning still fires (on `vendor-firebase` itself) — expected and left as-is, since that's
+  the real, irreducible size of the Firebase SDK, not something manual chunking can shrink further
+  without dropping the dependency.
+- Verified `tsc`/`npm run build` clean, then **click-tested the actual production bundle** (manual
+  chunking only affects `vite build`, not `vite dev`, so testing against the dev server would not
+  have exercised this at all): added a `cricket-platform-preview` entry to `.claude/launch.json`
+  running `vite preview` on port 4173, loaded the public home page (real live match, leaderboards,
+  recent results all rendered from genuine Firestore data), confirmed all three vendor chunks
+  loaded with no console errors, then navigated to `/stats` (a separate lazy-loaded route chunk)
+  and confirmed it rendered correctly too — proving the split holds up across real navigation
+  between chunks, not just on first load.
 
 ## Phase 6 — Production hardening: form validation audit
 - ⬜ Audit required/numeric/range validation across the highest-traffic forms (match setup,

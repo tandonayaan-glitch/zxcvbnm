@@ -489,5 +489,22 @@ reasoning.
     after. The five forms' UI wasn't click-tested (gated behind auth this session has repeatedly
     lost), but each is a straightforward `tsc`-verified prop-threading change riding on a
     round-trip that's now independently proven. `tsc`/`npm run build`/lint clean.
+28. **Performance: bundle chunking (`ROADMAP_V2.md` Phase 5)** — **Done**, no collision (touches
+    only `vite.config.ts`, untouched by anyone else this session). Added
+    `build.rolldownOptions.output.manualChunks` — **not** `build.rollupOptions`, which still works
+    here but is marked deprecated in this Vite 8/Rolldown build per `node_modules/vite`'s own type
+    definitions; confirmed by reading them rather than assuming Rollup-era config keys carry over
+    unchanged. Splits `vendor-firebase`/`vendor-react`/`vendor` off from the app's own code — the
+    old monolithic `collections-*.js` chunk (680kB, everything importing `lib/collections.ts` plus
+    the whole Firebase SDK bundled together) is gone; the app's own entry chunk dropped from ~305kB
+    to ~72kB. The 500kB+ chunk build warning still fires on `vendor-firebase` alone — expected,
+    left as-is, it's the SDK's real size, not something manual chunking reduces further. **Click-
+    tested the actual production bundle**, not the dev server (`manualChunks` only affects
+    `vite build`, `vite dev` never bundles) — added a `cricket-platform-preview` entry to
+    `.claude/launch.json` (`vite preview`, port 4173), loaded the public home page (real live
+    match/leaderboards/results rendered from genuine Firestore data, all three vendor chunks
+    fetched with zero console errors), then navigated to the separately lazy-loaded `/stats` route
+    and confirmed it rendered correctly too, proving the split survives real chunk-to-chunk
+    navigation, not just first load.
 
 (Appended to as further slices are picked up.)

@@ -4,6 +4,12 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Performance — Bundle chunking (ROADMAP_V2 Phase 5)
+- `vite.config.ts` now splits vendor code into `vendor-firebase`/`vendor-react`/`vendor` chunks,
+  separate from the app's own code. The Firebase SDK (by far the largest dependency) can now be
+  cached long-term across deploys instead of being re-bundled into whichever chunk happened to
+  import it; the app's own entry chunk dropped from ~305kB to ~72kB.
+
 ### Added — Optional edit reason on regular edits (Phase 37)
 - All five edit forms (Player, Team, Club, Tournament, Match setup) now have an optional "Reason
   for this change" field, threaded into the version-history entry `snapshotVersion()` already
