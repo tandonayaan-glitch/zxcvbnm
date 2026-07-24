@@ -38,6 +38,7 @@ import { pitchMapData, hasPitchMapData } from '@/domain/pitchMap'
 import { ScorecardConfigModal } from '@/features/scorecard/ScorecardConfigModal'
 import { matchToCSV, matchToJSON, exportSlug } from '@/domain/matchExport'
 import { downloadBlob } from '@/lib/download'
+import { MatchGallery } from '@/components/media/MatchGallery'
 import { computeHeadToHead } from '@/domain/headToHead'
 import { matchTopPerformers } from '@/domain/matchPerformers'
 import { chaseWinProbability } from '@/domain/winProbability'
@@ -434,6 +435,10 @@ export function MatchPage() {
         players={players.data ?? []}
         deliveries={deliveries}
       />
+
+      <div className="mt-4">
+        <MatchGallery matchId={match.id} canManage={admin} />
+      </div>
 
       {cfgOpen && (
         <ScorecardConfigModal
