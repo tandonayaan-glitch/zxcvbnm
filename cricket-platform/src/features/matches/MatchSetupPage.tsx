@@ -104,6 +104,7 @@ export function MatchSetupPage() {
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
   const [loadingEdit, setLoadingEdit] = useState(!!editId)
+  const [editReason, setEditReason] = useState('')
   const [form, setForm] = useState<FormState>({
     title: '',
     tournamentId: '',
@@ -304,6 +305,7 @@ export function MatchSetupPage() {
             prevMatch,
             changedKeys(prevMatch, payload),
             profile,
+            editReason.trim() || undefined,
           )
         }
         toast.success('Match updated')
@@ -590,12 +592,25 @@ export function MatchSetupPage() {
 
         {/* Step 4: review */}
         {step === 4 && teamA && teamB && (
-          <ReviewStep
-            form={form}
-            teamA={teamA}
-            teamB={teamB}
-            playerById={playerById}
-          />
+          <>
+            <ReviewStep
+              form={form}
+              teamA={teamA}
+              teamB={teamB}
+              playerById={playerById}
+            />
+            {editId && (
+              <div className="mt-4">
+                <Field label="Reason for this change (optional)">
+                  <Input
+                    value={editReason}
+                    onChange={(e) => setEditReason(e.target.value)}
+                    placeholder="e.g. corrected venue"
+                  />
+                </Field>
+              </div>
+            )}
+          </>
         )}
 
         {/* Footer nav */}

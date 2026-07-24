@@ -57,12 +57,13 @@ export function TeamsPage() {
   const { page, setPage, pageCount, pageItems, totalItems, pageSize } =
     usePaginated(scopedTeams, 12)
 
-  async function handleSave(input: TeamInput, id?: string) {
+  async function handleSave(input: TeamInput, id?: string, reason?: string) {
     try {
       if (id) {
         const prev = editing // pre-edit snapshot for undo
         await updateTeam(id, input)
-        if (prev) await snapshotVersion('team', id, prev, changedKeys(prev, input), profile)
+        if (prev)
+          await snapshotVersion('team', id, prev, changedKeys(prev, input), profile, reason)
         toast.undo('Team updated', async () => {
           if (!prev) return
           const { id: _i, createdAt: _c, updatedAt: _u, ...prevInput } = prev

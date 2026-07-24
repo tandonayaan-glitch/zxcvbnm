@@ -30,7 +30,7 @@ export function TournamentFormModal({
   clubs: Club[]
   seasons: Season[]
   onClose: () => void
-  onSave: (input: TournamentInput, id?: string) => void | Promise<void>
+  onSave: (input: TournamentInput, id?: string, reason?: string) => void | Promise<void>
 }) {
   const [name, setName] = useState(tournament?.name ?? '')
   const [shortName, setShortName] = useState(tournament?.shortName ?? '')
@@ -55,6 +55,7 @@ export function TournamentFormModal({
   const [qualifiersPerGroup, setQualifiersPerGroup] = useState(
     tournament?.qualifiersPerGroup ?? 2,
   )
+  const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -98,7 +99,7 @@ export function TournamentFormModal({
         format === 'group_knockout' ? Number(qualifiersPerGroup) || 2 : undefined,
     }
     try {
-      await onSave(input, tournament?.id)
+      await onSave(input, tournament?.id, reason.trim() || undefined)
     } finally {
       setSaving(false)
     }
@@ -282,6 +283,18 @@ export function TournamentFormModal({
               )
             })}
           </div>
+        </div>
+      )}
+
+      {tournament && (
+        <div className="mt-4">
+          <Field label="Reason for this change (optional)">
+            <Input
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. added a team"
+            />
+          </Field>
         </div>
       )}
 

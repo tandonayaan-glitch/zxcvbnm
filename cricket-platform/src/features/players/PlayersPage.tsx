@@ -110,7 +110,12 @@ export function PlayersPage() {
   const { page, setPage, pageCount, pageItems, totalItems, pageSize } =
     usePaginated(filtered, 20)
 
-  async function handleSave(input: PlayerInput, id?: string, createLogin?: boolean) {
+  async function handleSave(
+    input: PlayerInput,
+    id?: string,
+    createLogin?: boolean,
+    reason?: string,
+  ) {
     try {
       if (id) {
         const prev = editing // pre-edit snapshot for undo
@@ -122,6 +127,7 @@ export function PlayersPage() {
             prev,
             changedKeys(prev, input),
             profile,
+            reason,
           )
         }
         toast.undo('Player updated', async () => {

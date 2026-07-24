@@ -847,10 +847,27 @@ changes or a human scopes the task down to something finite.
   exercised (no credentials available this session), but the write path and search logic are
   independently verified.
 
-## Phase 37 — Optional edit reason on regular edits 🔧
-- Phase 18 explicitly scoped this out as "a small, bounded follow-up": restores auto-generate a
-  reason, but a manual edit through the Player/Team/Club/Tournament/Match-setup forms doesn't
-  prompt for one. Add an optional reason field to `snapshotVersion()`'s call sites.
+## Phase 37 — Optional edit reason on regular edits
+- ✅ Phase 18 explicitly scoped this out as "a small, bounded follow-up": restores auto-generate a
+  reason, but a manual edit through the Player/Team/Club/Tournament/Match-setup forms didn't
+  prompt for one. Added an optional "Reason for this change" text field to all five edit
+  surfaces — `PlayerFormModal`/`TeamFormModal`/`ClubFormModal`/`TournamentFormModal` (only shown
+  when editing an existing entity, not on create) and `MatchSetupPage`'s review step (only when
+  `?edit=` is set) — threaded through each page's save handler into `snapshotVersion()`'s existing
+  `reason` parameter (already supported since Phase 18, just never populated by a caller other
+  than the auto-generated restore message).
+- Found the same real bug independently at all five call sites while wiring this in: `Field`
+  doesn't accept a `className` prop (it's `{ label?, required?, error?, hint?, children }` with no
+  passthrough) — `<Field label="..." className="mt-4">` is a type error, not just a style no-op.
+  Fixed by wrapping each new field in a plain `<div className="mt-4">` instead.
+- Verified live end-to-end against the real database: created a real throwaway test player,
+  updated it, called `snapshotVersion()` exactly as the page's save handler does (with a real
+  reason string), and confirmed `listVersions()` returned the entry with `reason: "e2e test
+  reason"` correctly stored and readable — the actual Firestore round-trip this feature depends
+  on. The five forms' own UI wasn't click-tested (all gated behind the master-admin/owner auth
+  this session has repeatedly lost), but each is a straightforward, `tsc`-verified prop-threading
+  change with no new logic beyond what the version-history round-trip already proved works.
+  `tsc`/`npm run build`/lint clean, no new warnings.
 
 ---
 

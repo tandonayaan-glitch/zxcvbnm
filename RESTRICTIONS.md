@@ -450,5 +450,44 @@ reasoning.
     meant to be inclusive across all three fields). Test audit entry cleaned up after. Signing in
     through the actual login form still wasn't exercised (no credentials available), but the
     write path and search logic are now verified independently of the UI.
+26. **`ROADMAP_V2.md` Phase 3 — Match photo galleries** — **Done**, no collision. New
+    `components/media/MatchGallery.tsx`, built entirely on the already-existing
+    `storage.service.ts` exports (`uploadImage`/`deleteUploadedImage`/`listFolderImages`) — no
+    service-layer or `storage.rules` changes needed, since the rules file's `match /{allPaths=**}`
+    wildcard already covers a new `matches/{id}/` folder. Wired into the public `MatchPage.tsx`
+    right after the scorecard, passing the page's existing `canScore(profile)` boolean through as
+    `canManage`. Multi-file upload + per-photo delete for the match's scorer/owner (or master
+    admin); a lazy-loaded grid + built-in lightbox for everyone else; renders nothing (not an empty
+    placeholder) for a read-only visitor when there are zero photos. **Hit the tsc run mid-slice
+    while the concurrent session had an uncommitted, in-flight edit to `PlayerFormModal.tsx`**
+    (a new "reason for change" field) that didn't type-check yet (`Field` doesn't accept the
+    `className` prop it was passed) — confirmed via `git diff --stat` this belonged to the other
+    session, not this slice, and correctly left it untouched rather than fixing someone else's
+    active edit (risks a second silent-overwrite race, same class of risk as entry #24's `App.tsx`
+    incident). Both new/changed files for this slice type-check clean on their own. **Click-tested
+    live**: started a second dev-server instance (port 5174, alongside whatever the concurrent
+    session has running on 5173) and loaded a real completed match's public page — no auth needed,
+    since a signed-out visitor is exactly the `canManage=false` path this needed to prove out;
+    confirmed the Storage SDK loads, the section shows "Loading photos…" then correctly resolves to
+    fully hidden for a zero-photo read-only visitor, and no console/network errors. Upload/delete
+    (the `canManage=true` path) not exercised — same master-admin-auth-loss caveat as several
+    recent phases.
+27. **Optional edit reason on regular edits (Phase 37)** — **Done**, no collision (entry #26 above
+    correctly spotted my in-flight, not-yet-type-checked edit to `PlayerFormModal.tsx` mid-slice
+    and left it alone — this entry is that same work, finished). Added an optional "Reason for
+    this change" field to all five edit surfaces (`PlayerFormModal`/`TeamFormModal`/
+    `ClubFormModal`/`TournamentFormModal`, shown only when editing not creating, and
+    `MatchSetupPage`'s review step, shown only when `?edit=` is set), threaded through each page's
+    save handler into `snapshotVersion()`'s existing `reason` param (supported since Phase 18,
+    never previously populated by a manual-edit caller). **Found the same real bug at all five
+    call sites**: `Field` doesn't accept a `className` prop — passing one is a `tsc` error, not a
+    silent no-op. Fixed by wrapping each new field in a plain `<div className="mt-4">` instead.
+    Verified live end-to-end against the real database: created a throwaway test player, updated
+    it, called `snapshotVersion()` exactly as a save handler does (with a real reason string), and
+    confirmed `listVersions()` returned the entry with the reason correctly stored — the actual
+    Firestore round-trip this feature depends on. Test player and version entry both cleaned up
+    after. The five forms' UI wasn't click-tested (gated behind auth this session has repeatedly
+    lost), but each is a straightforward `tsc`-verified prop-threading change riding on a
+    round-trip that's now independently proven. `tsc`/`npm run build`/lint clean.
 
 (Appended to as further slices are picked up.)

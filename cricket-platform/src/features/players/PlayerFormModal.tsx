@@ -25,6 +25,7 @@ export function PlayerFormModal({
     input: PlayerInput,
     id?: string,
     createLogin?: boolean,
+    reason?: string,
   ) => void | Promise<void>
 }) {
   const [fullName, setFullName] = useState(player?.fullName ?? '')
@@ -41,6 +42,7 @@ export function PlayerFormModal({
   const [teamIds, setTeamIds] = useState<string[]>(player?.teamIds ?? [])
   const [active, setActive] = useState(player?.active ?? true)
   const [createLogin, setCreateLogin] = useState(!player)
+  const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -66,7 +68,7 @@ export function PlayerFormModal({
       active,
     }
     try {
-      await onSave(input, player?.id, createLogin)
+      await onSave(input, player?.id, createLogin, reason.trim() || undefined)
     } finally {
       setSaving(false)
     }
@@ -188,6 +190,18 @@ export function PlayerFormModal({
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {player && (
+        <div className="mt-4">
+          <Field label="Reason for this change (optional)">
+            <Input
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. corrected spelling"
+            />
+          </Field>
         </div>
       )}
 

@@ -58,12 +58,13 @@ export function ClubsSeasonsPage() {
   const clubName = (id?: string | null) =>
     (clubs.data ?? []).find((c) => c.id === id)?.name
 
-  async function handleSaveClub(input: ClubInput, id?: string) {
+  async function handleSaveClub(input: ClubInput, id?: string, reason?: string) {
     try {
       if (id) {
         const prev = editingClub
         await updateClub(id, input)
-        if (prev) await snapshotVersion('club', id, prev, changedKeys(prev, input), profile)
+        if (prev)
+          await snapshotVersion('club', id, prev, changedKeys(prev, input), profile, reason)
         toast.success('Club updated')
       } else {
         await createClub({ ...input, ownerId: profile?.id })

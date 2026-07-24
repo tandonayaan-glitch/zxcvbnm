@@ -62,13 +62,13 @@ export function TournamentsPage() {
   const { page, setPage, pageCount, pageItems, totalItems, pageSize } =
     usePaginated(scopedTournaments, 12)
 
-  async function handleSave(input: TournamentInput, id?: string) {
+  async function handleSave(input: TournamentInput, id?: string, reason?: string) {
     try {
       if (id) {
         const prev = editing // pre-edit snapshot for undo
         await updateTournament(id, input)
         if (prev) {
-          await snapshotVersion('tournament', id, prev, changedKeys(prev, input), profile)
+          await snapshotVersion('tournament', id, prev, changedKeys(prev, input), profile, reason)
         }
         toast.undo('Tournament updated', async () => {
           if (!prev) return

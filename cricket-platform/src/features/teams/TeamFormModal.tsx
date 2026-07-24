@@ -16,7 +16,7 @@ export function TeamFormModal({
   players: Player[]
   clubs: Club[]
   onClose: () => void
-  onSave: (input: TeamInput, id?: string) => void | Promise<void>
+  onSave: (input: TeamInput, id?: string, reason?: string) => void | Promise<void>
 }) {
   const [name, setName] = useState(team?.name ?? '')
   const [shortName, setShortName] = useState(team?.shortName ?? '')
@@ -30,6 +30,7 @@ export function TeamFormModal({
   const [playerIds, setPlayerIds] = useState<string[]>(team?.playerIds ?? [])
   const [captainId, setCaptainId] = useState(team?.captainId ?? '')
   const [viceCaptainId, setViceCaptainId] = useState(team?.viceCaptainId ?? '')
+  const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -59,7 +60,7 @@ export function TeamFormModal({
       logoURL: logoURL.trim() || null,
     }
     try {
-      await onSave(input, team?.id)
+      await onSave(input, team?.id, reason.trim() || undefined)
     } finally {
       setSaving(false)
     }
@@ -193,6 +194,18 @@ export function TeamFormModal({
                 </option>
               ))}
             </Select>
+          </Field>
+        </div>
+      )}
+
+      {team && (
+        <div className="mt-4">
+          <Field label="Reason for this change (optional)">
+            <Input
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. updated squad"
+            />
           </Field>
         </div>
       )}

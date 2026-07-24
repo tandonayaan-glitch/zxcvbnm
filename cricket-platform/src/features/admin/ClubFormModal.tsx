@@ -12,13 +12,14 @@ export function ClubFormModal({
 }: {
   club: Club | null
   onClose: () => void
-  onSave: (input: ClubInput, id?: string) => void | Promise<void>
+  onSave: (input: ClubInput, id?: string, reason?: string) => void | Promise<void>
 }) {
   const [name, setName] = useState(club?.name ?? '')
   const [shortName, setShortName] = useState(club?.shortName ?? '')
   const [logoURL, setLogoURL] = useState(club?.logoURL ?? '')
   const [homeVenue, setHomeVenue] = useState(club?.homeVenue ?? '')
   const [description, setDescription] = useState(club?.description ?? '')
+  const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -34,7 +35,7 @@ export function ClubFormModal({
       description: description.trim() || undefined,
     }
     try {
-      await onSave(input, club?.id)
+      await onSave(input, club?.id, reason.trim() || undefined)
     } finally {
       setSaving(false)
     }
@@ -79,6 +80,17 @@ export function ClubFormModal({
           />
         </Field>
       </div>
+      {club && (
+        <div className="mt-4">
+          <Field label="Reason for this change (optional)">
+            <Input
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. updated description"
+            />
+          </Field>
+        </div>
+      )}
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
     </Modal>
   )

@@ -4,6 +4,20 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Commercial expansion pass
 
+### Added — Optional edit reason on regular edits (Phase 37)
+- All five edit forms (Player, Team, Club, Tournament, Match setup) now have an optional "Reason
+  for this change" field, threaded into the version-history entry `snapshotVersion()` already
+  supported since Phase 18 but no caller had populated until now.
+- Found and fixed the same bug at all five call sites: `Field` doesn't accept a `className` prop
+  (a type error, not a no-op) — wrapped each new field in a plain `<div>` instead.
+
+### Added — Match photo galleries (ROADMAP_V2 Phase 3)
+- New `MatchGallery` component on the public match page: view photos from the match (uploaded to
+  a `matches/{id}` Storage folder, same convention as player/team/tournament media). The match's
+  scorer/owner (or master admin) gets an upload control and per-photo delete; everyone else sees a
+  read-only grid with a lightbox. No service-layer or Storage-rules changes needed — built entirely
+  on the existing `storage.service.ts` API.
+
 ### Added — Audit log: login events + search (Phase 36)
 - Successful sign-ins are now audit-logged (`auth.service.ts`'s `login()`, fire-and-forget so a
   rejected write for a non-admin login never blocks sign-in). Platform Tools' audit card gained a
