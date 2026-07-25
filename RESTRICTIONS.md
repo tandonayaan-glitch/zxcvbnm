@@ -3,15 +3,17 @@
 Single source of truth for implementation constraints, instruction precedence, architectural
 decisions, deferred work, and guidance for future sessions on **CricketHub**
 (`cricket-platform/`). Keep this file synchronized with `cricket-platform/ROADMAP.md`,
-`cricket-platform/ROADMAP_V2.md`, and `cricket-platform/CHANGELOG.md` — update it the moment a new
-restriction, conflict, deferral, or architectural decision is made, without pausing implementation
-work to do so.
+`cricket-platform/ROADMAP_V2.md`, `cricket-platform/ROADMAP_V3.md`, and
+`cricket-platform/CHANGELOG.md` — update it the moment a new restriction, conflict, deferral, or
+architectural decision is made, without pausing implementation work to do so.
 
-**Two roadmaps exist**: `ROADMAP.md` is the original "commercial platform" feature expansion (32
-phases, all done). `ROADMAP_V2.md` (started per explicit user request) is a follow-on
-cleanup/hardening/polish pass — not new feature surface, but making the existing surface more
-solid (repo cleanup, media management, notification polish, UI/UX, performance, production
-hardening, dev tooling). Every constraint/precedent below applies to both equally.
+**Three roadmaps exist**: `ROADMAP.md` is the original "commercial platform" feature expansion (37
+phases, all done). `ROADMAP_V2.md` (7 phases, all done) was a follow-on cleanup/hardening/polish
+pass — not new feature surface, but making the existing surface more solid. `ROADMAP_V3.md`
+("League Ecosystem," started per explicit user request) is the next major product milestone —
+genuinely new, spectator/community-facing feature surface (sharing, comments, reactions, following,
+public profiles, embeds, QR codes, tournament sponsors/galleries/announcements/downloads/calendar).
+Every constraint/precedent below applies to all three equally.
 
 ---
 
