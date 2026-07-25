@@ -146,17 +146,29 @@ export function PublicLayout() {
       <footer className="border-t border-ink-200 bg-white py-6 dark:border-ink-800 dark:bg-ink-900">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 text-sm text-ink-500 dark:text-ink-400 sm:flex-row">
           <p>© {new Date().getFullYear()} CricketHub — Live scoring & cricket management.</p>
-          <div className="flex gap-4">
-            <Link to="/login" className="hover:text-ink-800 dark:hover:text-ink-200">
+          <div className="flex gap-2 sm:gap-4">
+            <Link
+              to="/login"
+              className="rounded-md px-2 py-2.5 hover:bg-ink-100 hover:text-ink-800 dark:hover:bg-ink-800 dark:hover:text-ink-200"
+            >
               Scorer login
             </Link>
-            <Link to="/search" className="hover:text-ink-800 dark:hover:text-ink-200">
+            <Link
+              to="/search"
+              className="rounded-md px-2 py-2.5 hover:bg-ink-100 hover:text-ink-800 dark:hover:bg-ink-800 dark:hover:text-ink-200"
+            >
               Search
             </Link>
-            <Link to="/privacy" className="hover:text-ink-800 dark:hover:text-ink-200">
+            <Link
+              to="/privacy"
+              className="rounded-md px-2 py-2.5 hover:bg-ink-100 hover:text-ink-800 dark:hover:bg-ink-800 dark:hover:text-ink-200"
+            >
               Privacy
             </Link>
-            <Link to="/terms" className="hover:text-ink-800 dark:hover:text-ink-200">
+            <Link
+              to="/terms"
+              className="rounded-md px-2 py-2.5 hover:bg-ink-100 hover:text-ink-800 dark:hover:bg-ink-800 dark:hover:text-ink-200"
+            >
               Terms
             </Link>
           </div>

@@ -572,5 +572,16 @@ reasoning.
     `javascript_tool` working normally throughout; worked around it by verifying through the DOM
     directly rather than the accessibility tree); Club/Season pages use the identical one-line
     pattern, verified by code review only (this dev database has no club/season to click through).
+33. **`ROADMAP_V3.md` Phase 1 Slice 1.2 — Mobile spectator polish** — **Done**, no collision. A real
+    375px-viewport audit (page `scrollWidth`/`innerWidth`, per-element bounding rects, not
+    eyeballed screenshots — this turn's `computer`/screenshot tool was intermittently timing out;
+    confirmed via `get_page_text`/`javascript_tool`, which worked fine throughout, that this was a
+    tooling glitch, not an app bug) of a completed match page, a live match page, and the
+    tournament page's 11-tab bar. **Result: found zero page-level horizontal overflow anywhere** —
+    the responsive foundation from prior roadmaps genuinely already holds up, confirmed by testing
+    rather than re-asserting the earlier audit's read of the code. **One real, if minor, gap found
+    and fixed**: the public footer's four links (`PublicLayout.tsx`, present on every public page)
+    had only a ~20px tap target with no padding; added padding + hover state, measured 40px after
+    the fix. `tsc`/`npm run build` clean.
 
 (Appended to as further slices are picked up.)

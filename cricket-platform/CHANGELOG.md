@@ -4,6 +4,12 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — League Ecosystem (ROADMAP_V3)
 
+### Fixed — Footer touch-target sizing (ROADMAP_V3 Phase 1, Slice 1.2)
+- The public footer's four links (present on every public page) had a ~20px tap target; padded and
+  added a hover state, now ~40px. Found via a live mobile-viewport audit — the rest of the
+  spectator experience (scorecards, tournament tabs, live panel) was already solid, confirmed by
+  testing rather than assumed.
+
 ### Added — Shareable links (ROADMAP_V3 Phase 1, Slice 1.1)
 - New `ShareButton` on every public entity page (Match, Tournament, Team, Player, Club, Season):
   native share sheet on mobile, copy-to-clipboard everywhere else, with a real error toast if the

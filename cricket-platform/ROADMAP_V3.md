@@ -63,9 +63,27 @@ write-ups below as they're completed, not duplicated here.
   toast fires correctly instead of the original silent failure.
 
 ### Slice 1.2 — Mobile spectator polish
-- ⬜ Targeted pass at real mobile viewport widths on the highest-traffic spectator surfaces
-  (live match page, scorecard tables, tournament tabs) — fix whatever's actually found, not a
-  speculative rewrite.
+- ✅ Real 375px-viewport audit (not a speculative rewrite) of the highest-traffic surfaces: a
+  completed match page (scorecard tables, match insights, boundary/wicket timeline), a live match
+  page (`LivePanel`, wagon wheel, bowling line/length grid), and the tournament page's 11-tab bar.
+  Checked programmatically (page `scrollWidth` vs `innerWidth`, per-element bounding rects) rather
+  than eyeballing screenshots, since this session's `computer`/screenshot tooling was intermittently
+  timing out — confirmed via `get_page_text`/`javascript_tool` (which worked fine throughout) that
+  this was a tooling issue, not an app one.
+- **Result: the responsive foundation was already solid.** Zero page-level horizontal overflow on
+  any of the three surfaces; scorecard tables fit their container exactly; the tournament tab bar's
+  `overflow-x-auto` (`components/ui/Tabs.tsx`) already scrolls its own 869px of tabs within a 343px
+  viewport correctly rather than breaking the page. This matches the pre-slice reality check above
+  — most of Phase 1 was already built, and this confirms the "already-extensive responsive classes"
+  finding by testing it, not just reading the code.
+- **One genuine gap found and fixed**: the public footer's four links (`Scorer login`/`Search`/
+  `Privacy`/`Terms`, present via `PublicLayout.tsx` on every single public page) were plain
+  unpadded text — a 20px-tall tap target, well under accessible touch-target size. Added
+  padding + a hover background (`rounded-md px-2 py-2.5`, tightened `gap-4`→`gap-2 sm:gap-4` on
+  mobile so four wider targets still fit one row) — measured 40px tall post-fix, confirmed no new
+  overflow introduced.
+- `tsc`/`npm run build` clean. Verified live via direct DOM measurement (footer link heights
+  20px→40px) rather than a visual screenshot, for the same tooling-timeout reason as above.
 
 ## Phase 2 — Community
 
