@@ -44,9 +44,23 @@ write-ups below as they're completed, not duplicated here.
 ## Phase 1 — Live Spectator Experience
 
 ### Slice 1.1 — Shareable links
-- ⬜ New `ShareButton` component: copies the current page's canonical URL to clipboard, uses
-  `navigator.share()` on devices that support it (mobile), falls back to copy-to-clipboard + toast
-  everywhere else. Added to Match/Tournament/Team/Player/Club/Season public pages.
+- ✅ New `components/ui/ShareButton.tsx`: tries `navigator.share()` first (mobile share sheet),
+  falls back to `navigator.clipboard.writeText()` + a success toast, and — this is the real
+  finding from verification, not a hypothetical — **the clipboard write itself can reject** (focus
+  loss, permissions, insecure context), which the first version didn't handle, so a failed copy
+  would fail completely silently with no feedback at all. Fixed with a second fallback level: an
+  error toast telling the visitor to copy the URL from the address bar instead. Two variants
+  (`button` with label, `icon`-only for tight headers) sharing one `cn()`-styled base to match
+  `FollowButton`'s existing look. Added to all six public entity pages: Match (top-right of the
+  dark header bar), Tournament (next to the admin action buttons, always visible unlike those),
+  Team, Player, Club, Season.
+- `tsc`/`npm run build` clean. **Verified live**: confirmed `aria-label="Share"` renders exactly
+  once on Match/Tournament/Player/Team pages (Club/Season use the identical one-line pattern,
+  verified by code review — this dev database has no club/season to click-test against). Exercised
+  the real failure path live rather than just the happy path: this browser automation session's
+  `navigator.clipboard.writeText()` genuinely rejects with `NotAllowedError: Document is not
+  focused`, which is exactly the real-world condition the fix above targets — confirmed the error
+  toast fires correctly instead of the original silent failure.
 
 ### Slice 1.2 — Mobile spectator polish
 - ⬜ Targeted pass at real mobile viewport widths on the highest-traffic spectator surfaces

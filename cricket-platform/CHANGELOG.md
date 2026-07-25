@@ -2,6 +2,13 @@
 
 All notable changes to CricketHub. Newest first.
 
+## [Unreleased] — League Ecosystem (ROADMAP_V3)
+
+### Added — Shareable links (ROADMAP_V3 Phase 1, Slice 1.1)
+- New `ShareButton` on every public entity page (Match, Tournament, Team, Player, Club, Season):
+  native share sheet on mobile, copy-to-clipboard everywhere else, with a real error toast if the
+  clipboard write itself fails rather than failing silently.
+
 ## [Unreleased] — Commercial expansion pass
 
 ### Fixed — Overlay motion consistency (ROADMAP_V2 Phase 4)

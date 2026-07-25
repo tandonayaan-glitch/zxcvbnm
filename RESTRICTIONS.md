@@ -554,5 +554,23 @@ reasoning.
     back `getComputedStyle().animationName`/`animationDuration`, confirming both fire correctly. The
     two auth-gated surfaces weren't click-tested through their real trigger — same master-admin-
     auth-loss caveat as recent phases.
+32. **`ROADMAP_V3.md` created; Phase 1 Slice 1.1 — Shareable links** — **Done**, no collision. This
+    starts the third roadmap, a genuinely new product milestone ("League Ecosystem") rather than
+    more cleanup — see `ROADMAP_V3.md` for the full 5-phase plan and which of the user's requested
+    items already existed from prior roadmaps vs. are net-new (most of Phase 1's asks — live mode,
+    public pages — already existed; Phases 2-4 are mostly genuinely new). This slice: new
+    `components/ui/ShareButton.tsx` (native share sheet → clipboard-copy fallback), added to all six
+    public entity pages. **Found and fixed a real bug during live verification, not a hypothetical
+    one**: `navigator.clipboard.writeText()` can reject (this session's own browser automation hit
+    it live — `NotAllowedError: Document is not focused` — but focus loss/permissions/insecure-
+    context are all real conditions a genuine visitor can hit too), and the first version had no
+    handling for that rejection at all, so a failed copy would fail with zero user feedback. Fixed
+    with a second-level error toast. `tsc`/`npm run build` clean. Verified live: `aria-label="Share"`
+    confirmed present exactly once on Match/Tournament/Player/Team pages via direct DOM query (this
+    turn's browser tooling had a `window.innerWidth/innerHeight` of 0 and `computer`/`read_page`
+    timed out — a genuine tooling glitch, not an app issue, confirmed by `get_page_text` and
+    `javascript_tool` working normally throughout; worked around it by verifying through the DOM
+    directly rather than the accessibility tree); Club/Season pages use the identical one-line
+    pattern, verified by code review only (this dev database has no club/season to click through).
 
 (Appended to as further slices are picked up.)

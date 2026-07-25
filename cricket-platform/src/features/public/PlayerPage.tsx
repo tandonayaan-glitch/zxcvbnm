@@ -2,6 +2,7 @@ import { useParams, Link } from 'react-router-dom'
 import { User, Flag, Star, Award, Target, TrendingUp, Download, FileJson, Printer } from 'lucide-react'
 import { Avatar, Badge, Card, PageLoader, EmptyState } from '@/components/ui/primitives'
 import { FollowButton } from '@/components/ui/FollowButton'
+import { ShareButton } from '@/components/ui/ShareButton'
 import { ActivityFeed } from '@/components/activity/ActivityFeed'
 import { Tabs } from '@/components/ui/Tabs'
 import { useMemo, useState } from 'react'
@@ -191,7 +192,10 @@ export function PlayerPage() {
             )}
           </div>
           <div className="flex flex-col items-end gap-2">
-            <FollowButton kind="players" id={p.id} />
+            <div className="flex items-center gap-2">
+              <ShareButton variant="icon" title={p.fullName} />
+              <FollowButton kind="players" id={p.id} />
+            </div>
             <Link
               to={`/compare?a=${p.id}`}
               className="text-sm font-medium text-brand-700 hover:underline"

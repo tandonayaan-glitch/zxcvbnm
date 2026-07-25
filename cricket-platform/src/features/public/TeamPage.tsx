@@ -21,6 +21,7 @@ import {
   StatCard,
 } from '@/components/ui/primitives'
 import { FollowButton } from '@/components/ui/FollowButton'
+import { ShareButton } from '@/components/ui/ShareButton'
 import { ActivityFeed } from '@/components/activity/ActivityFeed'
 import { useAsync } from '@/hooks/useAsync'
 import { getTeam } from '@/services/teams.service'
@@ -168,7 +169,8 @@ export function TeamPage() {
               )}
             </p>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <ShareButton variant="icon" title={t.name} />
             <FollowButton kind="teams" id={t.id} />
           </div>
         </div>

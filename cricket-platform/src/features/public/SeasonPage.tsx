@@ -8,6 +8,7 @@ import {
   EmptyState,
   PageLoader,
 } from '@/components/ui/primitives'
+import { ShareButton } from '@/components/ui/ShareButton'
 import { useAsync } from '@/hooks/useAsync'
 import { getSeason } from '@/services/seasons.service'
 import { getClub } from '@/services/clubs.service'
@@ -94,6 +95,7 @@ export function SeasonPage() {
               </div>
             </div>
           </div>
+          <ShareButton variant="icon" title={s.name} />
         </div>
         {s.description && (
           <p className="mt-3 text-sm text-ink-600 dark:text-ink-400">{s.description}</p>

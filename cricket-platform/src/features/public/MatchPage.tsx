@@ -4,7 +4,6 @@ import {
   Radio,
   MapPin,
   Calendar,
-  Trophy,
   Settings2,
   Pencil,
   Award,
@@ -15,7 +14,6 @@ import {
   Target,
 } from 'lucide-react'
 import {
-  Button,
   Card,
   LiveBadge,
   PageLoader,
@@ -39,6 +37,7 @@ import { ScorecardConfigModal } from '@/features/scorecard/ScorecardConfigModal'
 import { matchToCSV, matchToJSON, exportSlug } from '@/domain/matchExport'
 import { downloadBlob } from '@/lib/download'
 import { MatchGallery } from '@/components/media/MatchGallery'
+import { ShareButton } from '@/components/ui/ShareButton'
 import { computeHeadToHead } from '@/domain/headToHead'
 import { matchTopPerformers } from '@/domain/matchPerformers'
 import { chaseWinProbability } from '@/domain/winProbability'
@@ -52,7 +51,7 @@ import {
   requiredRate,
   projectedScore,
 } from '@/lib/format'
-import type { Delivery, Match, Player, ScorecardConfig } from '@/types'
+import type { Delivery, Match, ScorecardConfig } from '@/types'
 
 export function MatchPage() {
   const { id = '' } = useParams()
@@ -163,24 +162,27 @@ export function MatchPage() {
       {/* Header */}
       <Card className="mb-4 overflow-hidden">
         <div className="bg-ink-900 px-5 py-4 text-white">
-          <div className="mb-1 flex items-center gap-2">
-            {live ? (
-              <LiveBadge />
-            ) : match.status === 'completed' ? (
-              <Badge tone="gray">Completed</Badge>
-            ) : match.status === 'abandoned' ? (
-              <Badge tone="red">Abandoned</Badge>
-            ) : (
-              <Badge tone="amber">Upcoming</Badge>
-            )}
-            {match.tournamentName && (
-              <Link
-                to={match.tournamentId ? `/tournament/${match.tournamentId}` : '#'}
-                className="text-xs text-ink-300 hover:text-white"
-              >
-                {match.tournamentName}
-              </Link>
-            )}
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              {live ? (
+                <LiveBadge />
+              ) : match.status === 'completed' ? (
+                <Badge tone="gray">Completed</Badge>
+              ) : match.status === 'abandoned' ? (
+                <Badge tone="red">Abandoned</Badge>
+              ) : (
+                <Badge tone="amber">Upcoming</Badge>
+              )}
+              {match.tournamentName && (
+                <Link
+                  to={match.tournamentId ? `/tournament/${match.tournamentId}` : '#'}
+                  className="text-xs text-ink-300 hover:text-white"
+                >
+                  {match.tournamentName}
+                </Link>
+              )}
+            </div>
+            <ShareButton variant="icon" title={`${match.teamA.name} vs ${match.teamB.name}`} />
           </div>
           <h1 className="text-xl font-bold">
             {match.teamA.name} vs {match.teamB.name}

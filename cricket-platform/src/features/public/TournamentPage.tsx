@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/primitives'
 import { Tabs } from '@/components/ui/Tabs'
 import { ActivityFeed } from '@/components/activity/ActivityFeed'
+import { ShareButton } from '@/components/ui/ShareButton'
 import { useAsync } from '@/hooks/useAsync'
 import { useToast } from '@/components/ui/toast'
 import { getTournament } from '@/services/tournaments.service'
@@ -234,18 +235,21 @@ export function TournamentPage() {
               </div>
             </div>
           </div>
-          {canManageTournaments(profile) && (
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={refresh} loading={refreshing}>
-                <RefreshCw size={14} /> Refresh
-              </Button>
-              <Link to="/matches/new">
-                <Button size="sm">
-                  <Plus size={14} /> Match
+          <div className="flex gap-2">
+            <ShareButton variant="icon" title={t.name} />
+            {canManageTournaments(profile) && (
+              <>
+                <Button variant="outline" size="sm" onClick={refresh} loading={refreshing}>
+                  <RefreshCw size={14} /> Refresh
                 </Button>
-              </Link>
-            </div>
-          )}
+                <Link to="/matches/new">
+                  <Button size="sm">
+                    <Plus size={14} /> Match
+                  </Button>
+                </Link>
+              </>
+            )}
+          </div>
         </div>
         {t.description && (
           <p className="mt-3 text-sm text-ink-600 dark:text-ink-400">{t.description}</p>
