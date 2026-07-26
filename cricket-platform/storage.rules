@@ -7,15 +7,60 @@ rules_version = '2';
 //    as Firestore's public-read cricket data).
 //  - Writes require sign-in; capped at 5MB and image-only content
 //    type, mirroring the client-side validation in
-//    services/media.service.ts — never trust client validation alone.
+//    services/storage.service.ts — never trust client validation alone.
+//  - Per-folder role gating (below) mirrors the equivalent Firestore
+//    create/update gates for each entity type, via a cross-service
+//    lookup of the caller's role on their `users/{uid}` profile doc —
+//    previously ANY signed-in user (including a plain VIEWER) could
+//    upload or delete a photo in ANY folder, platform-wide. This does
+//    NOT replicate per-entity ownership scoping (e.g. "only this
+//    match's own scorer") — the client UI already enforces that; role
+//    gating alone already closes the real gap (an unprivileged
+//    account touching media it has no business touching at all).
 // ==================================================================
 service firebase.storage {
   match /b/{bucket}/o {
-    match /{allPaths=**} {
-      allow read: if true;
-      allow write: if request.auth != null
-        && request.resource.size < 5 * 1024 * 1024
+    function isValidImage() {
+      return request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
+    }
+
+    // A content-management-capable role: covers player/team/club/tournament CRUD
+    // (canManage() in firestore.rules) and match scoring (canScore()) in one set,
+    // since media for both categories lives under this same Storage bucket.
+    function canManageMedia() {
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role
+           in ['MASTER_ADMIN', 'ADMIN', 'TEAM_MANAGER', 'TOURNAMENT_MANAGER', 'SCORER'];
+    }
+
+    // Own-avatar uploads (UserSettingsPage): any signed-in user, including a plain
+    // VIEWER, manages their own profile photo — this one folder is intentionally not
+    // role-gated the way the others below are.
+    match /users/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && isValidImage();
+    }
+    match /players/{allPaths=**} {
+      allow read: if true;
+      allow write: if canManageMedia() && isValidImage();
+    }
+    match /teams/{allPaths=**} {
+      allow read: if true;
+      allow write: if canManageMedia() && isValidImage();
+    }
+    match /clubs/{allPaths=**} {
+      allow read: if true;
+      allow write: if canManageMedia() && isValidImage();
+    }
+    match /tournaments/{allPaths=**} {
+      allow read: if true;
+      allow write: if canManageMedia() && isValidImage();
+    }
+    match /matches/{allPaths=**} {
+      allow read: if true;
+      allow write: if canManageMedia() && isValidImage();
     }
   }
 }

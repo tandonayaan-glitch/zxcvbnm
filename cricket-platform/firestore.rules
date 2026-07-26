@@ -70,8 +70,12 @@ service cloud.firestore {
             && request.resource.data.role == 'VIEWER'
             && request.resource.data.status == 'pending_registration')
       );
-      // Self may edit own profile but NOT change role or status, EXCEPT the
-      // one first-login activation transition (pending_registration -> active).
+      // Self may edit own profile but NOT change role or status, EXCEPT:
+      //  - the one first-login activation transition (pending_registration -> active)
+      //  - accepting an invitation: self-elevating to EXACTLY the role a still-valid
+      //    `invitationRoleGrants/{uid}` doc names (see that collection's own comment for why
+      //    this is safe rather than an open self-promotion hole — it's a narrow, unforgeable,
+      //    per-user, per-role, time-boxed exception, not "any user can set role: ADMIN").
       // Role/ban changes otherwise require the master admin.
       allow update: if isSignedIn() && (
         (request.auth.uid == uid
@@ -79,6 +83,11 @@ service cloud.firestore {
           && (request.resource.data.status == resource.data.status
               || (resource.data.status == 'pending_registration'
                   && request.resource.data.status == 'active')))
+        || (request.auth.uid == uid
+            && request.resource.data.status == resource.data.status
+            && exists(/databases/$(database)/documents/invitationRoleGrants/$(uid))
+            && get(/databases/$(database)/documents/invitationRoleGrants/$(uid)).data.role == request.resource.data.role
+            && get(/databases/$(database)/documents/invitationRoleGrants/$(uid)).data.expiresAt > request.time.toMillis())
         || isMasterAdmin()
       );
       allow delete: if isMasterAdmin();
@@ -254,9 +263,14 @@ service cloud.firestore {
 
     // ---- Invitations ------------------------------------------------
     match /invitations/{id} {
-      // The invited user reads their own; the master admin reads all.
-      allow read: if isSignedIn()
-        && (resource.data.invitedUid == request.auth.uid || isMasterAdmin());
+      // A single-doc read by its own id (the unguessable random code in the /invite/:code
+      // link) is public — a signed-out visitor needs to preview who invited them and to what
+      // role *before* they can sign in to respond (InvitePage's pending+signed-out state).
+      // This doesn't expose anything beyond "if you already have the exact link" — it's not
+      // enumerable, since `list` (the whole-collection reads InvitationsPage/listInvitations()
+      // use) stays master-admin-only below.
+      allow get: if true;
+      allow list: if isMasterAdmin();
       // Granting a role via invitation is as sensitive as granting it
       // directly (Users & Roles), so creation/cancel/resend is master-only.
       allow create, delete: if isMasterAdmin();
@@ -270,6 +284,19 @@ service cloud.firestore {
             && request.resource.data.role == resource.data.role
             && request.resource.data.invitedUid == resource.data.invitedUid)
       );
+    }
+
+    // ---- Invitation role-grant linkage (internal — see collections.ts comment) --------
+    match /invitationRoleGrants/{uid} {
+      // Nothing in the UI reads this directly — only firestore.rules itself (via `get()`,
+      // which always has access regardless of a doc's own rules) needs to see it.
+      allow read: if false;
+      // Created/refreshed only alongside an invitation (createInvitation/resendInvitation),
+      // both master-only actions.
+      allow create, update: if isMasterAdmin();
+      // Consumed (deleted) either by the master admin (cancelling) or by the invitee
+      // themselves, as the mirror-image of accepting/declining their own invitation.
+      allow delete: if isMasterAdmin() || (isSignedIn() && request.auth.uid == uid);
     }
   }
 }

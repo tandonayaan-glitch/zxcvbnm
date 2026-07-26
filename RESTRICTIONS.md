@@ -622,4 +622,146 @@ reasoning.
     entries (no club/season reachable from a real link in this dev database; `/account` needs auth
     this session's browser doesn't have).
 
+35. **Final comprehensive production audit** — user-requested, explicit scope: verify
+    production-readiness across code quality, dead/duplicate code, unused dependencies, Firestore
+    efficiency/indexes, TypeScript strictness, error handling, edge cases, UI consistency,
+    accessibility, performance, security, and documentation accuracy — fix genuine issues, invent
+    no new features. Delegated the broad multi-file investigation to three parallel agents (dead
+    code/duplication; Firestore efficiency/security; accessibility/error-handling/UI consistency),
+    independently verified their highest-confidence findings myself before acting on any of them,
+    same discipline as every prior finding this session.
+    - **Real, high-severity bug found and fixed**: `logActivity()` wrote `actorId`/`refId`
+      straight into `setDoc()` without `pruneUndefined()` — Firestore rejects `undefined` field
+      values (a standing, documented project constraint), so every call omitting `actorId` (the
+      large majority of call sites — every entity-creation event) threw, was silently swallowed by
+      the function's own best-effort try/catch, and the activity entry was never written. This
+      means the "No activity yet." empty states verified live during Phases 26/34 were this bug
+      manifesting, not genuinely empty feeds. Verified live: reproduced the write succeeding
+      post-fix against the real database with the exact args a real caller uses (no `actorId`).
+    - **Real, high-severity security bug found and fixed**: `invitations.service.ts`'s
+      `acceptInvitation()` (built and live-verified in Phase 25) calls `setUserRole()`, which
+      writes the invitee's OWN `role` field on `users/{uid}` — but `firestore.rules`' self-update
+      rule only permits a role-unchanged self-write; any actual role change requires
+      `isMasterAdmin()`. Since accept is always invoked by the non-master invitee themselves, this
+      write would be rejected by real rule enforcement every time — the invitation would get stuck
+      at `status: 'accepted'` (a terminal, non-retryable UI state) while the role silently never
+      applied. Phase 25's live verification never caught this because Firestore rules aren't
+      enforced against this project's dev-mode database (per `CLAUDE.md`), so the write succeeded
+      in testing regardless of what the (unenforced) rules said.
+      **Fix**: a new internal-only `invitationRoleGrants/{invitedUid}` collection
+      (`lib/collections.ts`) mirrors `{role, expiresAt}` for the current pending invitation, kept
+      in lockstep with every `invitations/{code}` mutation (`createInvitation` creates it,
+      `cancelInvitation`/`declineInvitation` delete it, `resendInvitation` re-affirms it,
+      `acceptInvitation` deletes it *after* the role-write so it can't be replayed). `users/{uid}`'s
+      update rule gained one new narrow OR-branch: self-role-elevation is permitted only when a
+      still-unexpired grant doc exists for that exact uid+role — unforgeable (only
+      `createInvitation`/`resendInvitation`, both master-only, can write one), single-use (deleted
+      on consumption), and scoped to exactly the invited role (can't self-grant a different one).
+      Firestore rules can't query by field value (only exact-path `get`/`exists`), which is why
+      this needed a uid-keyed mirror doc rather than checking the primary `invitations` collection
+      (keyed by its random shareable `code`) directly.
+      **Also fixed in the same pass**: `invitations/{id}`'s read rule required `isSignedIn()`,
+      meaning a genuinely signed-out visitor opening their own invite link (`InvitePage.tsx`'s
+      "pending + signed out, prompts sign-in" state) would have had their `getInvitation(code)`
+      read rejected by real rule enforcement too — never caught for the same reason (Phase 25's
+      live check of that exact state was done from an already-signed-in master-admin session,
+      which bypassed the gap via `isMasterAdmin()`). Split `allow read` into `allow get: if true`
+      (the code is an unguessable bearer token — a single-doc read by exact code isn't sensitive)
+      and `allow list: if isMasterAdmin()` (prevents enumerating the whole collection).
+      **Verified live** (logic-level; real rule *enforcement* still can't be tested against this
+      dev-mode database, same caveat as every other rules change this session): ran the actual
+      service functions against the real database end-to-end — create (confirmed grant doc
+      appears with correct role/expiry) → accept (confirmed role actually changes, confirmed grant
+      doc is deleted immediately after so it can't be replayed) → decline (confirmed grant
+      deleted) → cancel (confirmed grant deleted) → resend after decline (confirmed grant
+      re-created with fresh role/expiry). All test invitations, the grant doc, and test
+      notifications cleaned up after; test user's role reverted to `VIEWER`.
+    - **Real security gap found and fixed**: `storage.rules` gated every write on `request.auth !=
+      null` alone — any signed-in account, including a freshly self-registered `VIEWER` with no
+      content-management role at all, could `uploadBytes`/`deleteObject` on any path in the bucket,
+      bypassing every `canManage()`/`canScore()` gate the equivalent Firestore rules already
+      enforce for the same entities. Fixed with per-folder rules: `users/**` (own-avatar uploads,
+      `UserSettingsPage.tsx`) stays open to any signed-in user — a plain viewer legitimately needs
+      to set their own profile photo — but `players|teams|clubs|tournaments|matches/**` now require
+      a content-management-capable role, checked via a `firestore.get()` cross-service lookup on
+      the caller's `users/{uid}` profile (Storage Rules v2's documented, GA mechanism for this).
+      **Deliberately doesn't replicate per-entity ownership scoping** (e.g. "only this specific
+      match's assigned scorer") — that would need a second cross-reference to the entity's own
+      `ownerId`/`scorerId`, meaningfully more complex for a marginal additional gain the client UI
+      (which already passes `canManage`/`canScore` booleans into `MatchGallery` etc.) already
+      covers; role-level gating alone already closes the actual severe gap (an account with zero
+      content-management privileges touching media anywhere in the bucket). Not click-tested live
+      (Storage rule *enforcement*, like Firestore's, isn't active against this dev-mode project) —
+      reviewed the exact cross-service `firestore.get()` syntax against Firebase's documented
+      pattern rather than guessing.
+    - **Dead code removed** (each independently verified to have zero call sites anywhere in
+      `src/`, including lazy imports in `App.tsx` and same-file callers — learning directly from
+      `ROADMAP_V2.md` Phase 1's documented false-positive lesson on this exact kind of sweep):
+      `RoleGate` (superseded by `ProtectedRoute`), `deleteMatch`, `getStandings`/`sortStandings`,
+      `addTeamToTournament`/`removeTeamFromTournament`, `addPlayerToTeam`/`removePlayerFromTeam`,
+      `cachePlayerStats`, `BRACKET_STAGES`, `inningsSummaryLine`, `timeAgo`, `pluralize`, plus their
+      now-unused imports. **Deliberately kept, not deleted**: `useFeatureFlag`/`isFlagEnabledFor`
+      (explicitly documented in `ROADMAP.md` Phase 21 as "prepared architecture for the next
+      experimental feature to opt into" — an intentional decision, not accidental dead code);
+      `ownsOrMaster`/`canManagePlayers` (small, correct, `CLAUDE.md`-documented ownership/role
+      helpers — superseded in practice by list-level `ownerScope()` filtering, which is a
+      documentation-staleness finding, not a reason to delete a harmless, potentially-reusable
+      utility); `completeMatch`/`abandonMatch`/`setBatters`/`listRecoveryAttempts` (real,
+      correctly-implemented admin capabilities — force-complete/abandon a match, correct
+      striker/non-striker, review the recovery-attempt audit trail — that simply have no UI button
+      yet; deleting working backend logic because its UI wasn't built would make adding that UI
+      *harder* later, not easier — flagged as a recommendation instead, see below).
+    - **Deduplicated** a byte-identical private `csvCell()` helper copy-pasted verbatim across
+      `domain/matchExport.ts`/`playerExport.ts`/`tournamentExport.ts` into one shared export in
+      `lib/download.ts`.
+    - **Six list pages' delete/archive/import handlers had no try/catch** while their sibling save
+      handlers in the same files did (`PlayersPage`, `TeamsPage`, `TournamentsPage`,
+      `ClubsSeasonsPage` ×2, `MatchesPage` ×3) — a failed write (permission denied, network blip)
+      silently looked identical to a successful one from the user's perspective. Added consistent
+      `try/catch` + `toast.error(...)`, matching each file's own existing save-handler pattern.
+    - **`notifications.service.ts` fetched a user's entire notification history unbounded** on
+      every read (`where('userId','==',uid)` with no `limit()`), unlike every other client-sorted
+      list in this codebase (`auditLogs`, `clientErrors`, `recoveryAttempts` all cap the query
+      itself). Added a generous `limit(1000)` to bound the read cost. **Not a full fix**: this
+      bounds worst-case cost but doesn't guarantee the *newest* N are what's returned when a user
+      has more than the cap — a true fix needs `orderBy('createdAt')` alongside the `where()`,
+      which needs a composite index this project doesn't ship (`firestore.indexes.json` ships
+      empty by deliberate `ROADMAP_V2.md` Phase 1 decision). Flagged as a recommendation (below)
+      rather than adding an index unprompted, since that's a real infrastructure/deployment change.
+    - **Accessibility**: centralized `id`/`htmlFor` label association in the shared `Field`
+      component (`components/ui/primitives.tsx`) via `useId()` + a defensive `cloneElement` onto
+      the single child — fixes every form built on `Field` app-wide (Player/Team/Club/Tournament/
+      Match-setup forms, login/signup, settings) in one place rather than touching each file.
+      Verified live: `document.getElementById(label.getAttribute('for'))` resolves correctly on
+      the real login page, and clicking a label genuinely moves focus to its input. Also fixed
+      `MatchGallery.tsx`'s delete button being invisible to keyboard focus (`opacity-0` had a
+      `group-hover` counterpart but no `focus-visible` one) and its lightbox missing dialog
+      semantics + an Escape handler (every other overlay in the app has both, per `Modal.tsx`).
+    - **Removed 5 unused dependencies** (`react-hook-form`, `@hookform/resolvers`,
+      `@tanstack/react-query`, `zod`, `date-fns`) — confirmed zero imports anywhere in `src/` via
+      grep; this app hand-rolls form state (`useState` per field) and data fetching (`useAsync`)
+      throughout, so these were never actually adopted. Applied `npm audit fix` (non-`--force`,
+      no breaking changes) for two transitive vulnerabilities (`postcss`, `protobufjs`); left
+      `react-router`'s flagged advisory alone — it's specifically about RSC-mode CSRF, a mode this
+      client-only SPA doesn't use, and the only available fix is a `--force` downgrade labelled
+      breaking by `npm` itself, not something to apply blind.
+    - **TypeScript strictness**: `tsconfig.app.json` already has `strict: true`; grepped for
+      `: any`/`as any`/`Record<string, any>` across all of `src/` and found exactly one file
+      (`versionHistory.service.ts`, already reviewed and accepted earlier this session — a
+      snapshot/diff utility that's inherently polymorphic across five different entity shapes).
+      Nothing further to do here.
+    - **Recommendations for after real-world usage** (not implemented — each needs either a
+      product decision, an infrastructure change, or real usage data this session doesn't have):
+      add UI for the existing-but-unwired `completeMatch`/`abandonMatch`/`setBatters`/
+      `listRecoveryAttempts` capabilities described above; add a composite index (`userId`,
+      `createdAt`) for `notifications` once real per-user notification volume is known, to get a
+      true newest-N guarantee instead of the current generously-capped-but-unordered read; author
+      and deploy the CSP/security-headers recommendation from Phase 30 once ready for a real
+      production deploy; consider surfacing `useAsync`'s already-tracked (but currently unread
+      anywhere) `error` state in the highest-traffic pages if genuine Firestore-read failures turn
+      out to be common in practice — currently a failed fetch silently renders as an empty list
+      with no visible error, which is low-risk today (Firestore reads rarely fail under normal
+      operation) but worth revisiting if it ever isn't.
+    - `tsc`/`npm run build`/lint all clean throughout.
+
 (Appended to as further slices are picked up.)

@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where } from 'firebase/firestore'
+import { collection, doc, deleteDoc, getDoc, getDocs, setDoc, updateDoc, query, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { COL, genId, pruneUndefined } from '@/lib/collections'
 import { logAudit } from './audit.service'
@@ -7,6 +7,15 @@ import { setUserRole } from './users.service'
 import type { Invitation, InvitationStatus, Role, UserProfile } from '@/types'
 
 const invitationsCol = () => collection(db, COL.invitations)
+
+/** The invitee's own self-role-elevation write (in `users.service.ts`'s `setUserRole`, called
+ *  from `acceptInvitation` below) is otherwise blocked by `firestore.rules` — only the master
+ *  admin can normally change a `role` field. This doc is what that rule checks: its mere
+ *  existence, matching role, and unexpired `expiresAt` is what makes "accept your own invite"
+ *  a safe, narrowly-scoped exception rather than a privilege-escalation hole. It's internal
+ *  bookkeeping only — nothing in the UI reads it directly, and `firestore.rules` locks reads
+ *  out entirely. Kept in lockstep with every `invitations/{code}` mutation below. */
+const roleGrantRef = (invitedUid: string) => doc(db, COL.invitationRoleGrants, invitedUid)
 
 const DEFAULT_EXPIRY_DAYS = 7
 
@@ -46,6 +55,7 @@ export async function createInvitation(
     respondedAt: null,
   }
   await setDoc(doc(invitationsCol(), code), pruneUndefined(invitation))
+  await setDoc(roleGrantRef(invitedUid), { role, expiresAt: invitation.expiresAt })
   await notify(
     invitedUid,
     'account',
@@ -77,15 +87,20 @@ export async function getInvitation(code: string): Promise<Invitation | null> {
 }
 
 export async function cancelInvitation(inv: Invitation, actor: UserProfile | null): Promise<void> {
+  await deleteDoc(roleGrantRef(inv.invitedUid))
   await updateDoc(doc(invitationsCol(), inv.id), { status: 'cancelled', respondedAt: Date.now() })
   await logAudit(actor, 'invitation.cancel', `Cancelled invitation for ${inv.invitedUsername}`)
 }
 
 /** Extends the expiry and resets an expired/declined/cancelled invite back to pending. */
 export async function resendInvitation(inv: Invitation, actor: UserProfile, expiryDays = DEFAULT_EXPIRY_DAYS): Promise<void> {
+  const expiresAt = Date.now() + expiryDays * 24 * 60 * 60 * 1000
+  // Re-affirm the role grant too — cancel/decline already deleted it, and even a still-pending
+  // invite's grant would otherwise expire on the old timestamp.
+  await setDoc(roleGrantRef(inv.invitedUid), { role: inv.role, expiresAt })
   await updateDoc(doc(invitationsCol(), inv.id), {
     status: 'pending',
-    expiresAt: Date.now() + expiryDays * 24 * 60 * 60 * 1000,
+    expiresAt,
     respondedAt: null,
   })
   await notify(
@@ -99,8 +114,11 @@ export async function resendInvitation(inv: Invitation, actor: UserProfile, expi
 }
 
 export async function acceptInvitation(inv: Invitation, actor: UserProfile): Promise<void> {
-  await updateDoc(doc(invitationsCol(), inv.id), { status: 'accepted', respondedAt: Date.now() })
+  // Order matters: the role-write is only permitted by firestore.rules while the grant doc
+  // still exists, so it must happen before the grant is deleted.
   await setUserRole(inv.invitedUid, inv.role)
+  await deleteDoc(roleGrantRef(inv.invitedUid))
+  await updateDoc(doc(invitationsCol(), inv.id), { status: 'accepted', respondedAt: Date.now() })
   await notify(
     inv.createdBy,
     'account',
@@ -111,6 +129,7 @@ export async function acceptInvitation(inv: Invitation, actor: UserProfile): Pro
 }
 
 export async function declineInvitation(inv: Invitation, actor: UserProfile): Promise<void> {
+  await deleteDoc(roleGrantRef(inv.invitedUid))
   await updateDoc(doc(invitationsCol(), inv.id), { status: 'declined', respondedAt: Date.now() })
   await notify(
     inv.createdBy,

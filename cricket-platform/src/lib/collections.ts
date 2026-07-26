@@ -24,6 +24,11 @@ export const COL = {
   entityVersions: 'entityVersions', // pre-edit snapshots of players/teams/clubs/tournaments/matches
   featureFlags: 'featureFlags',
   invitations: 'invitations',
+  // Internal linkage doc consumed only by firestore.rules (users/{uid}'s self-role-elevation
+  // check on invitation accept) — never read directly by any UI. See RESTRICTIONS.md for why
+  // this exists: Firestore rules can't query "is there a pending invitation for this uid" by
+  // field value, only by exact doc path, so this mirrors {role, expiresAt} at invitedUid.
+  invitationRoleGrants: 'invitationRoleGrants',
 } as const
 
 export const SETTINGS_DOC = 'app'

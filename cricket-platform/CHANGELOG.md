@@ -4,6 +4,31 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — League Ecosystem (ROADMAP_V3)
 
+### Fixed — Final production audit
+- **`logActivity()` was silently failing on the majority of its calls** — it wrote straight to
+  `setDoc()` without `pruneUndefined()`, and Firestore rejects `undefined` field values (every
+  entity-creation event omits `actorId`). The write threw, was swallowed by the function's own
+  best-effort try/catch, and the activity entry never landed — meaning the "No activity yet."
+  states seen on club/team/player/tournament pages were largely this bug, not genuinely empty
+  feeds. Fixed with one line; verified live.
+- **The invitation system's role grant was broken by `firestore.rules`** — `acceptInvitation()`
+  writes the invitee's own `role`, but only the master admin is normally allowed to change a
+  `role` field, so the write would be rejected under real rule enforcement every time (invisible
+  in this project's dev-mode database, which doesn't enforce rules — that's why Phase 25's live
+  test didn't catch it). Fixed with a new internal, single-use `invitationRoleGrants` linkage
+  collection that makes the invitee's own self-elevation narrowly and safely verifiable by the
+  rule, without opening any broader self-promotion hole. Also fixed a related gap where a signed
+  out visitor couldn't even read their own invite link.
+- **Storage rules allowed any signed-in account, including a bare `VIEWER`, to upload or delete
+  any photo anywhere in the bucket.** Added per-folder role gating matching the equivalent
+  Firestore rules, while keeping the `users/` (own-avatar) folder open to any signed-in user.
+- Six list pages' delete/archive/import actions had no error handling, unlike their sibling save
+  actions — a failed write silently looked like it succeeded. Added consistent error toasts.
+- Removed dead code (an unused query helper duplicated per-entity, superseded CRUD helpers, a
+  superseded role-gate component) and 5 unused dependencies never actually adopted by the app.
+  Centralized form-label accessibility (`id`/`htmlFor`) in the shared `Field` component, fixing
+  every form in the app in one place.
+
 ### Added — Extended following + activity feeds (ROADMAP_V3 Phase 2, Slice 2.2)
 - Clubs and seasons are now followable, joining players/teams/tournaments; a Follow button was
   added to their public pages (and to the tournament page, which never had one despite tournaments
