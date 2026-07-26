@@ -77,9 +77,15 @@ screen, tournament page, or Platform Tools).
   surface that shows team/tournament names.
 - **Roles & owner-scoping** (`src/store/authStore.ts`): `MASTER_ADMIN` bypasses every guard
   (`hasRole` returns true for it). Normal admins are owner-scoped — `ownerScope(profile)` returns
-  their uid to filter by (or `null` = see-all for master); `ownsOrMaster` gates edit/delete. The
-  master admin is bootstrapped by registering a reserved username (`src/lib/constants.ts`,
-  `MASTER_ADMIN_USERNAME`, default `ayaan`) while no master exists.
+  their uid to filter by (or `null` = see-all for master), and pages apply it by filtering the
+  *list* itself (e.g. `PlayersPage`/`TeamsPage`), so a normal admin never sees another admin's rows
+  to begin with rather than seeing-then-hiding an edit/delete button per row. The real edit/delete
+  boundary is `firestore.rules`' `isOwnerOrMaster(resource.data.ownerId)` server-side; the client
+  never needs its own redundant per-row check given the list is already scoped. `ownsOrMaster` (the
+  same helper, client-side) exists for a future per-item check outside a pre-scoped list — e.g. a
+  detail page reached directly by URL — but nothing currently calls it. The master admin is
+  bootstrapped by registering a reserved username (`src/lib/constants.ts`, `MASTER_ADMIN_USERNAME`,
+  default `ayaan`) while no master exists.
 - **Auth is username/password over Firebase email/password.** Usernames map to synthetic emails
   (`username@VITE_AUTH_EMAIL_DOMAIN`); users never see the email. Keep the domain stable per project.
 - Firestore collection names live in `COL` (`src/lib/collections.ts`); dates/timestamps are
