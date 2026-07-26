@@ -583,5 +583,24 @@ reasoning.
     and fixed**: the public footer's four links (`PublicLayout.tsx`, present on every public page)
     had only a ~20px tap target with no padding; added padding + hover state, measured 40px after
     the fix. `tsc`/`npm run build` clean.
+34. **`ROADMAP_V3.md` Phase 2 Slice 2.1 — Public user profiles** — **Done**. The code landed via a
+    joint commit (the concurrent session's own large "Final production audit" commit swept in my
+    still-uncommitted `App.tsx`/`users.service.ts`/`UserProfilePage.tsx` changes alongside its own
+    unrelated dead-code/a11y/bug fixes) — confirmed via `git show --stat HEAD` that all three files
+    are present and correct, and re-ran `tsc` against the combined state afterward to be sure their
+    changes and mine compile together cleanly. Same established, accepted pattern as entries #23/
+    #25. New
+    `/u/:username` page + `getPublicProfile()` in `services/users.service.ts`, resolving the
+    existing `usernameLookup/{u}` → `users/{uid}` chain (both already public-read in
+    `firestore.rules` — no rules change needed) into a narrowed `PublicProfile` (no email/status/
+    bannedAt). A banned/pending account resolves identically to an unknown username — never
+    reveals which case it is. **Deliberately shipped without a "followed teams/players" section**:
+    `favStore` is localStorage-only (per-device), so there is no data to show for anyone's follows
+    but the current browser's own; a real public follows list needs Slice 2.2 to decide on
+    server-side sync first — noted there as a possible follow-up rather than faked here. `tsc`/
+    `npm run build` clean. **Verified live end-to-end against the real database**, not a stub:
+    `/u/ayaan` renders the actual master-admin profile through the real lookup chain (avatar
+    initials, name, username, "Master Admin" badge, real join date); an unknown username correctly
+    settles to "User not found"; no console errors either way.
 
 (Appended to as further slices are picked up.)

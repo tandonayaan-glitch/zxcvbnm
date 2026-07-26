@@ -4,6 +4,11 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — League Ecosystem (ROADMAP_V3)
 
+### Added — Public user profiles (ROADMAP_V3 Phase 2, Slice 2.1)
+- New `/u/:username` page: bio, photo, display name, role badge, member-since. `getPublicProfile()`
+  returns a safe narrowed subset of the user doc (no email/status/ban fields), and treats a
+  banned/pending account the same as an unknown username.
+
 ### Fixed — Footer touch-target sizing (ROADMAP_V3 Phase 1, Slice 1.2)
 - The public footer's four links (present on every public page) had a ~20px tap target; padded and
   added a hover state, now ~40px. Found via a live mobile-viewport audit — the rest of the

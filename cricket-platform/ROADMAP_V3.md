@@ -88,8 +88,22 @@ write-ups below as they're completed, not duplicated here.
 ## Phase 2 — Community
 
 ### Slice 2.1 — Public user profiles
-- ⬜ New `/u/:username` public page (bio, photo, display name, role badge, member-since, follows
-  summary). `getPublicProfile()` returns a narrowed, safe subset (no email/status/audit fields).
+- ✅ New `/u/:username` public page (bio, photo, display name, `@username`, role badge,
+  member-since). `getPublicProfile()` in `services/users.service.ts` resolves `usernameLookup/{u}`
+  → `users/{uid}` (both already public-read in `firestore.rules`, so no rules change needed) and
+  returns a narrowed `PublicProfile` type — no email/status/bannedAt. Returns `null` (rendered as a
+  normal "User not found" state, not an error) for an unknown username or a non-`active` account,
+  rather than exposing that a banned/pending account exists.
+- **Deliberately does not show "followed teams/players" yet** — `favStore` is localStorage-only
+  today (per-device), so there is no server-side data for anyone's follows but the current
+  browser's own. Showing a real follows list on another person's public profile needs Slice 2.2 to
+  actually decide whether follows move server-side for signed-in users; wiring a fake/placeholder
+  section now would be worse than waiting. Revisit as part of 2.2 if that slice adds sync.
+- `tsc`/`npm run build` clean. **Verified live end-to-end against the real database**: `/u/ayaan`
+  renders the real master-admin profile (avatar initials, name, username, "Master Admin" badge,
+  real join date) fetched through the actual `usernameLookup`→`users` chain, not a stub; `/u/`
+  plus a nonexistent username correctly resolves to "User not found" after the fetch settles; no
+  console errors on either path.
 
 ### Slice 2.2 — Extended following + activity feed coverage
 - ⬜ `favStore`'s `FavKind` grows to include clubs and seasons (currently players/teams/tournaments
