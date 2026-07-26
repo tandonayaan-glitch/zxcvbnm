@@ -3,6 +3,7 @@ import { User, Flag, Star, Award, Target, TrendingUp, Download, FileJson, Printe
 import { Avatar, Badge, Card, PageLoader, EmptyState } from '@/components/ui/primitives'
 import { FollowButton } from '@/components/ui/FollowButton'
 import { ShareButton } from '@/components/ui/ShareButton'
+import { QRCodeButton } from '@/components/ui/QRCodeButton'
 import { ActivityFeed } from '@/components/activity/ActivityFeed'
 import { Tabs } from '@/components/ui/Tabs'
 import { useMemo, useState } from 'react'
@@ -194,6 +195,7 @@ export function PlayerPage() {
           <div className="flex flex-col items-end gap-2">
             <div className="flex items-center gap-2">
               <ShareButton variant="icon" title={p.fullName} />
+              <QRCodeButton title={p.fullName} />
               <FollowButton kind="players" id={p.id} />
             </div>
             <Link

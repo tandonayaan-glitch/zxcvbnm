@@ -215,8 +215,19 @@ write-ups below as they're completed, not duplicated here.
 ## Phase 3 — Sharing
 
 ### Slice 3.1 — QR codes
-- ⬜ QR codes for match/team/tournament/player pages, generated client-side, surfaced from the new
-  `ShareButton`.
+- ✅ Added the `qrcode` dependency (pure JS, MIT, no native deps) — real QR encoding (mode/version
+  selection, Reed-Solomon error correction, mask patterns) is genuinely easy to get subtly wrong
+  by hand, unlike this app's usual "no external chart deps" SVG hand-rolling, where a wrong pixel
+  is visually obvious rather than an unscannable code that only fails on a real phone. New
+  `QRCodeButton.tsx`: an icon button opening a modal with the generated PNG (client-side, no
+  network call), the canonical URL as text, and a "Download PNG" link. Added next to `ShareButton`
+  on all seven public entity pages (Match/Tournament/Team/Player/Club/Season/User profile).
+- `tsc`/`npm run build` clean; the new dependency added ~25kB to the shared vendor chunk (`npm run
+  build`'s existing manual-chunking setup, from `ROADMAP_V2.md` Phase 5). **Verified live against
+  the real database, not just that it renders**: clicked the real button on a real completed
+  match's public page and confirmed a genuine PNG data URI came back (`data:image/png;base64,...`,
+  ~6.7kB, valid PNG header) — proof the encoding itself actually works end-to-end in the browser,
+  not just that a placeholder appeared. No console errors.
 
 ### Slice 3.2 — Embeddable widgets
 - ⬜ Chrome-free `/embed/match/:id` (compact live score card) and `/embed/scorecard/:id` (read-only

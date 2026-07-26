@@ -2,6 +2,7 @@ import { useParams } from 'react-router-dom'
 import { CalendarDays, UserRound } from 'lucide-react'
 import { Avatar, Badge, Card, EmptyState, PageLoader } from '@/components/ui/primitives'
 import { ShareButton } from '@/components/ui/ShareButton'
+import { QRCodeButton } from '@/components/ui/QRCodeButton'
 import { useAsync } from '@/hooks/useAsync'
 import { getPublicProfile, ROLE_LABELS } from '@/services/users.service'
 import { formatDate } from '@/lib/format'
@@ -45,6 +46,7 @@ export function UserProfilePage() {
             </div>
           </div>
           <ShareButton variant="icon" title={p.displayName} />
+          <QRCodeButton title={p.displayName} />
         </div>
         {p.bio && (
           <p className="mt-4 whitespace-pre-wrap text-sm text-ink-700 dark:text-ink-300">{p.bio}</p>

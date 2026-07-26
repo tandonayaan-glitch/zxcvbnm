@@ -40,6 +40,7 @@ import { MatchGallery } from '@/components/media/MatchGallery'
 import { CommentSection } from '@/components/media/CommentSection'
 import { MatchReactions } from '@/components/media/MatchReactions'
 import { ShareButton } from '@/components/ui/ShareButton'
+import { QRCodeButton } from '@/components/ui/QRCodeButton'
 import { computeHeadToHead } from '@/domain/headToHead'
 import { matchTopPerformers } from '@/domain/matchPerformers'
 import { chaseWinProbability } from '@/domain/winProbability'
@@ -185,6 +186,7 @@ export function MatchPage() {
               )}
             </div>
             <ShareButton variant="icon" title={`${match.teamA.name} vs ${match.teamB.name}`} />
+            <QRCodeButton title={`${match.teamA.name} vs ${match.teamB.name}`} />
           </div>
           <h1 className="text-xl font-bold">
             {match.teamA.name} vs {match.teamB.name}

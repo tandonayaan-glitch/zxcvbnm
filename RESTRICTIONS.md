@@ -832,5 +832,18 @@ reasoning.
     completed match page, confirmed all four reaction buttons render and are correctly disabled
     (with a sign-in tooltip) for a signed-out visitor, no console errors. The signed-in toggle path
     verified by code review + `tsc` only — same master-admin-auth-loss caveat as recent phases.
+40. **`ROADMAP_V3.md` Phase 3 Slice 3.1 — QR codes** — **Done**, no collision. Added the `qrcode`
+    npm dependency rather than hand-rolling an encoder — verified `npx firebase --version` isn't
+    the relevant check here, but confirmed npm registry access works and installed cleanly (`npm
+    install qrcode` + `@types/qrcode`); `npm audit` after install showed the same pre-existing
+    `react-router` RSC-CSRF advisory the concurrent session already reviewed and left alone
+    (entry #35/#36's audit) — nothing new introduced by this package. New `QRCodeButton.tsx`
+    (icon button → modal with a client-generated PNG, no network call, plus a download link),
+    added next to `ShareButton` on all seven public entity pages. `tsc`/`npm run build` clean; the
+    dependency added ~25kB to the shared vendor chunk. **Verified live against the real database,
+    the strongest verification level used this pass**: clicked the actual button on a real
+    completed match page and confirmed a genuine `data:image/png;base64,...` URI came back with a
+    valid PNG header — proof the encoding itself works end-to-end in a real browser, not just that
+    a placeholder rendered. No console errors.
 
 (Appended to as further slices are picked up.)

@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/primitives'
 import { ActivityFeed } from '@/components/activity/ActivityFeed'
 import { ShareButton } from '@/components/ui/ShareButton'
+import { QRCodeButton } from '@/components/ui/QRCodeButton'
 import { FollowButton } from '@/components/ui/FollowButton'
 import { useAsync } from '@/hooks/useAsync'
 import { getClub } from '@/services/clubs.service'
@@ -63,6 +64,7 @@ export function ClubPage() {
           </div>
           <div className="flex items-center gap-2">
             <ShareButton variant="icon" title={c.name} />
+            <QRCodeButton title={c.name} />
             <FollowButton kind="clubs" id={c.id} />
           </div>
         </div>

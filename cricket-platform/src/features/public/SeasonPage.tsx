@@ -9,6 +9,7 @@ import {
   PageLoader,
 } from '@/components/ui/primitives'
 import { ShareButton } from '@/components/ui/ShareButton'
+import { QRCodeButton } from '@/components/ui/QRCodeButton'
 import { FollowButton } from '@/components/ui/FollowButton'
 import { ActivityFeed } from '@/components/activity/ActivityFeed'
 import { useAsync } from '@/hooks/useAsync'
@@ -99,6 +100,7 @@ export function SeasonPage() {
           </div>
           <div className="flex items-center gap-2">
             <ShareButton variant="icon" title={s.name} />
+            <QRCodeButton title={s.name} />
             <FollowButton kind="seasons" id={s.id} />
           </div>
         </div>

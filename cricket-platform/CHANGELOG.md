@@ -4,6 +4,11 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — League Ecosystem (ROADMAP_V3)
 
+### Added — QR codes (ROADMAP_V3 Phase 3, Slice 3.1)
+- A "QR code" button next to Share on every public entity page (Match/Tournament/Team/Player/Club/
+  Season/User profile), opening a scannable QR code for that page's link with a PNG download —
+  generated client-side via the new `qrcode` dependency, no network call.
+
 ### Added — Match reactions (ROADMAP_V3 Phase 2, Slice 2.5)
 - Four tap-reaction emojis (🔥 👏 😮 💔) on every public match page, with live counts. Signed-in
   visitors can toggle their own; signed-out visitors see disabled buttons with a sign-in prompt.
