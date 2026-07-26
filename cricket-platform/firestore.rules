@@ -106,15 +106,49 @@ service cloud.firestore {
     // ---- Players / Teams (owner-scoped) -----------------------
     match /players/{id} {
       allow read: if true;
-      allow create: if canManage()
-        && (isMasterAdmin() || request.resource.data.ownerId == request.auth.uid);
-      allow update, delete: if isOwnerOrMaster(resource.data.ownerId);
+      // Normal path: a manager creates/owns a player. Second path: a team invitation's own
+      // invitee self-creates their own linked player doc — see the `teamInvitationGrants`
+      // comment below for why this narrow, grant-gated exception is safe. The new player's
+      // `ownerId` must match the actual team's owner (not an arbitrary value the invitee
+      // picks), so accepting an invite can't be used to "own" an unrelated player doc.
+      allow create: if (canManage()
+          && (isMasterAdmin() || request.resource.data.ownerId == request.auth.uid))
+        || (isSignedIn()
+            && request.resource.data.linkedUserId == request.auth.uid
+            && exists(/databases/$(database)/documents/teamInvitationGrants/$(request.auth.uid))
+            && get(/databases/$(database)/documents/teamInvitationGrants/$(request.auth.uid)).data.teamId in request.resource.data.teamIds
+            && get(/databases/$(database)/documents/teamInvitationGrants/$(request.auth.uid)).data.expiresAt > request.time.toMillis()
+            && get(/databases/$(database)/documents/teams/$(get(/databases/$(database)/documents/teamInvitationGrants/$(request.auth.uid)).data.teamId)).data.ownerId == request.resource.data.ownerId);
+      // Normal path: the owner/master edits any field. Second path: an invitee with an
+      // existing linked player appends the newly-invited team to their own `teamIds` only —
+      // nothing else on the doc may change, and only one id may be added.
+      allow update: if isOwnerOrMaster(resource.data.ownerId)
+        || (isSignedIn()
+            && resource.data.linkedUserId == request.auth.uid
+            && exists(/databases/$(database)/documents/teamInvitationGrants/$(request.auth.uid))
+            && get(/databases/$(database)/documents/teamInvitationGrants/$(request.auth.uid)).data.expiresAt > request.time.toMillis()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['teamIds', 'updatedAt'])
+            && request.resource.data.teamIds.hasAll(resource.data.teamIds)
+            && request.resource.data.teamIds.size() == resource.data.teamIds.size() + 1
+            && request.resource.data.teamIds.hasAny([get(/databases/$(database)/documents/teamInvitationGrants/$(request.auth.uid)).data.teamId]));
+      allow delete: if isOwnerOrMaster(resource.data.ownerId);
     }
     match /teams/{id} {
       allow read: if true;
       allow create: if canManage()
         && (isMasterAdmin() || request.resource.data.ownerId == request.auth.uid);
-      allow update, delete: if isOwnerOrMaster(resource.data.ownerId);
+      // Normal path: the owner/master edits any field. Second path: a team invitation's own
+      // invitee appends exactly the one player id they just joined as to `playerIds` — nothing
+      // else on the team doc may change.
+      allow update: if isOwnerOrMaster(resource.data.ownerId)
+        || (isSignedIn()
+            && exists(/databases/$(database)/documents/teamInvitationGrants/$(request.auth.uid))
+            && get(/databases/$(database)/documents/teamInvitationGrants/$(request.auth.uid)).data.teamId == id
+            && get(/databases/$(database)/documents/teamInvitationGrants/$(request.auth.uid)).data.expiresAt > request.time.toMillis()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['playerIds', 'updatedAt'])
+            && request.resource.data.playerIds.hasAll(resource.data.playerIds)
+            && request.resource.data.playerIds.size() == resource.data.playerIds.size() + 1);
+      allow delete: if isOwnerOrMaster(resource.data.ownerId);
     }
 
     // ---- Clubs / Seasons (owner-scoped) ------------------------
@@ -297,6 +331,49 @@ service cloud.firestore {
       // Consumed (deleted) either by the master admin (cancelling) or by the invitee
       // themselves, as the mirror-image of accepting/declining their own invitation.
       allow delete: if isMasterAdmin() || (isSignedIn() && request.auth.uid == uid);
+    }
+
+    // ---- Team invitations (invite an existing user to join a team's roster) ----------
+    match /teamInvitations/{id} {
+      // Same shape as `invitations`: a single-doc read by its own unguessable code is public
+      // (the invitee previews who invited them, and to which team, before signing in);
+      // full-collection reads are scoped to whoever manages the referenced team.
+      allow get: if true;
+      allow list: if isMasterAdmin()
+        || (isSignedIn() && isOwnerOrMaster(get(/databases/$(database)/documents/teams/$(resource.data.teamId)).data.ownerId));
+      allow create: if isSignedIn()
+        && isOwnerOrMaster(get(/databases/$(database)/documents/teams/$(request.resource.data.teamId)).data.ownerId)
+        && request.resource.data.createdBy == request.auth.uid;
+      allow delete: if isMasterAdmin()
+        || (isSignedIn() && isOwnerOrMaster(get(/databases/$(database)/documents/teams/$(resource.data.teamId)).data.ownerId));
+      // The invited user may only flip their own still-pending invite to accepted/declined —
+      // not touch its team or target. The team's owner (or master) can do anything (cancel/
+      // resend, both just an update).
+      allow update: if isSignedIn() && (
+        isMasterAdmin()
+        || isOwnerOrMaster(get(/databases/$(database)/documents/teams/$(resource.data.teamId)).data.ownerId)
+        || (resource.data.invitedUid == request.auth.uid
+            && resource.data.status == 'pending'
+            && request.resource.data.teamId == resource.data.teamId
+            && request.resource.data.invitedUid == resource.data.invitedUid)
+      );
+    }
+
+    // ---- Team invitation grant linkage (internal — see collections.ts comment) --------
+    match /teamInvitationGrants/{uid} {
+      // Nothing in the UI reads this directly — only firestore.rules itself (via `get()`,
+      // which always has access regardless of a doc's own rules) needs to see it.
+      allow read: if false;
+      // Created/refreshed only alongside a team invitation, gated the same way as the
+      // `teamInvitations` doc itself — whoever manages the referenced team.
+      allow create, update: if isSignedIn()
+        && isOwnerOrMaster(get(/databases/$(database)/documents/teams/$(request.resource.data.teamId)).data.ownerId);
+      // Consumed (deleted) by the team's owner/master (cancelling), or by the invitee
+      // themselves, as the mirror-image of accepting/declining their own invitation.
+      allow delete: if isMasterAdmin()
+        || (isSignedIn() && request.auth.uid == uid)
+        || (isSignedIn() && exists(/databases/$(database)/documents/teams/$(resource.data.teamId))
+            && isOwnerOrMaster(get(/databases/$(database)/documents/teams/$(resource.data.teamId)).data.ownerId));
     }
   }
 }

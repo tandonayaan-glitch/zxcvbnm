@@ -127,6 +127,9 @@ const InvitationsPage = lazy(() =>
 const InvitePage = lazy(() =>
   import('@/features/misc/InvitePage').then((m) => ({ default: m.InvitePage })),
 )
+const TeamInvitePage = lazy(() =>
+  import('@/features/misc/TeamInvitePage').then((m) => ({ default: m.TeamInvitePage })),
+)
 const MediaLibraryPage = lazy(() =>
   import('@/features/admin/MediaLibraryPage').then((m) => ({
     default: m.MediaLibraryPage,
@@ -401,6 +404,7 @@ export default function App() {
           <Route path="/match/:id" element={<MatchPage />} />
           <Route path="/u/:username" element={<UserProfilePage />} />
           <Route path="/invite/:code" element={<InvitePage />} />
+          <Route path="/team-invite/:code" element={<TeamInvitePage />} />
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/terms" element={<TermsOfServicePage />} />
           <Route path="*" element={<NotFoundPage />} />

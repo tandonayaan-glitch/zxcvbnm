@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Shield, Pencil, History, Trash2, Users } from 'lucide-react'
+import { Plus, Shield, Pencil, History, Trash2, Users, Mail } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
   Avatar,
@@ -27,6 +27,7 @@ import { softDelete } from '@/services/trash.service'
 import { snapshotVersion, changedKeys } from '@/services/versionHistory.service'
 import { useAuthStore, ownerScope } from '@/store/authStore'
 import { TeamFormModal } from './TeamFormModal'
+import { TeamInviteModal } from './TeamInviteModal'
 import type { Team } from '@/types'
 
 export function TeamsPage() {
@@ -39,6 +40,7 @@ export function TeamsPage() {
   const [editing, setEditing] = useState<Team | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [historyTeamId, setHistoryTeamId] = useState<string | null>(null)
+  const [invitingTeam, setInvitingTeam] = useState<Team | null>(null)
 
   const scopedTeams = useMemo(
     () => (teams.data ?? []).filter((t) => !scope || t.ownerId === scope),
@@ -173,6 +175,14 @@ export function TeamsPage() {
                 </div>
                 <div className="flex gap-1">
                   <button
+                    onClick={() => setInvitingTeam(t)}
+                    aria-label={`Invite a player to ${t.name}`}
+                    title="Invite a player"
+                    className="rounded-md p-1.5 text-ink-500 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800"
+                  >
+                    <Mail size={15} />
+                  </button>
+                  <button
                     onClick={() => {
                       setEditing(t)
                       setShowForm(true)
@@ -244,6 +254,10 @@ export function TeamsPage() {
           onClose={() => setHistoryTeamId(null)}
           onRestored={() => teams.refetch()}
         />
+      )}
+
+      {invitingTeam && (
+        <TeamInviteModal team={invitingTeam} onClose={() => setInvitingTeam(null)} />
       )}
     </div>
   )

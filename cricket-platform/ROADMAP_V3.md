@@ -132,9 +132,48 @@ write-ups below as they're completed, not duplicated here.
   from a real link to click through, and `/account` needs auth this session doesn't have.
 
 ### Slice 2.3 — Team roster invitations
-- ⬜ New, separate-from-the-existing-role-`Invitation` mechanism: a team manager/owner invites
-  someone (by link/code) to join the team's roster as a player. Deliberately a new collection
-  rather than widening `Invitation.role`, to avoid any risk to the already-verified role-grant flow.
+- ✅ New `TeamInvitation` type + `teamInvitations.service.ts`, deliberately a separate collection
+  from the existing role-granting `Invitation` (not a widened `Invitation.role`) — this touches
+  security-sensitive write paths (`players`/`teams` rules), so keeping it fully isolated avoids any
+  risk to the already-verified role-grant flow. A team owner/manager invites an existing registered
+  user by username (`TeamInviteModal.tsx`, wired into `TeamsPage.tsx` via a new mail-icon button per
+  team card); the invitee accepts/declines at `/team-invite/:code` (`TeamInvitePage.tsx`, mirrors
+  `InvitePage.tsx`'s layout exactly for consistency).
+- **Accepting reuses or creates a linked `Player`, then updates both denormalized roster arrays**:
+  `Player.teamIds` and `Team.playerIds` are two independently-maintained fields in this codebase
+  (confirmed by reading `PlayerFormModal.tsx`/`TeamFormModal.tsx` — neither form updates the other
+  entity's array; `dataIntegrity.ts`'s `orphaned_roster_entry` check exists precisely because they
+  can drift). `acceptTeamInvitation()` writes to both: reuses the invitee's existing linked player
+  (matched by `linkedUserId`) if they have one, appending the new team to its `teamIds`; otherwise
+  creates a fresh `Player` doc (`linkedUserId` set, `ownerId` = the team's actual owner, not the
+  invitee) and adds its id to the team's `playerIds`.
+- **The real design problem this slice had to solve**: a VIEWER accepting their own invite has
+  neither `canManage()` nor team ownership, so normal `firestore.rules` would block every write the
+  accept flow needs (creating/updating a `Player`, updating a `Team`). Solved with the exact same
+  grant-doc pattern the concurrent session had just added for role invitations
+  (`invitationRoleGrants`) — a `teamInvitationGrants/{invitedUid}` doc records `{teamId, expiresAt}`
+  and is the *only* thing that authorizes the invitee's own narrow exception, closely modeled on
+  that precedent for consistency:
+  - `players` create: invitee may create a player only with `linkedUserId == self`, only for the
+    exact team named in their still-valid grant, and — closing a hole the naive version of this
+    would have had — only with `ownerId` equal to *the real team's actual owner* (via a nested
+    `get()`), not an arbitrary value the invitee could pick to "own" their own player doc forever.
+  - `players` update: invitee may only touch `teamIds` (`affectedKeys().hasOnly(['teamIds',
+    'updatedAt'])`), only by adding exactly one id, and only the granted team's id.
+  - `teams` update: invitee may only touch `playerIds`, only by adding exactly one id.
+  - Every one of these closes as soon as `acceptTeamInvitation`/`declineTeamInvitation`/
+    `cancelTeamInvitation` deletes the grant doc.
+- `tsc`/`npm run build` clean. **Not click-tested live, and flagged as needing a real check before
+  relying on in production**: exercising this end-to-end needs two authenticated roles at once (a
+  team owner/manager to send the invite, a separate signed-in invitee to accept it) — this
+  session's browser has no credentials for either (same master-admin-auth-loss caveat as many
+  recent phases). The `firestore.rules` additions were manually re-read line by line for brace/
+  logic consistency, but **no Firebase CLI is installed in this environment** (`npx firebase
+  --version` fails — confirmed, not assumed) so they could not be validated by the rules linter or
+  emulator either. Given this is the most security-sensitive change in this slice pass, **recommend
+  a real `firebase emulators:start` or a staging deploy dry-run before this reaches production**,
+  the same "author against local dev, verify against a real deploy" caveat already applied to the
+  CSP recommendation in `ROADMAP.md` Phase 30.
 
 ### Slice 2.4 — Match comments
 - ⬜ New `comments` collection scoped to a match id. Public read, signed-in create, author or

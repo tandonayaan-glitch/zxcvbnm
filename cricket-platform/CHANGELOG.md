@@ -4,6 +4,18 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — League Ecosystem (ROADMAP_V3)
 
+### Added — Team roster invitations (ROADMAP_V3 Phase 2, Slice 2.3)
+- A team owner/manager can invite an existing registered user (by username) to join the team's
+  roster as a player — a new "Invite a player" button per team card on the Teams page. The invitee
+  accepts or declines at `/team-invite/:code`; accepting reuses their existing linked player if
+  they have one, or creates one for them, and adds it to the team's roster. Kept as its own
+  `teamInvitations` collection, fully separate from the existing role-granting invitation system.
+  **Security note**: the accepting user's own narrow write exceptions (creating/linking their
+  player, appending to the team's roster) are gated by a short-lived, single-purpose grant
+  document — see `RESTRICTIONS.md` for the full design and an explicit recommendation to validate
+  the new `firestore.rules` against a real emulator/deploy before production, since this session's
+  environment has no Firebase CLI to do so.
+
 ### Fixed — Final production audit
 - **`logActivity()` was silently failing on the majority of its calls** — it wrote straight to
   `setDoc()` without `pruneUndefined()`, and Firestore rejects `undefined` field values (every

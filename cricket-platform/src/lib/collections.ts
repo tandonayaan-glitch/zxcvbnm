@@ -29,6 +29,12 @@ export const COL = {
   // this exists: Firestore rules can't query "is there a pending invitation for this uid" by
   // field value, only by exact doc path, so this mirrors {role, expiresAt} at invitedUid.
   invitationRoleGrants: 'invitationRoleGrants',
+  teamInvitations: 'teamInvitations', // invites an existing user to join a team's roster as a player
+  // Mirrors invitationRoleGrants' role for team invitations: firestore.rules can't query "is
+  // there a pending team invitation for this uid," only check an exact doc path, so this
+  // records {teamId, expiresAt} at invitedUid — the narrow, unforgeable exception that lets the
+  // invitee create/update their own linked Player doc and append to the team's playerIds.
+  teamInvitationGrants: 'teamInvitationGrants',
 } as const
 
 export const SETTINGS_DOC = 'app'

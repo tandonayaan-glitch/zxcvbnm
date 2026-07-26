@@ -671,6 +671,31 @@ export interface Invitation {
   respondedAt?: number | null
 }
 
+export type TeamInvitationStatus = 'pending' | 'accepted' | 'declined' | 'cancelled' | 'expired'
+
+/**
+ * Invites an existing registered user to join a specific team's roster as a player — distinct
+ * from the role-granting `Invitation` above (which offers Scorer/Manager/Admin access). Accepting
+ * either links to the invitee's existing linked `Player` doc or creates a new one for them, then
+ * adds it to the team's `playerIds`. Kept as its own collection/service rather than folding into
+ * `Invitation` to avoid any risk to that already-verified role-grant flow.
+ */
+export interface TeamInvitation {
+  id: string // == code
+  code: string
+  teamId: string
+  teamName: string
+  invitedUid: string
+  invitedUsername: string
+  message?: string
+  status: TeamInvitationStatus
+  createdBy: string
+  createdByName: string
+  createdAt: number
+  expiresAt: number
+  respondedAt?: number | null
+}
+
 /** A user's request to be granted ADMIN access (to run a tournament). */
 export interface AdminRequest {
   id: string

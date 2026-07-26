@@ -764,4 +764,45 @@ reasoning.
       operation) but worth revisiting if it ever isn't.
     - `tsc`/`npm run build`/lint all clean throughout.
 
+37. **`ROADMAP_V3.md` Phase 2 Slice 2.3 — Team roster invitations** — **Done**, no collision. New
+    `TeamInvitation` type + `teamInvitations.service.ts`, deliberately a fully separate collection
+    from the existing role-granting `Invitation` — this touches the same class of security-sensitive
+    write paths (`players`/`teams` rules) the concurrent session's entry #35 just found and fixed a
+    real bug in, so isolating the new feature avoids any risk to that now-verified role-grant flow.
+    `TeamInviteModal.tsx` (username lookup via Slice 2.1's `getPublicProfile()`, reused rather than
+    duplicated) wired into `TeamsPage.tsx` as a new per-team-card "Invite a player" button;
+    `/team-invite/:code` (`TeamInvitePage.tsx`) mirrors `InvitePage.tsx`'s layout for the
+    accept/decline UI.
+    - **Design problem this slice had to solve**: `Player.teamIds` and `Team.playerIds` are two
+      independently-maintained denormalized arrays in this codebase (confirmed by reading
+      `PlayerFormModal.tsx`/`TeamFormModal.tsx` — neither form updates the other entity's array;
+      `dataIntegrity.ts`'s `orphaned_roster_entry` check exists precisely because they can drift).
+      `acceptTeamInvitation()` writes both: reuses the invitee's existing linked player (matched by
+      `linkedUserId`) if they have one, appending the new team's id to its `teamIds`; otherwise
+      creates a fresh `Player` (`linkedUserId` set to the invitee, `ownerId` set to the *team's*
+      actual owner, not the invitee) and adds its id to the team's `playerIds`.
+    - **The harder problem**: a VIEWER accepting their own invite has neither `canManage()` nor team
+      ownership, so unmodified `firestore.rules` would block every write the accept flow needs.
+      Solved with the same grant-doc pattern the concurrent session's entry #35 just added for role
+      invitations (`invitationRoleGrants`) — a new `teamInvitationGrants/{invitedUid}` doc records
+      `{teamId, expiresAt}` and is the only thing that authorizes the invitee's own narrow exception:
+      `players` create is scoped to `linkedUserId == self`, the exact granted team, and —
+      closing a hole the naive version would have had — `ownerId` must equal *the real team's
+      actual owner* (checked via a nested `get()`), not a value the invitee could pick themselves to
+      permanently "own" their own player doc outside the accept flow; `players` update may only
+      touch `teamIds` (`affectedKeys().hasOnly(['teamIds','updatedAt'])`) and only add the one
+      granted team id; `teams` update may only touch `playerIds` and only add exactly one id. Every
+      exception closes the moment the grant doc is deleted (on accept/decline/cancel).
+    - `tsc`/`npm run build` clean. **Not click-tested live, flagged as needing real verification
+      before production**: exercising this needs two authenticated roles simultaneously (a team
+      owner/manager to invite, a separate signed-in invitee to accept) and this session's browser
+      has credentials for neither. The new `firestore.rules` blocks were manually re-read line by
+      line for brace/logic consistency, but this environment has **no Firebase CLI installed**
+      (`npx firebase --version` fails — confirmed, not assumed) so they could not be run through the
+      rules linter or emulator. Given entry #35 just demonstrated that a rules bug can sit invisible
+      in this project's non-rule-enforcing dev database indefinitely, **recommend validating these
+      specific rules against a real emulator or staging deploy before relying on them in
+      production** — the same "author locally, verify against a real deploy" caveat already applied
+      to the CSP recommendation in `ROADMAP.md` Phase 30.
+
 (Appended to as further slices are picked up.)
