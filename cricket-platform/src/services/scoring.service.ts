@@ -103,11 +103,23 @@ export function squadFor(match: Match, teamId: string): string[] {
   return teamId === match.teamA.id ? match.squadA : match.squadB
 }
 
+/**
+ * The wicket count the engine treats as "all out" for this team, plus one
+ * (i.e. the `battingSquadSize` the engine subtracts one from). Reads the
+ * configured `maxWickets`/`lastManStanding` rules when set; falls back to the
+ * literal squad length for matches created before these fields existed, which
+ * reproduces the exact prior behaviour.
+ */
+function effectiveSquadSize(match: Match, teamId: string): number {
+  const base = match.maxWickets != null ? match.maxWickets + 1 : squadFor(match, teamId).length
+  return base + (match.lastManStanding ? 1 : 0)
+}
+
 function optsFor(match: Match, battingTeamId: string): Omit<ApplyBallOpts, 'sequence' | 'incomingBatterId' | 'scorerId'> {
   return {
     ballsPerOver: match.ballsPerOver,
     maxOvers: match.oversPerInnings,
-    battingSquadSize: squadFor(match, battingTeamId).length,
+    battingSquadSize: effectiveSquadSize(match, battingTeamId),
   }
 }
 
@@ -388,7 +400,7 @@ export function computeResult(
   const score2 = second.totalRuns
 
   if (score2 >= (second.target ?? score1 + 1)) {
-    const squadSize = squadFor(match, secondTeam).length
+    const squadSize = effectiveSquadSize(match, secondTeam)
     const wktsLeft = squadSize - 1 - second.wickets
     return {
       outcome: 'win',

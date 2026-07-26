@@ -38,6 +38,7 @@ import { matchToCSV, matchToJSON, exportSlug } from '@/domain/matchExport'
 import { downloadBlob } from '@/lib/download'
 import { MatchGallery } from '@/components/media/MatchGallery'
 import { CommentSection } from '@/components/media/CommentSection'
+import { MatchReactions } from '@/components/media/MatchReactions'
 import { ShareButton } from '@/components/ui/ShareButton'
 import { computeHeadToHead } from '@/domain/headToHead'
 import { matchTopPerformers } from '@/domain/matchPerformers'
@@ -403,6 +404,10 @@ export function MatchPage() {
           )}
         </div>
       )}
+
+      <div className="mb-3">
+        <MatchReactions matchId={match.id} />
+      </div>
 
       {/* Export toolbar */}
       {hasScorecard && (

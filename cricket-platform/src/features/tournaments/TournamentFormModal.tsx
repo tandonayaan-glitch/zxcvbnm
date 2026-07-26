@@ -55,6 +55,15 @@ export function TournamentFormModal({
   const [qualifiersPerGroup, setQualifiersPerGroup] = useState(
     tournament?.qualifiersPerGroup ?? 2,
   )
+  const [defaultTeamSize, setDefaultTeamSize] = useState(
+    tournament?.defaultTeamSize != null ? String(tournament.defaultTeamSize) : '',
+  )
+  const [defaultMaxWickets, setDefaultMaxWickets] = useState(
+    tournament?.defaultMaxWickets != null ? String(tournament.defaultMaxWickets) : '',
+  )
+  const [defaultPowerplayOvers, setDefaultPowerplayOvers] = useState(
+    tournament?.defaultPowerplayOvers != null ? String(tournament.defaultPowerplayOvers) : '',
+  )
   const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -104,6 +113,9 @@ export function TournamentFormModal({
             )
           : undefined,
       qualifiersPerGroup: format === 'group_knockout' ? qualifiers : undefined,
+      defaultTeamSize: defaultTeamSize ? Number(defaultTeamSize) : undefined,
+      defaultMaxWickets: defaultMaxWickets ? Number(defaultMaxWickets) : undefined,
+      defaultPowerplayOvers: defaultPowerplayOvers ? Number(defaultPowerplayOvers) : undefined,
     }
     try {
       await onSave(input, tournament?.id, reason.trim() || undefined)
@@ -293,6 +305,45 @@ export function TournamentFormModal({
           </div>
         </div>
       )}
+
+      <div className="mt-4">
+        <div className="mb-1.5 text-sm font-medium text-ink-700 dark:text-ink-300">
+          Match rule defaults (optional)
+        </div>
+        <p className="mb-2 text-xs text-ink-500 dark:text-ink-400">
+          Pre-fills the Match Rules step when scorers set up a match in this tournament.
+          Leave blank to use the setup wizard's own defaults.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="Team size">
+            <Input
+              type="number"
+              min={2}
+              value={defaultTeamSize}
+              onChange={(e) => setDefaultTeamSize(e.target.value)}
+              placeholder="11"
+            />
+          </Field>
+          <Field label="Max wickets">
+            <Input
+              type="number"
+              min={1}
+              value={defaultMaxWickets}
+              onChange={(e) => setDefaultMaxWickets(e.target.value)}
+              placeholder="10"
+            />
+          </Field>
+          <Field label="Powerplay overs" hint="Used for formats over 20 overs.">
+            <Input
+              type="number"
+              min={0}
+              value={defaultPowerplayOvers}
+              onChange={(e) => setDefaultPowerplayOvers(e.target.value)}
+              placeholder="10"
+            />
+          </Field>
+        </div>
+      </div>
 
       {tournament && (
         <div className="mt-4">

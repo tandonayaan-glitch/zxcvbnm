@@ -191,8 +191,26 @@ write-ups below as they're completed, not duplicated here.
   same master-admin-auth-loss caveat as recent phases.
 
 ### Slice 2.5 — Match reactions
-- ⬜ Lightweight per-match emoji tap reactions, one-per-user-per-emoji (a `matchReactions/{id}_{uid}`
-  doc prevents spam), aggregate counts read from a small summary doc.
+- ✅ Four fixed reaction emojis (🔥 👏 😮 💔) as a new `matches/{id}/reactions/{uid}` subcollection
+  (one doc per reacting user, matching the existing `deliveries`/`ballMeta` subcollection
+  convention rather than a top-level composite-id collection) — toggling is a single read + write
+  per tap, and aggregate counts are computed client-side from the full per-match list rather than
+  maintained as separate counters, since per-match reaction volume is low. New
+  `MatchReactions.tsx`, wired onto `MatchPage.tsx` just above the export toolbar; disabled with a
+  "Sign in to react" tooltip for signed-out visitors.
+- **Hit the same concurrent-edit race as `App.tsx`'s entry #24, this time on `MatchPage.tsx`**: the
+  first attempt to wire in the import + `<MatchReactions>` usage was silently overwritten — caught
+  only because a routine post-edit grep (now standing practice for hot shared files) came up empty
+  right after a clean `tsc` run. Re-applied against the then-current file, re-verified via grep
+  immediately, and confirmed the earlier `ShareButton`/`CommentSection`/`MatchGallery` wiring from
+  prior slices survived the same overwrite untouched. `tsc`/`npm run build` clean after the fix.
+- `firestore.rules`: doc id must equal the writer's own uid and `userId` must match — much simpler
+  than Slice 2.3's grant-doc design since there's no cross-user privilege to gate, just "you can
+  only write your own reaction doc."
+- **Verified live against the real database**: loaded a real completed match page, confirmed all
+  four reaction buttons render and are correctly disabled for a signed-out visitor, no console
+  errors. The signed-in tap/toggle path verified by code review + `tsc` only — same
+  master-admin-auth-loss caveat as recent phases.
 
 ## Phase 3 — Sharing
 

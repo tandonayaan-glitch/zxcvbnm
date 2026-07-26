@@ -815,5 +815,22 @@ reasoning.
     console errors. The signed-in post/delete path verified by code review + `tsc` only — same
     master-admin-auth-loss caveat as recent phases; lower risk than Slice 2.3's rules changes since
     this collection's rules are simple field/length checks with no cross-document `get()` lookups.
+39. **`ROADMAP_V3.md` Phase 2 Slice 2.5 — Match reactions** — **Done**, no collision on the feature
+    itself. Four fixed emoji reactions (🔥 👏 😮 💔) as a new `matches/{id}/reactions/{uid}`
+    subcollection (matches the existing `deliveries`/`ballMeta` convention rather than a top-level
+    composite-id collection); aggregate counts computed client-side from the per-match list, no
+    separate counter docs. `firestore.rules` for it is simple — doc id and `userId` must both equal
+    the writer's own uid, no cross-document `get()` needed (much lower risk than Slice 2.3's
+    grant-doc design). **Hit the same class of silent concurrent-edit race documented in entry #24,
+    this time on `MatchPage.tsx`**: the first attempt to wire in the import + `<MatchReactions>`
+    usage was overwritten with no error on either side; caught only because the now-standing
+    practice (grep the hot shared file for the new symbol immediately after editing, not just after
+    `tsc`) came up empty right after a clean `tsc` pass. Re-applied against the then-current file,
+    re-verified via grep immediately, and confirmed the prior slices' `ShareButton`/
+    `CommentSection`/`MatchGallery` wiring survived the same overwrite untouched. `tsc`/`npm run
+    build` clean after the fix. **Verified live against the real database**: loaded a real
+    completed match page, confirmed all four reaction buttons render and are correctly disabled
+    (with a sign-in tooltip) for a signed-out visitor, no console errors. The signed-in toggle path
+    verified by code review + `tsc` only — same master-admin-auth-loss caveat as recent phases.
 
 (Appended to as further slices are picked up.)

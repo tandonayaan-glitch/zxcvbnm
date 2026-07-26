@@ -726,6 +726,20 @@ export interface TeamInvitation {
   respondedAt?: number | null
 }
 
+export const REACTION_EMOJIS = ['🔥', '👏', '😮', '💔'] as const
+export type ReactionEmoji = (typeof REACTION_EMOJIS)[number]
+
+/** One user's tap-reactions on a match — doc id is the reacting user's uid, subcollection
+ *  under `matches/{id}/reactions`. Aggregate counts are computed client-side from the full list
+ *  (low cardinality per match) rather than maintained as separate counters. */
+export interface MatchReaction {
+  id: string // == userId
+  matchId: string
+  userId: string
+  emojis: ReactionEmoji[]
+  updatedAt: number
+}
+
 /** A spectator comment on a match — flat (not threaded), matches the platform's
  *  amateur/semi-pro scope rather than a full discussion-thread system. */
 export interface MatchComment {

@@ -36,6 +36,13 @@ export interface CreateMatchInput {
   squadB: string[]
   toss?: TossInfo | null
   battingFirstTeamId?: string | null
+  maxWickets?: number
+  teamSize?: number
+  powerplayMode?: 'auto' | 'manual'
+  powerplayOvers?: number
+  lastManStanding?: boolean
+  retiredHurtEnabled?: boolean
+  superOverEnabled?: boolean
   venue?: string
   scheduledAt?: number | null
   scorerId?: string | null
@@ -62,6 +69,13 @@ export async function createMatch(input: CreateMatchInput): Promise<string> {
     squadB: input.squadB,
     toss: input.toss ?? null,
     battingFirstTeamId: input.battingFirstTeamId ?? null,
+    maxWickets: input.maxWickets,
+    teamSize: input.teamSize,
+    powerplayMode: input.powerplayMode,
+    powerplayOvers: input.powerplayOvers,
+    lastManStanding: input.lastManStanding,
+    retiredHurtEnabled: input.retiredHurtEnabled,
+    superOverEnabled: input.superOverEnabled,
     venue: input.venue ?? '',
     scheduledAt: input.scheduledAt ?? null,
     scorerId: input.scorerId ?? null,

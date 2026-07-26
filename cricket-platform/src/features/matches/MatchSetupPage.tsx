@@ -8,11 +8,13 @@ import {
   ListChecks,
   Settings2,
   Shield,
+  SlidersHorizontal,
   Users,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
   Avatar,
+  Badge,
   Button,
   Card,
   Field,
@@ -36,6 +38,11 @@ import { useAuthStore, ownerScope } from '@/store/authStore'
 import { cn } from '@/lib/cn'
 import { MATCH_FORMAT_LABELS, MATCH_FORMAT_OVERS } from '@/lib/format'
 import { STAGE_ORDER, STAGE_LABELS, hasKnockoutPhase } from '@/domain/bracket'
+import {
+  computeAutoPowerplayOvers,
+  defaultMaxWickets,
+  DEFAULT_TEAM_SIZE,
+} from '@/domain/matchRules'
 import type {
   KnockoutStage,
   MatchFormat,
@@ -63,13 +70,21 @@ interface FormState {
   squadB: string[]
   tossWinner: 'A' | 'B' | ''
   tossDecision: TossDecision
+  teamSize: number
+  maxWickets: number
+  powerplayMode: 'auto' | 'manual'
+  powerplayOvers: number
+  lastManStanding: boolean
+  retiredHurtEnabled: boolean
+  superOverEnabled: boolean
 }
 
 const STEPS = [
   { label: 'Details', icon: <Settings2 size={16} /> },
   { label: 'Teams', icon: <Shield size={16} /> },
-  { label: 'Squads', icon: <Users size={16} /> },
+  { label: 'Playing XI', icon: <Users size={16} /> },
   { label: 'Toss', icon: <Coins size={16} /> },
+  { label: 'Match Rules', icon: <SlidersHorizontal size={16} /> },
   { label: 'Review', icon: <ListChecks size={16} /> },
 ]
 
@@ -123,6 +138,13 @@ export function MatchSetupPage() {
     squadB: [],
     tossWinner: '',
     tossDecision: 'bat',
+    teamSize: DEFAULT_TEAM_SIZE,
+    maxWickets: defaultMaxWickets(DEFAULT_TEAM_SIZE),
+    powerplayMode: 'auto',
+    powerplayOvers: computeAutoPowerplayOvers(20),
+    lastManStanding: false,
+    retiredHurtEnabled: true,
+    superOverEnabled: false,
   })
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
@@ -155,6 +177,13 @@ export function MatchSetupPage() {
               : 'B'
             : '',
           tossDecision: m.toss?.decision ?? 'bat',
+          teamSize: m.teamSize ?? DEFAULT_TEAM_SIZE,
+          maxWickets: m.maxWickets ?? defaultMaxWickets(m.teamSize ?? DEFAULT_TEAM_SIZE),
+          powerplayMode: m.powerplayMode ?? 'auto',
+          powerplayOvers: m.powerplayOvers ?? computeAutoPowerplayOvers(m.oversPerInnings),
+          lastManStanding: m.lastManStanding ?? false,
+          retiredHurtEnabled: m.retiredHurtEnabled ?? true,
+          superOverEnabled: m.superOverEnabled ?? false,
         })
       }
       setLoadingEdit(false)
@@ -194,7 +223,51 @@ export function MatchSetupPage() {
 
   function onFormatChange(fmt: MatchFormat) {
     set('format', fmt)
-    if (fmt !== 'CUSTOM') set('oversPerInnings', MATCH_FORMAT_OVERS[fmt])
+    if (fmt !== 'CUSTOM') {
+      const overs = MATCH_FORMAT_OVERS[fmt]
+      set('oversPerInnings', overs)
+      if (form.powerplayMode === 'auto') {
+        set('powerplayOvers', computeAutoPowerplayOvers(overs, selectedTournament?.defaultPowerplayOvers))
+      }
+    }
+  }
+
+  function onOversChange(overs: number) {
+    set('oversPerInnings', overs)
+    if (form.powerplayMode === 'auto') {
+      set('powerplayOvers', computeAutoPowerplayOvers(overs, selectedTournament?.defaultPowerplayOvers))
+    }
+  }
+
+  function onPowerplayModeChange(mode: 'auto' | 'manual') {
+    set('powerplayMode', mode)
+    if (mode === 'auto') {
+      set(
+        'powerplayOvers',
+        computeAutoPowerplayOvers(form.oversPerInnings, selectedTournament?.defaultPowerplayOvers),
+      )
+    }
+  }
+
+  function onTeamSizeChange(size: number) {
+    set('teamSize', size)
+    set('maxWickets', defaultMaxWickets(size))
+  }
+
+  // Pre-fill Match Rules from the tournament's configured defaults (once, on selection).
+  function onTournamentChange(id: string) {
+    set('tournamentId', id)
+    const t = scopedTournaments.find((x) => x.id === id)
+    if (!t) return
+    if (t.defaultTeamSize != null) {
+      set('teamSize', t.defaultTeamSize)
+      set('maxWickets', t.defaultMaxWickets ?? defaultMaxWickets(t.defaultTeamSize))
+    } else if (t.defaultMaxWickets != null) {
+      set('maxWickets', t.defaultMaxWickets)
+    }
+    if (form.powerplayMode === 'auto') {
+      set('powerplayOvers', computeAutoPowerplayOvers(form.oversPerInnings, t.defaultPowerplayOvers))
+    }
   }
 
   // Pre-fill squads from team rosters when a team is picked.
@@ -229,18 +302,22 @@ export function MatchSetupPage() {
 
   // step validation
   function canAdvance(): boolean {
-    if (step === 0)
-      return (
-        form.title.trim().length > 0 &&
-        form.oversPerInnings >= 1 &&
-        form.oversPerInnings <= 120 &&
-        form.ballsPerOver >= 1 &&
-        form.ballsPerOver <= 12
-      )
+    if (step === 0) return form.title.trim().length > 0
     if (step === 1)
       return !!form.teamAId && !!form.teamBId && form.teamAId !== form.teamBId
     if (step === 2) return form.squadA.length >= 2 && form.squadB.length >= 2
     if (step === 3) return form.tossWinner !== ''
+    if (step === 4)
+      return (
+        form.oversPerInnings >= 1 &&
+        form.oversPerInnings <= 120 &&
+        form.ballsPerOver >= 1 &&
+        form.ballsPerOver <= 12 &&
+        form.teamSize >= 2 &&
+        form.maxWickets >= 1 &&
+        form.powerplayOvers >= 0 &&
+        form.powerplayOvers <= form.oversPerInnings
+      )
     return true
   }
 
@@ -293,6 +370,13 @@ export function MatchSetupPage() {
       squadB: form.squadB,
       toss: { wonByTeamId: tossWinnerId, decision: form.tossDecision },
       battingFirstTeamId,
+      maxWickets: Number(form.maxWickets) || defaultMaxWickets(DEFAULT_TEAM_SIZE),
+      teamSize: Number(form.teamSize) || DEFAULT_TEAM_SIZE,
+      powerplayMode: form.powerplayMode,
+      powerplayOvers: Number(form.powerplayOvers) || 0,
+      lastManStanding: form.lastManStanding,
+      retiredHurtEnabled: form.retiredHurtEnabled,
+      superOverEnabled: form.superOverEnabled,
       venue: form.venue.trim(),
       scheduledAt,
       scorerId: form.scorerId || profile.id,
@@ -397,7 +481,7 @@ export function MatchSetupPage() {
             <Field label="Tournament (optional)">
               <Select
                 value={form.tournamentId}
-                onChange={(e) => set('tournamentId', e.target.value)}
+                onChange={(e) => onTournamentChange(e.target.value)}
               >
                 <option value="">Standalone match</option>
                 {scopedTournaments.map((t) => (
@@ -435,25 +519,6 @@ export function MatchSetupPage() {
                   </option>
                 ))}
               </Select>
-            </Field>
-            <Field label="Overs per innings">
-              <Input
-                type="number"
-                min={1}
-                max={120}
-                value={form.oversPerInnings}
-                onChange={(e) => set('oversPerInnings', Number(e.target.value))}
-                disabled={form.format !== 'CUSTOM'}
-              />
-            </Field>
-            <Field label="Balls per over">
-              <Input
-                type="number"
-                min={1}
-                max={12}
-                value={form.ballsPerOver}
-                onChange={(e) => set('ballsPerOver', Number(e.target.value))}
-              />
             </Field>
             <Field label="Venue">
               <Input
@@ -598,8 +663,113 @@ export function MatchSetupPage() {
           </div>
         )}
 
-        {/* Step 4: review */}
-        {step === 4 && teamA && teamB && (
+        {/* Step 4: match rules */}
+        {step === 4 && (
+          <div className="space-y-5">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Overs per innings">
+                <Input
+                  type="number"
+                  min={1}
+                  max={120}
+                  value={form.oversPerInnings}
+                  onChange={(e) => onOversChange(Number(e.target.value))}
+                  disabled={form.format !== 'CUSTOM'}
+                />
+              </Field>
+              <Field label="Balls per over">
+                <Input
+                  type="number"
+                  min={1}
+                  max={12}
+                  value={form.ballsPerOver}
+                  onChange={(e) => set('ballsPerOver', Number(e.target.value))}
+                />
+              </Field>
+              <Field label="Team size" hint="Playing XI per side.">
+                <Input
+                  type="number"
+                  min={2}
+                  value={form.teamSize}
+                  onChange={(e) => onTeamSizeChange(Number(e.target.value))}
+                />
+              </Field>
+              <Field label="Number of wickets" hint="Wickets down before the innings ends.">
+                <Input
+                  type="number"
+                  min={1}
+                  value={form.maxWickets}
+                  onChange={(e) => set('maxWickets', Number(e.target.value))}
+                />
+              </Field>
+            </div>
+
+            <div>
+              <div className="mb-2 text-sm font-medium text-ink-700 dark:text-ink-300">
+                Powerplay
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {(['auto', 'manual'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => onPowerplayModeChange(mode)}
+                    className={cn(
+                      'rounded-xl border-2 p-3 text-left font-semibold capitalize',
+                      form.powerplayMode === mode
+                        ? 'border-brand-500 bg-brand-50 text-brand-700'
+                        : 'border-ink-200 dark:border-ink-800 text-ink-700 dark:text-ink-300 hover:border-ink-300',
+                    )}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-3 max-w-[220px]">
+                <Field
+                  label="Powerplay overs"
+                  hint={
+                    form.powerplayMode === 'auto'
+                      ? 'Calculated from total overs (or tournament default beyond 20 overs).'
+                      : undefined
+                  }
+                >
+                  <Input
+                    type="number"
+                    min={0}
+                    max={form.oversPerInnings}
+                    value={form.powerplayOvers}
+                    onChange={(e) => set('powerplayOvers', Number(e.target.value))}
+                    disabled={form.powerplayMode === 'auto'}
+                  />
+                </Field>
+              </div>
+            </div>
+
+            <div className="space-y-3 border-t border-ink-100 dark:border-ink-800 pt-4">
+              <ToggleRow
+                label="Last man standing"
+                hint="Innings continues with a lone not-out batter instead of ending one short."
+                value={form.lastManStanding}
+                onChange={(v) => set('lastManStanding', v)}
+              />
+              <ToggleRow
+                label="Retired hurt"
+                hint="Offer 'retired hurt' as a wicket type while scoring."
+                value={form.retiredHurtEnabled}
+                onChange={(v) => set('retiredHurtEnabled', v)}
+              />
+              <ToggleRow
+                label="Super Over"
+                hint="Ties are followed by a Super Over per match rules (scored separately)."
+                value={form.superOverEnabled}
+                onChange={(v) => set('superOverEnabled', v)}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Step 5: review */}
+        {step === 5 && teamA && teamB && (
           <>
             <ReviewStep
               form={form}
@@ -742,6 +912,17 @@ function ReviewStep({
         <div className="mt-1 text-ink-500 dark:text-ink-400">
           {form.isPublic ? 'Public match' : 'Private match'}
         </div>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          <Badge>{form.maxWickets} wickets</Badge>
+          <Badge>{form.teamSize}-a-side</Badge>
+          <Badge>
+            Powerplay: {form.powerplayOvers} over{form.powerplayOvers === 1 ? '' : 's'} (
+            {form.powerplayMode})
+          </Badge>
+          {form.lastManStanding && <Badge>Last man standing</Badge>}
+          {!form.retiredHurtEnabled && <Badge>No retired hurt</Badge>}
+          {form.superOverEnabled && <Badge>Super Over</Badge>}
+        </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
@@ -757,6 +938,42 @@ function ReviewStep({
           <p className="text-ink-600 dark:text-ink-400">{names(form.squadB) || '—'}</p>
         </div>
       </div>
+    </div>
+  )
+}
+
+function ToggleRow({
+  label,
+  hint,
+  value,
+  onChange,
+}: {
+  label: string
+  hint: string
+  value: boolean
+  onChange: (v: boolean) => void
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <div className="text-sm font-medium text-ink-800 dark:text-ink-200">{label}</div>
+        <div className="text-xs text-ink-500 dark:text-ink-400">{hint}</div>
+      </div>
+      <button
+        onClick={() => onChange(!value)}
+        className={cn(
+          'relative h-6 w-11 rounded-full transition-colors',
+          value ? 'bg-brand-600' : 'bg-ink-300',
+        )}
+        aria-pressed={value}
+      >
+        <span
+          className={cn(
+            'absolute top-0.5 h-5 w-5 rounded-full bg-white dark:bg-ink-900 transition-transform',
+            value ? 'translate-x-5' : 'translate-x-0.5',
+          )}
+        />
+      </button>
     </div>
   )
 }

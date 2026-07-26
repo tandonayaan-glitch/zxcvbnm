@@ -206,6 +206,11 @@ export function ScoringPage() {
         <p className="mt-2 text-lg font-semibold text-pitch-700">
           {match.result?.summary}
         </p>
+        {match.result?.outcome === 'tie' && match.superOverEnabled && (
+          <p className="mt-1 text-sm text-ink-500 dark:text-ink-400">
+            Super Over enabled per match rules — to be scored as a separate match.
+          </p>
+        )}
         <div className="mt-6 flex justify-center gap-3">
           <Button onClick={() => navigate(`/match/${match.id}`)}>
             <Eye size={16} /> View scorecard
@@ -454,6 +459,7 @@ export function ScoringPage() {
           fieldingPlayers={(players.data ?? []).filter((p) =>
             bowlingSquad.includes(p.id),
           )}
+          retiredHurtEnabled={match.retiredHurtEnabled !== false}
           onConfirm={confirmWicket}
           onClose={() => setWicketOpen(false)}
         />
@@ -873,6 +879,32 @@ function PreMatch({
           <div className="mt-1">
             <b>Batting first:</b> {battingName}
           </div>
+          <div className="mt-1">
+            <b>Wickets:</b> {match.maxWickets ?? Math.max(match.squadA.length, match.squadB.length) - 1}
+            {' · '}
+            <b>Team size:</b> {match.teamSize ?? Math.max(match.squadA.length, match.squadB.length)}
+            {' · '}
+            <b>Powerplay:</b> {match.powerplayOvers ?? '—'} overs
+          </div>
+          {(match.lastManStanding || match.retiredHurtEnabled === false || match.superOverEnabled) && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {match.lastManStanding && (
+                <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
+                  Last man standing
+                </span>
+              )}
+              {match.retiredHurtEnabled === false && (
+                <span className="rounded-full bg-ink-100 dark:bg-ink-800 px-2 py-0.5 text-xs font-medium text-ink-600 dark:text-ink-400">
+                  No retired hurt
+                </span>
+              )}
+              {match.superOverEnabled && (
+                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">
+                  Super Over
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </Card>
       <Button className="mt-6" size="lg" onClick={onStart} loading={busy}>

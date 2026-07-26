@@ -82,6 +82,7 @@ export interface InningsInsights {
 
 function powerplayOverCount(match: Match): number {
   const total = match.oversPerInnings
+  if (match.powerplayOvers != null) return Math.min(match.powerplayOvers, total)
   switch (match.format) {
     case 'T20':
       return Math.min(6, total)

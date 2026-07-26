@@ -36,6 +36,7 @@ export const COL = {
   // invitee create/update their own linked Player doc and append to the team's playerIds.
   teamInvitationGrants: 'teamInvitationGrants',
   comments: 'comments', // flat spectator comments, scoped to a matchId
+  reactions: 'reactions', // subcollection under matches/{id}; one doc per reacting user
 } as const
 
 export const SETTINGS_DOC = 'app'

@@ -4,6 +4,10 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — League Ecosystem (ROADMAP_V3)
 
+### Added — Match reactions (ROADMAP_V3 Phase 2, Slice 2.5)
+- Four tap-reaction emojis (🔥 👏 😮 💔) on every public match page, with live counts. Signed-in
+  visitors can toggle their own; signed-out visitors see disabled buttons with a sign-in prompt.
+
 ### Added — Match comments (ROADMAP_V3 Phase 2, Slice 2.4)
 - A flat comment section on every public match page: signed-in visitors can post (500-char cap),
   the comment's own author or the master admin can delete it. No editing or threading — matches

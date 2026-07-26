@@ -64,6 +64,7 @@ export function WicketModal({
   nonStrikerId,
   battingPlayers,
   fieldingPlayers,
+  retiredHurtEnabled = true,
   onConfirm,
   onClose,
 }: {
@@ -71,6 +72,8 @@ export function WicketModal({
   nonStrikerId: string | null
   battingPlayers: Player[]
   fieldingPlayers: Player[]
+  /** Whether "Retired hurt" is offered as a wicket type, per the match's rules. */
+  retiredHurtEnabled?: boolean
   onConfirm: (r: WicketResult) => void
   onClose: () => void
 }) {
@@ -78,6 +81,9 @@ export function WicketModal({
   const [outBatterId, setOutBatterId] = useState(strikerId)
   const [fielderId, setFielderId] = useState('')
   const [runs, setRuns] = useState(0)
+  const wicketTypes = Object.entries(WICKET_TYPE_LABELS).filter(
+    ([k]) => retiredHurtEnabled || k !== 'retired_hurt',
+  )
 
   const needsFielder = type === 'caught' || type === 'stumped' || type === 'run_out'
   const canChooseEnd = type === 'run_out'
@@ -115,7 +121,7 @@ export function WicketModal({
       <div className="space-y-4">
         <Field label="How out?">
           <Select value={type} onChange={(e) => setType(e.target.value as WicketType)}>
-            {Object.entries(WICKET_TYPE_LABELS).map(([k, v]) => (
+            {wicketTypes.map(([k, v]) => (
               <option key={k} value={k}>
                 {v}
               </option>

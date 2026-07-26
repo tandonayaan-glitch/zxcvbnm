@@ -193,6 +193,14 @@ service cloud.firestore {
         allow read: if true;
         allow write: if canScore();
       }
+      // Spectator tap-reactions — one doc per reacting user, doc id == their own uid.
+      match /reactions/{uid} {
+        allow read: if true;
+        allow create, update: if isSignedIn()
+          && request.auth.uid == uid
+          && request.resource.data.userId == uid;
+        allow delete: if false;
+      }
     }
 
     // ---- Cached stats -----------------------------------------
