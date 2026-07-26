@@ -29,11 +29,6 @@ export const STAGE_LABELS: Record<KnockoutStage, string> = {
   final: 'Final',
 }
 
-/** Stages that belong on the knockout bracket (everything except the group phase). */
-export const BRACKET_STAGES: KnockoutStage[] = STAGE_ORDER.filter(
-  (s) => s !== 'group',
-)
-
 export interface BracketRound {
   stage: KnockoutStage
   label: string

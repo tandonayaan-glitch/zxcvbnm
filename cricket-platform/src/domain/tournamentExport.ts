@@ -2,6 +2,7 @@
  * Tournament export — build CSV / JSON from prepared, name-resolved rows
  * (standings + leaders). Pure string builders; the UI wires the download.
  * ================================================================== */
+import { csvCell } from '@/lib/download'
 
 export interface StandingsExportRow {
   rank: number
@@ -25,11 +26,6 @@ export interface TournamentExport {
   standings: StandingsExportRow[]
   mostRuns: LeaderExportRow[]
   mostWickets: LeaderExportRow[]
-}
-
-function csvCell(v: string | number): string {
-  const s = String(v)
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
 export function tournamentToCSV(data: TournamentExport): string {

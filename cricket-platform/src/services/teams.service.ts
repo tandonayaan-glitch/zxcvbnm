@@ -8,8 +8,6 @@ import {
   deleteDoc,
   query,
   orderBy,
-  arrayUnion,
-  arrayRemove,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { COL, pruneUndefined } from '@/lib/collections'
@@ -61,24 +59,3 @@ export async function deleteTeam(id: string): Promise<void> {
   await deleteDoc(doc(db, COL.teams, id))
 }
 
-export async function addPlayerToTeam(teamId: string, playerId: string) {
-  await updateDoc(doc(db, COL.teams, teamId), {
-    playerIds: arrayUnion(playerId),
-    updatedAt: Date.now(),
-  })
-  await updateDoc(doc(db, COL.players, playerId), {
-    teamIds: arrayUnion(teamId),
-    updatedAt: Date.now(),
-  })
-}
-
-export async function removePlayerFromTeam(teamId: string, playerId: string) {
-  await updateDoc(doc(db, COL.teams, teamId), {
-    playerIds: arrayRemove(playerId),
-    updatedAt: Date.now(),
-  })
-  await updateDoc(doc(db, COL.players, playerId), {
-    teamIds: arrayRemove(teamId),
-    updatedAt: Date.now(),
-  })
-}

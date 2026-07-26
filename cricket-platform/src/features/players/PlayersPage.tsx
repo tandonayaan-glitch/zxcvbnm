@@ -180,15 +180,23 @@ export function PlayersPage() {
   }
 
   async function toggleActive(p: Player) {
-    await setPlayerActive(p.id, !p.active)
-    players.refetch()
+    try {
+      await setPlayerActive(p.id, !p.active)
+      players.refetch()
+    } catch {
+      toast.error('Could not update player status')
+    }
   }
 
   async function handleDelete(p: Player) {
     if (!confirm(`Move ${p.fullName} to Trash? You can restore it from Trash later.`)) return
-    await softDelete('player', p.id, profile)
-    toast.success('Player moved to Trash')
-    players.refetch()
+    try {
+      await softDelete('player', p.id, profile)
+      toast.success('Player moved to Trash')
+      players.refetch()
+    } catch {
+      toast.error('Could not move player to Trash')
+    }
   }
 
   return (

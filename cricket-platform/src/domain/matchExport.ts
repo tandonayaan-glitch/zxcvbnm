@@ -4,6 +4,7 @@
  * ================================================================== */
 import type { Delivery, Match, Player } from '@/types'
 import { ballsToOvers } from '@/lib/format'
+import { csvCell } from '@/lib/download'
 
 function nameMap(players: Player[]): Map<string, string> {
   return new Map(players.map((p) => [p.id, p.displayName]))
@@ -12,11 +13,6 @@ function nameMap(players: Player[]): Map<string, string> {
 /** Full structured export — the match doc plus its ball-by-ball deliveries. */
 export function matchToJSON(match: Match, deliveries: Delivery[]): string {
   return JSON.stringify({ match, deliveries }, null, 2)
-}
-
-function csvCell(v: string | number): string {
-  const s = String(v)
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
 /** Human-readable scorecard as CSV: per-innings batting and bowling cards. */

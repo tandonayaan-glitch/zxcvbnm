@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { ImageIcon, Trash2, Upload, Loader2, X } from 'lucide-react'
 import { Card, CardHeader, CardBody } from '@/components/ui/primitives'
 import { useToast } from '@/components/ui/toast'
@@ -24,6 +24,13 @@ export function MatchGallery({ matchId, canManage }: { matchId: string; canManag
   const [uploading, setUploading] = useState(false)
   const [lightbox, setLightbox] = useState<StoredImage | null>(null)
   const [deletingPath, setDeletingPath] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!lightbox) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setLightbox(null)
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [lightbox])
 
   async function handleFiles(e: ChangeEvent<HTMLInputElement>) {
     const files = [...(e.target.files ?? [])]
@@ -119,7 +126,7 @@ export function MatchGallery({ matchId, canManage }: { matchId: string; canManag
                     onClick={() => handleDelete(img)}
                     disabled={deletingPath === img.path}
                     aria-label="Remove photo"
-                    className="absolute right-1 top-1 rounded-md bg-black/60 p-1.5 text-white opacity-0 transition-opacity hover:bg-red-600 group-hover:opacity-100 disabled:opacity-100"
+                    className="absolute right-1 top-1 rounded-md bg-black/60 p-1.5 text-white opacity-0 transition-opacity hover:bg-red-600 focus-visible:opacity-100 group-hover:opacity-100 disabled:opacity-100"
                   >
                     {deletingPath === img.path ? (
                       <Loader2 size={13} className="animate-spin" />
@@ -136,6 +143,9 @@ export function MatchGallery({ matchId, canManage }: { matchId: string; canManag
 
       {lightbox && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Photo"
           className="fixed inset-0 z-[70] flex items-center justify-center bg-black/85 p-4"
           onClick={() => setLightbox(null)}
         >

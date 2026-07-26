@@ -7,7 +7,7 @@ import { useAsync } from '@/hooks/useAsync'
 import { listAllMatches } from '@/services/matches.service'
 import { aggregateTeamStats } from '@/domain/stats'
 import { computeHeadToHead } from '@/domain/headToHead'
-import type { Match, TeamStats } from '@/types'
+import type { TeamStats } from '@/types'
 
 interface TeamOption {
   id: string

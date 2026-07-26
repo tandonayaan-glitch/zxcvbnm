@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   updateDoc,
   query,
@@ -10,9 +11,10 @@ import { db } from '@/lib/firebase'
 import { COL } from '@/lib/collections'
 import { pruneUndefined } from '@/lib/collections'
 import { notify } from './notifications.service'
-import type { Role, UserProfile, UserStatus } from '@/types'
+import { normalizeUsername } from './auth.service'
+import type { Role, UserProfile, UserStatus, UsernameLookup } from '@/types'
 
-const ROLE_LABELS: Record<Role, string> = {
+export const ROLE_LABELS: Record<Role, string> = {
   MASTER_ADMIN: 'Master Admin',
   ADMIN: 'Admin',
   SCORER: 'Scorer',
@@ -80,4 +82,37 @@ export async function setUserStatus(
   } else if (status === 'active') {
     await notify(uid, 'security', 'Account reinstated', 'Your account access was restored.', '/dashboard')
   }
+}
+
+/** Safe subset of `UserProfile` for a public-facing profile page — no email, status, or ban info. */
+export interface PublicProfile {
+  id: string
+  username: string
+  displayName: string
+  role: Role
+  bio?: string
+  photoURL?: string | null
+  createdAt: number
+}
+
+function toPublicProfile(p: UserProfile): PublicProfile {
+  const { id, username, displayName, role, bio, photoURL, createdAt } = p
+  return { id, username, displayName, role, bio, photoURL, createdAt }
+}
+
+/**
+ * Looks up a user by username for a public profile page. Returns `null` for an unknown username
+ * or a banned/pending account (nothing to show a visitor either way) — never throws, so a bad
+ * username in the URL renders a normal "not found" state rather than an error boundary.
+ */
+export async function getPublicProfile(username: string): Promise<PublicProfile | null> {
+  const u = normalizeUsername(username)
+  const lookupSnap = await getDoc(doc(db, COL.usernameLookup, u))
+  if (!lookupSnap.exists()) return null
+  const { uid } = lookupSnap.data() as UsernameLookup
+  const profileSnap = await getDoc(doc(db, COL.users, uid))
+  if (!profileSnap.exists()) return null
+  const profile = profileSnap.data() as UserProfile
+  if (profile.status !== 'active') return null
+  return toPublicProfile(profile)
 }

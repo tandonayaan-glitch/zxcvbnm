@@ -194,6 +194,11 @@ const SeasonPage = lazy(() =>
 const MatchPage = lazy(() =>
   import('@/features/public/MatchPage').then((m) => ({ default: m.MatchPage })),
 )
+const UserProfilePage = lazy(() =>
+  import('@/features/public/UserProfilePage').then((m) => ({
+    default: m.UserProfilePage,
+  })),
+)
 
 export default function App() {
   const init = useAuthStore((s) => s.init)
@@ -394,6 +399,7 @@ export default function App() {
           <Route path="/club/:id" element={<ClubPage />} />
           <Route path="/season/:id" element={<SeasonPage />} />
           <Route path="/match/:id" element={<MatchPage />} />
+          <Route path="/u/:username" element={<UserProfilePage />} />
           <Route path="/invite/:code" element={<InvitePage />} />
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/terms" element={<TermsOfServicePage />} />

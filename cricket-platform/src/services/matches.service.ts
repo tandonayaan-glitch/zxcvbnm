@@ -5,7 +5,6 @@ import {
   getDocs,
   setDoc,
   updateDoc,
-  deleteDoc,
   query,
   where,
   orderBy,
@@ -102,10 +101,6 @@ export async function updateMatch(
     doc(db, COL.matches, id),
     pruneUndefined({ ...patch, updatedAt: Date.now() }),
   )
-}
-
-export async function deleteMatch(id: string): Promise<void> {
-  await deleteDoc(doc(db, COL.matches, id))
 }
 
 /** All matches, newest first (admin list, sorted client-side to avoid index needs). */

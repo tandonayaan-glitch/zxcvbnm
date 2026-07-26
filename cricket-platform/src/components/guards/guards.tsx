@@ -45,17 +45,3 @@ export function ProtectedRoute({
 
   return <>{children}</>
 }
-
-/** Inline gate for conditionally rendering actions by role. */
-export function RoleGate({
-  roles,
-  children,
-  fallback = null,
-}: {
-  roles: Role[]
-  children: ReactNode
-  fallback?: ReactNode
-}) {
-  const profile = useAuthStore((s) => s.profile)
-  return hasRole(profile, ...roles) ? <>{children}</> : <>{fallback}</>
-}

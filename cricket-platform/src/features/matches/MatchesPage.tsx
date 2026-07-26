@@ -52,24 +52,36 @@ export function MatchesPage() {
 
   async function handleDelete(m: Match) {
     if (!confirm(`Move "${m.title}" to Trash? You can restore it from Trash later.`)) return
-    await softDelete('match', m.id, profile)
-    toast.success('Match moved to Trash')
-    matches.refetch()
+    try {
+      await softDelete('match', m.id, profile)
+      toast.success('Match moved to Trash')
+      matches.refetch()
+    } catch {
+      toast.error('Could not move match to Trash')
+    }
   }
 
   async function toggleArchive(m: Match) {
-    await updateMatch(m.id, { archived: !m.archived })
-    toast.success(m.archived ? 'Match unarchived' : 'Match archived')
-    matches.refetch()
+    try {
+      await updateMatch(m.id, { archived: !m.archived })
+      toast.success(m.archived ? 'Match unarchived' : 'Match archived')
+      matches.refetch()
+    } catch {
+      toast.error('Could not update match')
+    }
   }
 
   async function handleImport(json: string) {
     if (!profile) return
-    const id = await importMatch(json, profile.id)
-    toast.success('Match imported (archived — review then unarchive to publish)')
-    setImportOpen(false)
-    matches.refetch()
-    navigate(`/match/${id}`)
+    try {
+      const id = await importMatch(json, profile.id)
+      toast.success('Match imported (archived — review then unarchive to publish)')
+      setImportOpen(false)
+      matches.refetch()
+      navigate(`/match/${id}`)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not import match — check the JSON is valid')
+    }
   }
 
   return (

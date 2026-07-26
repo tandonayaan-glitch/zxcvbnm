@@ -95,9 +95,13 @@ export function TournamentsPage() {
 
   async function handleDelete(t: Tournament) {
     if (!confirm(`Move ${t.name} to Trash? You can restore it from Trash later.`)) return
-    await softDelete('tournament', t.id, profile)
-    toast.success('Tournament moved to Trash')
-    tournaments.refetch()
+    try {
+      await softDelete('tournament', t.id, profile)
+      toast.success('Tournament moved to Trash')
+      tournaments.refetch()
+    } catch {
+      toast.error('Could not move tournament to Trash')
+    }
   }
 
   return (

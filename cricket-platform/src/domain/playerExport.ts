@@ -6,17 +6,13 @@
 import type { Player, PlayerStats, PlayerMatchPerformance } from '@/types'
 import type { TournamentSplit } from './playerSplits'
 import { battingAverage, strikeRate, formatBestBowling } from '@/lib/format'
+import { csvCell } from '@/lib/download'
 
 export interface PlayerExport {
   player: Player
   stats: PlayerStats | null
   splits: TournamentSplit[]
   performances: PlayerMatchPerformance[]
-}
-
-function csvCell(v: string | number): string {
-  const s = String(v)
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
 export function playerToCSV(data: PlayerExport): string {

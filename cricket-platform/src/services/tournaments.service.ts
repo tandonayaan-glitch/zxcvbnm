@@ -8,8 +8,6 @@ import {
   deleteDoc,
   query,
   orderBy,
-  arrayUnion,
-  arrayRemove,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { COL, pruneUndefined } from '@/lib/collections'
@@ -67,39 +65,7 @@ export async function deleteTournament(id: string): Promise<void> {
   await deleteDoc(doc(db, COL.tournaments, id))
 }
 
-export async function addTeamToTournament(tournamentId: string, teamId: string) {
-  await updateDoc(doc(db, COL.tournaments, tournamentId), {
-    teamIds: arrayUnion(teamId),
-    updatedAt: Date.now(),
-  })
-}
-
-export async function removeTeamFromTournament(
-  tournamentId: string,
-  teamId: string,
-) {
-  await updateDoc(doc(db, COL.tournaments, tournamentId), {
-    teamIds: arrayRemove(teamId),
-    updatedAt: Date.now(),
-  })
-}
-
 /* ----------------------- Standings (cached) ----------------------- */
-const standingsCol = (tid: string) =>
-  collection(db, COL.tournaments, tid, COL.standings)
-
-export async function getStandings(tid: string): Promise<StandingsRow[]> {
-  const snap = await getDocs(standingsCol(tid))
-  const rows = snap.docs.map((d) => d.data() as StandingsRow)
-  return sortStandings(rows)
-}
-
 export async function saveStandingsRow(tid: string, row: StandingsRow) {
   await setDoc(doc(db, COL.tournaments, tid, COL.standings, row.teamId), row)
-}
-
-export function sortStandings(rows: StandingsRow[]): StandingsRow[] {
-  return [...rows].sort(
-    (a, b) => b.points - a.points || b.nrr - a.nrr || b.won - a.won,
-  )
 }

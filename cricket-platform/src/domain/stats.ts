@@ -10,7 +10,6 @@ import type {
   StandingsRow,
   Team,
   TeamStats,
-  InningsState,
 } from '@/types'
 import { ballsToOvers, ballsToDecimalOvers } from '@/lib/format'
 
@@ -378,14 +377,6 @@ export function topWicketTakers(
       value: s.wickets,
       secondary: s.runsConceded,
     }))
-}
-
-/** Convenience for single-innings best partnership-free summaries. */
-export function inningsSummaryLine(inn: InningsState, ballsPerOver = 6): string {
-  return `${inn.totalRuns}/${inn.wickets} (${ballsToOvers(
-    inn.legalBalls,
-    ballsPerOver,
-  )} ov)`
 }
 
 /* ============================ Leaderboards ============================ */

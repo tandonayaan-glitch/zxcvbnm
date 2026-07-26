@@ -3,7 +3,6 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Search, User, Shield, Trophy, Swords, Building2 } from 'lucide-react'
 import {
   Avatar,
-  Card,
   EmptyState,
   PageLoader,
 } from '@/components/ui/primitives'

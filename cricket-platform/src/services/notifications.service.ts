@@ -6,6 +6,7 @@ import {
   updateDoc,
   query,
   where,
+  limit as fbLimit,
   onSnapshot,
   writeBatch,
 } from 'firebase/firestore'
@@ -52,12 +53,20 @@ function newestFirst(docs: AppNotification[], max: number): AppNotification[] {
   return [...docs].sort((a, b) => b.createdAt - a.createdAt).slice(0, max)
 }
 
+// Firestore reads for a `where()`-only query (no `orderBy`) aren't guaranteed to come back in
+// any particular order, so `fbLimit()` here bounds the read cost for an account that's
+// accumulated a very large notification history rather than guaranteeing the newest N — a true
+// "always exactly the newest N" guarantee needs `orderBy('createdAt')` alongside the `where()`,
+// which needs a composite index this project doesn't ship (same reasoning documented on every
+// other client-sorted list here). Set generously above every real `max` this app passes.
+const READ_CAP = 1000
+
 /** A user's notifications, newest first, capped at `max` (default 50). */
 export async function listNotifications(
   userId: string,
   max = 50,
 ): Promise<AppNotification[]> {
-  const q = query(notificationsCol(), where('userId', '==', userId))
+  const q = query(notificationsCol(), where('userId', '==', userId), fbLimit(READ_CAP))
   const snap = await getDocs(q)
   return newestFirst(
     snap.docs.map((d) => d.data() as AppNotification),
@@ -71,7 +80,7 @@ export function subscribeNotifications(
   cb: (notifications: AppNotification[]) => void,
   max = 50,
 ): () => void {
-  const q = query(notificationsCol(), where('userId', '==', userId))
+  const q = query(notificationsCol(), where('userId', '==', userId), fbLimit(READ_CAP))
   return onSnapshot(
     q,
     (snap) => cb(newestFirst(snap.docs.map((d) => d.data() as AppNotification), max)),

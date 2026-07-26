@@ -89,9 +89,13 @@ export function TeamsPage() {
 
   async function handleDelete(t: Team) {
     if (!confirm(`Move ${t.name} to Trash? You can restore it from Trash later.`)) return
-    await softDelete('team', t.id, profile)
-    toast.success('Team moved to Trash')
-    teams.refetch()
+    try {
+      await softDelete('team', t.id, profile)
+      toast.success('Team moved to Trash')
+      teams.refetch()
+    } catch {
+      toast.error('Could not move team to Trash')
+    }
   }
 
   return (

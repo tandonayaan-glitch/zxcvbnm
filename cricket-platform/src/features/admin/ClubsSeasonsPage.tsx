@@ -80,9 +80,13 @@ export function ClubsSeasonsPage() {
 
   async function handleDeleteClub(c: Club) {
     if (!confirm(`Move ${c.name} to Trash? Teams/tournaments/seasons linked to it keep their club reference. You can restore it from Trash later.`)) return
-    await softDelete('club', c.id, profile)
-    toast.success('Club moved to Trash')
-    clubs.refetch()
+    try {
+      await softDelete('club', c.id, profile)
+      toast.success('Club moved to Trash')
+      clubs.refetch()
+    } catch {
+      toast.error('Could not move club to Trash')
+    }
   }
 
   async function handleSaveSeason(input: SeasonInput, id?: string) {
@@ -104,9 +108,13 @@ export function ClubsSeasonsPage() {
 
   async function handleDeleteSeason(s: Season) {
     if (!confirm(`Move ${s.name} to Trash? Tournaments linked to it keep their season reference. You can restore it from Trash later.`)) return
-    await softDelete('season', s.id, profile)
-    toast.success('Season moved to Trash')
-    seasons.refetch()
+    try {
+      await softDelete('season', s.id, profile)
+      toast.success('Season moved to Trash')
+      seasons.refetch()
+    } catch {
+      toast.error('Could not move season to Trash')
+    }
   }
 
   return (

@@ -19,3 +19,9 @@ export function slugify(s: string): string {
     .replace(/^-|-$/g, '')
     .toLowerCase()
 }
+
+/** Quote a CSV cell if it contains a comma, quote, or newline. */
+export function csvCell(v: string | number): string {
+  const s = String(v)
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}

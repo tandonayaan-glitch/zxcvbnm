@@ -214,20 +214,6 @@ export function formatBytes(bytes: number): string {
   return `${v.toFixed(v < 10 ? 1 : 0)} ${units[i]}`
 }
 
-export function timeAgo(ms?: number | null): string {
-  if (!ms) return ''
-  const diff = Date.now() - ms
-  const s = Math.floor(diff / 1000)
-  if (s < 60) return 'just now'
-  const m = Math.floor(s / 60)
-  if (m < 60) return `${m}m ago`
-  const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h ago`
-  const d = Math.floor(h / 24)
-  if (d < 7) return `${d}d ago`
-  return formatDate(ms)
-}
-
 /* ---------------------------- Misc ---------------------------- */
 
 export function initials(name?: string | null): string {
@@ -256,8 +242,4 @@ export function colorFromString(str?: string | null): string {
     hash = safe.charCodeAt(i) + ((hash << 5) - hash)
   }
   return palette[Math.abs(hash) % palette.length]
-}
-
-export function pluralize(n: number, singular: string, plural?: string): string {
-  return n === 1 ? singular : plural ?? `${singular}s`
 }

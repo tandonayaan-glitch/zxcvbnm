@@ -1,6 +1,6 @@
 import { collection, doc, setDoc, getDocs, query, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { COL, genId } from '@/lib/collections'
+import { COL, genId, pruneUndefined } from '@/lib/collections'
 import type { ActivityLog } from '@/types'
 
 const activityCol = () => collection(db, COL.activity)
@@ -22,7 +22,7 @@ export async function logActivity(
       refId: opts?.refId,
       createdAt: Date.now(),
     }
-    await setDoc(doc(activityCol(), id), entry)
+    await setDoc(doc(activityCol(), id), pruneUndefined(entry))
   } catch (e) {
     console.error('logActivity failed', e)
   }

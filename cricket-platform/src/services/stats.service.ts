@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, writeBatch } from 'firebase/firestore'
+import { doc, getDoc, writeBatch } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { COL } from '@/lib/collections'
 import {
@@ -74,7 +74,3 @@ export async function getPlayerPerformances(
   return playerPerformances(playerId, matches)
 }
 
-/** Save a single computed stats doc (used by on-the-fly fallbacks). */
-export async function cachePlayerStats(s: PlayerStats): Promise<void> {
-  await setDoc(doc(db, COL.playerStats, s.playerId), s)
-}

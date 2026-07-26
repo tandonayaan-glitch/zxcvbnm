@@ -1,9 +1,13 @@
 import {
   forwardRef,
+  cloneElement,
+  isValidElement,
+  useId,
   type ButtonHTMLAttributes,
   type InputHTMLAttributes,
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
+  type ReactElement,
   type ReactNode,
 } from 'react'
 import { cn } from '@/lib/cn'
@@ -187,10 +191,23 @@ export function Field({
   hint?: string
   children: ReactNode
 }) {
+  // Give the (single) form control an id so the label is programmatically
+  // associated with it — screen readers otherwise only announce "edit text"
+  // for a visually-adjacent-but-unlinked label. Silently skipped if `children`
+  // isn't exactly one element (e.g. a wrapper `<div>` around two inputs).
+  const id = useId()
+  const child =
+    label && isValidElement(children)
+      ? cloneElement(children as ReactElement<{ id?: string }>, { id })
+      : children
   return (
     <div>
-      {label && <Label required={required}>{label}</Label>}
-      {children}
+      {label && (
+        <Label htmlFor={id} required={required}>
+          {label}
+        </Label>
+      )}
+      {child}
       {hint && !error && (
         <p className="mt-1 text-xs text-ink-500 dark:text-ink-400">{hint}</p>
       )}
