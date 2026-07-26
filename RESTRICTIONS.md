@@ -804,5 +804,16 @@ reasoning.
       specific rules against a real emulator or staging deploy before relying on them in
       production** — the same "author locally, verify against a real deploy" caveat already applied
       to the CSP recommendation in `ROADMAP.md` Phase 30.
+38. **`ROADMAP_V3.md` Phase 2 Slice 2.4 — Match comments** — **Done**, no collision. New
+    `MatchComment` type + `comments.service.ts`, a `comments` collection scoped by `matchId`.
+    Public read; signed-in create (500-char cap, enforced in both the service and
+    `firestore.rules`); delete by the comment's own author or the master admin — no edit, kept
+    simple on purpose. New `CommentSection.tsx` wired into the public `MatchPage.tsx` right after
+    the photo gallery. `tsc`/`npm run build` clean. **Verified live against the real database** for
+    the only path testable without credentials (signed-out read): loaded a real completed match
+    page, confirmed the section renders its sign-in prompt and empty state correctly with no
+    console errors. The signed-in post/delete path verified by code review + `tsc` only — same
+    master-admin-auth-loss caveat as recent phases; lower risk than Slice 2.3's rules changes since
+    this collection's rules are simple field/length checks with no cross-document `get()` lookups.
 
 (Appended to as further slices are picked up.)

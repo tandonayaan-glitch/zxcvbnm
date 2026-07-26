@@ -37,6 +37,7 @@ import { ScorecardConfigModal } from '@/features/scorecard/ScorecardConfigModal'
 import { matchToCSV, matchToJSON, exportSlug } from '@/domain/matchExport'
 import { downloadBlob } from '@/lib/download'
 import { MatchGallery } from '@/components/media/MatchGallery'
+import { CommentSection } from '@/components/media/CommentSection'
 import { ShareButton } from '@/components/ui/ShareButton'
 import { computeHeadToHead } from '@/domain/headToHead'
 import { matchTopPerformers } from '@/domain/matchPerformers'
@@ -440,6 +441,10 @@ export function MatchPage() {
 
       <div className="mt-4">
         <MatchGallery matchId={match.id} canManage={admin} />
+      </div>
+
+      <div className="mt-4">
+        <CommentSection matchId={match.id} />
       </div>
 
       {cfgOpen && (

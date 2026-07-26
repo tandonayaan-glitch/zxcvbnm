@@ -176,8 +176,19 @@ write-ups below as they're completed, not duplicated here.
   CSP recommendation in `ROADMAP.md` Phase 30.
 
 ### Slice 2.4 — Match comments
-- ⬜ New `comments` collection scoped to a match id. Public read, signed-in create, author or
-  master-admin delete. Flat (not threaded) — matches the platform's amateur/semi-pro scope.
+- ✅ New `MatchComment` type + `comments.service.ts` (`listComments`/`postComment`/
+  `deleteComment`), a new `comments` collection scoped by `matchId`. Public read; signed-in create
+  (500-char cap enforced both client-side and in `firestore.rules`); delete by the comment's own
+  author or the master admin (moderation) — no edit, a removed-and-reposted comment is simpler to
+  reason about than an editable one. New `CommentSection.tsx`, wired into the public `MatchPage.tsx`
+  right after the photo gallery: a textarea + character counter for signed-in visitors, a "Sign in
+  to leave a comment" prompt otherwise, and a flat (not threaded) list with a delete button shown
+  only to the comment's author or an admin.
+- `tsc`/`npm run build` clean. **Verified live against the real database** for the signed-out read
+  path (the only path testable without credentials): loaded a real completed match page, confirmed
+  the "Comments" section renders "Sign in to leave a comment." and "No comments yet — be the
+  first.", no console errors. The signed-in post/delete path verified by code review + `tsc` only —
+  same master-admin-auth-loss caveat as recent phases.
 
 ### Slice 2.5 — Match reactions
 - ⬜ Lightweight per-match emoji tap reactions, one-per-user-per-emoji (a `matchReactions/{id}_{uid}`

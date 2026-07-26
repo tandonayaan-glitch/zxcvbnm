@@ -35,6 +35,7 @@ export const COL = {
   // records {teamId, expiresAt} at invitedUid — the narrow, unforgeable exception that lets the
   // invitee create/update their own linked Player doc and append to the team's playerIds.
   teamInvitationGrants: 'teamInvitationGrants',
+  comments: 'comments', // flat spectator comments, scoped to a matchId
 } as const
 
 export const SETTINGS_DOC = 'app'

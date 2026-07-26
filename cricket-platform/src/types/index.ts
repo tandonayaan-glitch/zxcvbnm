@@ -176,6 +176,13 @@ export interface Tournament {
   teamGroups?: Record<string, string>
   /** How many teams advance from each group; only meaningful for group_knockout. */
   qualifiersPerGroup?: number
+  /** Match-rule defaults new matches in this tournament pre-fill from (Match Setup
+   *  Wizard's Match Rules step). All optional — unset means the wizard's own defaults apply. */
+  defaultMaxWickets?: number
+  defaultTeamSize?: number
+  /** Auto-powerplay convention for longer formats (>20 overs) that the wizard's
+   *  overs-based tiers don't cover; see domain/matchRules.ts. */
+  defaultPowerplayOvers?: number
   ownerId?: string // owning admin (uid); master admin sees all
   createdAt: number
   updatedAt: number
@@ -429,6 +436,29 @@ export interface Match {
   squadB: string[]
   toss?: TossInfo | null
   battingFirstTeamId?: string | null
+  /** Number of wickets that ends an innings (engine's all-out threshold minus one).
+   *  Undefined on older matches — falls back to the literal squad length, exactly
+   *  as before this field existed. */
+  maxWickets?: number
+  /** Expected playing-XI size; informational and drives the `maxWickets` default
+   *  in the setup wizard, not read by the scoring engine. */
+  teamSize?: number
+  /** 'auto' derives `powerplayOvers` from the overs/tournament convention; 'manual'
+   *  means the scorer set it explicitly. Undefined on older matches. */
+  powerplayMode?: 'auto' | 'manual'
+  /** Explicit powerplay length in overs. Undefined on older matches — analytics
+   *  fall back to the existing per-format heuristic (see domain/insights.ts). */
+  powerplayOvers?: number
+  /** When true, the innings continues with a lone not-out batter (all-out
+   *  threshold extends by one wicket) instead of ending at the standard count. */
+  lastManStanding?: boolean
+  /** Whether "retired hurt" is offered as a wicket type in the scoring UI.
+   *  Undefined/true preserves existing behaviour for older matches. */
+  retiredHurtEnabled?: boolean
+  /** Rule flag only — whether tied matches are followed by a Super Over per the
+   *  match/tournament rules. No Super Over scoring is implemented; this just
+   *  drives a confirmation note on a tied result. */
+  superOverEnabled?: boolean
   venue?: string
   scheduledAt?: number | null
   scorerId?: string | null
@@ -694,6 +724,18 @@ export interface TeamInvitation {
   createdAt: number
   expiresAt: number
   respondedAt?: number | null
+}
+
+/** A spectator comment on a match — flat (not threaded), matches the platform's
+ *  amateur/semi-pro scope rather than a full discussion-thread system. */
+export interface MatchComment {
+  id: string
+  matchId: string
+  authorId: string
+  authorName: string
+  authorPhotoURL?: string | null
+  text: string
+  createdAt: number
 }
 
 /** A user's request to be granted ADMIN access (to run a tournament). */

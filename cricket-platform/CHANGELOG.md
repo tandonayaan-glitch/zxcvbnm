@@ -4,6 +4,11 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — League Ecosystem (ROADMAP_V3)
 
+### Added — Match comments (ROADMAP_V3 Phase 2, Slice 2.4)
+- A flat comment section on every public match page: signed-in visitors can post (500-char cap),
+  the comment's own author or the master admin can delete it. No editing or threading — matches
+  the platform's amateur/semi-pro scope.
+
 ### Added — Team roster invitations (ROADMAP_V3 Phase 2, Slice 2.3)
 - A team owner/manager can invite an existing registered user (by username) to join the team's
   roster as a player — a new "Invite a player" button per team card on the Teams page. The invitee

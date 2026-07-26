@@ -375,5 +375,22 @@ service cloud.firestore {
         || (isSignedIn() && exists(/databases/$(database)/documents/teams/$(resource.data.teamId))
             && isOwnerOrMaster(get(/databases/$(database)/documents/teams/$(resource.data.teamId)).data.ownerId));
     }
+
+    // ---- Match comments -----------------------------------------
+    match /comments/{id} {
+      // Public read, like the rest of the cricket data — comments are meant to be visible on
+      // the public match page to signed-out spectators too.
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 500;
+      // A comment's own author, or the master admin (moderation), can remove it. No edits —
+      // a removed-and-reposted comment is simpler to reason about than an editable one.
+      allow delete: if isMasterAdmin()
+        || (isSignedIn() && resource.data.authorId == request.auth.uid);
+      allow update: if false;
+    }
   }
 }
