@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/primitives'
 import { ActivityFeed } from '@/components/activity/ActivityFeed'
 import { ShareButton } from '@/components/ui/ShareButton'
+import { FollowButton } from '@/components/ui/FollowButton'
 import { useAsync } from '@/hooks/useAsync'
 import { getClub } from '@/services/clubs.service'
 import { listTeams } from '@/services/teams.service'
@@ -60,7 +61,10 @@ export function ClubPage() {
               {c.homeVenue && <span>· {c.homeVenue}</span>}
             </div>
           </div>
-          <ShareButton variant="icon" title={c.name} />
+          <div className="flex items-center gap-2">
+            <ShareButton variant="icon" title={c.name} />
+            <FollowButton kind="clubs" id={c.id} />
+          </div>
         </div>
         {c.description && (
           <p className="mt-3 text-sm text-ink-600 dark:text-ink-400">{c.description}</p>

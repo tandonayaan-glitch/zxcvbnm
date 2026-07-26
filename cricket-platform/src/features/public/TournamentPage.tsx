@@ -27,6 +27,7 @@ import {
 import { Tabs } from '@/components/ui/Tabs'
 import { ActivityFeed } from '@/components/activity/ActivityFeed'
 import { ShareButton } from '@/components/ui/ShareButton'
+import { FollowButton } from '@/components/ui/FollowButton'
 import { useAsync } from '@/hooks/useAsync'
 import { useToast } from '@/components/ui/toast'
 import { getTournament } from '@/services/tournaments.service'
@@ -237,6 +238,7 @@ export function TournamentPage() {
           </div>
           <div className="flex gap-2">
             <ShareButton variant="icon" title={t.name} />
+            <FollowButton kind="tournaments" id={t.id} />
             {canManageTournaments(profile) && (
               <>
                 <Button variant="outline" size="sm" onClick={refresh} loading={refreshing}>

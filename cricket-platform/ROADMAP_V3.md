@@ -106,9 +106,30 @@ write-ups below as they're completed, not duplicated here.
   console errors on either path.
 
 ### Slice 2.2 — Extended following + activity feed coverage
-- ⬜ `favStore`'s `FavKind` grows to include clubs and seasons (currently players/teams/tournaments
-  only); `FollowButton` added wherever a followable entity's public page doesn't have one yet.
-  `ActivityFeed refId` scoping extended to any entity page still missing it.
+- ✅ `favStore.ts`'s `FavKind` grows from `players | teams | tournaments` to also include `clubs`
+  and `seasons`. `FollowButton` added to `ClubPage`/`SeasonPage`/`TournamentPage` (all three
+  previously had none — `TournamentPage` was missing it despite tournaments already being
+  followable before this slice). `ActivityFeed refId` scoping: `ClubPage.tsx` already had it;
+  `SeasonPage.tsx` genuinely didn't — added, matching the same pattern.
+- **Found and fixed a real, independent bug while wiring this up**: `AccountPage.tsx`'s
+  "Following" card only ever rendered `favs.players` and `favs.teams` — `tournaments` was already
+  a followable kind *before this slice* but was never shown there, so following a tournament
+  produced no visible confirmation anywhere in the account UI. Extended the card to render all
+  five kinds (added `listTournaments`/`listClubs`/`listSeasons` fetches alongside the existing
+  player/team ones), not just the two new ones — leaving the pre-existing tournament gap in place
+  would have been an obvious follow-up miss.
+- **Cross-device sync deliberately stays out of scope for this slice**: `favStore` remains
+  localStorage-only (per-device). Syncing follows server-side for signed-in users (so a public
+  profile page could show what someone follows, per Slice 2.1's own deferred note) is a real
+  design decision — new writes, new `firestore.rules`, a migration path for existing local
+  follows — bigger than "add two more kinds to an enum." Flagged in `RESTRICTIONS.md` §4 as a
+  scoped future slice rather than bundled in here speculatively.
+- `tsc`/`npm run build` clean. **Verified live against the real database**: followed the real
+  `seedT1` tournament via the actual `FollowButton` click handler (not a reimplementation) and
+  confirmed `localStorage['crickethub.favs']` updated correctly with the new `clubs`/`seasons` keys
+  already present as empty arrays. `ClubPage`/`SeasonPage`'s `FollowButton`/`ActivityFeed` additions
+  verified by code review only — same as Slice 1.1, this dev database has no club/season reachable
+  from a real link to click through, and `/account` needs auth this session doesn't have.
 
 ### Slice 2.3 — Team roster invitations
 - ⬜ New, separate-from-the-existing-role-`Invitation` mechanism: a team manager/owner invites

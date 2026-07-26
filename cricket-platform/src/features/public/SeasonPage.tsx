@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { CalendarRange, Trophy, Award } from 'lucide-react'
+import { CalendarRange, Trophy, Award, Activity } from 'lucide-react'
 import {
   Avatar,
   Badge,
@@ -9,6 +9,8 @@ import {
   PageLoader,
 } from '@/components/ui/primitives'
 import { ShareButton } from '@/components/ui/ShareButton'
+import { FollowButton } from '@/components/ui/FollowButton'
+import { ActivityFeed } from '@/components/activity/ActivityFeed'
 import { useAsync } from '@/hooks/useAsync'
 import { getSeason } from '@/services/seasons.service'
 import { getClub } from '@/services/clubs.service'
@@ -95,7 +97,10 @@ export function SeasonPage() {
               </div>
             </div>
           </div>
-          <ShareButton variant="icon" title={s.name} />
+          <div className="flex items-center gap-2">
+            <ShareButton variant="icon" title={s.name} />
+            <FollowButton kind="seasons" id={s.id} />
+          </div>
         </div>
         {s.description && (
           <p className="mt-3 text-sm text-ink-600 dark:text-ink-400">{s.description}</p>
@@ -141,6 +146,13 @@ export function SeasonPage() {
           ))}
         </div>
       )}
+
+      <div className="mb-3 mt-6 flex items-center gap-2 text-sm font-semibold text-ink-800 dark:text-ink-200">
+        <Activity size={16} /> Activity
+      </div>
+      <Card className="p-4">
+        <ActivityFeed refId={id} max={10} />
+      </Card>
     </div>
   )
 }

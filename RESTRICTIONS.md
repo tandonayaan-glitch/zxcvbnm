@@ -102,6 +102,7 @@ does not conflict with a still-standing "do not":
 | Feature-flag club-specific scoping | Deferred, beyond Phase 21 | Phase 21 built global on/off + percentage rollout + beta-only gating; no flags gate an actual per-club feature yet (no experimental feature exists that would need it) — prepared architecture for the next one, not a current need. |
 | Platform analytics: retention, feature-usage tracking | Deferred, beyond Phase 22/31 | Same root cause as the already-documented DAU/MAU gap — no session/login log exists to compute return-visit retention from, and per-feature usage needs an event-tracking pipeline this app has never had. Phase 22 already discloses what it doesn't measure rather than fabricating a number; the same honesty applies here. |
 | Multi-tagging `logActivity()` so scoped detail-page feeds (Phase 34) show related match activity, not just the entity's own creation event | Deferred, beyond Phase 34 | `refId` is a single field; making a match's activity entries also reference both team ids and the tournament id (and milestones filterable by player) means touching every call site in `matches.service.ts`/`scoring.service.ts` plus deciding whether `ActivityLog` needs a `refIds: string[]` shape change — a schema/call-site change across already-verified services, bigger than "wire up the existing prop." |
+| Cross-device follow sync (`favStore` moving from localStorage to a per-user Firestore doc) | Deferred, beyond `ROADMAP_V3.md` Slice 2.2 | `favStore` stays device-local for every visitor including signed-in ones. Syncing it server-side (so e.g. a public user profile could show what that person follows, per Slice 2.1's own note) needs new writes, a `firestore.rules` block, and a migration path for whatever's already in a user's `localStorage` — a real design decision bigger than widening the `FavKind` enum, which is all this slice did. Revisit as its own scoped slice if a concrete need (cross-device follows, public follow lists) makes it worth the write cost. |
 
 Anything not listed above and not explicitly excluded is fair game for slicing — see
 `cricket-platform/ROADMAP.md` for the live phase list.
@@ -602,5 +603,23 @@ reasoning.
     `/u/ayaan` renders the actual master-admin profile through the real lookup chain (avatar
     initials, name, username, "Master Admin" badge, real join date); an unknown username correctly
     settles to "User not found"; no console errors either way.
+35. **`ROADMAP_V3.md` Phase 2 Slice 2.2 — Extended following + activity feed coverage** — **Done**,
+    no collision. `favStore.ts`'s `FavKind` grows to `clubs`/`seasons` (from `players | teams |
+    tournaments`); `FollowButton` added to `ClubPage`/`SeasonPage`/`TournamentPage` (all three had
+    none before — tournaments were already followable but had no button on their own page);
+    `ActivityFeed refId` added to `SeasonPage.tsx` (`ClubPage.tsx` already had it). **Found and
+    fixed a real, pre-existing bug unrelated to the two new kinds**: `AccountPage.tsx`'s "Following"
+    card only ever rendered `favs.players`/`favs.teams` — `favs.tournaments` was already a
+    followable kind before this slice but was never shown there, so following a tournament had no
+    visible confirmation anywhere. Fixed by rendering all five kinds now, not just patching in the
+    two new ones. **Cross-device sync intentionally deferred** — see §4's new table entry;
+    `favStore` stays localStorage-only, which is also why Slice 2.1's profile page still can't show
+    a real "follows" section for anyone but the viewer's own browser. `tsc`/`npm run build` clean.
+    **Verified live against the real database**: followed the real `seedT1` tournament through the
+    actual `FollowButton` click handler and confirmed `localStorage['crickethub.favs']` updated
+    correctly with the new `clubs`/`seasons` keys present as empty arrays. `ClubPage`/`SeasonPage`'s
+    additions and the `AccountPage.tsx` fix verified by code review only — same caveats as recent
+    entries (no club/season reachable from a real link in this dev database; `/account` needs auth
+    this session's browser doesn't have).
 
 (Appended to as further slices are picked up.)

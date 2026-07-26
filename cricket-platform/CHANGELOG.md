@@ -4,6 +4,13 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — League Ecosystem (ROADMAP_V3)
 
+### Added — Extended following + activity feeds (ROADMAP_V3 Phase 2, Slice 2.2)
+- Clubs and seasons are now followable, joining players/teams/tournaments; a Follow button was
+  added to their public pages (and to the tournament page, which never had one despite tournaments
+  already being followable). Season pages gained an Activity feed. Fixed a pre-existing gap in
+  `AccountPage.tsx`'s "Following" card: followed tournaments were never shown there — now all five
+  followable kinds render.
+
 ### Added — Public user profiles (ROADMAP_V3 Phase 2, Slice 2.1)
 - New `/u/:username` page: bio, photo, display name, role badge, member-since. `getPublicProfile()`
   returns a safe narrowed subset of the user doc (no email/status/ban fields), and treats a

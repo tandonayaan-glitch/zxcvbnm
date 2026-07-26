@@ -19,6 +19,9 @@ import { useFavStore } from '@/store/favStore'
 import { useAsync } from '@/hooks/useAsync'
 import { listPlayers } from '@/services/players.service'
 import { listTeams } from '@/services/teams.service'
+import { listTournaments } from '@/services/tournaments.service'
+import { listClubs } from '@/services/clubs.service'
+import { listSeasons } from '@/services/seasons.service'
 import { createAdminRequest, getMyRequest } from '@/services/requests.service'
 import { homeForRole } from '@/features/auth/AuthLayout'
 import { Heart } from 'lucide-react'
@@ -31,6 +34,9 @@ export function AccountPage() {
   const favs = useFavStore((s) => s.favs)
   const allPlayers = useAsync(listPlayers, [])
   const allTeams = useAsync(listTeams, [])
+  const allTournaments = useAsync(listTournaments, [])
+  const allClubs = useAsync(listClubs, [])
+  const allSeasons = useAsync(listSeasons, [])
 
   const [request, setRequest] = useState<AdminRequest | null>(null)
   const [loading, setLoading] = useState(true)
@@ -95,7 +101,11 @@ export function AccountPage() {
         </CardBody>
       </Card>
 
-      {(favs.players.length > 0 || favs.teams.length > 0) && (
+      {(favs.players.length > 0 ||
+        favs.teams.length > 0 ||
+        favs.tournaments.length > 0 ||
+        favs.clubs.length > 0 ||
+        favs.seasons.length > 0) && (
         <Card className="mb-4 border-red-200">
           <CardHeader
             className="bg-red-50"
@@ -130,6 +140,45 @@ export function AccountPage() {
                   style={{ borderColor: t.primaryColor }}
                 >
                   {t.shortName}
+                </Link>
+              )
+            })}
+            {favs.tournaments.map((tid) => {
+              const t = (allTournaments.data ?? []).find((x) => x.id === tid)
+              if (!t) return null
+              return (
+                <Link
+                  key={tid}
+                  to={`/tournament/${tid}`}
+                  className="rounded-full border border-ink-200 dark:border-ink-800 px-3 py-1 text-sm text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
+                >
+                  {t.name}
+                </Link>
+              )
+            })}
+            {favs.clubs.map((cid) => {
+              const c = (allClubs.data ?? []).find((x) => x.id === cid)
+              if (!c) return null
+              return (
+                <Link
+                  key={cid}
+                  to={`/club/${cid}`}
+                  className="rounded-full border border-ink-200 dark:border-ink-800 px-3 py-1 text-sm text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
+                >
+                  {c.name}
+                </Link>
+              )
+            })}
+            {favs.seasons.map((sid) => {
+              const s = (allSeasons.data ?? []).find((x) => x.id === sid)
+              if (!s) return null
+              return (
+                <Link
+                  key={sid}
+                  to={`/season/${sid}`}
+                  className="rounded-full border border-ink-200 dark:border-ink-800 px-3 py-1 text-sm text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
+                >
+                  {s.name}
                 </Link>
               )
             })}
