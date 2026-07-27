@@ -202,6 +202,14 @@ const UserProfilePage = lazy(() =>
     default: m.UserProfilePage,
   })),
 )
+const EmbedMatchPage = lazy(() =>
+  import('@/features/embed/EmbedMatchPage').then((m) => ({ default: m.EmbedMatchPage })),
+)
+const EmbedScorecardPage = lazy(() =>
+  import('@/features/embed/EmbedScorecardPage').then((m) => ({
+    default: m.EmbedScorecardPage,
+  })),
+)
 
 export default function App() {
   const init = useAuthStore((s) => s.init)
@@ -236,6 +244,10 @@ export default function App() {
       <OfflineBanner />
       <Suspense fallback={<PageLoader />}>
         <Routes>
+        {/* Embeds (chrome-free — meant to be iframed elsewhere, no app shell) */}
+        <Route path="/embed/match/:id" element={<EmbedMatchPage />} />
+        <Route path="/embed/scorecard/:id" element={<EmbedScorecardPage />} />
+
         {/* Auth (full screen) */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />

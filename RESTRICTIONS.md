@@ -103,6 +103,9 @@ does not conflict with a still-standing "do not":
 | Platform analytics: retention, feature-usage tracking | Deferred, beyond Phase 22/31 | Same root cause as the already-documented DAU/MAU gap — no session/login log exists to compute return-visit retention from, and per-feature usage needs an event-tracking pipeline this app has never had. Phase 22 already discloses what it doesn't measure rather than fabricating a number; the same honesty applies here. |
 | Multi-tagging `logActivity()` so scoped detail-page feeds (Phase 34) show related match activity, not just the entity's own creation event | Deferred, beyond Phase 34 | `refId` is a single field; making a match's activity entries also reference both team ids and the tournament id (and milestones filterable by player) means touching every call site in `matches.service.ts`/`scoring.service.ts` plus deciding whether `ActivityLog` needs a `refIds: string[]` shape change — a schema/call-site change across already-verified services, bigger than "wire up the existing prop." |
 | Cross-device follow sync (`favStore` moving from localStorage to a per-user Firestore doc) | Deferred, beyond `ROADMAP_V3.md` Slice 2.2 | `favStore` stays device-local for every visitor including signed-in ones. Syncing it server-side (so e.g. a public user profile could show what that person follows, per Slice 2.1's own note) needs new writes, a `firestore.rules` block, and a migration path for whatever's already in a user's `localStorage` — a real design decision bigger than widening the `FavKind` enum, which is all this slice did. Revisit as its own scoped slice if a concrete need (cross-device follows, public follow lists) makes it worth the write cost. |
+| Duckworth-Lewis (D/L) rain-rule support, even as a placeholder | Omitted per explicit user instruction ("future-ready placeholder only if already supported; otherwise omit") | Confirmed via grep (`Duckworth\|D/L\|DLS\|dls`) — zero hits anywhere in the codebase. Not implemented in any form, so no placeholder was added to the Match Rules step. Revisit only if the user explicitly scopes a real D/L (or simplified target-reset) implementation. |
+| Follow-On rule in the Match Rules step | Omitted per explicit user instruction ("only if applicable to the match format") | `MatchFormat` is `'T20' \| 'ODI' \| 'T10' \| 'THE_HUNDRED' \| 'CUSTOM'` — no multi-day/Test format exists anywhere in the type system, and Follow-On is meaningless for any of these (all are single-innings-per-side limited-overs formats). Revisit only if a multi-day format is ever added. |
+| Super Over — actual scoring/resolution engine | Deferred; implemented as a rule flag only | The user's ask listed "Super Over enabled" as a plain setting to include (not conditioned like D/L or Follow-On), so `Match.superOverEnabled` exists and a confirmation note shows on a tied result ("Super Over enabled per match rules — to be scored as a separate match"). No existing tie-breaker/Super-Over infrastructure was found anywhere in `domain/scoring.ts` or its callers, and building a second mini-match scoring flow (its own innings, its own all-out rule, linking back to the parent match's result) is materially bigger than "read a configuration value" — it would mean *adding* scoring logic, which conflicts with the user's own explicit constraint ("Do not modify scoring logic beyond reading these configuration values"). A tied Super-Over match today is just scored as its own separate `Match` document, same as any other match. |
 
 Anything not listed above and not explicitly excluded is fair game for slicing — see
 `cricket-platform/ROADMAP.md` for the live phase list.
@@ -845,5 +848,82 @@ reasoning.
     completed match page and confirmed a genuine `data:image/png;base64,...` URI came back with a
     valid PNG header — proof the encoding itself works end-to-end in a real browser, not just that
     a placeholder rendered. No console errors.
+
+41. **Match Setup Wizard restructure + configurable Match Rules step** — user-requested (not a
+    `ROADMAP_V3.md` item), explicit constraint: "Preserve backward compatibility with all existing
+    matches and the verified scoring engine. Do not modify scoring logic beyond reading these
+    configuration values." **Done**, no collision on the feature's own files, though its work
+    ended up bundled into commit `20bd7f2` alongside the concurrent session's Match Reactions work
+    — both were uncommitted in the shared working tree when a broad commit was made; confirmed via
+    `git show 20bd7f2 -- <file>` that every file this slice touched matches this slice's intended
+    content exactly, byte-for-byte, so nothing was lost or altered by the bundling.
+    - `MatchSetupPage.tsx` is now a 6-step wizard (Details → Teams → Playing XI → Toss → **Match
+      Rules** → Review), following the user's own suggested step order (which places Match Rules
+      *after* Toss — the wizard's explicit list was trusted over a looser prose description
+      earlier in the same request that could be read either way).
+    - **"Number of wickets" and "Last Man Standing" made independently configurable without
+      touching `scoring.ts`**: the engine already takes `battingSquadSize` as a passed-in number
+      (`ApplyBallOpts.battingSquadSize`, with `allOut = wickets >= battingSquadSize - 1`) rather
+      than deriving it internally from squad length. Added `effectiveSquadSize()` in
+      `scoring.service.ts` — `maxWickets != null ? maxWickets + 1 : squadFor(...).length`, plus
+      `+1` again when `lastManStanding` is set — and wired it into both `optsFor()` (feeds the
+      live engine) and `computeResult()`'s "won by N wickets" margin calculation (previously used
+      literal squad length directly; now consistent with the configured rule). Old matches with
+      neither field set reproduce the exact literal-squad-length behaviour.
+    - **Powerplay**: new pure `domain/matchRules.ts` (`computeAutoPowerplayOvers`,
+      `defaultMaxWickets`) implements the user's exact stated convention (5→1, 6–10→2, 11–20→6,
+      beyond 20 uses the tournament's configured default, else falls back to 10) for the wizard's
+      Auto mode. This is deliberately separate from `domain/insights.ts`'s existing
+      `powerplayOverCount()` (a per-*format* heuristic used only for post-match analytics display)
+      — that function was extended, not replaced, to prefer the new explicit `Match.powerplayOvers`
+      when set, falling back to its original heuristic for historical matches that predate this
+      field. Verified the new pure functions with a standalone Node check against the user's exact
+      example inputs (5/6/10/11/20/50 overs, with and without a tournament default) — all matched.
+    - **Retired hurt**: `WicketType`'s `retired_hurt` was already engine-recognised and already
+      excluded from `wicketCountsAsDismissal`/`isCountedWicket` — so "Retired Hurt enabled/disabled"
+      is purely a scorer-facing UI toggle (`WicketModal` now takes `retiredHurtEnabled` and filters
+      it out of the wicket-type dropdown when false); no engine change needed or made.
+    - **Duckworth-Lewis, Follow-On, Super Over**: see §4 for the omission/scoping reasoning per the
+      user's own conditional instructions.
+    - `Tournament` gained optional `defaultTeamSize`/`defaultMaxWickets`/`defaultPowerplayOvers`,
+      editable in a new "Match rule defaults" section of `TournamentFormModal`; selecting a
+      tournament in the wizard pre-fills the Match Rules step from these once, at selection time
+      (same one-shot-prefill pattern as `chooseTeam`'s squad prefill), remaining fully editable
+      after. All new `Match`/`Tournament` fields are optional; `pruneUndefined()` already strips
+      undefined values so no Firestore write path needed changes.
+    - `tsc -p tsconfig.app.json --noEmit`, `npm run build`, `npm run lint` all clean throughout.
+    - **Verified live against the real database**: created real throwaway test players ("MSW Test
+      P1"–"P4"), two teams ("MSW Test Team A"/"B"), and a tournament ("MSW Test Tournament") with
+      `defaultTeamSize=8`/`defaultMaxWickets=7`/`defaultPowerplayOvers=3` configured — confirmed via
+      the browser's DOM (`input.value`, not just the accessible-name placeholder text, which looks
+      identical to a placeholder in the a11y tree) that all three defaults round-tripped through
+      Firestore correctly on reopening the edit modal. **Did not reach the wizard's own Match Rules
+      step live**: the authenticated browser session was lost when the dev server had to be
+      restarted mid-verification, and per the standing safety rule (entry documented earlier: "self
+      -registering a new account... to work around this was correctly not attempted"), no new
+      throwaway login was created to re-establish it — the user was asked for test credentials but,
+      per the assistant's own prohibited-actions list, entering a password into the login form is
+      not something the assistant can do even when a user supplies and authorizes it, so that path
+      was also correctly declined. The wizard's step logic (validation gating, the auto/manual
+      powerplay toggle, tournament-selection prefill, the Review step's rule badges, and the
+      `submit()` payload) was instead verified by a careful full re-read of the final file plus the
+      Node check above — not a live click-through.
+    - **Leftover test data not yet cleaned up** (blocked by the same lost-session issue): the four
+      test players, two test teams, and one test tournament named above are still live in the
+      database and should be deleted (by the user, or by a future session once a working
+      authenticated preview is available).
+42. **`ROADMAP_V3.md` Phase 3 Slice 3.2 — Embeddable widgets** — **Done**, no collision. Two new
+    chrome-free routes mounted at the top level of `App.tsx` (sibling to `/login`, not nested under
+    `PublicLayout`, so neither gets the header/nav/footer): `/embed/match/:id`
+    (`EmbedMatchPage.tsx`, a small self-contained score summary — deliberately not reusing
+    `MatchPage`'s private `LivePanel`, which assumes chrome this page doesn't have) and
+    `/embed/scorecard/:id` (`EmbedScorecardPage.tsx`, reuses the real `ScorecardView` directly so
+    it can't drift from what the full site shows). New `EmbedButton.tsx` on the match page only
+    (embeds are match-specific, unlike sharing/QR which apply to every entity type). `tsc`/`npm run
+    build` clean. **Verified live against the real database**: loaded both embed routes directly
+    for a real completed match, confirmed genuinely chrome-free rendering (`<body>` as the content
+    root, not `<main>` — proof `PublicLayout` didn't leak in) with correct content and no console
+    errors on either; opened the real embed-code modal from the match page and confirmed both
+    `<iframe>` snippets contain the actual match id and origin, not placeholder text.
 
 (Appended to as further slices are picked up.)

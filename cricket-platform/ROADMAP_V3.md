@@ -230,9 +230,21 @@ write-ups below as they're completed, not duplicated here.
   not just that a placeholder appeared. No console errors.
 
 ### Slice 3.2 — Embeddable widgets
-- ⬜ Chrome-free `/embed/match/:id` (compact live score card) and `/embed/scorecard/:id` (read-only
-  full scorecard) routes with no app shell, meant to be iframed elsewhere; embed-code snippet
-  offered from `ShareButton`.
+- ✅ Two new chrome-free routes, mounted at the top level of `App.tsx` (sibling to `/login`, not
+  nested under `PublicLayout`) so neither gets the app's header/nav/footer: `/embed/match/:id`
+  (`EmbedMatchPage.tsx` — a small self-contained live score summary, deliberately not reusing
+  `MatchPage`'s private `LivePanel`, which assumes surrounding chrome this page doesn't have) and
+  `/embed/scorecard/:id` (`EmbedScorecardPage.tsx` — reuses the real `ScorecardView` component
+  directly, so it never drifts from what the full site shows). New `EmbedButton.tsx` (a modal with
+  both `<iframe>` snippets, pre-filled with the real match id and the page's own origin, each with
+  a one-click copy), added next to `ShareButton`/`QRCodeButton` on the match page only — embeds are
+  match-specific, unlike sharing/QR which apply to every entity type.
+- `tsc`/`npm run build` clean. **Verified live against the real database**: loaded both embed
+  routes directly for a real completed match — confirmed genuinely chrome-free rendering (`Source
+  element: <body>`, not `<main>`, confirming no `PublicLayout` wrapper leaked in), correct live
+  score summary and full scorecard content, no console errors on either. Opened the real
+  `EmbedButton` modal from the match page and confirmed both textareas contain correct, working
+  `<iframe>` snippets with the actual match id and origin substituted in.
 
 ## Phase 4 — Tournament Ecosystem
 

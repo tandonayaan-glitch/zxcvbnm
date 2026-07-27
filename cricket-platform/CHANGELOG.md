@@ -4,6 +4,31 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — League Ecosystem (ROADMAP_V3)
 
+### Added — Embeddable widgets (ROADMAP_V3 Phase 3, Slice 3.2)
+- Two chrome-free routes for embedding a match elsewhere: `/embed/match/:id` (compact live score
+  card) and `/embed/scorecard/:id` (full scorecard, reusing the real `ScorecardView`). A new
+  "Embed" button on the match page offers ready-to-paste `<iframe>` snippets for both.
+
+### Added — Match Setup Wizard & configurable match rules
+- The match setup flow is now a 6-step wizard: Details → Teams → Playing XI → Toss → **Match
+  Rules** → Review. The new Match Rules step lets the scorer configure/confirm overs, balls per
+  over, team size, number of wickets, powerplay (Auto/Manual), Last Man Standing, whether "retired
+  hurt" is offered as a wicket type, and a Super Over rule flag — all pre-filled from the selected
+  tournament's configured defaults (new optional `Tournament.defaultTeamSize` /
+  `defaultMaxWickets` / `defaultPowerplayOvers`, editable per-tournament in the tournament form)
+  but always editable per match.
+- Powerplay auto-calculation follows 5→1 / 6–10→2 / 11–20→6 over conventions; beyond 20 overs it
+  uses the tournament's configured default (falling back to 10).
+- All new `Match` fields are optional and additive — existing matches without them fall back to
+  the exact prior behaviour (literal squad length for the all-out threshold, the existing
+  per-format powerplay heuristic for analytics). `domain/scoring.ts` (the verified ball-by-ball
+  engine) was not modified; `scoring.service.ts`'s `optsFor`/`computeResult` now derive the
+  engine's `battingSquadSize` input from the configured wickets/Last-Man-Standing rule instead of
+  literal squad length, when set.
+- Duckworth-Lewis and Follow-On were intentionally omitted (not implemented anywhere in the
+  codebase, and no multi-day match format exists respectively) — see RESTRICTIONS.md for reasoning.
+  Super Over is a rule-flag/confirmation-note only; no Super Over scoring engine was built.
+
 ### Added — QR codes (ROADMAP_V3 Phase 3, Slice 3.1)
 - A "QR code" button next to Share on every public entity page (Match/Tournament/Team/Player/Club/
   Season/User profile), opening a scannable QR code for that page's link with a PNG download —
