@@ -925,5 +925,16 @@ reasoning.
     root, not `<main>` — proof `PublicLayout` didn't leak in) with correct content and no console
     errors on either; opened the real embed-code modal from the match page and confirmed both
     `<iframe>` snippets contain the actual match id and origin, not placeholder text.
+43. **`ROADMAP_V3.md` Phase 4 Slice 4.1 — Sponsor showcase** — **Done**, no collision. New
+    `Sponsor`/`SponsorTier` types, `Tournament.sponsors?: Sponsor[]` (optional — no migration
+    needed, matches the additive-optional-fields convention already used for every schema change
+    this session). Admin editor in `TournamentFormModal.tsx` (add/remove list, reuses the existing
+    `ImageUploadField` for logos); public display is a tier-sorted logo strip on `TournamentPage.tsx`
+    that renders nothing at all when there are no sponsors, not an empty section. `tsc`/`npm run
+    build` clean. **Verified live against the real database** for the one thing testable without an
+    admin credential: loaded a real tournament with no `sponsors` field at all (every tournament in
+    this dev database predates the field) and confirmed no crash, no console errors — the actual
+    "legacy doc" case, not a hypothetical. The admin editor and populated-display path verified by
+    code review + `tsc` only — same master-admin-auth-loss caveat as recent phases.
 
 (Appended to as further slices are picked up.)

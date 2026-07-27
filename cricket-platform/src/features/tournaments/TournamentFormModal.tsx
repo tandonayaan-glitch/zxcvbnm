@@ -1,15 +1,20 @@
 import { useState } from 'react'
+import { Plus, Trash2 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button, Field, Input, Select, Textarea } from '@/components/ui/primitives'
 import { ImageUploadField } from '@/components/ui/ImageUploadField'
 import type {
   Club,
   Season,
+  Sponsor,
+  SponsorTier,
   Team,
   Tournament,
   TournamentFormat,
   TournamentStatus,
 } from '@/types'
+
+const SPONSOR_TIERS: SponsorTier[] = ['title', 'gold', 'silver', 'partner']
 import type { TournamentInput } from '@/services/tournaments.service'
 
 function toDateInput(ms?: number | null): string {
@@ -64,9 +69,20 @@ export function TournamentFormModal({
   const [defaultPowerplayOvers, setDefaultPowerplayOvers] = useState(
     tournament?.defaultPowerplayOvers != null ? String(tournament.defaultPowerplayOvers) : '',
   )
+  const [sponsors, setSponsors] = useState<Sponsor[]>(tournament?.sponsors ?? [])
   const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  function addSponsor() {
+    setSponsors((prev) => [...prev, { name: '', tier: 'partner' }])
+  }
+  function updateSponsor(i: number, patch: Partial<Sponsor>) {
+    setSponsors((prev) => prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)))
+  }
+  function removeSponsor(i: number) {
+    setSponsors((prev) => prev.filter((_, idx) => idx !== i))
+  }
 
   function toggle(id: string) {
     setTeamIds((prev) =>
@@ -116,6 +132,16 @@ export function TournamentFormModal({
       defaultTeamSize: defaultTeamSize ? Number(defaultTeamSize) : undefined,
       defaultMaxWickets: defaultMaxWickets ? Number(defaultMaxWickets) : undefined,
       defaultPowerplayOvers: defaultPowerplayOvers ? Number(defaultPowerplayOvers) : undefined,
+      sponsors: sponsors.some((s) => s.name.trim())
+        ? sponsors
+            .filter((s) => s.name.trim())
+            .map((s) => ({
+              name: s.name.trim(),
+              tier: s.tier,
+              url: s.url?.trim() || undefined,
+              logoURL: s.logoURL || null,
+            }))
+        : undefined,
     }
     try {
       await onSave(input, tournament?.id, reason.trim() || undefined)
@@ -343,6 +369,70 @@ export function TournamentFormModal({
             />
           </Field>
         </div>
+      </div>
+
+      <div className="mt-4">
+        <div className="mb-1.5 flex items-center justify-between">
+          <span className="text-sm font-medium text-ink-700 dark:text-ink-300">
+            Sponsors (optional)
+          </span>
+          <button
+            type="button"
+            onClick={addSponsor}
+            className="inline-flex items-center gap-1 text-xs font-medium text-brand-700 hover:underline"
+          >
+            <Plus size={13} /> Add sponsor
+          </button>
+        </div>
+        {sponsors.length === 0 ? (
+          <p className="rounded-lg bg-ink-50 dark:bg-ink-800/60 px-3 py-2 text-sm text-ink-500 dark:text-ink-400">
+            No sponsors added yet.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {sponsors.map((s, i) => (
+              <div
+                key={i}
+                className="grid grid-cols-1 gap-2 rounded-lg border border-ink-200 dark:border-ink-800 p-3 sm:grid-cols-[1fr_auto_1fr_auto_auto]"
+              >
+                <Input
+                  value={s.name}
+                  onChange={(e) => updateSponsor(i, { name: e.target.value })}
+                  placeholder="Sponsor name"
+                />
+                <Select
+                  value={s.tier}
+                  onChange={(e) => updateSponsor(i, { tier: e.target.value as SponsorTier })}
+                >
+                  {SPONSOR_TIERS.map((tier) => (
+                    <option key={tier} value={tier}>
+                      {tier[0].toUpperCase() + tier.slice(1)}
+                    </option>
+                  ))}
+                </Select>
+                <Input
+                  value={s.url ?? ''}
+                  onChange={(e) => updateSponsor(i, { url: e.target.value })}
+                  placeholder="Website (optional)"
+                />
+                <ImageUploadField
+                  value={s.logoURL ?? ''}
+                  onChange={(url) => updateSponsor(i, { logoURL: url })}
+                  folder="tournaments"
+                  shape="square"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeSponsor(i)}
+                  aria-label="Remove sponsor"
+                  className="justify-self-start rounded-md p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 sm:justify-self-center"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {tournament && (

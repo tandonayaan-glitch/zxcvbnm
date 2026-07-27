@@ -58,7 +58,9 @@ import {
 import { downloadBlob, slugify } from '@/lib/download'
 import { canManageTournaments, useAuthStore } from '@/store/authStore'
 import { formatDate, formatRate, ballsToOvers } from '@/lib/format'
-import type { Match, StandingsRow } from '@/types'
+import type { Match, StandingsRow, SponsorTier } from '@/types'
+
+const SPONSOR_TIER_ORDER: Record<SponsorTier, number> = { title: 0, gold: 1, silver: 2, partner: 3 }
 
 export function TournamentPage() {
   const { id = '' } = useParams()
@@ -259,6 +261,34 @@ export function TournamentPage() {
           <p className="mt-3 text-sm text-ink-600 dark:text-ink-400">{t.description}</p>
         )}
       </Card>
+
+      {t.sponsors && t.sponsors.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center justify-center gap-5 rounded-xl border border-ink-100 bg-ink-50/60 px-4 py-3 dark:border-ink-800 dark:bg-ink-900/40">
+          {[...t.sponsors]
+            .sort((a, b) => SPONSOR_TIER_ORDER[a.tier] - SPONSOR_TIER_ORDER[b.tier])
+            .map((s, i) => (
+              <a
+                key={`${s.name}-${i}`}
+                href={s.url || undefined}
+                target={s.url ? '_blank' : undefined}
+                rel={s.url ? 'noreferrer' : undefined}
+                title={s.name}
+                className="flex flex-col items-center gap-1"
+              >
+                {s.logoURL ? (
+                  <img src={s.logoURL} alt={s.name} className="h-10 max-w-[120px] object-contain" />
+                ) : (
+                  <span className="text-sm font-semibold text-ink-700 dark:text-ink-300">
+                    {s.name}
+                  </span>
+                )}
+                <span className="text-[10px] font-medium uppercase tracking-wide text-ink-400 dark:text-ink-500">
+                  {s.tier}
+                </span>
+              </a>
+            ))}
+        </div>
+      )}
 
       {hasExport && (
         <div className="mb-4 flex flex-wrap items-center gap-2">

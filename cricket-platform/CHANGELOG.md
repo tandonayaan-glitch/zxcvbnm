@@ -4,6 +4,10 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — League Ecosystem (ROADMAP_V3)
 
+### Added — Sponsor showcase (ROADMAP_V3 Phase 4, Slice 4.1)
+- Tournaments can now list sponsors (name, logo, website, tier: title/gold/silver/partner),
+  editable from the tournament form and shown as a sorted logo strip on the public tournament page.
+
 ### Added — Embeddable widgets (ROADMAP_V3 Phase 3, Slice 3.2)
 - Two chrome-free routes for embedding a match elsewhere: `/embed/match/:id` (compact live score
   card) and `/embed/scorecard/:id` (full scorecard, reusing the real `ScorecardView`). A new

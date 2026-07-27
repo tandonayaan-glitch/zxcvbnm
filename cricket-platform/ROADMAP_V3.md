@@ -249,7 +249,19 @@ write-ups below as they're completed, not duplicated here.
 ## Phase 4 — Tournament Ecosystem
 
 ### Slice 4.1 — Sponsor showcase
-- ⬜ `Tournament.sponsors[]` (name/logo/link/tier), admin editor, public display section.
+- ✅ New `Sponsor`/`SponsorTier` types (`name`, optional `logoURL`/`url`, `tier: title | gold |
+  silver | partner`) and `Tournament.sponsors?: Sponsor[]`. Admin editor added to
+  `TournamentFormModal.tsx`: an add/remove repeatable list (name, tier select, website, logo
+  upload reusing the existing `ImageUploadField`), only sponsors with a name are kept on save.
+  Public display: a sponsor strip on `TournamentPage.tsx` right under the header card, sorted by
+  tier (title first), each logo (or name if no logo uploaded) linking out to the sponsor's site —
+  renders nothing at all for a tournament with no sponsors, not an empty placeholder section.
+- `tsc`/`npm run build` clean. **Verified live against the real database** for the one thing
+  testable without an admin-form credential: loaded a real tournament with no `sponsors` field at
+  all (every tournament in this dev database predates the field) and confirmed no crash and no
+  console errors — the exact "resilience to legacy/foreign docs" case this codebase's convention
+  cares about, not a hypothetical. The admin editor and populated-display path verified by code
+  review + `tsc` only — same master-admin-auth-loss caveat as recent phases.
 
 ### Slice 4.2 — Tournament photo galleries
 - ⬜ Generalizes the existing match-only gallery pattern (`components/media/MatchGallery.tsx`) into

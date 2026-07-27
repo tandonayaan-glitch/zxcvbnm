@@ -156,6 +156,15 @@ export type KnockoutStage =
   | 'third_place'
   | 'final'
 
+export type SponsorTier = 'title' | 'gold' | 'silver' | 'partner'
+
+export interface Sponsor {
+  name: string
+  logoURL?: string | null
+  url?: string
+  tier: SponsorTier
+}
+
 export interface Tournament {
   id: string
   name: string
@@ -183,6 +192,8 @@ export interface Tournament {
   /** Auto-powerplay convention for longer formats (>20 overs) that the wizard's
    *  overs-based tiers don't cover; see domain/matchRules.ts. */
   defaultPowerplayOvers?: number
+  /** Optional sponsor showcase, shown on the public tournament page. */
+  sponsors?: Sponsor[]
   ownerId?: string // owning admin (uid); master admin sees all
   createdAt: number
   updatedAt: number
