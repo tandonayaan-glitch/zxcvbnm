@@ -936,5 +936,30 @@ reasoning.
     this dev database predates the field) and confirmed no crash, no console errors — the actual
     "legacy doc" case, not a hypothetical. The admin editor and populated-display path verified by
     code review + `tsc` only — same master-admin-auth-loss caveat as recent phases.
+44. **`ROADMAP_V3.md` Phase 4 Slice 4.2 — Tournament photo galleries** — **Done**, no collision.
+    Extracted `MatchGallery.tsx` into a generic `EntityGallery.tsx` (folder/title/canManage/
+    emptyLabel/`hideWhenEmpty` props); `MatchGallery` is now a thin wrapper, zero behavior change.
+    Wired a second usage onto `TournamentPage.tsx` as a new "Gallery" tab, using the new
+    `hideWhenEmpty={false}` option to show a normal "No photos yet." state (matching the existing
+    Activity tab's convention) instead of vanishing, since a dedicated tab is a different context
+    than a card sitting in a page's default scroll. **Corrected a wrong assumption in this file's
+    own earlier text**: the original slice plan said this would "fix the tracked-folder gap in
+    `MediaLibraryPage.tsx` (tournaments folder isn't listed there today)" — checking the actual
+    file found `tournaments` already IS tracked there. The real gap is that `MediaLibraryPage`
+    tracks flat one-image-per-entity-type folders and has no browsing support for the per-entity-id
+    *nested* gallery folders (`matches/{id}/`, now also `tournaments/{id}/`) — a structurally
+    different, N+1-read feature, not a one-line fix. Left as a documented scope boundary.
+    **Auth recovered mid-slice**: this browser session's dev-server preview is now signed in as an
+    admin/scorer — the master-admin-auth-loss caveat repeated across dozens of prior entries no
+    longer applies going forward. Verified live with the real session: clicked the actual "Gallery"
+    tab on a real tournament, confirmed the admin "Add photos" control and the correct
+    loading→"No photos yet" transition, no console errors; regression-checked `MatchGallery`
+    post-refactor on a real match page (unchanged). **Attempted a real file upload** via a
+    synthetic canvas-generated PNG dispatched to the hidden file input, to prove the write path —
+    the technique itself didn't register with React's file-input handling (confirmed via
+    `read_network_requests`: zero Storage requests fired, meaning the synthetic event never reached
+    React's `onChange`), a known limitation of simulating `<input type="file">` via raw DOM events,
+    not an app bug. Not pursued further — the upload/delete logic is unchanged from `MatchGallery`,
+    already verified end-to-end when it originally shipped (`ROADMAP.md` Phase 12).
 
 (Appended to as further slices are picked up.)

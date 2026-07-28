@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/primitives'
 import { Tabs } from '@/components/ui/Tabs'
 import { ActivityFeed } from '@/components/activity/ActivityFeed'
+import { EntityGallery } from '@/components/media/EntityGallery'
 import { ShareButton } from '@/components/ui/ShareButton'
 import { QRCodeButton } from '@/components/ui/QRCodeButton'
 import { FollowButton } from '@/components/ui/FollowButton'
@@ -349,6 +350,7 @@ export function TournamentPage() {
           { key: 'records', label: 'Records' },
           { key: 'teams', label: 'Teams' },
           { key: 'activity', label: 'Activity' },
+          { key: 'gallery', label: 'Gallery' },
         ]}
       />
 
@@ -659,6 +661,15 @@ export function TournamentPage() {
         <Card className="p-4">
           <ActivityFeed refId={id} max={15} />
         </Card>
+      )}
+
+      {tab === 'gallery' && (
+        <EntityGallery
+          folder={`tournaments/${id}`}
+          title="Tournament gallery"
+          canManage={canManageTournaments(profile)}
+          hideWhenEmpty={false}
+        />
       )}
     </div>
   )

@@ -4,6 +4,11 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — League Ecosystem (ROADMAP_V3)
 
+### Added — Tournament photo galleries (ROADMAP_V3 Phase 4, Slice 4.2)
+- Tournaments get a photo gallery too, as a new "Gallery" tab on the public tournament page.
+  Generalized the match-only gallery into a reusable `EntityGallery` component (`MatchGallery` is
+  now a thin wrapper over it, unchanged behavior).
+
 ### Added — Sponsor showcase (ROADMAP_V3 Phase 4, Slice 4.1)
 - Tournaments can now list sponsors (name, logo, website, tier: title/gold/silver/partner),
   editable from the tournament form and shown as a sorted logo strip on the public tournament page.

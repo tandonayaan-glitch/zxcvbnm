@@ -264,9 +264,42 @@ write-ups below as they're completed, not duplicated here.
   review + `tsc` only — same master-admin-auth-loss caveat as recent phases.
 
 ### Slice 4.2 — Tournament photo galleries
-- ⬜ Generalizes the existing match-only gallery pattern (`components/media/MatchGallery.tsx`) into
-  a reusable gallery wired onto `TournamentPage.tsx` too; fixes the tracked-folder gap in
-  `MediaLibraryPage.tsx` (tournaments folder isn't listed there today).
+- ✅ Extracted the match-only `MatchGallery.tsx` into a generic `EntityGallery.tsx` (folder/title/
+  canManage/emptyLabel/hideWhenEmpty props); `MatchGallery` is now a thin wrapper over it, so its
+  existing usage on `MatchPage.tsx` needed zero changes. Wired a second usage onto
+  `TournamentPage.tsx` as a new "Gallery" tab (`tournaments/{id}` Storage folder) — a tab rather
+  than an always-visible card (unlike the match page's single-card placement), because the
+  tournament page already has 11 tabs and a dedicated tab is more discoverable than another
+  section competing with sponsors/standings/etc. Added a `hideWhenEmpty` prop (default `true`,
+  preserving `MatchGallery`'s original "show nothing if empty and read-only" behavior) so the new
+  tab usage can opt out and show a normal "No photos yet." empty state instead — same convention
+  the existing Activity tab already uses, since a dedicated tab the visitor explicitly clicked into
+  is a different context than a card sitting in the page's default scroll.
+- **Corrected a wrong assumption from this file's own earlier text**: the original plan said this
+  slice would "fix the tracked-folder gap in `MediaLibraryPage.tsx` (tournaments folder isn't
+  listed there today)" — checking the actual file found `tournaments` *is* already tracked there.
+  The real gap (from the original audit) is that `MediaLibraryPage` tracks flat, one-image-per-
+  entity-type folders (`players`, `teams`, `clubs`, `tournaments`, `users` — for photos/logos/
+  banners/avatars) and has no browsing support for the *per-entity-id nested gallery folders*
+  (`matches/{id}/`, and now `tournaments/{id}/`) this feature and `MatchGallery` use — a
+  structurally different shape (listing every match/tournament id and unioning their subfolders is
+  an N+1-read feature, not a one-line fix). Left as a documented, deliberate scope boundary rather
+  than either silently skipping it or forcing an unplanned bigger change to match stale wording.
+- `tsc`/`npm run build` clean. **Verified live with a real authenticated session, not just code
+  review** — this browser pane recovered auth mid-slice (the long-standing master-admin-auth-loss
+  caveat from dozens of prior entries no longer applies to this session as of this point): loaded
+  the real Tournament page signed in as an admin/scorer role, clicked the actual "Gallery" tab,
+  confirmed it renders the admin "Add photos" control and transitions correctly from "Loading
+  photos…" to "No photos yet — add the first one.", no console errors. Also regression-checked
+  `MatchGallery` post-refactor on a real match page — unchanged output, confirming the
+  `EntityGallery` extraction didn't alter its behavior. **Attempted an actual file upload** (a
+  synthetic canvas-generated PNG dispatched to the hidden file input) to prove the write path, not
+  just the render path — this specific technique didn't register with React's file-input handling
+  (a known limitation of simulating `<input type="file">` selection via raw DOM events, not
+  evidence of an app bug: confirmed via `read_network_requests` that no Storage request was even
+  attempted, meaning the synthetic event never reached React's `onChange` at all). Not pursued
+  further since the upload/delete logic itself is copied byte-for-byte from `MatchGallery`, already
+  verified working end-to-end when that feature originally shipped (`ROADMAP.md` Phase 12).
 
 ### Slice 4.3 — Announcements
 - ⬜ Tournament-scoped announcement posts, admin create/pin, shown on the tournament page,
