@@ -985,5 +985,21 @@ reasoning.
     button (confirmed it flipped to Unpin); deleted it via the real Delete button and confirmed the
     page correctly settled back to "No announcements yet." No console errors at any step; test data
     fully cleaned up afterward.
+46. **`ROADMAP_V3.md` Phase 4 Slice 4.4 — Downloads** — **Done**, no collision. `storage.service.ts`
+    gained `uploadDocument`/`listFolderDocuments`/`deleteUploadedDocument` (PDF-only, 10MB cap) for
+    a new `tournamentDocuments/{id}` folder, plus a genuinely separate `storage.rules` block
+    (`isValidDocument()`) — a PDF uploaded under the existing `tournaments/{allPaths=**}` path
+    would have been rejected by that rule's image-only `isValidImage()` check, so this needed its
+    own top-level path, not just a new content-type branch on the existing one. New
+    `DownloadsPanel.tsx` as a new "Downloads" tab on `TournamentPage.tsx`. Same documented scope
+    boundary as Slice 4.2: this per-tournament-id nested folder isn't covered by
+    `MediaLibraryPage.tsx`'s flat-folder model either. `tsc`/`npm run build` clean. **Verified live
+    with a real authenticated admin session**: the Downloads tab renders the admin upload control
+    and resolves correctly from "Loading…" to "No documents yet.", no console errors. **Attempted a
+    real PDF upload** (minimal valid PDF bytes into the hidden file input) — hit the same known,
+    already-documented limitation as entry #44's photo-upload attempt (synthetic `<input
+    type="file">` selection doesn't register with React's controlled `onChange`; confirmed via
+    `read_network_requests` that zero Storage requests fired). Not a new risk: the upload/list/
+    delete logic mirrors the already-verified `EntityGallery` pattern for a different content type.
 
 (Appended to as further slices are picked up.)

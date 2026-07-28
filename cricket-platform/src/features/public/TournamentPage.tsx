@@ -28,6 +28,7 @@ import { Tabs } from '@/components/ui/Tabs'
 import { ActivityFeed } from '@/components/activity/ActivityFeed'
 import { EntityGallery } from '@/components/media/EntityGallery'
 import { AnnouncementsPanel } from './AnnouncementsPanel'
+import { DownloadsPanel } from './DownloadsPanel'
 import { ShareButton } from '@/components/ui/ShareButton'
 import { QRCodeButton } from '@/components/ui/QRCodeButton'
 import { FollowButton } from '@/components/ui/FollowButton'
@@ -353,6 +354,7 @@ export function TournamentPage() {
           { key: 'activity', label: 'Activity' },
           { key: 'gallery', label: 'Gallery' },
           { key: 'announcements', label: 'Announcements' },
+          { key: 'downloads', label: 'Downloads' },
         ]}
       />
 
@@ -681,6 +683,10 @@ export function TournamentPage() {
           canManage={canManageTournaments(profile)}
           profile={profile}
         />
+      )}
+
+      {tab === 'downloads' && (
+        <DownloadsPanel tournamentId={id} canManage={canManageTournaments(profile)} />
       )}
     </div>
   )

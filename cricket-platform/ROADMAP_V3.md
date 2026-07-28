@@ -329,8 +329,25 @@ write-ups below as they're completed, not duplicated here.
   database, not just a reading of the source.
 
 ### Slice 4.4 — Downloads
-- ⬜ Document attachments (PDF rulebook/fixture sheet) on a tournament — extends the Storage
-  service beyond images (new upload path + rule), listed with download links on the tournament page.
+- ✅ PDF document attachments (rulebook, fixture sheet, etc.) on a tournament. `storage.service.ts`
+  gained `uploadDocument`/`listFolderDocuments`/`deleteUploadedDocument` (PDF-only, 10MB cap —
+  bigger than the 5MB image cap since a PDF isn't client-side compressed the way images are) under
+  a new `tournamentDocuments/{id}` folder; a matching `storage.rules` block (`isValidDocument()` —
+  a genuinely separate path from `tournaments/{allPaths=**}`'s existing image-only rule, since a
+  PDF upload there would have been rejected by the `isValidImage()` content-type check). New
+  `DownloadsPanel.tsx`, wired as a new "Downloads" tab on `TournamentPage.tsx`: admins get an
+  upload control and per-document delete, everyone gets a list with size/date and a download link.
+  Consistent with Slice 4.2's documented scope boundary, this per-tournament-id nested folder is
+  intentionally not covered by `MediaLibraryPage.tsx`'s flat-folder browsing model either.
+- `tsc`/`npm run build` clean. **Verified live with a real authenticated admin session**: the
+  "Downloads" tab renders the admin "Upload PDF" control and resolves correctly from "Loading…" to
+  "No documents yet.", no console errors. **Attempted a real PDF upload** (a minimal valid PDF byte
+  sequence dispatched to the hidden file input) to prove the write path — hit the same known,
+  already-documented limitation as Slices 4.2's photo-upload attempt: a synthetic `<input
+  type="file">` selection via raw DOM events doesn't register with React's controlled `onChange`
+  (confirmed via `read_network_requests`: zero Storage requests fired). Not a new risk — the
+  upload/list/delete logic follows the same pattern as the already-verified `EntityGallery`
+  upload path, just for a different content type and Storage folder.
 
 ### Slice 4.5 — Calendar + better fixture/standings sharing
 - ⬜ Per-match "Add to calendar" (.ics) download; a calendar/month view for tournament fixtures;

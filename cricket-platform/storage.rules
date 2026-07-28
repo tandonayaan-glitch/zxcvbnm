@@ -25,6 +25,13 @@ service firebase.storage {
         && request.resource.contentType.matches('image/.*');
     }
 
+    // Tournament document attachments (rulebook, fixture sheet) — PDF only, larger cap than a
+    // resized photo since a PDF isn't compressed client-side the way images are.
+    function isValidDocument() {
+      return request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType == 'application/pdf';
+    }
+
     // A content-management-capable role: covers player/team/club/tournament CRUD
     // (canManage() in firestore.rules) and match scoring (canScore()) in one set,
     // since media for both categories lives under this same Storage bucket.
@@ -61,6 +68,10 @@ service firebase.storage {
     match /matches/{allPaths=**} {
       allow read: if true;
       allow write: if canManageMedia() && isValidImage();
+    }
+    match /tournamentDocuments/{allPaths=**} {
+      allow read: if true;
+      allow write: if canManageMedia() && isValidDocument();
     }
   }
 }

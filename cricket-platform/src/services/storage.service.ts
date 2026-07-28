@@ -69,6 +69,45 @@ export interface StoredImage {
   createdAt: number
 }
 
+const MAX_DOC_BYTES = 10 * 1024 * 1024 // 10MB — documents run bigger than a resized photo
+const ACCEPTED_DOC_TYPES = ['application/pdf']
+
+export class DocumentUploadError extends Error {}
+
+export interface StoredDocument {
+  path: string
+  url: string
+  name: string
+  size: number
+  createdAt: number
+}
+
+/** Validate and upload a PDF (rulebook, fixture sheet, etc.) to Firebase Storage under
+ *  `folder/`, returning its public download URL. No resize/compress step — unlike images,
+ *  a PDF is uploaded as-is. */
+export async function uploadDocument(file: File, folder: string): Promise<string> {
+  if (!ACCEPTED_DOC_TYPES.includes(file.type)) {
+    throw new DocumentUploadError('Please choose a PDF file.')
+  }
+  if (file.size > MAX_DOC_BYTES) {
+    throw new DocumentUploadError('Document is too large (max 10MB).')
+  }
+  const fileRef = ref(storage, `${folder}/${genId('doc_')}-${file.name}`)
+  await uploadBytes(fileRef, file, { contentType: 'application/pdf' })
+  return getDownloadURL(fileRef)
+}
+
+/** Best-effort delete of a previously uploaded document — never throws, same convention as
+ *  `deleteUploadedImage`. */
+export async function deleteUploadedDocument(url: string): Promise<void> {
+  try {
+    if (!url.includes('firebasestorage')) return
+    await deleteObject(ref(storage, url))
+  } catch {
+    /* ignore */
+  }
+}
+
 /** `listAll()` can hang indefinitely (rather than resolving to an empty list, or rejecting)
  *  when a prefix has never had an object uploaded to it — observed directly against this
  *  project's Storage bucket. Race it against a timeout so a never-touched folder shows as
@@ -91,6 +130,26 @@ export async function listFolderImages(folder: string): Promise<StoredImage[]> {
       return {
         path: item.fullPath,
         url,
+        size: meta.size,
+        createdAt: new Date(meta.timeCreated).getTime(),
+      }
+    }),
+  )
+  return results.sort((a, b) => b.createdAt - a.createdAt)
+}
+
+/** List every document under a given upload folder (e.g. `tournamentDocuments/{id}`). Strips
+ *  the generated `doc_xxxxx-` id prefix back off the filename for display. */
+export async function listFolderDocuments(folder: string): Promise<StoredDocument[]> {
+  const folderRef = ref(storage, folder)
+  const { items } = await listAllWithTimeout(folderRef)
+  const results = await Promise.all(
+    items.map(async (item) => {
+      const [url, meta] = await Promise.all([getDownloadURL(item), getMetadata(item)])
+      return {
+        path: item.fullPath,
+        url,
+        name: item.name.replace(/^doc_[a-z0-9]+-/, ''),
         size: meta.size,
         createdAt: new Date(meta.timeCreated).getTime(),
       }

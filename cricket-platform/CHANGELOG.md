@@ -4,6 +4,10 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — League Ecosystem (ROADMAP_V3)
 
+### Added — Tournament downloads (ROADMAP_V3 Phase 4, Slice 4.4)
+- Tournament organizers can upload PDF documents (rulebook, fixture sheet) from a new "Downloads"
+  tab on the public tournament page; spectators get a list with download links.
+
 ### Added — Tournament announcements (ROADMAP_V3 Phase 4, Slice 4.3)
 - Tournament organizers can post announcements (pin/unpin, delete) from a new "Announcements" tab
   on the public tournament page; spectators see a pinned-first, newest-first read-only list.
