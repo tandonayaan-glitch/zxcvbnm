@@ -4,6 +4,11 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — League Ecosystem (ROADMAP_V3)
 
+### Added — Fixtures calendar view + standings sharing (ROADMAP_V3 Phase 4, Slice 4.5)
+- A real month-grid calendar view for tournament fixtures (List/Calendar toggle), a "Download
+  calendar" button for the whole tournament's fixtures as one `.ics` file, and a "Copy standings"
+  button that copies a compact plain-text summary for sharing outside the app.
+
 ### Added — Tournament downloads (ROADMAP_V3 Phase 4, Slice 4.4)
 - Tournament organizers can upload PDF documents (rulebook, fixture sheet) from a new "Downloads"
   tab on the public tournament page; spectators get a list with download links.

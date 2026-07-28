@@ -1001,5 +1001,24 @@ reasoning.
     type="file">` selection doesn't register with React's controlled `onChange`; confirmed via
     `read_network_requests` that zero Storage requests fired). Not a new risk: the upload/list/
     delete logic mirrors the already-verified `EntityGallery` pattern for a different content type.
+47. **`ROADMAP_V3.md` Phase 4 Slice 4.5 — Calendar + fixture/standings sharing** — **Done**, no
+    collision. Per-match "Add to calendar" was already shipped by the concurrent session
+    (`domain/calendarExport.ts`'s `matchToICS`, `AddToCalendarButton.tsx` on `MatchPage.tsx`) before
+    this slice started — confirmed by reading both files rather than assumed, and not duplicated.
+    Built the two remaining pieces: (1) new `FixturesCalendar.tsx`, a real month-grid with prev/
+    next navigation (not a placeholder), added as a List/Calendar toggle on the tournament's
+    "Fixtures & Results" tab, List staying the default so existing behavior is unchanged; (2) a
+    tournament-wide "Download calendar" button using a new `matchesToICS()` added to
+    `calendarExport.ts` (multi-`VEVENT` file, reuses the existing file's private helpers rather than
+    duplicating them); (3) a "Copy standings" button generating a compact plain-text summary via
+    `navigator.clipboard`, independent of the existing full CSV/JSON tournament export — for
+    pasting into a chat/social post, not a data file. `tsc`/`npm run build` clean. **Verified live
+    against the real database**: captured the actual clipboard payload from "Copy standings"
+    (`navigator.clipboard.writeText` stubbed to intercept) and confirmed genuine, correctly
+    formatted data (real team names, points, NRR to 3 decimals), not placeholder text; switched to
+    Calendar view and confirmed the real `seedRSvTK1` match rendered on its correct real-world date
+    (July 1, 2026); clicked "Download calendar" with no error; clicked month navigation and
+    confirmed it correctly advanced July → August 2026. No console errors throughout. **This closes
+    out `ROADMAP_V3.md` Phase 4 (Tournament Ecosystem) — all 5 slices done.**
 
 (Appended to as further slices are picked up.)

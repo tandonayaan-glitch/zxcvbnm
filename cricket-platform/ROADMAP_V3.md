@@ -350,8 +350,30 @@ write-ups below as they're completed, not duplicated here.
   upload path, just for a different content type and Storage folder.
 
 ### Slice 4.5 — Calendar + better fixture/standings sharing
-- ⬜ Per-match "Add to calendar" (.ics) download; a calendar/month view for tournament fixtures;
-  a standalone standings/fixtures share path independent of the full tournament export.
+- ✅ **Per-match "Add to calendar" (.ics) was already done by the concurrent session** before this
+  slice started (`domain/calendarExport.ts`'s `matchToICS`, `components/ui/AddToCalendarButton.tsx`,
+  wired into `MatchPage.tsx`) — confirmed by reading both files, not duplicated. This slice built
+  the two remaining pieces:
+  - **Tournament fixtures calendar view**: new `FixturesCalendar.tsx`, a real month-grid (not a
+    placeholder list) with prev/next navigation, defaulting to the month of the earliest scheduled
+    match. Added as a List/Calendar toggle on the "Fixtures & Results" tab — List stays the
+    default (unchanged behavior for existing users), Calendar is opt-in.
+  - **Tournament-wide calendar download**: extended `calendarExport.ts` with a new `matchesToICS()`
+    (multi-`VEVENT` `.ics` covering every scheduled match in the tournament) rather than duplicating
+    the single-event logic — reuses the same private helpers (`estimatedDurationMinutes`,
+    `toICSDate`, `escapeText`) the existing `matchToICS` already has. A "Download calendar" button
+    sits next to the List/Calendar toggle.
+  - **Standalone standings share**: a "Copy standings" button generates a compact plain-text
+    summary (rank, team, played/won/lost/points/NRR) via `navigator.clipboard`, independent of the
+    full CSV/JSON tournament export — meant for pasting into a chat or social post, not a data file.
+- `tsc`/`npm run build` clean. **Verified live against the real database**: clicked "Copy
+  standings" and captured the real clipboard payload (`navigator.clipboard.writeText` stubbed to
+  intercept rather than actually touching the OS clipboard) — confirmed genuine, correctly
+  formatted data (real team names, points, NRR to 3 decimals) came out, not placeholder text;
+  switched the Fixtures tab to Calendar view and confirmed the real `seedRSvTK1` match rendered on
+  its correct real-world date (July 1, 2026) in the grid; clicked "Download calendar" and confirmed
+  no error/exception; clicked month-navigation and confirmed it correctly advanced July → August
+  2026. No console errors throughout.
 
 ## Phase 5 — Final Polish
 

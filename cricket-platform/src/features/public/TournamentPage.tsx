@@ -15,6 +15,8 @@ import {
   Download,
   FileJson,
   Printer,
+  CalendarPlus,
+  Copy,
 } from 'lucide-react'
 import {
   Avatar,
@@ -29,6 +31,8 @@ import { ActivityFeed } from '@/components/activity/ActivityFeed'
 import { EntityGallery } from '@/components/media/EntityGallery'
 import { AnnouncementsPanel } from './AnnouncementsPanel'
 import { DownloadsPanel } from './DownloadsPanel'
+import { FixturesCalendar } from './FixturesCalendar'
+import { matchesToICS } from '@/domain/calendarExport'
 import { ShareButton } from '@/components/ui/ShareButton'
 import { QRCodeButton } from '@/components/ui/QRCodeButton'
 import { FollowButton } from '@/components/ui/FollowButton'
@@ -77,6 +81,7 @@ export function TournamentPage() {
   const seasons = useAsync(listSeasons, [])
   const [tab, setTab] = useState('standings')
   const [refreshing, setRefreshing] = useState(false)
+  const [matchesView, setMatchesView] = useState<'list' | 'calendar'>('list')
 
   const tMatches = useMemo(
     () => (matches.data ?? []).filter((m) => m.tournamentId === id),
@@ -359,7 +364,31 @@ export function TournamentPage() {
       />
 
       {tab === 'standings' && (
-        <StandingsTable rows={standings} teamNameById={teamNameById} />
+        <div>
+          {standings.length > 0 && (
+            <div className="mb-2 flex justify-end">
+              <button
+                onClick={() => {
+                  const lines = [
+                    `${t.name} — Standings`,
+                    ...standings.map(
+                      (r, i) =>
+                        `${i + 1}. ${r.teamName} — P${r.played} W${r.won} L${r.lost} Pts${r.points} NRR${r.nrr >= 0 ? '+' : ''}${r.nrr.toFixed(3)}`,
+                    ),
+                  ]
+                  navigator.clipboard
+                    .writeText(lines.join('\n'))
+                    .then(() => toast.success('Standings copied to clipboard'))
+                    .catch(() => toast.error('Could not copy — try again'))
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-xs font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
+              >
+                <Copy size={13} /> Copy standings
+              </button>
+            </div>
+          )}
+          <StandingsTable rows={standings} teamNameById={teamNameById} />
+        </div>
       )}
 
       {tab === 'groups' && (
@@ -416,8 +445,49 @@ export function TournamentPage() {
       )}
 
       {tab === 'matches' && (
-        <div className="space-y-2">
-          {tMatches.length === 0 ? (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="inline-flex rounded-lg border border-ink-200 dark:border-ink-800 p-0.5">
+              <button
+                onClick={() => setMatchesView('list')}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium ${
+                  matchesView === 'list'
+                    ? 'bg-brand-600 text-white'
+                    : 'text-ink-600 dark:text-ink-400'
+                }`}
+              >
+                List
+              </button>
+              <button
+                onClick={() => setMatchesView('calendar')}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium ${
+                  matchesView === 'calendar'
+                    ? 'bg-brand-600 text-white'
+                    : 'text-ink-600 dark:text-ink-400'
+                }`}
+              >
+                Calendar
+              </button>
+            </div>
+            <button
+              onClick={() => {
+                const ics = matchesToICS(tMatches, `${t.name} fixtures`)
+                if (!ics) {
+                  toast.error('No scheduled matches to add to a calendar yet')
+                  return
+                }
+                downloadBlob(`${slugify(t.name)}-fixtures.ics`, ics, 'text/calendar;charset=utf-8')
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-xs font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
+            >
+              <CalendarPlus size={13} /> Download calendar
+            </button>
+          </div>
+
+          {matchesView === 'calendar' && <FixturesCalendar matches={tMatches} />}
+
+          {matchesView === 'list' &&
+            (tMatches.length === 0 ? (
             <EmptyState title="No matches scheduled" />
           ) : (
             tMatches.map((m) => (
@@ -450,7 +520,7 @@ export function TournamentPage() {
                 </Card>
               </Link>
             ))
-          )}
+          ))}
         </div>
       )}
 
