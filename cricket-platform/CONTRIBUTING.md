@@ -59,8 +59,9 @@ constraints, deferred features (and why), and a running log of past implementati
   field existed keep working with no migration step.
 - Resolve display names from denormalized data on the parent doc, with the live collection as a
   fallback — team/player/tournament docs can be deleted while matches referencing them remain.
-- Update `CHANGELOG.md` and `ROADMAP.md` (or `ROADMAP_V2.md` for the polish/hardening pass) with
-  each self-contained change.
+- Update `CHANGELOG.md` and whichever roadmap the change belongs to (`ROADMAP.md` for the original
+  feature build, `ROADMAP_V2.md` for the polish/hardening pass, `ROADMAP_V3.md` for the League
+  Ecosystem milestone) with each self-contained change.
 
 ## Environment gotchas
 

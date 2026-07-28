@@ -58,6 +58,7 @@ export function EmbedButton({ matchId, className }: { matchId: string; className
               value={scoreSnippet}
               rows={2}
               onFocus={(e) => e.target.select()}
+              aria-label="Live score card embed code"
               className="w-full resize-none rounded-lg border border-ink-200 bg-ink-50 p-2 font-mono text-xs text-ink-700 dark:border-ink-800 dark:bg-ink-800/60 dark:text-ink-300"
             />
           </div>
@@ -78,6 +79,7 @@ export function EmbedButton({ matchId, className }: { matchId: string; className
               value={scorecardSnippet}
               rows={2}
               onFocus={(e) => e.target.select()}
+              aria-label="Full scorecard embed code"
               className="w-full resize-none rounded-lg border border-ink-200 bg-ink-50 p-2 font-mono text-xs text-ink-700 dark:border-ink-800 dark:bg-ink-800/60 dark:text-ink-300"
             />
           </div>

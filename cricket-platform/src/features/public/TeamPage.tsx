@@ -25,6 +25,7 @@ import { ShareButton } from '@/components/ui/ShareButton'
 import { QRCodeButton } from '@/components/ui/QRCodeButton'
 import { ActivityFeed } from '@/components/activity/ActivityFeed'
 import { useAsync } from '@/hooks/useAsync'
+import { useDocumentMeta } from '@/hooks/useDocumentMeta'
 import { getTeam } from '@/services/teams.service'
 import { getPlayersByIds, listPlayers } from '@/services/players.service'
 import { getTeamStats } from '@/services/stats.service'
@@ -126,6 +127,11 @@ export function TeamPage() {
   const tournamentNameById = useMemo(
     () => new Map((tournaments.data ?? []).map((tn) => [tn.id, tn.name])),
     [tournaments.data],
+  )
+
+  useDocumentMeta(
+    team.data?.name ?? 'Team',
+    team.data ? `${team.data.name} — squad, stats, and match history on CricketHub.` : undefined,
   )
 
   if (team.loading) return <PageLoader />

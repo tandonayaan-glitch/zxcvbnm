@@ -4,6 +4,7 @@ import { Avatar, Badge, Card, EmptyState, PageLoader } from '@/components/ui/pri
 import { ShareButton } from '@/components/ui/ShareButton'
 import { QRCodeButton } from '@/components/ui/QRCodeButton'
 import { useAsync } from '@/hooks/useAsync'
+import { useDocumentMeta } from '@/hooks/useDocumentMeta'
 import { getPublicProfile, ROLE_LABELS } from '@/services/users.service'
 import { formatDate } from '@/lib/format'
 
@@ -19,6 +20,11 @@ const ROLE_TONE: Record<string, 'gray' | 'blue' | 'green' | 'amber'> = {
 export function UserProfilePage() {
   const { username = '' } = useParams()
   const profile = useAsync(() => getPublicProfile(username), [username])
+
+  useDocumentMeta(
+    profile.data?.displayName ?? 'Profile',
+    profile.data ? `@${profile.data.username} on CricketHub.` : undefined,
+  )
 
   if (profile.loading) return <PageLoader />
   if (!profile.data)

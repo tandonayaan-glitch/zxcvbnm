@@ -1,9 +1,10 @@
-# CricketHub — Roadmap V3 (League Ecosystem)
+# CricketHub — Roadmap V3 (League Ecosystem) — ✅ Complete (all 5 phases, 15 slices)
 
-`ROADMAP.md` (37 phases) and `ROADMAP_V2.md` (7 phases) are both complete. This third roadmap is
-the next **major product milestone**, not another cleanup pass: turning CricketHub from "a platform
-a club/tournament runs on" into a **league ecosystem** — spectators can follow, share, discuss, and
-discover; tournaments get a real public storefront (sponsors, galleries, announcements, downloads).
+`ROADMAP.md` (37 phases), `ROADMAP_V2.md` (7 phases), and this third roadmap are all now complete.
+This roadmap covered the next **major product milestone**, not another cleanup pass: turning
+CricketHub from "a platform a club/tournament runs on" into a **league ecosystem** — spectators can
+follow, share, discuss, and discover; tournaments get a real public storefront (sponsors,
+galleries, announcements, downloads).
 
 Scope is fixed by the user's own brief (5 phases, listed below) — this file does **not** re-audit
 for generic polish; it maps each requested item to what already exists vs. what's genuinely new,
@@ -377,14 +378,46 @@ write-ups below as they're completed, not duplicated here.
 
 ## Phase 5 — Final Polish
 
-- ⬜ UI consistency pass over everything shipped in Phases 1-4.
-- ⬜ Performance check (bundle-size delta from new dependencies).
-- ⬜ Accessibility pass on all new interactive components.
-- ⬜ SEO for public pages — per-route `document.title`/meta description (no SSR in this client-only
-  Vite SPA, so this is real but bounded: crawlers that execute JS will see it, a static crawler
-  won't — documented honestly rather than oversold), plus static `robots.txt`/`sitemap.xml`.
-- ⬜ Documentation updates (`README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`).
-- ⬜ Fix any genuine bugs found along the way (not a speculative bug hunt).
+- ✅ **SEO**: new `hooks/useDocumentMeta.ts` sets a per-route `document.title` (`"{Entity} —
+  CricketHub"`) and updates the `<meta name="description">` tag, wired into all seven public
+  entity pages (Match/Tournament/Team/Player/Club/Season/User profile) with a real, specific
+  description per page (match result summary or format/venue; tournament description or
+  format/venue; team/player/club/season generated summaries; `@username` for profiles) rather than
+  a generic placeholder. Honest about the real limitation: this is a client-only Vite SPA with no
+  SSR, so a crawler that doesn't execute JS won't see any of this — documented rather than
+  oversold, same convention as every other environment-dependent feature this project has shipped
+  (CSP headers, `firestore.rules`). Also added static `public/robots.txt` (allow-all, points to
+  the sitemap) and `public/sitemap.xml` — deliberately listing only the static routes (home,
+  browse, stats, search, privacy, terms), since the dynamic entity pages (`/match/:id` etc.) can't
+  be enumerated without a build-time data fetch this client-only app doesn't have; the sitemap's
+  placeholder domain needs replacing with the real production origin before a deploy, since
+  sitemap URLs must be absolute per spec and this project has no fixed domain configured anywhere.
+- ✅ **Accessibility pass**: audited every new interactive component from this milestone
+  (icon-button `onClick` count vs. `aria-label` count, not a full manual pass) and found two real
+  gaps: `MatchReactions.tsx`'s emoji-tap buttons had no accessible name beyond the bare emoji
+  character (a weak, inconsistent screen-reader experience) — added `aria-label`s stating the
+  action and current count, plus `aria-pressed` so the toggle state is announced; `EmbedButton.tsx`'s
+  two read-only embed-code textareas had no programmatic label (just adjacent, unlinked `<span>`
+  text) — added `aria-label`s. Everything else already had accessible names on first pass.
+- ✅ **UI consistency pass**: confirmed the four action-button family (`ShareButton`, `QRCodeButton`,
+  `EmbedButton`, and the concurrent session's `AddToCalendarButton`) independently converged on the
+  same `h-9 w-9` icon-button base style — no drift to fix. `FollowButton`'s different (labeled)
+  style is correct, not an inconsistency — it's a toggle with a text label, not an icon action.
+- ✅ **Performance**: reviewed the bundle-size deltas from this milestone's one new dependency
+  (`qrcode`, ~25kB added to the shared vendor chunk, already logged in Slice 3.1) — no further
+  action; every other addition this pass reused existing dependencies.
+- ✅ **Documentation updates**: `README.md`'s feature list gained a line covering the League
+  Ecosystem surface (sharing/QR/embeds, comments/reactions, profiles, invitations, tournament
+  sponsors/galleries/announcements/downloads/calendar) without turning the README into a changelog;
+  its architecture tree comment now mentions `useDocumentMeta`. `CONTRIBUTING.md`'s "update the
+  roadmap" convention note was stale (mentioned `ROADMAP.md`/`ROADMAP_V2.md` but not this file) —
+  fixed.
+- ✅ **Genuine bugs found and fixed along the way** (not a speculative hunt — each was a real defect
+  hit during this milestone's own work, already logged in its own slice's write-up above):
+  `ShareButton`'s original clipboard-write had no error handling for a real rejection case (Slice
+  1.1); `AccountPage.tsx`'s "Following" card never rendered followed tournaments even before this
+  milestone touched it (Slice 2.2). No new bugs found during this final pass beyond the
+  accessibility gaps above.
 
 ---
 

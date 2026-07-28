@@ -11,6 +11,9 @@ A production-style cricket **scoring + management + public viewer** platform bui
 - Real-time public match centre, scorecards, and ball-by-ball commentary
 - Player / team / tournament public pages with a real stats engine
 - Customizable scorecards (per match) and global search
+- League Ecosystem: shareable links + QR codes, embeddable match/scorecard widgets, match comments
+  and reactions, public user profiles, team roster invitations, tournament sponsors/photo
+  galleries/announcements/document downloads, and a fixtures calendar view
 
 ## 1. Prerequisites
 
@@ -74,7 +77,7 @@ src/
   services/       Firestore data access (auth, players, teams, tournaments,
                   matches, scoring, stats, search, users, settings)
   store/          zustand auth store + role helpers
-  hooks/          useAsync
+  hooks/          useAsync, useDocumentMeta
   components/     ui kit, layouts (AppShell / PublicLayout), route guards
   features/       auth, dashboard, players, teams, tournaments, matches,
                   scoring, scorecard, settings, public (viewer pages)

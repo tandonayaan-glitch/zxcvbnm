@@ -8,6 +8,7 @@ import { ActivityFeed } from '@/components/activity/ActivityFeed'
 import { Tabs } from '@/components/ui/Tabs'
 import { useMemo, useState } from 'react'
 import { useAsync } from '@/hooks/useAsync'
+import { useDocumentMeta } from '@/hooks/useDocumentMeta'
 import { getPlayer } from '@/services/players.service'
 import { getTeamsByIds } from '@/services/teams.service'
 import { getPlayerStats, getPlayerPerformances } from '@/services/stats.service'
@@ -121,6 +122,13 @@ export function PlayerPage() {
     }
     return map
   }, [splits, matches.data, id])
+
+  useDocumentMeta(
+    player.data?.fullName ?? 'Player',
+    player.data
+      ? `${player.data.fullName} — batting and bowling stats, career timeline on CricketHub.`
+      : undefined,
+  )
 
   if (player.loading) return <PageLoader />
   if (!player.data)

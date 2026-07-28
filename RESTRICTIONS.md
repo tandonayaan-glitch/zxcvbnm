@@ -1020,5 +1020,29 @@ reasoning.
     (July 1, 2026); clicked "Download calendar" with no error; clicked month navigation and
     confirmed it correctly advanced July → August 2026. No console errors throughout. **This closes
     out `ROADMAP_V3.md` Phase 4 (Tournament Ecosystem) — all 5 slices done.**
+48. **`ROADMAP_V3.md` Phase 5 — Final polish pass** — **Done**, no collision. **SEO**: new
+    `hooks/useDocumentMeta.ts` sets a per-route `document.title`/meta description, wired into all
+    seven public entity pages with real, specific descriptions (not generic placeholders) — honest
+    about the real limitation that a non-JS-executing crawler won't see any of this (client-only
+    Vite SPA, no SSR), same convention as this project's other environment-dependent features.
+    Static `public/robots.txt`/`sitemap.xml` added, sitemap deliberately scoped to only the static
+    routes since dynamic entity pages can't be enumerated without a build-time data fetch this app
+    doesn't have — its placeholder domain needs replacing before a real deploy (sitemap URLs must
+    be absolute; this project has no fixed production domain configured anywhere to pull one from).
+    **Accessibility**: audited every new interactive component from this whole milestone
+    (icon-button `onClick` vs. `aria-label` counts) and found two real, fixed gaps —
+    `MatchReactions.tsx`'s emoji-tap buttons had no accessible name beyond the bare emoji character
+    (added `aria-label` + `aria-pressed`), `EmbedButton.tsx`'s two embed-code textareas had no
+    programmatic label (added `aria-label`s). **UI consistency**: confirmed `ShareButton`/
+    `QRCodeButton`/`EmbedButton`/the concurrent session's `AddToCalendarButton` independently
+    converged on the same `h-9 w-9` icon-button style — nothing to fix. **Docs**: `README.md`
+    feature list + architecture comment updated; `CONTRIBUTING.md`'s roadmap-update convention note
+    was stale (missing this file) — fixed. `tsc`/`npm run build` clean throughout. **Verified live
+    against the real database**: confirmed real per-route titles/descriptions on Match and
+    Tournament pages (not placeholder text — actual team names, actual result summary, actual
+    tournament format), confirmed `robots.txt` serves correctly, confirmed the restructured
+    Fixtures "List" view (touched during Slice 4.5's ternary edit) still renders real match data
+    correctly with no console errors. **This closes out `ROADMAP_V3.md` in full — all 5 phases, 15
+    slices done.**
 
 (Appended to as further slices are picked up.)

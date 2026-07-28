@@ -12,6 +12,7 @@ import { ShareButton } from '@/components/ui/ShareButton'
 import { QRCodeButton } from '@/components/ui/QRCodeButton'
 import { FollowButton } from '@/components/ui/FollowButton'
 import { useAsync } from '@/hooks/useAsync'
+import { useDocumentMeta } from '@/hooks/useDocumentMeta'
 import { getClub } from '@/services/clubs.service'
 import { listTeams } from '@/services/teams.service'
 import { listTournaments } from '@/services/tournaments.service'
@@ -36,6 +37,13 @@ export function ClubPage() {
   const teams = useAsync(listTeams, [])
   const tournaments = useAsync(listTournaments, [])
   const seasons = useAsync(listSeasons, [])
+
+  useDocumentMeta(
+    club.data?.name ?? 'Club',
+    club.data
+      ? (club.data.description ?? `${club.data.name} — teams, seasons, and tournaments on CricketHub.`)
+      : undefined,
+  )
 
   if (club.loading) return <PageLoader />
   if (!club.data)

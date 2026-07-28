@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Static routes only. Dynamic entity pages (/match/:id, /tournament/:id, /team/:id, /player/:id,
+  /club/:id, /season/:id, /u/:username) can't be enumerated here without a build-time data fetch,
+  which this client-only Vite SPA doesn't have — a real, bounded limitation, not an oversight (see
+  RESTRICTIONS.md). Replace REPLACE_WITH_PRODUCTION_DOMAIN with the real deployed origin before
+  this is useful to a crawler; sitemap URLs must be absolute per the spec.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://REPLACE_WITH_PRODUCTION_DOMAIN/</loc>
+    <changefreq>hourly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://REPLACE_WITH_PRODUCTION_DOMAIN/browse</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://REPLACE_WITH_PRODUCTION_DOMAIN/stats</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://REPLACE_WITH_PRODUCTION_DOMAIN/search</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://REPLACE_WITH_PRODUCTION_DOMAIN/privacy</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  <url>
+    <loc>https://REPLACE_WITH_PRODUCTION_DOMAIN/terms</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.2</priority>
+  </url>
+</urlset>

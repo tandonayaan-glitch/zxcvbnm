@@ -4,6 +4,12 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — League Ecosystem (ROADMAP_V3)
 
+### Added — Final polish pass (ROADMAP_V3 Phase 5)
+- Per-route page titles and meta descriptions on all public entity pages, plus static
+  `robots.txt`/`sitemap.xml`. Accessibility fixes: proper labels on match-reaction buttons and
+  embed-code textareas. `README.md`/`CONTRIBUTING.md` updated to reflect this milestone. This
+  closes out `ROADMAP_V3.md` — all 5 phases, 15 slices done.
+
 ### Added — Fixtures calendar view + standings sharing (ROADMAP_V3 Phase 4, Slice 4.5)
 - A real month-grid calendar view for tournament fixtures (List/Calendar toggle), a "Download
   calendar" button for the whole tournament's fixtures as one `.ics` file, and a "Copy standings"

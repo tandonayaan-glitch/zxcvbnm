@@ -37,6 +37,7 @@ import { ShareButton } from '@/components/ui/ShareButton'
 import { QRCodeButton } from '@/components/ui/QRCodeButton'
 import { FollowButton } from '@/components/ui/FollowButton'
 import { useAsync } from '@/hooks/useAsync'
+import { useDocumentMeta } from '@/hooks/useDocumentMeta'
 import { useToast } from '@/components/ui/toast'
 import { getTournament } from '@/services/tournaments.service'
 import { listTeams } from '@/services/teams.service'
@@ -167,6 +168,14 @@ export function TournamentPage() {
       })),
     }),
     [tournament.data?.name, standings, teamNameById, stats, players.data],
+  )
+
+  useDocumentMeta(
+    tournament.data?.name ?? 'Tournament',
+    tournament.data
+      ? (tournament.data.description ??
+          `${tournament.data.format.replace('_', ' + ')} tournament${tournament.data.venue ? ` at ${tournament.data.venue}` : ''} on CricketHub.`)
+      : undefined,
   )
 
   if (tournament.loading) return <PageLoader />

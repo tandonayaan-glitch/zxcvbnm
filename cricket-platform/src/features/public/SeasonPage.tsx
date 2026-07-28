@@ -13,6 +13,7 @@ import { QRCodeButton } from '@/components/ui/QRCodeButton'
 import { FollowButton } from '@/components/ui/FollowButton'
 import { ActivityFeed } from '@/components/activity/ActivityFeed'
 import { useAsync } from '@/hooks/useAsync'
+import { useDocumentMeta } from '@/hooks/useDocumentMeta'
 import { getSeason } from '@/services/seasons.service'
 import { getClub } from '@/services/clubs.service'
 import { listTournaments } from '@/services/tournaments.service'
@@ -62,6 +63,13 @@ export function SeasonPage() {
   )
   const playerName = (pid: string) =>
     (players.data ?? []).find((p) => p.id === pid)?.displayName ?? 'Unknown'
+
+  useDocumentMeta(
+    season.data?.name ?? 'Season',
+    season.data
+      ? (season.data.description ?? `${season.data.name} — tournaments and leaders on CricketHub.`)
+      : undefined,
+  )
 
   if (season.loading) return <PageLoader />
   if (!season.data)

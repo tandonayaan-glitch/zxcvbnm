@@ -46,6 +46,8 @@ export function MatchReactions({ matchId }: { matchId: string }) {
             onClick={() => tap(emoji)}
             disabled={!profile || pending === emoji}
             title={profile ? undefined : 'Sign in to react'}
+            aria-label={`React with ${emoji}${count > 0 ? ` (${count})` : ''}`}
+            aria-pressed={active}
             className={cn(
               'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60',
               active

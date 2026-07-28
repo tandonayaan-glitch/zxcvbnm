@@ -22,6 +22,7 @@ import {
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/toast'
 import { useAsync } from '@/hooks/useAsync'
+import { useDocumentMeta } from '@/hooks/useDocumentMeta'
 import { listPlayers } from '@/services/players.service'
 import { subscribeMatch, updateMatch, listAllMatches } from '@/services/matches.service'
 import { setPlayerOfTheMatch, subscribeDeliveries } from '@/services/scoring.service'
@@ -42,6 +43,7 @@ import { MatchReactions } from '@/components/media/MatchReactions'
 import { ShareButton } from '@/components/ui/ShareButton'
 import { QRCodeButton } from '@/components/ui/QRCodeButton'
 import { EmbedButton } from '@/components/ui/EmbedButton'
+import { AddToCalendarButton } from '@/components/ui/AddToCalendarButton'
 import { computeHeadToHead } from '@/domain/headToHead'
 import { matchTopPerformers } from '@/domain/matchPerformers'
 import { chaseWinProbability } from '@/domain/winProbability'
@@ -118,6 +120,13 @@ export function MatchPage() {
   )
   const stars = useMemo(() => (match ? matchTopPerformers(match) : null), [match])
 
+  useDocumentMeta(
+    match ? `${match.teamA.name} vs ${match.teamB.name}` : 'Match',
+    match
+      ? (match.result?.summary ?? `${match.format} · ${match.oversPerInnings} overs${match.venue ? ` at ${match.venue}` : ''}`)
+      : undefined,
+  )
+
   if (loading || players.loading) return <PageLoader />
   if (!match || !h2h || !stars)
     return (
@@ -189,6 +198,7 @@ export function MatchPage() {
             <ShareButton variant="icon" title={`${match.teamA.name} vs ${match.teamB.name}`} />
             <QRCodeButton title={`${match.teamA.name} vs ${match.teamB.name}`} />
             <EmbedButton matchId={match.id} />
+            <AddToCalendarButton match={match} />
           </div>
           <h1 className="text-xl font-bold">
             {match.teamA.name} vs {match.teamB.name}
