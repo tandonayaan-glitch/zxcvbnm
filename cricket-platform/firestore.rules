@@ -400,5 +400,16 @@ service cloud.firestore {
         || (isSignedIn() && resource.data.authorId == request.auth.uid);
       allow update: if false;
     }
+
+    // ---- Tournament announcements ---------------------------------
+    match /announcements/{id} {
+      // Public read, like the rest of the cricket data.
+      allow read: if true;
+      // Same owner-scoped shape as tournaments/players/teams/etc: `ownerId` is copied from the
+      // tournament's own `ownerId` at creation time, so this never needs a cross-document `get()`.
+      allow create: if canManage()
+        && (isMasterAdmin() || request.resource.data.ownerId == request.auth.uid);
+      allow update, delete: if isOwnerOrMaster(resource.data.ownerId);
+    }
   }
 }

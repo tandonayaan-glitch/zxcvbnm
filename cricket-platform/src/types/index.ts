@@ -763,6 +763,19 @@ export interface MatchComment {
   createdAt: number
 }
 
+/** A tournament-scoped announcement post, shown on the public tournament page. */
+export interface Announcement {
+  id: string
+  tournamentId: string
+  title: string
+  body: string
+  pinned: boolean
+  createdBy: string
+  createdByName: string
+  createdAt: number
+  ownerId?: string // copied from the tournament's ownerId at creation, for owner-scoped rules
+}
+
 /** A user's request to be granted ADMIN access (to run a tournament). */
 export interface AdminRequest {
   id: string

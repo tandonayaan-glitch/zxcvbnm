@@ -961,5 +961,29 @@ reasoning.
     React's `onChange`), a known limitation of simulating `<input type="file">` via raw DOM events,
     not an app bug. Not pursued further — the upload/delete logic is unchanged from `MatchGallery`,
     already verified end-to-end when it originally shipped (`ROADMAP.md` Phase 12).
+45. **`ROADMAP_V3.md` Phase 4 Slice 4.3 — Announcements** — **Done**. New `Announcement` type,
+    `announcements.service.ts` (`listAnnouncements`/`createAnnouncement`/`togglePin`/
+    `deleteAnnouncement`), a new `announcements` collection scoped by `tournamentId`. Its
+    `ownerId` is copied from the tournament's own `ownerId` at creation time, so `firestore.rules`
+    reuses the exact same `isOwnerOrMaster(resource.data.ownerId)` shape every other owner-scoped
+    entity already uses — no cross-document `get()` needed, a simpler design than Slice 2.3's
+    grant-doc pattern since there's no invitee-side exception to carve out here. New
+    `AnnouncementsPanel.tsx`, wired into `TournamentPage.tsx` as a new "Announcements" tab: admins
+    get create/pin/delete, everyone gets a pinned-first read-only list. **Deliberately dropped
+    "optionally notifying followers on post"** from the original plan text — `favStore` is
+    localStorage-only (Slice 2.2's own decision), so there is no server-side follower list for any
+    tournament to notify in the first place; this was an aspirational phrase written before that
+    scope decision existed, not a real capability skipped. **Collision note**: the concurrent
+    session found these files sitting uncommitted on disk mid-pass and wrote its own `ROADMAP_V3.md`
+    entry describing them as "found already implemented" (the mirror image of how this session has
+    itself described the other session's uncommitted work several times, e.g. entries #23/#25) —
+    no actual duplication, confirmed via `git status` that only one copy of each file exists.
+    `tsc`/`npm run build` clean. **Verified live with a real authenticated admin session, a full
+    create→pin→delete round trip against the real database** — went further than the concurrent
+    session's code-read-only verification of the same feature: posted a genuine test announcement
+    through the actual form, confirmed the live "Announcement posted" toast; toggled the real Pin
+    button (confirmed it flipped to Unpin); deleted it via the real Delete button and confirmed the
+    page correctly settled back to "No announcements yet." No console errors at any step; test data
+    fully cleaned up afterward.
 
 (Appended to as further slices are picked up.)

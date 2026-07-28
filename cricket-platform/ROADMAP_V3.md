@@ -302,8 +302,31 @@ write-ups below as they're completed, not duplicated here.
   verified working end-to-end when that feature originally shipped (`ROADMAP.md` Phase 12).
 
 ### Slice 4.3 — Announcements
-- ⬜ Tournament-scoped announcement posts, admin create/pin, shown on the tournament page,
-  optionally notifying followers via the existing notification service.
+- ✅ **Found already implemented during this pass's reality check** (not newly built here) — a
+  concurrent session had shipped `Announcement` type, `announcements.service.ts`
+  (`listAnnouncements`/`createAnnouncement`/`togglePin`/`deleteAnnouncement`), a new `announcements`
+  collection (`ownerId` copied from the tournament's own at creation, so `firestore.rules` needs no
+  cross-document `get()` — public read, owner/master-scoped write, same shape as the rest of the
+  cricket data), and `AnnouncementsPanel.tsx` wired into `TournamentPage.tsx`'s "Announcements" tab
+  (admin create/pin/delete, pinned-first sort) — but never updated this roadmap file to say so, so
+  it was still showing ⬜ despite being done. Verified the code is genuinely complete (not a partial
+  stub) by reading the panel, service, and `firestore.rules` block end-to-end before marking this
+  ✅; no code changes made for this slice itself.
+- **Does not notify followers on post** — the original ask's "optionally notifying followers via
+  the existing notification service" was not wired up. Left as a documented gap rather than silently
+  dropped: `notify()` (`services/notifications.service.ts`) sends to one uid at a time, and there is
+  no existing "get every follower of tournament X" query (`favStore` is localStorage-only per
+  Slice 2.2's own scope note, so there is no server-side follower list to iterate over at all) —
+  wiring this up for real is the same cross-device-follow-sync prerequisite already flagged in
+  `RESTRICTIONS.md` §4, not a small addition to this slice.
+- **Addendum — live write-path verification**: went one step further than a code read, with a real
+  authenticated admin session available this pass. Posted a genuine test announcement through the
+  actual form (native-setter input dispatch, since React-controlled inputs ignore a bare
+  `.value =`), confirmed it appeared with a live "Announcement posted" toast; clicked the real Pin
+  button and confirmed it flipped to Unpin; clicked the real Delete button and confirmed the page
+  correctly settled back to "No announcements yet." No console errors at any step, and the test
+  data was fully cleaned up afterward — a genuine create→pin→delete round trip against the real
+  database, not just a reading of the source.
 
 ### Slice 4.4 — Downloads
 - ⬜ Document attachments (PDF rulebook/fixture sheet) on a tournament — extends the Storage

@@ -4,6 +4,10 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — League Ecosystem (ROADMAP_V3)
 
+### Added — Tournament announcements (ROADMAP_V3 Phase 4, Slice 4.3)
+- Tournament organizers can post announcements (pin/unpin, delete) from a new "Announcements" tab
+  on the public tournament page; spectators see a pinned-first, newest-first read-only list.
+
 ### Added — Tournament photo galleries (ROADMAP_V3 Phase 4, Slice 4.2)
 - Tournaments get a photo gallery too, as a new "Gallery" tab on the public tournament page.
   Generalized the match-only gallery into a reusable `EntityGallery` component (`MatchGallery` is

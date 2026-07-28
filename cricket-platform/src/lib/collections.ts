@@ -37,6 +37,7 @@ export const COL = {
   teamInvitationGrants: 'teamInvitationGrants',
   comments: 'comments', // flat spectator comments, scoped to a matchId
   reactions: 'reactions', // subcollection under matches/{id}; one doc per reacting user
+  announcements: 'announcements', // scoped by tournamentId
 } as const
 
 export const SETTINGS_DOC = 'app'

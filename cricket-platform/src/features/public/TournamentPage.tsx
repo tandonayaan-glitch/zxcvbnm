@@ -27,6 +27,7 @@ import {
 import { Tabs } from '@/components/ui/Tabs'
 import { ActivityFeed } from '@/components/activity/ActivityFeed'
 import { EntityGallery } from '@/components/media/EntityGallery'
+import { AnnouncementsPanel } from './AnnouncementsPanel'
 import { ShareButton } from '@/components/ui/ShareButton'
 import { QRCodeButton } from '@/components/ui/QRCodeButton'
 import { FollowButton } from '@/components/ui/FollowButton'
@@ -351,6 +352,7 @@ export function TournamentPage() {
           { key: 'teams', label: 'Teams' },
           { key: 'activity', label: 'Activity' },
           { key: 'gallery', label: 'Gallery' },
+          { key: 'announcements', label: 'Announcements' },
         ]}
       />
 
@@ -669,6 +671,15 @@ export function TournamentPage() {
           title="Tournament gallery"
           canManage={canManageTournaments(profile)}
           hideWhenEmpty={false}
+        />
+      )}
+
+      {tab === 'announcements' && (
+        <AnnouncementsPanel
+          tournamentId={id}
+          tournamentOwnerId={t.ownerId}
+          canManage={canManageTournaments(profile)}
+          profile={profile}
         />
       )}
     </div>
