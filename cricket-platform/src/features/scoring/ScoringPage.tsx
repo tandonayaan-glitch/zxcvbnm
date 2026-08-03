@@ -8,6 +8,8 @@ import {
   RefreshCw,
   Eye,
   Keyboard,
+  Ban,
+  RotateCcw,
 } from 'lucide-react'
 import { Button, Card, PageLoader, Spinner } from '@/components/ui/primitives'
 import { Modal } from '@/components/ui/Modal'
@@ -25,6 +27,8 @@ import {
   undoLastBall,
   startSecondInnings,
   endInnings,
+  abandonMatch,
+  reopenMatch,
   battingFirstTeamId,
   squadFor,
   subscribeDeliveries,
@@ -219,6 +223,20 @@ export function ScoringPage() {
             <RefreshCw size={16} /> Update stats
           </Button>
         </div>
+        {match.status === 'abandoned' && (
+          <div className="mt-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (confirm('Reopen this match and resume scoring live?'))
+                  guard(() => reopenMatch(match))
+              }}
+              loading={busy}
+            >
+              <RotateCcw size={16} /> Reopen match
+            </Button>
+          </div>
+        )}
       </div>
     )
   }
@@ -482,6 +500,15 @@ export function ScoringPage() {
             className="rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
           >
             End innings
+          </button>
+          <button
+            onClick={() => {
+              if (confirm('Abandon this match? This ends it with no result and cannot be undone from here (it can be reopened afterward).'))
+                guard(() => abandonMatch(match))
+            }}
+            className="flex items-center gap-1.5 rounded-lg border border-red-300 dark:border-red-800 px-3 py-1.5 text-sm font-medium text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+          >
+            <Ban size={14} /> Abandon match
           </button>
         </div>
       </div>

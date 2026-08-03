@@ -372,6 +372,27 @@ export async function abandonMatch(match: Match): Promise<void> {
   void notifyMatchDone(match, result)
 }
 
+/**
+ * Reverse an abandoned match back to live (e.g. a mis-tap on "Abandon match").
+ * Deliberately scoped to `status === 'abandoned'` only — reopening a
+ * genuinely `completed` match with a real scored result is a different,
+ * riskier operation (stats/standings may already reflect its final state)
+ * and is out of scope here. `abandonMatch()` never touches `innings`/
+ * deliveries, so the innings state is exactly as it was at the moment of
+ * abandonment and scoring can resume from there unchanged.
+ */
+export async function reopenMatch(match: Match): Promise<void> {
+  if (match.status !== 'abandoned') {
+    throw new Error('Only an abandoned match can be reopened.')
+  }
+  await updateDoc(doc(db, COL.matches, match.id), {
+    status: 'live',
+    result: null,
+    completedAt: null,
+    updatedAt: Date.now(),
+  })
+}
+
 export async function setPlayerOfTheMatch(matchId: string, playerId: string) {
   await updateDoc(doc(db, COL.matches, matchId), {
     playerOfTheMatchId: playerId,
