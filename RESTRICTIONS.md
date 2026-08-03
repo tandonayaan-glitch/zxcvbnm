@@ -1079,4 +1079,38 @@ reasoning.
     session — the delete action also depends on a native `confirm()` dialog that didn't reliably
     click through a second time — it remains in the database and needs manual deletion.
 
+50. **`ROADMAP_V4.md` Slice 2.2 — Abandon match control + reopen safety net** — **Done**. No
+    *content* collision, but the code landed in git differently than planned: before this session
+    could commit it, a concurrent session swept both touched files (`ScoringPage.tsx`,
+    `scoring.service.ts`) into its own unrelated commit `5d19dca` ("Update scoring page and
+    service") — the same broad-`git add`-sweeps-uncommitted-work pattern already documented for
+    the Match Settings slice earlier this session. Diffed `5d19dca` against this slice's intended
+    changes and confirmed byte-for-byte identical — nothing lost, altered, or merged with anything
+    else; only the commit message fails to describe this slice's actual content. Documenting this
+    here rather than re-committing, since the code is already correctly in history.
+    `abandonMatch()` had been fully implemented but genuinely unreachable from any UI
+    (confirmed by grep, zero call sites, per entry #49's own audit methodology) — wired up as a
+    red/danger-styled "Abandon match" button on `ScoringPage.tsx`'s live footer, confirmation-gated
+    identically to the existing "End innings" button. **New `reopenMatch()`** in
+    `scoring.service.ts` closes the "one-way door" risk this slice's own planning pass flagged:
+    guards `if (match.status !== 'abandoned') throw` (defense in depth — the calling UI already
+    only renders the button in that state), then writes exactly the same
+    `{ status: 'live', result: null, completedAt: null }` shape `undoLastBall()` already writes for
+    its own "reopen a closed state" case — no novel data shape, no schema change, no existing
+    function's signature touched. `abandonMatch()` itself was not modified. Zero lines of
+    `scoring.ts` touched. `tsc -p tsconfig.app.json --noEmit` and `npm run build` both clean.
+    **Verified live against the real database, full cycle, not just the happy path**: created a
+    real throwaway match ("Abandon Reopen Test"), scored a real ball to establish genuine
+    in-progress state (4/0, specific striker/non-striker/bowler/partnership), then abandoned it
+    (confirmed the resulting screen shows a "Reopen match" button), reopened it (confirmed the
+    innings state — striker, non-striker, bowler, partnership, current-over ball token — was
+    restored *exactly*, proving `abandonMatch`/`reopenMatch` never touch deliveries or innings),
+    then abandoned it a second time from the reopened state (confirmed the full cycle repeats
+    cleanly). **Also verified the negative case, which matters more than the happy path here**:
+    navigated to a separate match that completed normally (from entry #49's own test data) and
+    confirmed its completed screen shows **no** "Reopen match" button at all — a real scored result
+    cannot be reversed through this control. Both throwaway matches from this slice and the
+    previous one were successfully soft-deleted after verification — no leftover test-data cleanup
+    gap this time.
+
 (Appended to as further slices are picked up.)

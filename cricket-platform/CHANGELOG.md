@@ -4,6 +4,14 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Scorer Experience (ROADMAP_V4)
 
+### Added — Abandon match control + reopen safety net (ROADMAP_V4 Slice 2.2)
+- A scorer can now mark a live match "Abandoned" (rain, bad light, injury, etc.) directly from the
+  live scoring screen — previously this had no UI anywhere despite the underlying capability
+  already existing. Paired with a new "Reopen match" action, shown only on an abandoned match
+  (never on a genuinely completed one), which resumes scoring with the innings exactly as they
+  were at the moment of abandonment — nothing about a completed match's real result can be reopened
+  this way.
+
 ### Added — Last-man-stranded detection + guided innings closure (ROADMAP_V4 Slice 2.1a)
 - When Last Man Standing is enabled and a team is left with no eligible replacement batter, the
   live scoring screen now shows a clear "No partner remains for \[team\]" message with a direct

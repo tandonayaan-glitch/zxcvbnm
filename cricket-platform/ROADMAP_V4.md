@@ -31,9 +31,12 @@ compliance** line confirming this was checked, not assumed.
   explicitly not attempted (deferred to Phase 5), reopen safety net scoped strictly to abandoned
   matches. Both remain unimplemented, blocked on `ROADMAP_V3` being fully completed, merged, and
   verified; they'll be the first two slices built once that happens.
-- **Pass 5 (this one)**: `ROADMAP_V3` confirmed complete, merged, and verified. **Slice 2.1a
-  implemented and verified live against the real database** — see its write-up below. 2.2 is next,
-  to begin only once 2.1a is committed.
+- **Pass 5**: `ROADMAP_V3` confirmed complete, merged, and verified. **Slice 2.1a implemented and
+  verified live against the real database**, committed. 2.2 approved to begin next.
+- **Pass 6 (this one)**: **Slice 2.2 (Abandon match control + reopen safety net) implemented and
+  verified live end-to-end**, including the abandon → reopen → abandon-again cycle and the
+  negative case (a genuinely completed match correctly offers no reopen control). Both P0 slices
+  are now done.
 
 ## ⚠️ Critical correction from this pass: Slice 2.1 was wrong
 
@@ -82,7 +85,7 @@ architecture review and re-planning only.
 | Priority | Slice | Files touched | Overlaps V3's working set? |
 |---|---|---|---|
 | **P0** | ✅ 2.1a — Last-man-stranded detection + guided closure *(revised scope)* | `ScoringPage.tsx` | No |
-| **P0** | 2.2 — Abandon match control **+ reopen safety net** *(expanded scope)* | `ScoringPage.tsx`, `MatchesPage.tsx` or `MatchPage.tsx` (see 2.2's own overlap note) | Conditional — see 2.2 |
+| **P0** | ✅ 2.2 — Abandon match control **+ reopen safety net** *(expanded scope)* | `ScoringPage.tsx`, `scoring.service.ts` | No (landed entirely in the zero-overlap file set) |
 | P1 | 2.3 — Player of the Match at end-of-match | `ScoringPage.tsx` (+ `MatchPage.tsx` only if the higher-risk approach is chosen) | Conditional |
 | P1 | 3.1 — Innings-break scorecard link | `ScoringPage.tsx` | No |
 | P1 | 4.2a — Mobile scorer audit (read-only) | `ScoringPage.tsx`, `ScoringModals.tsx` | No |
@@ -99,30 +102,29 @@ architecture review and re-planning only.
 | 🚫 | Phase 5 items (now including true solo LMS batting) | `src/domain/scoring.ts` | N/A — permanently out of scope |
 
 ### What can start the instant V3 merges, no further check needed
-**1.4, 2.4, 4.1, 4.2a/4.2b, 3.1** (2.1a done — see below) — files touched are exclusively
-`ScoringPage.tsx`/`ScoringModals.tsx`/`scoring.service.ts`, which nothing in V3's scope, current or
-planned, goes near.
+**1.4, 2.4, 4.1, 4.2a/4.2b, 3.1** (2.1a and 2.2 both done — see below) — files touched are
+exclusively `ScoringPage.tsx`/`ScoringModals.tsx`/`scoring.service.ts`, which nothing in V3's scope,
+current or planned, goes near. 2.2 ended up landing entirely in this same zero-overlap set (the
+reopen safety net was placed on `ScoringPage.tsx`, not `MatchesPage.tsx`/`MatchPage.tsx`, exactly
+per its own plan's preferred option).
 
 ### What needs a fresh look at the merged file before starting
-**2.2** (if the reopen safety net lands as an admin action on `MatchesPage.tsx` — check that file's
-post-merge state, though it's not currently in V3's working set), **2.3** and **3.3** (both touch
-`MatchPage.tsx` directly, which is under active V3 development right now), and **1.1/1.2/1.3/4.3**
-(low risk, but `MatchSetupPage.tsx` could be touched by V3's Phase 5 "UI consistency pass over
-Phases 1-4" before this starts).
+**2.3** and **3.3** (both touch `MatchPage.tsx` directly, which was under active V3 development —
+check its current state before starting either), and **1.1/1.2/1.3/4.3** (low risk, but
+`MatchSetupPage.tsx` could have been touched by V3's Phase 5 "UI consistency pass over Phases 1-4").
 
 ---
 
-## P0 findings — 2.1a done, 2.2 up next
+## P0 findings — both done
 
 - **Slice 2.1a — Last-man-stranded detection + guided innings closure** ✅ **Done and verified** —
   see the full write-up below for implementation and live-verification details.
-- **Slice 2.2 — Abandon match control + reopen safety net** (expanded scope, see below) —
-  **approved**, including the reopen safety net, scoped strictly to abandoned matches (not
-  completed ones).
+- **Slice 2.2 — Abandon match control + reopen safety net** ✅ **Done and verified** — see the full
+  write-up below.
 
-`ROADMAP_V3` was confirmed complete, merged, and verified before 2.1a started. 2.1a is now
-implemented, `tsc`/`npm run build` clean, and verified live end-to-end. **2.2 has not been started
-yet** — it begins only after 2.1a is fully committed, per the one-verified-slice-at-a-time process.
+`ROADMAP_V3` was confirmed complete, merged, and verified before 2.1a started. Both P0 slices are
+now implemented, `tsc`/`npm run build` clean, and verified live end-to-end, each committed
+separately per the one-verified-slice-at-a-time process. **2.3 is next** (P1), once picked up.
 
 ---
 
@@ -322,7 +324,7 @@ actual `WicketModal`/`recordBall` path. Confirmed:
   repeated attempts with the same override technique didn't reliably take effect this time) — it
   remains in the database and should be deleted manually.
 
-### Slice 2.2 — Abandon match control + reopen safety net (P0 — expanded scope)
+### Slice 2.2 — Abandon match control + reopen safety net ✅ Done (P0 — expanded scope)
 **Problem**: `abandonMatch()` is fully implemented but has zero call sites anywhere — confirmed by
 grep, unchanged from Pass 2. **New in this pass**: there is also **no way to reverse an abandoned
 match back to live** anywhere in the app (confirmed by grepping `matches.service.ts` for any
@@ -377,6 +379,35 @@ review.
     lost or altered), and is **not** offered for a genuinely `completed` match.
   - `tsc`/`npm run build` clean; live-verified against a real (throwaway) match through the full
     abandon → reopen → abandon-again cycle, cleaned up after.
+
+**Implemented and verified.** Added `reopenMatch()` to `scoring.service.ts` (guards
+`if (match.status !== 'abandoned') throw`, then writes exactly
+`{ status: 'live', result: null, completedAt: null, updatedAt }` — the same shape
+`undoLastBall()` already writes for its own "re-open a closed state" case, no new data shape
+introduced). `ScoringPage.tsx` gained a red/danger-styled "Abandon match" button in the live footer
+(next to "End innings", same `confirm()` gate) and a "Reopen match" button shown **only** when
+`match.status === 'abandoned'` on the completed/abandoned screen — never for a genuinely
+`completed` match, since that branch is gated on the exact same status check both in the UI and
+(defensively) inside `reopenMatch()` itself. Zero lines of `scoring.ts` touched; no existing
+function's signature or behavior changed — `abandonMatch()` is called exactly as it already existed.
+`tsc -p tsconfig.app.json --noEmit` and `npm run build` both clean (same pre-existing, unrelated
+`ScoreHeader` lint warning, untouched). **Verified live against the real database, full cycle**:
+created a real throwaway match ("Abandon Reopen Test"), started it, scored a real ball (4 runs) to
+establish genuine in-progress state, then:
+- Tapped "Abandon match" → confirmed `status: 'abandoned'`, "Match complete / Match abandoned — no
+  result" screen, and — critically — a "Reopen match" button present.
+- Tapped "Reopen match" → confirmed the match returned to the live scoring screen with **the exact
+  same innings state** (4/0, same striker/non-striker/bowler, same partnership, same "this over"
+  ball token) — proof `abandonMatch`/`reopenMatch` never touch deliveries or innings.
+- Tapped "Abandon match" again from the reopened state → confirmed it abandons cleanly a second
+  time, completing the full abandon → reopen → abandon-again cycle with no errors.
+- Navigated to a separate, genuinely `completed` match (from the earlier Slice 2.1a test) and
+  confirmed its completed screen shows **no** "Reopen match" button at all — the scoping-to-
+  abandoned-only requirement holds for the one case that matters most (a real result should never
+  be reversible through this control).
+- Both throwaway matches ("Abandon Reopen Test", "LMS Stranded Test" — left over from Slice 2.1a's
+  verification) were successfully soft-deleted via the Matches page once verification finished, so
+  there is no leftover test-data cleanup gap from this slice.
 
 ### Slice 2.3 — Player of the Match at end-of-match (P1)
 **Problem**: `setPlayerOfTheMatch()` is only reachable from the public `MatchPage.tsx`; the scorer
