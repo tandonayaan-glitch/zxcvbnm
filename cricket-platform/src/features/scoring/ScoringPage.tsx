@@ -10,6 +10,7 @@ import {
   Keyboard,
   Ban,
   RotateCcw,
+  Award,
 } from 'lucide-react'
 import { Button, Card, PageLoader, Spinner } from '@/components/ui/primitives'
 import { Modal } from '@/components/ui/Modal'
@@ -29,6 +30,7 @@ import {
   endInnings,
   abandonMatch,
   reopenMatch,
+  setPlayerOfTheMatch,
   battingFirstTeamId,
   squadFor,
   subscribeDeliveries,
@@ -65,6 +67,7 @@ export function ScoringPage() {
     null,
   )
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [potmOpen, setPotmOpen] = useState(false)
 
   useEffect(() => {
     const unsub = subscribeMatch(id, (m) => {
@@ -186,6 +189,11 @@ export function ScoringPage() {
     }
   }
 
+  async function choosePotm(pid: string) {
+    setPotmOpen(false)
+    await guard(() => setPlayerOfTheMatch(match!.id, pid || null))
+  }
+
   /* ------------------------- lifecycle screens ------------------------- */
 
   if (match.status === 'setup') {
@@ -222,6 +230,14 @@ export function ScoringPage() {
           <Button variant="outline" onClick={publish} loading={publishing}>
             <RefreshCw size={16} /> Update stats
           </Button>
+          {match.status === 'completed' && (
+            <Button variant="outline" onClick={() => setPotmOpen(true)}>
+              <Award size={16} />
+              {match.playerOfTheMatchId
+                ? `POTM: ${name(match.playerOfTheMatchId)}`
+                : 'Player of the match'}
+            </Button>
+          )}
         </div>
         {match.status === 'abandoned' && (
           <div className="mt-3">
@@ -236,6 +252,20 @@ export function ScoringPage() {
               <RotateCcw size={16} /> Reopen match
             </Button>
           </div>
+        )}
+        {potmOpen && (
+          <PlayerPickModal
+            title="Player of the match"
+            subtitle="Pick from either squad, or clear the current award."
+            options={[
+              { id: '', name: 'No award / clear' },
+              ...[...match.squadA, ...match.squadB].map((pid) =>
+                playerOption(playerById.get(pid), pid),
+              ),
+            ]}
+            onPick={choosePotm}
+            onClose={() => setPotmOpen(false)}
+          />
         )}
       </div>
     )

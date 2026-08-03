@@ -393,7 +393,7 @@ export async function reopenMatch(match: Match): Promise<void> {
   })
 }
 
-export async function setPlayerOfTheMatch(matchId: string, playerId: string) {
+export async function setPlayerOfTheMatch(matchId: string, playerId: string | null) {
   await updateDoc(doc(db, COL.matches, matchId), {
     playerOfTheMatchId: playerId,
     updatedAt: Date.now(),

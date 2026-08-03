@@ -4,6 +4,11 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Scorer Experience (ROADMAP_V4)
 
+### Added — Player of the Match at end-of-match (ROADMAP_V4 Slice 2.3)
+- The scorer can now pick (or clear) Player of the Match directly from the live scoring screen's
+  "Match complete" state, without leaving to find the control on the public scorecard page. Shows
+  the current pick on the button once set.
+
 ### Added — Abandon match control + reopen safety net (ROADMAP_V4 Slice 2.2)
 - A scorer can now mark a live match "Abandoned" (rain, bad light, injury, etc.) directly from the
   live scoring screen — previously this had no UI anywhere despite the underlying capability

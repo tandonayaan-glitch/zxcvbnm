@@ -1113,4 +1113,23 @@ reasoning.
     previous one were successfully soft-deleted after verification — no leftover test-data cleanup
     gap this time.
 
+51. **`ROADMAP_V4.md` Slice 2.3 — Player of the Match at end-of-match** — **Done**, no collision.
+    Used the plan's preferred approach exactly: reused the existing `PlayerPickModal` component
+    (already used by `ScoringPage.tsx` for the batter/bowler pickers) instead of building a new
+    modal, mapping `[...match.squadA, ...match.squadB]` through the file's existing
+    `playerOption()` helper and prepending a synthetic `{id: '', name: 'No award / clear'}` entry
+    for un-picking. `setPlayerOfTheMatch()`'s parameter widened from `playerId: string` to
+    `playerId: string | null` — this is a backward-compatible widening (any caller passing a
+    `string`, including the existing `MatchPage.tsx` call site, remains valid unchanged); confirmed
+    `MatchPage.tsx` needed zero edits. The button on `ScoringPage.tsx`'s completed screen is gated
+    to `match.status === 'completed'` only, matching `MatchPage.tsx`'s own existing gate (never
+    shown for an abandoned match). Zero lines of `scoring.ts` or `MatchPage.tsx` touched. `tsc -p
+    tsconfig.app.json --noEmit` and `npm run build` both clean. **Verified live against the real
+    database, full cycle**: created a real throwaway match, force-completed both innings via "End
+    innings" (fastest path to a genuine `completed` match), picked a real player as Player of the
+    Match from `ScoringPage.tsx`, confirmed the button label updated and the same name appeared on
+    the public `/match/:id` scorecard's "Player of the match" section, then cleared it via "No
+    award / clear" and confirmed the button reverted to unset. Test match soft-deleted after
+    verification — no leftover data.
+
 (Appended to as further slices are picked up.)
