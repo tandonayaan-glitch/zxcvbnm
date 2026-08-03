@@ -2,6 +2,16 @@
 
 All notable changes to CricketHub. Newest first.
 
+## [Unreleased] — Scorer Experience (ROADMAP_V4)
+
+### Added — Last-man-stranded detection + guided innings closure (ROADMAP_V4 Slice 2.1a)
+- When Last Man Standing is enabled and a team is left with no eligible replacement batter, the
+  live scoring screen now shows a clear "No partner remains for \[team\]" message with a direct
+  "End innings" action, instead of a confusing, dead-end "No eligible players" picker with no way
+  forward. This does not add solo-batter scoring (the verified scoring engine requires a
+  non-striker for every ball, and always will — see `RESTRICTIONS.md`); it makes the existing
+  Last Man Standing rule's effect end in a clean, understood state rather than a stuck scorer.
+
 ## [Unreleased] — League Ecosystem (ROADMAP_V3)
 
 ### Added — Final polish pass (ROADMAP_V3 Phase 5)

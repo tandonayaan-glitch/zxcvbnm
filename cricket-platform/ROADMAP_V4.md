@@ -27,10 +27,13 @@ compliance** line confirming this was checked, not assumed.
   — see below), rollback considerations added to every slice, two slices split for production-ready
   sizing, and two new findings surfaced (an orphaned `completeMatch()` function, and a missing
   "reopen match" safety net for the abandon-match slice).
-- **Pass 4 (this one)**: user approved 2.1a and 2.2 exactly as revised in Pass 3 — solo-batter
-  scoring explicitly not attempted (deferred to Phase 5), reopen safety net scoped strictly to
-  abandoned matches. Both remain unimplemented, blocked on `ROADMAP_V3` being fully completed,
-  merged, and verified; they'll be the first two slices built once that happens.
+- **Pass 4**: user approved 2.1a and 2.2 exactly as revised in Pass 3 — solo-batter scoring
+  explicitly not attempted (deferred to Phase 5), reopen safety net scoped strictly to abandoned
+  matches. Both remain unimplemented, blocked on `ROADMAP_V3` being fully completed, merged, and
+  verified; they'll be the first two slices built once that happens.
+- **Pass 5 (this one)**: `ROADMAP_V3` confirmed complete, merged, and verified. **Slice 2.1a
+  implemented and verified live against the real database** — see its write-up below. 2.2 is next,
+  to begin only once 2.1a is committed.
 
 ## ⚠️ Critical correction from this pass: Slice 2.1 was wrong
 
@@ -78,7 +81,7 @@ architecture review and re-planning only.
 
 | Priority | Slice | Files touched | Overlaps V3's working set? |
 |---|---|---|---|
-| **P0** | 2.1a — Last-man-stranded detection + guided closure *(revised scope)* | `ScoringPage.tsx` | No |
+| **P0** | ✅ 2.1a — Last-man-stranded detection + guided closure *(revised scope)* | `ScoringPage.tsx` | No |
 | **P0** | 2.2 — Abandon match control **+ reopen safety net** *(expanded scope)* | `ScoringPage.tsx`, `MatchesPage.tsx` or `MatchPage.tsx` (see 2.2's own overlap note) | Conditional — see 2.2 |
 | P1 | 2.3 — Player of the Match at end-of-match | `ScoringPage.tsx` (+ `MatchPage.tsx` only if the higher-risk approach is chosen) | Conditional |
 | P1 | 3.1 — Innings-break scorecard link | `ScoringPage.tsx` | No |
@@ -96,8 +99,9 @@ architecture review and re-planning only.
 | 🚫 | Phase 5 items (now including true solo LMS batting) | `src/domain/scoring.ts` | N/A — permanently out of scope |
 
 ### What can start the instant V3 merges, no further check needed
-**2.1a, 1.4, 2.4, 4.1, 4.2a/4.2b, 3.1** — files touched are exclusively `ScoringPage.tsx`/
-`ScoringModals.tsx`/`scoring.service.ts`, which nothing in V3's scope, current or planned, goes near.
+**1.4, 2.4, 4.1, 4.2a/4.2b, 3.1** (2.1a done — see below) — files touched are exclusively
+`ScoringPage.tsx`/`ScoringModals.tsx`/`scoring.service.ts`, which nothing in V3's scope, current or
+planned, goes near.
 
 ### What needs a fresh look at the merged file before starting
 **2.2** (if the reopen safety net lands as an admin action on `MatchesPage.tsx` — check that file's
@@ -108,19 +112,17 @@ Phases 1-4" before this starts).
 
 ---
 
-## ✅ P0 findings — approved, blocked only on the V3 merge
+## P0 findings — 2.1a done, 2.2 up next
 
-- **Slice 2.1a — Last-man-stranded detection + guided innings closure** (revised scope, see below)
-  — **approved**: detect the "no eligible partner remains" state and guide the scorer directly to
-  the existing End Innings workflow; solo-batter scoring explicitly not attempted, deferred to
-  Phase 5 as an engine change.
+- **Slice 2.1a — Last-man-stranded detection + guided innings closure** ✅ **Done and verified** —
+  see the full write-up below for implementation and live-verification details.
 - **Slice 2.2 — Abandon match control + reopen safety net** (expanded scope, see below) —
   **approved**, including the reopen safety net, scoped strictly to abandoned matches (not
   completed ones).
 
-Both verified independent of V3's current and structural scope. **Neither is started.** Both wait
-on `ROADMAP_V3` being fully completed, merged, and verified, and will then be implemented first, in
-that order, ahead of every other slice in this file.
+`ROADMAP_V3` was confirmed complete, merged, and verified before 2.1a started. 2.1a is now
+implemented, `tsc`/`npm run build` clean, and verified live end-to-end. **2.2 has not been started
+yet** — it begins only after 2.1a is fully committed, per the one-verified-slice-at-a-time process.
 
 ---
 
@@ -233,7 +235,7 @@ correct it without leaving the scoring flow.
 
 ## Phase 2 — Live Scoring Correctness & Flow
 
-### Slice 2.1a — Last-man-stranded detection + guided innings closure (P0 — revised scope)
+### Slice 2.1a — Last-man-stranded detection + guided innings closure ✅ Done (P0 — revised scope)
 **Problem** (re-verified against `scoring.ts` directly this pass): `ScoringPage.tsx`'s
 `needBatter` has no concept of a true last-man scenario. When Last Man Standing is enabled and a
 team's second-to-last recognized batter falls, `needBatter` still fires, `incomingOptions` is
@@ -288,6 +290,37 @@ which is off-limits.
   - `tsc`/`npm run build` clean. Live verification requires actually playing a squad down to the
     true LMS-stranded state with real Firestore test data — flag clearly if a working authenticated
     session isn't available to complete that specific check, same caveat as before.
+
+**Implemented and verified.** `needBatter`'s derivation was reordered so `incomingOptions` is
+computed first (it's now needed by the new `lastManStranded` check too), then `lastManStranded`
+excludes that state from `needBatter`, and the score-pad-visible condition gained a matching
+`!lastManStranded` exclusion so the normal scoring UI can't render in the dead-end state either.
+`tsc -p tsconfig.app.json --noEmit` and `npm run build` both clean (pre-existing, unrelated lint
+warning on this file's `ScoreHeader` unused param untouched). **Verified live against the real
+database**, not just code review: created a real throwaway 2-a-side match ("LMS Stranded Test",
+`maxWickets: 1`, `lastManStanding: true` — the smallest squad that reaches the true stranded state
+after exactly one wicket) via the actual wizard, started it, and recorded a real wicket via the
+actual `WicketModal`/`recordBall` path. Confirmed:
+- The generic "No eligible players" `PlayerPickModal` never appeared.
+- The new "No partner remains for MWA" card rendered instead, with the normal score pad correctly
+  hidden underneath it (no way to attempt further scoring in the dead-end state).
+- Clicking through to "End innings" (the browser automation's native `confirm()` dialog needed a
+  one-line `window.confirm` override to click through reliably — a testing-tool limitation, not an
+  app issue, confirmed by observing the **pre-existing** footer "End innings" button hit the exact
+  same dialog behavior) correctly called the existing `endInnings()`, transitioned to
+  `innings_break`, and the second innings started normally chasing the correct target.
+- Completed the match end-to-end (Team B won by 2 wickets — incidentally also re-confirming the
+  `effectiveSquadSize`/Last-Man-Standing margin math from the earlier Match Settings slice is still
+  correct) to fully exercise the flow rather than stopping at the fix's own boundary.
+- **Not verified live**: the regression case (LMS disabled, or a normal 9th-wicket-down state with
+  an eligible replacement) — this relies on the engine's existing, already-verified
+  `evaluateInningsEnd`/`needBatter` logic being unchanged, which a full re-read of the diff confirms
+  (no line touching the non-LMS path), so this is asserted by code review rather than a second live
+  match, to keep the throwaway test data footprint small.
+- **Known cleanup gap**: the "LMS Stranded Test" match could not be deleted through this same
+  browser automation session (the delete action also depends on a native `confirm()` dialog, and
+  repeated attempts with the same override technique didn't reliably take effect this time) — it
+  remains in the database and should be deleted manually.
 
 ### Slice 2.2 — Abandon match control + reopen safety net (P0 — expanded scope)
 **Problem**: `abandonMatch()` is fully implemented but has zero call sites anywhere — confirmed by

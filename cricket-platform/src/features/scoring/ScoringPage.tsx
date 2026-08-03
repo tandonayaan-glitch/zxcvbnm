@@ -255,12 +255,6 @@ export function ScoringPage() {
   if (!inn) return <PageLoader />
 
   const needOpeners = !inn.strikerId && !inn.nonStrikerId
-  const needBatter =
-    !inn.isComplete &&
-    (!inn.strikerId || !inn.nonStrikerId) &&
-    !needOpeners
-  const needBowler =
-    !inn.isComplete && !!inn.strikerId && !!inn.nonStrikerId && !inn.bowlerId
 
   const battedOutIds = new Set(
     inn.battingCard.filter((b) => b.out).map((b) => b.playerId),
@@ -270,6 +264,28 @@ export function ScoringPage() {
   const incomingOptions = battingSquad
     .filter((pid) => !battedOutIds.has(pid) && !atCrease.has(pid))
     .map((pid) => playerOption(playerById.get(pid), pid))
+
+  /**
+   * True "no partner remains" state: Last Man Standing is enabled, a batter
+   * slot is empty, and there's nobody left in the squad to fill it. The
+   * engine still requires a non-null non-striker for every ball (that's
+   * unchanged — see ROADMAP_V4 Slice 2.1a), so this can only be resolved by
+   * ending the innings, not by continuing to score solo.
+   */
+  const lastManStranded =
+    !inn.isComplete &&
+    !!match.lastManStanding &&
+    incomingOptions.length === 0 &&
+    (!inn.strikerId || !inn.nonStrikerId) &&
+    !needOpeners
+
+  const needBatter =
+    !inn.isComplete &&
+    (!inn.strikerId || !inn.nonStrikerId) &&
+    !needOpeners &&
+    !lastManStranded
+  const needBowler =
+    !inn.isComplete && !!inn.strikerId && !!inn.nonStrikerId && !inn.bowlerId
 
   const bowlerOptions = bowlingSquad
     .filter((pid) => pid !== inn.lastBowlerId)
@@ -374,8 +390,29 @@ export function ScoringPage() {
         />
       )}
 
+      {lastManStranded && (
+        <Card className="mb-3 p-4 text-center">
+          <p className="font-semibold text-ink-800 dark:text-ink-200">
+            No partner remains for {battingTeamShort}
+          </p>
+          <p className="mt-1 text-sm text-ink-500 dark:text-ink-400">
+            Every other player is already out or at the crease — with Last Man Standing, this
+            innings can only be closed now.
+          </p>
+          <Button
+            className="mt-3"
+            onClick={() => {
+              if (confirm('End the current innings now?')) guard(() => endInnings(match))
+            }}
+            loading={busy}
+          >
+            End innings
+          </Button>
+        </Card>
+      )}
+
       {/* Score pad */}
-      {!needOpeners && !needBatter && !needBowler && !inn.isComplete && (
+      {!needOpeners && !needBatter && !needBowler && !inn.isComplete && !lastManStranded && (
         <>
           <ScoringShortcuts
             busy={busy}

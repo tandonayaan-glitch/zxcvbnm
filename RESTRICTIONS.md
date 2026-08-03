@@ -1045,4 +1045,38 @@ reasoning.
     correctly with no console errors. **This closes out `ROADMAP_V3.md` in full — all 5 phases, 15
     slices done.**
 
+49. **`ROADMAP_V4.md` Slice 2.1a — Last-man-stranded detection + guided innings closure** —
+    **Done**, no collision (`ROADMAP_V3.md` confirmed complete/merged/verified before this started;
+    `ScoringPage.tsx` was never in V3's scope in the first place). **A planning-time correction is
+    worth restating here since it affects how "Last Man Standing" should be described going
+    forward**: `Match.lastManStanding` (added earlier this session, entry #41) widens the all-out
+    wicket threshold, but does **not**, and per the standing restriction on `src/domain/scoring.ts`
+    **cannot**, enable actual solo batting — `applyBall` hard-throws
+    (`'Striker, non-striker and bowler must be set before scoring.'`) if `nonStrikerId` is null,
+    confirmed by direct re-read of the engine, not assumed. `ROADMAP_V4.md`'s own planning pass
+    originally proposed a fix that would have hit this exact throw; caught and corrected before any
+    code was written. This slice instead detects the genuine "no eligible replacement batter
+    remains" state (`lastManStranded` in `ScoringPage.tsx`, computed from the already-existing
+    `incomingOptions`) and replaces the previously-generic, dead-end "No eligible players"
+    `PlayerPickModal` with a specific message plus a direct "End innings" action — reusing the
+    existing, unmodified `endInnings()` service call, which has no striker/non-striker precondition.
+    The normal score pad is also hidden in this state (added a matching exclusion) so there's no
+    way to attempt further scoring once stranded. Zero lines of `scoring.ts` touched or needed.
+    `tsc -p tsconfig.app.json --noEmit` and `npm run build` both clean. **Verified live against the
+    real database**: created a real throwaway 2-a-side match (`maxWickets: 1`,
+    `lastManStanding: true` — the smallest squad that reaches the true stranded state after exactly
+    one wicket) via the actual Match Setup Wizard, started it, and recorded a real wicket through
+    the actual `WicketModal`. Confirmed the generic empty-picker never appeared, the new guided
+    message rendered with the score pad correctly hidden, and clicking through to "End innings"
+    correctly invoked `endInnings()`, transitioned to `innings_break`, and the second innings
+    started normally chasing the right target — completed the match end-to-end (won by 2 wickets,
+    which also re-confirms the `effectiveSquadSize` LMS margin math from entry #41 is still correct)
+    rather than stopping at the fix's own boundary. The regression case (LMS disabled, or a normal
+    9th-wicket-down state with an eligible replacement) relies on the engine's unchanged
+    `evaluateInningsEnd`/`needBatter` logic — confirmed by diff review that no non-LMS code path was
+    touched, not re-verified with a second live match, to keep throwaway test data minimal. **Known
+    gap**: the test match ("LMS Stranded Test") could not be deleted through this browser automation
+    session — the delete action also depends on a native `confirm()` dialog that didn't reliably
+    click through a second time — it remains in the database and needs manual deletion.
+
 (Appended to as further slices are picked up.)
