@@ -36,11 +36,13 @@ compliance** line confirming this was checked, not assumed.
 - **Pass 6**: **Slice 2.2 (Abandon match control + reopen safety net) implemented and verified live
   end-to-end**, including the abandon → reopen → abandon-again cycle and the negative case (a
   genuinely completed match correctly offers no reopen control). Both P0 slices are now done.
-- **Pass 7 (this one)**: **Slice 2.3 (Player of the Match at end-of-match) implemented and verified
+- **Pass 7**: **Slice 2.3 (Player of the Match at end-of-match) implemented and verified
   live end-to-end**, using the preferred zero-`MatchPage.tsx`-touch approach exactly as planned —
   reused the existing `PlayerPickModal` component rather than a new one, and widened
   `setPlayerOfTheMatch()`'s signature (`string` → `string | null`) to support clearing, a
   backward-compatible change that needed no update to `MatchPage.tsx`'s existing call site.
+- **Pass 8 (this one)**: **Slice 3.1 (Innings-break scorecard link) implemented and verified live**
+  — a small, low-risk addition; four of the six zero-V3-overlap slices are now done.
 
 ## ⚠️ Critical correction from this pass: Slice 2.1 was wrong
 
@@ -91,7 +93,7 @@ architecture review and re-planning only.
 | **P0** | ✅ 2.1a — Last-man-stranded detection + guided closure *(revised scope)* | `ScoringPage.tsx` | No |
 | **P0** | ✅ 2.2 — Abandon match control **+ reopen safety net** *(expanded scope)* | `ScoringPage.tsx`, `scoring.service.ts` | No (landed entirely in the zero-overlap file set) |
 | P1 | ✅ 2.3 — Player of the Match at end-of-match | `ScoringPage.tsx`, `scoring.service.ts` | No (preferred approach used — `MatchPage.tsx` untouched) |
-| P1 | 3.1 — Innings-break scorecard link | `ScoringPage.tsx` | No |
+| P1 | ✅ 3.1 — Innings-break scorecard link | `ScoringPage.tsx` | No |
 | P1 | 4.2a — Mobile scorer audit (read-only) | `ScoringPage.tsx`, `ScoringModals.tsx` | No |
 | P1/P2 | 4.2b — Mobile scorer fixes (scoped by 4.2a's findings) | Same as 4.2a | No |
 | P2 | 1.1 — Setup wizard validation feedback | `MatchSetupPage.tsx` | Low (Phase-5-polish note) |
@@ -106,9 +108,9 @@ architecture review and re-planning only.
 | 🚫 | Phase 5 items (now including true solo LMS batting) | `src/domain/scoring.ts` | N/A — permanently out of scope |
 
 ### What can start the instant V3 merges, no further check needed
-**1.4, 2.4, 4.1, 4.2a/4.2b, 3.1** (2.1a, 2.2, and 2.3 all done — see below) — files touched are
+**1.4, 2.4, 4.1, 4.2a/4.2b** (2.1a, 2.2, 2.3, and 3.1 all done — see below) — files touched are
 exclusively `ScoringPage.tsx`/`ScoringModals.tsx`/`scoring.service.ts`, which nothing in V3's scope,
-current or planned, goes near. Both 2.2 and 2.3 ended up landing entirely in this same zero-overlap
+current or planned, goes near. 2.2 and 2.3 both ended up landing entirely in this same zero-overlap
 set — each slice's own plan preferred keeping `MatchPage.tsx` untouched, and both stuck to it.
 
 ### What needs a fresh look at the merged file before starting
@@ -127,8 +129,8 @@ have been touched by V3's Phase 5 "UI consistency pass over Phases 1-4").
 
 `ROADMAP_V3` was confirmed complete, merged, and verified before 2.1a started. Both P0 slices are
 now implemented, `tsc`/`npm run build` clean, and verified live end-to-end, each committed
-separately per the one-verified-slice-at-a-time process. **Slice 2.3 (P1) is also now done** — see
-its write-up below. **3.1 (Innings-break scorecard link) is next.**
+separately per the one-verified-slice-at-a-time process. **Slices 2.3 and 3.1 (both P1) are also
+now done** — see their write-ups below. **4.2a (Mobile scorer experience audit) is next.**
 
 ---
 
@@ -501,7 +503,7 @@ clear cycle, not just the happy path. Test match cleaned up (soft-deleted) after
 
 ## Phase 3 — Innings Transition & Scorecard Navigation
 
-### Slice 3.1 — Innings-break scorecard link (P1)
+### Slice 3.1 — Innings-break scorecard link ✅ Done (P1)
 **Problem**: The `innings_break` screen has no link to the scorecard, unlike every other lifecycle
 screen.
 
@@ -515,6 +517,17 @@ screen.
 - **Restrictions compliance**: ✅ Compliant.
 - **Acceptance criteria**: Working scorecard link from the innings-break screen, showing the
   just-completed first innings correctly. `tsc`/`npm run build` clean.
+
+**Implemented and verified exactly as planned.** Used a `Button variant="outline"` alongside the
+existing "Start 2nd innings" primary button (`navigate()`-based, matching the completed screen's
+button-row convention, rather than the live footer's pill-`Link` style — this screen's layout is
+the same centered-card shape as the completed screen, not the footer bar). `tsc -p
+tsconfig.app.json --noEmit` and `npm run build` both clean. **Verified live against the real
+database**: created a real throwaway match, force-ended the first innings via "End innings" to
+reach a genuine `innings_break` state, confirmed the new "Scorecard" button renders, clicked it,
+and confirmed it navigates to `/match/:id` showing the just-completed first innings correctly
+("MWA 0/0", "Innings break — 2nd innings about to begin"). Test match soft-deleted after
+verification.
 
 ### Slice 3.2 — In-scoring-screen scorecard view (P2)
 **Problem**: The live footer's "Scorecard" link navigates away entirely.

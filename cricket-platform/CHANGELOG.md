@@ -4,6 +4,11 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Scorer Experience (ROADMAP_V4)
 
+### Added — Innings-break scorecard link (ROADMAP_V4 Slice 3.1)
+- The "Innings break" screen (between the two innings of a live match) now has a "Scorecard"
+  button alongside "Start 2nd innings", matching every other lifecycle screen — previously it was
+  the only one with no way to check the just-completed innings.
+
 ### Added — Player of the Match at end-of-match (ROADMAP_V4 Slice 2.3)
 - The scorer can now pick (or clear) Player of the Match directly from the live scoring screen's
   "Match complete" state, without leaving to find the control on the public scorecard page. Shows

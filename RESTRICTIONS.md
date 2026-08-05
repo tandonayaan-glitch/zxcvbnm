@@ -1132,4 +1132,16 @@ reasoning.
     award / clear" and confirmed the button reverted to unset. Test match soft-deleted after
     verification — no leftover data.
 
+52. **`ROADMAP_V4.md` Slice 3.1 — Innings-break scorecard link** — **Done**, no collision. Smallest
+    slice in the plan: the `innings_break` lifecycle screen (`ScoringPage.tsx`) gained a
+    `Button variant="outline"` "Scorecard" action alongside its existing "Start 2nd innings"
+    primary button — matched to that screen's centered-card button-row layout (same pattern as the
+    completed screen's "View scorecard"/"Update stats" row) rather than the live-scoring footer's
+    pill-`Link` style, since this screen isn't the footer bar. No new component, no service change.
+    `tsc -p tsconfig.app.json --noEmit` and `npm run build` both clean. **Verified live against the
+    real database**: created a real throwaway match, force-ended the first innings via "End
+    innings" to reach a genuine `innings_break` state, confirmed the new button renders, clicked
+    it, and confirmed it lands on `/match/:id` showing the just-completed first innings correctly.
+    Test match soft-deleted after verification.
+
 (Appended to as further slices are picked up.)

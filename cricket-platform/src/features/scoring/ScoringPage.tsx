@@ -287,14 +287,18 @@ export function ScoringPage() {
             Target: {first.totalRuns + 1}
           </p>
         </Card>
-        <Button
-          className="mt-6"
-          size="lg"
-          onClick={() => guard(() => startSecondInnings(match))}
-          loading={busy}
-        >
-          Start 2nd innings
-        </Button>
+        <div className="mt-6 flex justify-center gap-3">
+          <Button
+            size="lg"
+            onClick={() => guard(() => startSecondInnings(match))}
+            loading={busy}
+          >
+            Start 2nd innings
+          </Button>
+          <Button variant="outline" size="lg" onClick={() => navigate(`/match/${match.id}`)}>
+            <Eye size={16} /> Scorecard
+          </Button>
+        </div>
       </div>
     )
   }
