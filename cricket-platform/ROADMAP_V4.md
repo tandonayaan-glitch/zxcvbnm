@@ -41,8 +41,14 @@ compliance** line confirming this was checked, not assumed.
   reused the existing `PlayerPickModal` component rather than a new one, and widened
   `setPlayerOfTheMatch()`'s signature (`string` → `string | null`) to support clearing, a
   backward-compatible change that needed no update to `MatchPage.tsx`'s existing call site.
-- **Pass 8 (this one)**: **Slice 3.1 (Innings-break scorecard link) implemented and verified live**
-  — a small, low-risk addition; four of the six zero-V3-overlap slices are now done.
+- **Pass 8**: **Slice 3.1 (Innings-break scorecard link) implemented and verified live** — a small,
+  low-risk addition; four of the six zero-V3-overlap slices are now done.
+- **Pass 9 (this one)**: **Slice 4.2a (mobile scorer experience audit) completed** — read-only,
+  live at a real 375×812 viewport against a real match, walking the full lifecycle including
+  `WicketModal`'s most complex state. Found the responsive foundation holds up here too, with one
+  genuine issue: the "Keyboard shortcuts" button is undersized *and* leads to information that's
+  meaningless on a touch-only device. Slice 4.2b, previously unscoped, is now fully scoped to fix
+  exactly that one thing.
 
 ## ⚠️ Critical correction from this pass: Slice 2.1 was wrong
 
@@ -94,8 +100,8 @@ architecture review and re-planning only.
 | **P0** | ✅ 2.2 — Abandon match control **+ reopen safety net** *(expanded scope)* | `ScoringPage.tsx`, `scoring.service.ts` | No (landed entirely in the zero-overlap file set) |
 | P1 | ✅ 2.3 — Player of the Match at end-of-match | `ScoringPage.tsx`, `scoring.service.ts` | No (preferred approach used — `MatchPage.tsx` untouched) |
 | P1 | ✅ 3.1 — Innings-break scorecard link | `ScoringPage.tsx` | No |
-| P1 | 4.2a — Mobile scorer audit (read-only) | `ScoringPage.tsx`, `ScoringModals.tsx` | No |
-| P1/P2 | 4.2b — Mobile scorer fixes (scoped by 4.2a's findings) | Same as 4.2a | No |
+| P1 | ✅ 4.2a — Mobile scorer audit (read-only) | none (measurement only) | No |
+| P2 | 4.2b — Mobile scorer fixes (hide Shortcuts button on touch devices) | `ScoringPage.tsx` | No |
 | P2 | 1.1 — Setup wizard validation feedback | `MatchSetupPage.tsx` | Low (Phase-5-polish note) |
 | P2 | 2.4 — Auto-recompute stats on completion | `scoring.service.ts` | No |
 | P2 | 3.2 — In-scoring scorecard view | `ScoringPage.tsx` (reuses `ScorecardView`) | No |
@@ -108,7 +114,7 @@ architecture review and re-planning only.
 | 🚫 | Phase 5 items (now including true solo LMS batting) | `src/domain/scoring.ts` | N/A — permanently out of scope |
 
 ### What can start the instant V3 merges, no further check needed
-**1.4, 2.4, 4.1, 4.2a/4.2b** (2.1a, 2.2, 2.3, and 3.1 all done — see below) — files touched are
+**1.4, 2.4, 4.1, 4.2b** (2.1a, 2.2, 2.3, 3.1, and 4.2a all done — see below) — files touched are
 exclusively `ScoringPage.tsx`/`ScoringModals.tsx`/`scoring.service.ts`, which nothing in V3's scope,
 current or planned, goes near. 2.2 and 2.3 both ended up landing entirely in this same zero-overlap
 set — each slice's own plan preferred keeping `MatchPage.tsx` untouched, and both stuck to it.
@@ -130,7 +136,8 @@ have been touched by V3's Phase 5 "UI consistency pass over Phases 1-4").
 `ROADMAP_V3` was confirmed complete, merged, and verified before 2.1a started. Both P0 slices are
 now implemented, `tsc`/`npm run build` clean, and verified live end-to-end, each committed
 separately per the one-verified-slice-at-a-time process. **Slices 2.3 and 3.1 (both P1) are also
-now done** — see their write-ups below. **4.2a (Mobile scorer experience audit) is next.**
+now done** — see their write-ups below. **Slice 4.2a is also now done** (read-only audit; see its
+write-up). **4.2b (hide the Shortcuts button on touch devices) is next.**
 
 ---
 
@@ -583,7 +590,7 @@ between Scorecard/Insights/Timeline/Comments/Reactions/Gallery.
   ahead of real scorer feedback. **Dependencies**: none. **Rollback**: trivial. **Restrictions**:
   ✅ compliant (UI-only). **Acceptance criteria**: deferred until a concrete case is named.
 
-### Slice 4.2a — Mobile scorer experience audit (read-only) (P1)
+### Slice 4.2a — Mobile scorer experience audit (read-only) ✅ Done (P1)
 **Problem**: `ROADMAP_V3` Slice 1.2 scoped its 375px audit to spectator surfaces only —
 `ScoringPage.tsx` has never been checked at a phone viewport.
 
@@ -602,13 +609,71 @@ between Scorecard/Insights/Timeline/Comments/Reactions/Gallery.
   `WicketModal`/`OpenersPanel`/`PlayerPickModal` layouts at 375px, and whether the keyboard-shortcuts
   affordance makes sense on a touch-only device.
 
-### Slice 4.2b — Mobile scorer fixes (scoped by 4.2a) (P1/P2 depending on findings)
-- **Affected files**: Whatever 4.2a's findings name — expected to stay within `ScoringPage.tsx`/
-  `ScoringModals.tsx` based on the audit's scope, but not finalized until 4.2a completes.
-- **Risks/Dependencies/Rollback/Acceptance criteria**: Cannot be meaningfully specified before 4.2a
-  runs — intentionally left open rather than guessed at.
-- **Restrictions compliance**: To be re-confirmed per actual fix once scoped, but expected ✅ given
-  the file set involved.
+**Done — audited live at a real 375×812 viewport against a real throwaway match, not a static
+read of the JSX.** Walked the full lifecycle: `PreMatch` → `OpenersPanel` → live scoring (scored
+real balls, including triggering the shot-detail prompt and a full over to reach the bowler-change
+prompt) → `WicketModal` in both its default and most complex state (`run_out`, which adds a
+fielder select + a runs-completed row) → the bowler-selection `PlayerPickModal` →
+`ShortcutsHelpModal`. Measured via `document.body.scrollWidth` vs `window.innerWidth` (page-level
+overflow) and `getBoundingClientRect()` (per-element tap-target sizing), the same technique
+`ROADMAP_V3` Slice 1.2 used when screenshot tooling proved unreliable.
+
+**Result: the responsive foundation holds up here too, with one genuine finding.**
+- **Zero page-level horizontal overflow** anywhere in the flow — `PreMatch`, `OpenersPanel`, the
+  live `ScoreHeader`/batter-bowler card, the "This over" ball-token strip (checked both near-empty
+  and populated with 4 tokens including a boundary and a six — its `overflow-x: auto` correctly
+  scopes scrolling to itself without ever pushing the page wider, matching the already-proven
+  tournament-tab-bar pattern from `ROADMAP_V3` Slice 1.2), `WicketModal` (including its `run_out`
+  state — the widest configuration, with a fielder select and a 4-button runs-completed row, and
+  its "Confirm wicket" button stayed visible without needing to scroll), the bowler-selection
+  `PlayerPickModal`, and `ShortcutsHelpModal`.
+- **Tap targets are comfortably sized almost everywhere**: `ScorePad`'s run buttons are 96×64,
+  extras (Wide/No ball/Bye/Leg bye) 71×44, Wicket/Undo 151×48, the footer's End innings/Abandon
+  match/Scorecard controls 87–124×54, and `PlayerPickModal`'s option rows 335×54 — all at or above
+  the 44px accessible touch-target guideline. `OpenersPanel`'s three `<select>`s and its "Start
+  scoring" button measured 37–40px tall — a shade under the ideal but consistent with this app's
+  existing `Button`/native-`<select>` baseline elsewhere, not a new regression introduced by this
+  screen; noted as a minor polish candidate, not a blocking finding.
+- **The one genuine, concrete finding**: the "Keyboard shortcuts" trigger button measured **84×24**
+  — well under the 44px guideline, and unlike every other undersized element above, this one has a
+  second, independent problem layered on top: its entire purpose (a list of keyboard shortcuts) is
+  **functionally meaningless on a touch-only device with no physical keyboard**. A scorer on a
+  phone who taps it (already a precision challenge at 24px tall) is shown a list of key combos
+  they can never use, in place of anything actually relevant to how they're scoring. This is the
+  one item this audit is naming as worth fixing — see Slice 4.2b below.
+
+### Slice 4.2b — Mobile scorer fixes ⬜ (P2 — scoped by 4.2a's findings)
+**Problem**: 4.2a found exactly one genuine issue: the "Keyboard shortcuts" affordance
+(`ScoringPage.tsx`'s `ScorePad`, `onShowShortcuts`/`Keyboard` button, and the `ShortcutsHelpModal`
+it opens) is undersized (84×24, below the 44px guideline) and, more fundamentally, presents
+keyboard-only information to a device class that can never use it.
+
+- **Affected files**: `src/features/scoring/ScoringPage.tsx` only (`ScorePad`'s shortcuts button
+  and the surrounding conditional that renders it).
+- **Architecture**: Detect touch-primary devices with a `matchMedia('(pointer: coarse)')` check
+  (standard, no new dependency — already the conventional way to distinguish "primarily touch"
+  from "primarily mouse/trackpad" without relying on brittle user-agent sniffing) and hide the
+  "Shortcuts" button entirely on that class of device, rather than just enlarging its tap target —
+  enlarging it would still leave a touch-only scorer tapping into a modal full of information that
+  can never apply to them. `ScoringShortcuts`'s `keydown` listener itself stays completely
+  unchanged — a device with an attached physical keyboard (e.g. an iPad with a keyboard case)
+  should keep working exactly as today; this only hides the *discovery* affordance for devices
+  that can't use what it leads to.
+- **Risks**: Low. `matchMedia('(pointer: coarse)')` is well-supported and this is a purely additive
+  conditional around an existing button — no change to the shortcuts logic itself, so a
+  misdetection in either direction degrades to today's exact behavior (shortcuts button
+  shown/hidden), never to a broken or crashing state.
+- **Dependencies**: None — this is the only fix 4.2a's findings justify; everything else measured
+  within acceptable range and isn't being touched.
+- **Rollback**: Trivial — revert the file; no data or schema involvement.
+- **Restrictions compliance**: ✅ Compliant — pure UI conditional, no engine or schema involvement.
+- **Acceptance criteria**: On a touch-primary viewport (`pointer: coarse`), the "Shortcuts" button
+  is not rendered at all; on a mouse/trackpad-primary viewport, it renders exactly as today, same
+  84×24 size, same modal content, unaffected. The underlying keyboard shortcuts themselves
+  (0/1/2/3/4/6, W, Q, N, B, L, U, E, Esc) keep working identically on both device classes if a
+  physical keyboard happens to be attached — only the *button* is conditional, not the
+  `keydown` handling. `tsc`/`npm run build` clean; live-verified at both a touch-emulated (375px
+  mobile preset) and a standard desktop viewport.
 
 ### Slice 4.3 — Remembered scorer preferences (P3)
 - ⬜ No concrete pain point identified in either audit pass — deliberately undesigned pending real

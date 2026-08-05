@@ -1144,4 +1144,29 @@ reasoning.
     it, and confirmed it lands on `/match/:id` showing the just-completed first innings correctly.
     Test match soft-deleted after verification.
 
+53. **`ROADMAP_V4.md` Slice 4.2a — Mobile scorer experience audit** — **Done**, read-only, no code
+    changed, so no `CHANGELOG.md` entry (nothing shipped to describe). `ROADMAP_V3` Slice 1.2's own
+    375px audit explicitly scoped itself to spectator surfaces only; `ScoringPage.tsx`/
+    `ScoringModals.tsx` — the screen a scorer actually uses pitchside on a phone — had never been
+    checked. Audited live at a real 375×812 viewport against a real throwaway match (not a static
+    JSX read): walked `PreMatch` → `OpenersPanel` → live scoring (real balls scored, a full over
+    completed to reach the bowler-change prompt) → `WicketModal` in its `run_out` state (the
+    widest configuration — adds a fielder select and a runs-completed row) → the bowler-selection
+    `PlayerPickModal` → `ShortcutsHelpModal`, measuring via `document.body.scrollWidth` vs
+    `window.innerWidth` and `getBoundingClientRect()`, the same technique Slice 1.2 used after
+    finding screenshot tooling unreliable. **Result: zero page-level horizontal overflow anywhere**
+    in the flow, including `WicketModal`'s `run_out` state with its "Confirm wicket" button
+    staying visible without scrolling, and the "This over" ball-token strip's `overflow-x: auto`
+    correctly scoping to itself rather than pushing the page wider (same pattern already proven on
+    the tournament tab bar). Tap targets are comfortably sized almost everywhere (`ScorePad`'s run
+    buttons 96×64, extras 71×44, Wicket/Undo 151×48, footer actions 87–124×54, `PlayerPickModal`
+    options 335×54); `OpenersPanel`'s selects/button measured 37–40px, a shade under the 44px ideal
+    but matching this app's existing baseline elsewhere, not a new regression. **One genuine
+    finding**: the "Keyboard shortcuts" trigger button is 84×24 (under the 44px guideline) and,
+    more fundamentally, opens a modal of keyboard shortcuts that are unusable on a touch-only
+    device with no physical keyboard. Scoped into a fully-specified Slice 4.2b (hide the button on
+    `pointer: coarse` devices via `matchMedia`, leave the actual `keydown` handling untouched for
+    any device with an attached physical keyboard) — not fixed in this pass, per the read-only
+    scope of 4.2a.
+
 (Appended to as further slices are picked up.)
