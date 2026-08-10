@@ -68,6 +68,13 @@ export function ScoringPage() {
   )
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [potmOpen, setPotmOpen] = useState(false)
+  // Touch-primary devices (phones/tablets) have no physical keyboard, so the shortcuts this
+  // button leads to don't apply — hide the discovery affordance rather than resize it. The
+  // underlying keydown handling in ScoringShortcuts is untouched, so a keyboard-attached device
+  // (e.g. a tablet with a keyboard case) keeps working exactly the same either way.
+  const [touchPrimary] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches === true,
+  )
 
   useEffect(() => {
     const unsub = subscribeMatch(id, (m) => {
@@ -487,7 +494,7 @@ export function ScoringPage() {
             onWicket={() => setWicketOpen(true)}
             onUndo={() => guard(() => undoLastBall(match))}
             canUndo={curDeliveries.length > 0}
-            onShowShortcuts={() => setShortcutsOpen(true)}
+            onShowShortcuts={touchPrimary ? undefined : () => setShortcutsOpen(true)}
           />
         </>
       )}

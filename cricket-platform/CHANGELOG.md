@@ -4,6 +4,13 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Scorer Experience (ROADMAP_V4)
 
+### Fixed — Mobile scorer fixes (ROADMAP_V4 Slice 4.2b)
+- The "Keyboard shortcuts" button on the live scoring screen is now hidden on touch-primary devices
+  (phones/tablets), which have no physical keyboard and so can never use what it leads to. Devices
+  with a mouse/trackpad, or a touch device with an attached physical keyboard, are unaffected — the
+  underlying keyboard shortcuts themselves keep working identically either way; only the discovery
+  button is conditional.
+
 ### Added — Innings-break scorecard link (ROADMAP_V4 Slice 3.1)
 - The "Innings break" screen (between the two innings of a live match) now has a "Scorecard"
   button alongside "Start 2nd innings", matching every other lifecycle screen — previously it was

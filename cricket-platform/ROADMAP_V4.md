@@ -43,12 +43,18 @@ compliance** line confirming this was checked, not assumed.
   backward-compatible change that needed no update to `MatchPage.tsx`'s existing call site.
 - **Pass 8**: **Slice 3.1 (Innings-break scorecard link) implemented and verified live** — a small,
   low-risk addition; four of the six zero-V3-overlap slices are now done.
-- **Pass 9 (this one)**: **Slice 4.2a (mobile scorer experience audit) completed** — read-only,
+- **Pass 9**: **Slice 4.2a (mobile scorer experience audit) completed** — read-only,
   live at a real 375×812 viewport against a real match, walking the full lifecycle including
   `WicketModal`'s most complex state. Found the responsive foundation holds up here too, with one
   genuine issue: the "Keyboard shortcuts" button is undersized *and* leads to information that's
   meaningless on a touch-only device. Slice 4.2b, previously unscoped, is now fully scoped to fix
   exactly that one thing.
+- **Pass 10 (this one)**: **Slice 4.2b (hide the Shortcuts button on touch-primary devices)
+  implemented and verified live end-to-end**, including the discovery that the Browser pane's
+  mobile viewport preset doesn't emulate `pointer: coarse` and the `matchMedia` override/SPA-remount
+  workaround used to test it anyway. All P1-and-above slices are now done; only P2/P3 slices remain.
+  User authorized continuing through the remaining ROADMAP_V4 slices in priority order without
+  pausing for per-slice approval — proceeding to Slice 1.4 next.
 
 ## ⚠️ Critical correction from this pass: Slice 2.1 was wrong
 
@@ -101,7 +107,7 @@ architecture review and re-planning only.
 | P1 | ✅ 2.3 — Player of the Match at end-of-match | `ScoringPage.tsx`, `scoring.service.ts` | No (preferred approach used — `MatchPage.tsx` untouched) |
 | P1 | ✅ 3.1 — Innings-break scorecard link | `ScoringPage.tsx` | No |
 | P1 | ✅ 4.2a — Mobile scorer audit (read-only) | none (measurement only) | No |
-| P2 | 4.2b — Mobile scorer fixes (hide Shortcuts button on touch devices) | `ScoringPage.tsx` | No |
+| P2 | ✅ 4.2b — Mobile scorer fixes (hide Shortcuts button on touch devices) | `ScoringPage.tsx` | No |
 | P2 | 1.1 — Setup wizard validation feedback | `MatchSetupPage.tsx` | Low (Phase-5-polish note) |
 | P2 | 2.4 — Auto-recompute stats on completion | `scoring.service.ts` | No |
 | P2 | 3.2 — In-scoring scorecard view | `ScoringPage.tsx` (reuses `ScorecardView`) | No |
@@ -114,7 +120,7 @@ architecture review and re-planning only.
 | 🚫 | Phase 5 items (now including true solo LMS batting) | `src/domain/scoring.ts` | N/A — permanently out of scope |
 
 ### What can start the instant V3 merges, no further check needed
-**1.4, 2.4, 4.1, 4.2b** (2.1a, 2.2, 2.3, 3.1, and 4.2a all done — see below) — files touched are
+**1.4, 2.4, 4.1** (2.1a, 2.2, 2.3, 3.1, 4.2a, and 4.2b all done — see below) — files touched are
 exclusively `ScoringPage.tsx`/`ScoringModals.tsx`/`scoring.service.ts`, which nothing in V3's scope,
 current or planned, goes near. 2.2 and 2.3 both ended up landing entirely in this same zero-overlap
 set — each slice's own plan preferred keeping `MatchPage.tsx` untouched, and both stuck to it.
@@ -137,7 +143,9 @@ have been touched by V3's Phase 5 "UI consistency pass over Phases 1-4").
 now implemented, `tsc`/`npm run build` clean, and verified live end-to-end, each committed
 separately per the one-verified-slice-at-a-time process. **Slices 2.3 and 3.1 (both P1) are also
 now done** — see their write-ups below. **Slice 4.2a is also now done** (read-only audit; see its
-write-up). **4.2b (hide the Shortcuts button on touch devices) is next.**
+write-up). **Slice 4.2b is also now done** (hid the Shortcuts button on touch-primary devices; see
+its write-up). **Slice 1.4 (Toss re-confirmation at match start) is next**, per this file's own
+stated no-overlap priority order.
 
 ---
 
@@ -642,7 +650,7 @@ overflow) and `getBoundingClientRect()` (per-element tap-target sizing), the sam
   they can never use, in place of anything actually relevant to how they're scoring. This is the
   one item this audit is naming as worth fixing — see Slice 4.2b below.
 
-### Slice 4.2b — Mobile scorer fixes ⬜ (P2 — scoped by 4.2a's findings)
+### Slice 4.2b — Mobile scorer fixes ✅ Done (P2 — scoped by 4.2a's findings)
 **Problem**: 4.2a found exactly one genuine issue: the "Keyboard shortcuts" affordance
 (`ScoringPage.tsx`'s `ScorePad`, `onShowShortcuts`/`Keyboard` button, and the `ShortcutsHelpModal`
 it opens) is undersized (84×24, below the 44px guideline) and, more fundamentally, presents
@@ -674,6 +682,28 @@ keyboard-only information to a device class that can never use it.
   physical keyboard happens to be attached — only the *button* is conditional, not the
   `keydown` handling. `tsc`/`npm run build` clean; live-verified at both a touch-emulated (375px
   mobile preset) and a standard desktop viewport.
+
+**Implemented and verified exactly as planned, with one testing nuance worth recording.** Added a
+one-time `useState(() => matchMedia('(pointer: coarse)').matches)` check (mirrors this codebase's
+existing `matchMedia` usage in `prefsStore.ts` — a synchronous check, no live-updating listener,
+since pointer type doesn't realistically change mid-match) and made `ScorePad`'s
+`onShowShortcuts` prop `undefined` when `touchPrimary` is true — reusing the prop's existing
+optionality (`ScorePad` already only renders the button `{onShowShortcuts && (...)}`), so no change
+to `ScorePad` itself was needed at all. `tsc -p tsconfig.app.json --noEmit` and `npm run build`
+both clean (same pre-existing, unrelated `ScoreHeader` lint warning).
+**Testing nuance**: the Browser pane's "mobile" viewport preset (375×812) only changes *viewport
+dimensions* — it does **not** emulate touch input, so `matchMedia('(pointer: coarse)').matches`
+stayed `false` even at that width (confirmed directly, not assumed). Verified correctly instead by
+overriding `window.matchMedia` to force `pointer: coarse` true, then re-entering `ScoringPage` via
+client-side routing (`history.pushState` + a dispatched `popstate` event — this project's own
+documented SPA-testing technique per `CLAUDE.md`, not a hard reload, which would have reset the
+override) so the `useState` initializer re-ran with the override active. **Verified live against
+the real database**: confirmed the button renders by default (`pointer: coarse` false, matching
+4.2a's own audit); confirmed it's absent once `pointer: coarse` is forced true; and — the part that
+actually proves the "don't touch the keydown handling" requirement — dispatched a real `keydown`
+event for `'1'` while the button was hidden and confirmed the score updated (0/0 → 1/0) exactly as
+it would with the button visible, proving `ScoringShortcuts`'s listener is completely unaffected by
+the button's visibility. Test match cleaned up after verification.
 
 ### Slice 4.3 — Remembered scorer preferences (P3)
 - ⬜ No concrete pain point identified in either audit pass — deliberately undesigned pending real
@@ -708,11 +738,14 @@ roadmaps' scope boundaries.
 ---
 
 ### Notes
-- **Nothing in this file is implemented until `ROADMAP_V3` is complete, merged, and verified.**
-- Once unblocked, priority order within the no-overlap set: **2.1a, 2.2 (both P0, pending explicit
-  approval)** → 3.1 → 4.2a → 4.2b → 1.4 → 2.4 → 4.1 → 1.1/1.2/1.3/4.3 (re-check `MatchSetupPage.tsx`
-  post-merge first).
-- **2.3** and **3.3** need a fresh read of the merged `MatchPage.tsx` before being scoped further;
-  **3.3** specifically should not start until well after merge, given its blast radius.
+- **`ROADMAP_V3` is complete, merged, and verified.** ROADMAP_V4 implementation is underway,
+  proceeding one verified slice at a time in priority order, without pausing for per-slice approval.
+- Priority order within the no-overlap set: 2.1a ✅ → 2.2 ✅ → 2.3 ✅ → 3.1 ✅ → 4.2a ✅ → 4.2b ✅ →
+  **1.4 (next)** → 2.4 → 4.1 → 1.1/1.2/1.3/4.3 (re-check `MatchSetupPage.tsx` for any V3 Phase-5
+  UI-consistency-pass changes immediately before starting each of these four).
+- **3.3** needs a fresh read of the merged `MatchPage.tsx` before being scoped further and should not
+  start until its post-merge scope is re-confirmed, given its blast radius (the single
+  largest-blast-radius file in this roadmap).
 - Every slice ends with `tsc` + `npm run build` green and a live smoke test where auth allows it.
-- This file intentionally has zero ✅ — it is a plan awaiting approval, not a log of completed work.
+- Six of fifteen slices are done (2.1a, 2.2, 2.3, 3.1, 4.2a, 4.2b); the rest are tracked above with
+  full architecture/risk/rollback write-ups ready to implement in order.

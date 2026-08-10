@@ -1169,4 +1169,26 @@ reasoning.
     any device with an attached physical keyboard) — not fixed in this pass, per the read-only
     scope of 4.2a.
 
+54. **`ROADMAP_V4.md` Slice 4.2b — Mobile scorer fixes (hide Shortcuts button on touch devices)** —
+    **Done**, no collision. Fixed exactly the one finding 4.2a scoped: added a one-time
+    `useState(() => matchMedia('(pointer: coarse)').matches)` check in `ScoringPage.tsx` (mirrors
+    this codebase's existing synchronous, non-live-updating `matchMedia` usage in
+    `src/store/prefsStore.ts`) and passed `ScorePad`'s `onShowShortcuts` prop as `undefined` when
+    `touchPrimary` is true — `ScorePad` already only renders the button `{onShowShortcuts && (...)}`,
+    so its own definition needed zero changes; only the call site became conditional.
+    `ScoringShortcuts`'s `keydown` listener itself was not touched in any way. Zero lines of
+    `scoring.ts` touched. `tsc -p tsconfig.app.json --noEmit` and `npm run build` both clean (same
+    pre-existing, unrelated `ScoreHeader` lint warning, predating this session). **Testing note**:
+    the Browser pane's 375×812 "mobile" viewport preset changes only viewport *dimensions* — it does
+    not set `matchMedia('(pointer: coarse)').matches` to `true` (confirmed directly, not assumed).
+    Verified correctly instead by overriding `window.matchMedia` for that query and re-entering
+    `ScoringPage` via `history.pushState` + a dispatched `popstate` event (this project's own
+    documented SPA-testing technique, per `CLAUDE.md` — not a hard reload, which would have reset
+    the override) so the `useState` initializer re-ran with the override active. **Verified live
+    against the real database**: confirmed the Shortcuts button renders by default (`pointer: coarse`
+    false, matching 4.2a's own measurement); confirmed it is absent once `pointer: coarse` is forced
+    true; and, proving the "don't touch the keydown handling" requirement specifically, dispatched a
+    real `keydown` event for `'1'` while the button was hidden and confirmed the score updated (0/0
+    → 1/0) exactly as it would with the button visible. Test match cleaned up after verification.
+
 (Appended to as further slices are picked up.)
