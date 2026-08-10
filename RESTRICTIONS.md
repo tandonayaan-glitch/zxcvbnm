@@ -1243,4 +1243,22 @@ reasoning.
     test methodology (intentionally polluting the shared stats cache to prove the wiring, then
     un-polluting it), not a gap in the shipped feature itself.
 
+57. **`ROADMAP_V4.md` Slices 4.1 and 4.3 — formally closed as intentionally deferred, no code
+    change.** Both slices were designed from Pass 3 onward as conditional — build only once a
+    concrete case exists, not speculatively. Re-evaluated both before continuing further into the
+    roadmap: for 4.1 (fewer taps for common scoring actions), re-read `ScorePad`'s current run/extras
+    flow specifically hunting for a slow sequence to fix — a plain run is already one tap, a plain
+    extra is already two taps (select type, then tap `0`, per the UI's own "tap 0 for just the
+    extra" helper text), and a run-plus-extra is two taps, the minimum possible given both are
+    independent inputs; no dead-end or redundant-confirmation sequence exists anywhere in the pad.
+    For 4.3 (remembered scorer preferences), the blocker was never technical — a
+    `favStore`/`bgStore`-shaped localStorage store is straightforward — but "remembered preferences"
+    has no defined scope without a real friction report to resolve which fields, per-scorer vs
+    per-device, and silent-prefill vs confirm-first. Building either now would mean designing for a
+    hypothetical need rather than a real, observed one — the exact anti-pattern this project's own
+    stated conventions (and each slice's own original write-up, unchanged since Pass 3) already
+    warned against. No `scoring.ts`/`Delivery`/offline-infrastructure question arises for either,
+    since neither produced any code. Zero files touched, so no `tsc`/`npm run build`/live-verification
+    step applies — this entry documents a re-evaluate-and-defer decision, not an implementation.
+
 (Appended to as further slices are picked up.)

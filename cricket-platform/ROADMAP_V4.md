@@ -64,7 +64,14 @@ compliance** line confirming this was checked, not assumed.
   and a declared finish via `endInnings`), using before/after Stats-page snapshots rather than just
   checking for the absence of errors. Every P0/P1/P2 no-overlap slice is now done except 3.2 (P2,
   still open) and 3.3 (P2, hard-blocked pending a fresh `MatchPage.tsx` read); remaining P3 slices
-  (1.2, 1.3, 4.1, 4.3) and 1.1 (P2, `MatchSetupPage.tsx`) are also still open.
+  (1.2, 1.3, 4.1, 4.3) and 1.1 (P2, `MatchSetupPage.tsx`) are also still open. **Re-evaluated 4.1 and
+  4.3 and formally closed both as intentionally deferred** — re-reading `ScorePad` found no concrete
+  slow tap-sequence to fix, and "remembered preferences" has open design questions (which fields,
+  per-scorer vs per-device, silent vs confirmed) that only a real friction report can answer;
+  building either now would mean designing for a hypothetical need, which this codebase's own
+  conventions (and each slice's own original write-up) say to avoid. Proceeding to the remaining
+  concretely-scoped slices: 1.1, 1.3, 1.2, 3.2, then 3.3 last (needs the freshest `MatchPage.tsx`
+  read given its blast radius).
 
 ## ⚠️ Critical correction from this pass: Slice 2.1 was wrong
 
@@ -125,8 +132,8 @@ architecture review and re-planning only.
 | P3 | 1.2 — Quick rematch/duplicate match | `MatchesPage.tsx`, `MatchSetupPage.tsx` | Low |
 | P3 | 1.3 — Team size/wickets bounds validation | `MatchSetupPage.tsx` | Low |
 | P3 | ✅ 1.4 — Toss re-confirmation at match start | `ScoringPage.tsx` | No |
-| P3 | 4.1 — Faster scoring taps | `ScoringPage.tsx` | No |
-| P3 | 4.3 — Remembered scorer preferences | `MatchSetupPage.tsx`, new local store | Low |
+| P3 | 🚫 4.1 — Faster scoring taps *(deferred, no concrete case)* | `ScoringPage.tsx` | No |
+| P3 | 🚫 4.3 — Remembered scorer preferences *(deferred, no concrete case)* | `MatchSetupPage.tsx`, new local store | Low |
 | 🚫 | Phase 5 items (now including true solo LMS batting) | `src/domain/scoring.ts` | N/A — permanently out of scope |
 
 ### What can start the instant V3 merges, no further check needed
@@ -156,9 +163,9 @@ now done** — see their write-ups below. **Slice 4.2a is also now done** (read-
 write-up). **Slice 4.2b is also now done** (hid the Shortcuts button on touch-primary devices; see
 its write-up). **Slice 1.4 is also now done** (toss re-confirmation on `PreMatch`; see its
 write-up). **Slice 2.4 is also now done** (auto-recompute stats/standings on completion; see its
-write-up). **Slice 4.1 (faster scoring taps) is next to evaluate**, per this file's own stated
-no-overlap priority order — though it's flagged in its own section as deliberately unspecified
-pending a concrete slow-sequence finding.
+write-up). **Slices 4.1 and 4.3 have been formally closed as intentionally deferred** — no concrete
+case for either after re-evaluation; see their write-ups. **Slice 1.1 (setup wizard validation
+feedback) is next.**
 
 ---
 
@@ -663,11 +670,24 @@ between Scorecard/Insights/Timeline/Comments/Reactions/Gallery.
 
 ## Phase 4 — Faster, Mobile Scorer Workflow
 
-### Slice 4.1 — Fewer taps for common scoring actions (P3)
-- ⬜ Deliberately least-specified — no concrete slow sequence identified in either audit pass.
+### Slice 4.1 — Fewer taps for common scoring actions (P3) 🚫 Deferred — no code change
+- Deliberately least-specified — no concrete slow sequence identified in either audit pass.
   **Affected files**: `ScoringPage.tsx` (`ScorePad`). **Risk**: low but speculative — don't build
   ahead of real scorer feedback. **Dependencies**: none. **Rollback**: trivial. **Restrictions**:
   ✅ compliant (UI-only). **Acceptance criteria**: deferred until a concrete case is named.
+
+**Re-evaluated this pass, closed without a code change.** Re-read `ScorePad`'s current run/extras
+flow specifically looking for a "too many taps" pattern to fix: a plain run is already one tap
+(`onRun(r)`); a plain extra is already two taps (select the extra type, then tap `0` for "just the
+extra" — the UI's own helper text confirms this is the intended fast path, not an oversight); a
+run-plus-extra (e.g. a wide with 2 run) is two taps, which is the minimum possible given both pieces
+of information are independent inputs. No dead-end or redundant-confirmation sequence was found
+anywhere in the pad. Building a "faster taps" feature without a concrete slow sequence to fix would
+mean inventing the requirement rather than discovering it — exactly the kind of speculative,
+un-asked-for scope this codebase's own conventions (and this roadmap's own stated `4.1` reasoning
+from the start) say to avoid. **Formally closed as intentionally deferred, not abandoned** — if a
+real scorer reports a specific slow sequence, that becomes a new, concretely-scoped slice reusing
+this file's existing risk/rollback shape, not a reopening of this one.
 
 ### Slice 4.2a — Mobile scorer experience audit (read-only) ✅ Done (P1)
 **Problem**: `ROADMAP_V3` Slice 1.2 scoped its 375px audit to spectator surfaces only —
@@ -776,12 +796,24 @@ event for `'1'` while the button was hidden and confirmed the score updated (0/0
 it would with the button visible, proving `ScoringShortcuts`'s listener is completely unaffected by
 the button's visibility. Test match cleaned up after verification.
 
-### Slice 4.3 — Remembered scorer preferences (P3)
-- ⬜ No concrete pain point identified in either audit pass — deliberately undesigned pending real
+### Slice 4.3 — Remembered scorer preferences (P3) 🚫 Deferred — no code change
+- No concrete pain point identified in either audit pass — deliberately undesigned pending real
   friction reports, same reasoning as 4.1. **Affected files**: `MatchSetupPage.tsx` + a new
   localStorage-backed store (mirrors `favStore`/`bgStore`'s existing pattern). **Risk**: low
   technically; real risk is building unused scaffolding for a need that never materializes.
   **Restrictions**: ✅ compliant in principle. **Acceptance criteria**: deferred.
+
+**Re-evaluated this pass, closed without a code change.** The blocker isn't technical — a
+localStorage-backed store following `favStore`/`bgStore`'s existing shape would be straightforward —
+it's that "remembered preferences" has no defined scope without a real friction report to answer the
+actual design questions: which fields get remembered (last team pairing? last venue? last overs
+config? all of it?), per-scorer or per-device, and does a remembered value silently pre-fill or
+require confirmation. Picking arbitrary answers to those questions now would mean designing for a
+hypothetical need rather than an observed one — the exact risk this slice's own write-up already
+called out ("real risk is building unused scaffolding for a need that never materializes"), and this
+codebase's stated convention against building ahead of real requirements. **Formally closed as
+intentionally deferred, not abandoned** — a real friction report converts this into a concretely-
+scoped slice reusing the `favStore`/`bgStore` pattern already noted here.
 
 ## Phase 5 — Identified, but requires touching the verified scoring engine (🚫 out of scope)
 
@@ -812,12 +844,13 @@ roadmaps' scope boundaries.
 - **`ROADMAP_V3` is complete, merged, and verified.** ROADMAP_V4 implementation is underway,
   proceeding one verified slice at a time in priority order, without pausing for per-slice approval.
 - Priority order within the no-overlap set: 2.1a ✅ → 2.2 ✅ → 2.3 ✅ → 3.1 ✅ → 4.2a ✅ → 4.2b ✅ →
-  1.4 ✅ → 2.4 ✅ → **4.1 (next to evaluate)** → 1.1/1.2/1.3/4.3 (re-check `MatchSetupPage.tsx` for
-  any V3 Phase-5 UI-consistency-pass changes immediately before starting each of these four); 3.2
-  can also start any time (no dependency on the others).
+  1.4 ✅ → 2.4 ✅ → 4.1 🚫 (deferred) → 4.3 🚫 (deferred) → **1.1 (next)** → 1.3 → 1.2 → 3.2
+  (re-check `MatchSetupPage.tsx` for any V3 Phase-5 UI-consistency-pass changes immediately before
+  starting 1.1/1.2/1.3).
 - **3.3** needs a fresh read of the merged `MatchPage.tsx` before being scoped further and should not
   start until its post-merge scope is re-confirmed, given its blast radius (the single
-  largest-blast-radius file in this roadmap).
+  largest-blast-radius file in this roadmap) — planned last for that reason.
 - Every slice ends with `tsc` + `npm run build` green and a live smoke test where auth allows it.
-- Eight of fifteen slices are done (2.1a, 2.2, 2.3, 3.1, 4.2a, 4.2b, 1.4, 2.4); the rest are tracked
-  above with full architecture/risk/rollback write-ups ready to implement in order.
+- Eight of fifteen slices are done (2.1a, 2.2, 2.3, 3.1, 4.2a, 4.2b, 1.4, 2.4); two (4.1, 4.3) are
+  formally closed as intentionally deferred, no code shipped; the remaining five (1.1, 1.2, 1.3,
+  3.2, 3.3) are tracked above with full architecture/risk/rollback write-ups ready to implement.
