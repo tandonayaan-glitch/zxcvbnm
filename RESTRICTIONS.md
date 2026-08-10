@@ -1352,4 +1352,31 @@ reasoning.
     to support it. Test match soft-deleted after verification. **This was the last P0–P2 slice in
     the roadmap — only Slice 3.3 (hard-blocked, P2) remains of the entire plan.**
 
+62. **`ROADMAP_V4.md` Slice 3.3 — Scorecard page in-page navigation** — **Done**, no collision, and
+    the final slice of the entire roadmap. Re-read the fully-merged `MatchPage.tsx` fresh (647
+    lines) before writing any code, per the plan's own hard-block requirement — confirmed V3's
+    calendar/`FixturesCalendar` work landed on `TournamentPage.tsx`, not here, so this file's section
+    order was never actually disturbed by V3. Chose the plan's "sticky in-page sub-nav" option over
+    restructuring into `Tabs.tsx` panels, since `Tabs` implies switching which content is *shown* —
+    a materially bigger, riskier change than the actual gap (no way to jump to a section). Added a
+    small `SectionJumpLink` component (`scrollIntoView({behavior: 'smooth', block: 'start'})`,
+    `print:hidden`) and a row of them right after the header card, linking to Insights, Scorecard,
+    Photos, and Comments — each only rendered when its target section will actually render for the
+    specific match (`deliveries.length > 0` for Insights, `hasScorecard` for Scorecard, matching
+    those sections' own existing conditions exactly; Photos/Comments always render). Added `id`/
+    `scroll-mt-4` to each target section's wrapper `div`. Nothing else on the page was restructured,
+    gated, or removed, so every section stays reachable by plain scrolling exactly as before —
+    satisfies the "no section requires more clicks than today" acceptance criterion by construction.
+    Zero lines of `scoring.ts` touched. `tsc -p tsconfig.app.json --noEmit` and `npm run build` both
+    clean. **Verified live against a real, already-populated seeded match** (`Royal Strikers vs
+    Thunder Kings`, a completed match with head-to-head history, graphs/insights, a full two-innings
+    scorecard, and existing photos/comments sections) rather than throwaway data, so nothing needed
+    cleanup afterward. Confirmed all four jump links render, then clicked each one (in separate tool
+    calls to avoid racing the smooth-scroll animation, a lesson carried over from Slices 1.4/1.2's
+    testing) and confirmed via `getBoundingClientRect()` that Insights and Scorecard landed within
+    16px of the viewport top (matching the `scroll-mt-4` offset exactly), Photos landed within
+    ~100px, and Comments — the last section on the page — correctly clamped to the bottom of the
+    scrollable document (the browser cannot scroll past the page end), still comfortably visible.
+    **This closes out `ROADMAP_V4` in its entirety — every slice is done or formally deferred.**
+
 (Appended to as further slices are picked up.)

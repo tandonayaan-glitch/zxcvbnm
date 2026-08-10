@@ -1,15 +1,16 @@
 # CricketHub — Roadmap V4 (Scorer Experience)
 
-`ROADMAP.md` (37 phases), `ROADMAP_V2.md` (7 phases), and `ROADMAP_V3.md` (League Ecosystem, being
-finished by a concurrent session as of this writing) cover the public/spectator/admin surfaces.
-This fourth roadmap audits the **other half of the app that's never had a dedicated pass**: the
-actual scorer's journey from creating a match to completing it — `MatchSetupPage.tsx` →
-`ScoringPage.tsx` (`PreMatch` → live scoring → innings break → completion) → back to the scorecard.
+`ROADMAP.md` (37 phases), `ROADMAP_V2.md` (7 phases), and `ROADMAP_V3.md` (League Ecosystem) cover
+the public/spectator/admin surfaces. This fourth roadmap audits the **other half of the app that
+never had a dedicated pass**: the actual scorer's journey from creating a match to completing it —
+`MatchSetupPage.tsx` → `ScoringPage.tsx` (`PreMatch` → live scoring → innings break → completion) →
+back to the scorecard.
 
-**This file is planning only — nothing below has been implemented, and nothing will be until
-`ROADMAP_V3` is complete, merged, and verified.** Every slice is ⬜.
+**✅ ROADMAP_V4 is complete.** Every slice below is either implemented and verified (✅) or formally
+closed as intentionally deferred with a documented reason (🚫) — see "Roadmap status: complete" near
+the end of this file for the full tally and links to each slice's write-up.
 
-Legend: ⬜ planned · 🚫 out of scope (reasoning inline) — no ✅/🟡 yet, nothing here is built.
+Legend: ✅ done and verified · 🚫 out of scope or formally deferred (reasoning inline).
 
 Same standing rules as every prior roadmap: `src/domain/scoring.ts`, `Delivery`/`BallInput`, and
 offline infrastructure are never touched. Every slice below carries an explicit **Restrictions
@@ -95,12 +96,20 @@ compliance** line confirming this was checked, not assumed.
   rather than assuming the write succeeded, then corrected via the match's own Edit flow before
   re-testing. Eleven of thirteen implementable slices now done (two more, 4.1/4.3, formally
   deferred rather than implemented); only 3.2 and the hard-blocked 3.3 remain.
-- **Pass 16 (this one)**: **Slice 3.2 (in-scoring-screen scorecard modal) implemented and verified
+- **Pass 16**: **Slice 3.2 (in-scoring-screen scorecard modal) implemented and verified
   live end-to-end**, including two in-progress-state checks stronger than the plan's own named
   example (a mid-flight shot-detail prompt, not just a half-selected extra) and a direct check of
   the innings-switching claim rather than trusting the architecture note. Twelve of thirteen
   implementable slices now done — **Slice 3.3 is the only slice left in this entire roadmap**,
   still correctly hard-blocked pending a fresh read of the merged `MatchPage.tsx`.
+- **Pass 17 (this one, final)**: **Slice 3.3 (scorecard page in-page navigation) implemented and
+  verified live end-to-end**, unblocked by re-reading the fully-merged `MatchPage.tsx` fresh (647
+  lines — confirmed V3's calendar work landed on `TournamentPage.tsx` instead, so this file's
+  section order was never actually at risk). Chose a sticky jump-link row over restructuring the
+  page into `Tabs.tsx` panels, since the actual problem was "no way to jump," not "wrong content
+  model." Verified against a real, already-populated seeded match rather than throwaway data — no
+  cleanup needed. **This closes out ROADMAP_V4**: every slice is now done or formally deferred with
+  a documented reason. See "Roadmap status: complete" at the end of this file for the full tally.
 
 ## ⚠️ Critical correction from this pass: Slice 2.1 was wrong
 
@@ -157,7 +166,7 @@ architecture review and re-planning only.
 | P2 | ✅ 1.1 — Setup wizard validation feedback | `MatchSetupPage.tsx` | Low (Phase-5-polish note) |
 | P2 | ✅ 2.4 — Auto-recompute stats on completion | `scoring.service.ts` | No |
 | P2 | ✅ 3.2 — In-scoring scorecard view | `ScoringPage.tsx` (reuses `ScorecardView`) | No |
-| P2 | 3.3 — Scorecard in-page navigation | `MatchPage.tsx` | **Yes, heavily — hard-blocked** |
+| P2 | ✅ 3.3 — Scorecard in-page navigation | `MatchPage.tsx` | No (V3 already merged by the time this started) |
 | P3 | ✅ 1.2 — Quick rematch/duplicate match | `MatchesPage.tsx`, `MatchSetupPage.tsx` | Low |
 | P3 | ✅ 1.3 — Team size/wickets bounds validation | `MatchSetupPage.tsx` | Low |
 | P3 | ✅ 1.4 — Toss re-confirmation at match start | `ScoringPage.tsx` | No |
@@ -165,16 +174,15 @@ architecture review and re-planning only.
 | P3 | 🚫 4.3 — Remembered scorer preferences *(deferred, no concrete case)* | `MatchSetupPage.tsx`, new local store | Low |
 | 🚫 | Phase 5 items (now including true solo LMS batting) | `src/domain/scoring.ts` | N/A — permanently out of scope |
 
-### What can start the instant V3 merges, no further check needed
-**4.1** (2.1a, 2.2, 2.3, 3.1, 4.2a, 4.2b, 1.4, and 2.4 all done — see below) — files touched are
-exclusively `ScoringPage.tsx`/`ScoringModals.tsx`/`scoring.service.ts`, which nothing in V3's scope,
-current or planned, goes near. 2.2 and 2.3 both ended up landing entirely in this same zero-overlap
-set — each slice's own plan preferred keeping `MatchPage.tsx` untouched, and both stuck to it.
-
-### What needs a fresh look at the merged file before starting
-**3.3** (touches `MatchPage.tsx` directly, which was under active V3 development — check its
-current state before starting), and **1.1/1.2/1.3/4.3** (low risk, but `MatchSetupPage.tsx` could
-have been touched by V3's Phase 5 "UI consistency pass over Phases 1-4").
+### Historical: what could start the instant V3 merged, and what needed a fresh look first
+(Kept for the record — every slice this section discussed is now done or formally deferred; see
+"Roadmap status: complete" below.) 2.1a, 2.2, 2.3, 3.1, 4.2a, 4.2b, 1.4, and 2.4 all shipped entirely
+within `ScoringPage.tsx`/`ScoringModals.tsx`/`scoring.service.ts`, a zero-overlap set V3 never
+touched. 1.1, 1.3, and 1.2 each re-checked `MatchSetupPage.tsx` immediately before starting and
+found it unchanged from Pass 3's audit. 3.3 — the slice this whole section most worried about —
+waited until every other slice was done, then re-read the fully-merged `MatchPage.tsx` fresh (647
+lines, confirmed V3's calendar additions live on `TournamentPage.tsx` instead) before scoping or
+touching it. 4.1 and 4.3 were formally closed as intentionally deferred rather than implemented.
 
 ---
 
@@ -197,9 +205,10 @@ case for either after re-evaluation; see their write-ups. **Slice 1.1 is also no
 wizard validation feedback; see its write-up). **Slice 1.3 is also now done** (team size/wickets
 bounds sanity; see its write-up). **Slice 1.2 is also now done** (quick rematch/duplicate match,
 including a real stale-mount bug found and fixed during verification; see its write-up). **Slice 3.2
-is also now done** (in-scoring-screen scorecard modal; see its write-up). **Every slice in this
-roadmap is now done or formally deferred except Slice 3.3**, which remains hard-blocked pending a
-fresh read of the merged `MatchPage.tsx` — see below.
+is also now done** (in-scoring-screen scorecard modal; see its write-up). **Slice 3.3 is also now
+done** (page-level jump navigation on `MatchPage.tsx`, unblocked by a fresh read of the fully-merged
+file; see its write-up). **ROADMAP_V4 is complete** — every slice is done or formally deferred with
+a documented reason. See "Roadmap status: complete" at the end of this file.
 
 ---
 
@@ -777,7 +786,7 @@ architecture note alone: ended the first innings, started the second, and confir
 real "MWA innings"/"MWB innings" tabs from `ScorecardView`'s own internal `Tabs`, with no extra code
 written to support it. Test match soft-deleted after verification.
 
-### Slice 3.3 — Scorecard page in-page navigation (P2, hard-blocked)
+### Slice 3.3 — Scorecard page in-page navigation ✅ Done (P2, was hard-blocked)
 **Problem**: `MatchPage.tsx` (639 lines pre-V3-merge) has no page-level section-jump navigation
 between Scorecard/Insights/Timeline/Comments/Reactions/Gallery.
 
@@ -802,6 +811,42 @@ between Scorecard/Insights/Timeline/Comments/Reactions/Gallery.
   scrolling remains reachable; no section requires more clicks than today for a visitor who
   prefers to just scroll. `tsc`/`npm run build` clean; live-verified against a real match with
   every optional section populated.
+
+**Implemented and verified, unblocked by a fresh read of the merged file as planned.** Re-read the
+current `MatchPage.tsx` in full (647 lines, not 639 — V3's calendar/`FixturesCalendar` additions
+live on `TournamentPage.tsx`, not here, so this file's own section order was unaffected by V3 after
+all) before writing any code, confirming no lingering V3-in-flight risk and re-mapping the page's
+actual current section list rather than trusting the old pre-merge framing: header card, head-to-
+head (conditional), live mini-panel (conditional), Player of the Match card (conditional), star
+performers (conditional), analytics graphs + match insights (conditional on `deliveries.length >
+0`), wagon wheel/pitch map (conditional on tagged shot data), match reactions, export toolbar
+(conditional), scorecard (conditional on `hasScorecard`), photo gallery, comments. Chose the
+plan's "sticky in-page sub-nav" option over `Tabs.tsx` — `Tabs` implies switching which content is
+*shown*, which would mean restructuring this page's already-conditional section tree into tab
+panels, a materially bigger and riskier change than the actual problem (no way to jump to a section)
+calls for. Added a `SectionJumpLink` pill-button row (new small component, `scrollIntoView({behavior:
+'smooth', block: 'start'})` on click, `print:hidden`) right after the header card, linking to
+Insights, Scorecard, Photos, and Comments — each pill only rendered when its target section will
+actually render for this specific match (`deliveries.length > 0` for Insights, `hasScorecard` for
+Scorecard, matching those sections' own existing render conditions exactly; Photos/Comments always
+render so their pills always show). Added `id`/`scroll-mt-4` to each target section's wrapper `div`
+(`scroll-mt-4` so the scrolled-to section isn't flush against the very top edge). Nothing else on
+the page was restructured, gated, or removed — every section remains reachable by plain scrolling
+exactly as before, satisfying the acceptance criterion by construction, not by a separate check.
+Zero lines of `scoring.ts` touched. `tsc -p tsconfig.app.json --noEmit` and `npm run build` both
+clean. **Verified live against a real, already-existing seeded match with every optional section
+populated** (`Royal Strikers vs Thunder Kings`, a completed match with head-to-head history,
+graphs/insights, a full two-innings scorecard, and existing comments/photos infrastructure) — no
+throwaway test data needed, so nothing to clean up. Confirmed all four pills render for this match;
+clicked each one (in separate tool calls, having learned from Slice 1.4/1.2's testing to avoid
+racing a smooth-scroll animation against an immediately-following position check) and confirmed via
+`getBoundingClientRect()` that Insights and Scorecard landed with their target element within 16px
+of the viewport top (matching the `scroll-mt-4` offset exactly), Photos landed within ~100px (a
+lazy-loading images section shifting slightly as it loads), and Comments — the last section on the
+page — correctly clamped to the bottom of the scrollable document rather than reaching the full
+16px offset, since the browser cannot scroll past the end of the page; still landed comfortably
+inside the viewport in all cases. **This was the last remaining slice in ROADMAP_V4 — every P0
+through P3 slice is now either done or formally deferred with a documented reason.**
 
 ## Phase 4 — Faster, Mobile Scorer Workflow
 
@@ -975,17 +1020,40 @@ roadmaps' scope boundaries.
 
 ---
 
-### Notes
-- **`ROADMAP_V3` is complete, merged, and verified.** ROADMAP_V4 implementation is underway,
-  proceeding one verified slice at a time in priority order, without pausing for per-slice approval.
-- Priority order within the no-overlap set: 2.1a ✅ → 2.2 ✅ → 2.3 ✅ → 3.1 ✅ → 4.2a ✅ → 4.2b ✅ →
-  1.4 ✅ → 2.4 ✅ → 4.1 🚫 (deferred) → 4.3 🚫 (deferred) → 1.1 ✅ → 1.3 ✅ → 1.2 ✅ → 3.2 ✅ →
-  **3.3 (last remaining slice, hard-blocked)**.
-- **3.3** needs a fresh read of the merged `MatchPage.tsx` before being scoped further and should not
-  start until its post-merge scope is re-confirmed, given its blast radius (the single
-  largest-blast-radius file in this roadmap) — this is now genuinely the last thing standing between
-  this roadmap and completion.
-- Every slice ends with `tsc` + `npm run build` green and a live smoke test where auth allows it.
-- Twelve of fifteen slices are done (2.1a, 2.2, 2.3, 3.1, 4.2a, 4.2b, 1.4, 2.4, 1.1, 1.3, 1.2, 3.2);
-  two (4.1, 4.3) are formally closed as intentionally deferred, no code shipped; **3.3 is the only
-  slice left**, blocked on the fresh `MatchPage.tsx` read described above.
+### Roadmap status: complete
+**Every slice in ROADMAP_V4 is now either implemented and verified, or formally closed as
+intentionally deferred with a documented reason.** `ROADMAP_V3` was confirmed complete, merged, and
+verified before any implementation began here; from that point, every slice was implemented one at
+a time, in priority order, verified live against the real database (or explicitly noted when no
+data-write path existed to verify), and committed separately before moving to the next.
+
+Final tally, in the order they were built:
+1. **2.1a** — Last-man-stranded detection + guided innings closure (P0) ✅
+2. **2.2** — Abandon match control + reopen safety net (P0) ✅
+3. **2.3** — Player of the Match at end-of-match (P1) ✅
+4. **3.1** — Innings-break scorecard link (P1) ✅
+5. **4.2a** — Mobile scorer experience audit, read-only (P1) ✅
+6. **4.2b** — Mobile scorer fixes: hide Shortcuts button on touch devices (P2) ✅
+7. **1.4** — Toss re-confirmation at match start (P3) ✅
+8. **2.4** — Auto-recompute stats/standings on completion (P2) ✅
+9. **4.1** — Fewer taps for common scoring actions (P3) 🚫 *deferred — no concrete slow sequence found*
+10. **4.3** — Remembered scorer preferences (P3) 🚫 *deferred — no concrete pain point, open design questions*
+11. **1.1** — Setup wizard validation feedback (P2) ✅
+12. **1.3** — Team size/wickets bounds sanity (P3) ✅
+13. **1.2** — Quick rematch/duplicate match (P3) ✅
+14. **3.2** — In-scoring-screen scorecard view (P2) ✅
+15. **3.3** — Scorecard page in-page navigation (P2) ✅
+
+**Zero lines of `src/domain/scoring.ts` were touched by any slice** — every one of the eleven
+implemented, non-deferred slices reads from the verified engine rather than modifying it, matching
+the standing restriction this roadmap opened with. Two real bugs were found and fixed *during live
+verification* rather than assumed away (Slice 1.2's stale-mount title/date/toss leak; a test-data
+mistake in the same slice where a knockout stage silently failed to save, caught before it could
+produce a false-positive regression check). Phase 5's four items (true solo LMS batting, free hit,
+DRS, drinks-break timestamps) remain permanently out of scope, confirmed to require engine changes
+this project's rules don't allow.
+- Every implemented slice ended with `tsc -p tsconfig.app.json --noEmit` and `npm run build` both
+  clean, plus a live verification against the real Firestore database (or an explicit note when the
+  slice had no data-write path to verify, e.g. Slices 1.1/1.3's pure client-side validation).
+- `CHANGELOG.md` and `RESTRICTIONS.md` (repo root) were updated alongside every implemented slice;
+  see `RESTRICTIONS.md` entries #49 onward for the full implementation/verification log.

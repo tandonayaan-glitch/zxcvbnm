@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   Radio,
@@ -12,6 +12,10 @@ import {
   Printer,
   TrendingUp,
   Target,
+  BarChart3,
+  ClipboardList,
+  Images,
+  MessageSquare,
 } from 'lucide-react'
 import {
   Card,
@@ -280,6 +284,27 @@ export function MatchPage() {
         )}
       </Card>
 
+      {/* Jump to a section further down the page — only sections that will
+          actually render for this match get a link. */}
+      <div className="mb-4 flex flex-wrap gap-2 print:hidden">
+        {deliveries.length > 0 && (
+          <SectionJumpLink targetId="match-insights" icon={<BarChart3 size={14} />}>
+            Insights
+          </SectionJumpLink>
+        )}
+        {hasScorecard && (
+          <SectionJumpLink targetId="match-scorecard" icon={<ClipboardList size={14} />}>
+            Scorecard
+          </SectionJumpLink>
+        )}
+        <SectionJumpLink targetId="match-gallery" icon={<Images size={14} />}>
+          Photos
+        </SectionJumpLink>
+        <SectionJumpLink targetId="match-comments" icon={<MessageSquare size={14} />}>
+          Comments
+        </SectionJumpLink>
+      </div>
+
       {/* Head-to-head */}
       {h2h.played > 0 && (
         <Card className="mb-4 p-4">
@@ -394,7 +419,7 @@ export function MatchPage() {
 
       {/* Analytics graphs */}
       {deliveries.length > 0 && (
-        <div className="mb-4">
+        <div id="match-insights" className="mb-4 scroll-mt-4">
           <MatchGraphs match={match} deliveries={deliveries} />
         </div>
       )}
@@ -452,17 +477,19 @@ export function MatchPage() {
       )}
 
       {/* Scorecard */}
-      <ScorecardView
-        match={match}
-        players={players.data ?? []}
-        deliveries={deliveries}
-      />
+      <div id="match-scorecard" className="scroll-mt-4">
+        <ScorecardView
+          match={match}
+          players={players.data ?? []}
+          deliveries={deliveries}
+        />
+      </div>
 
-      <div className="mt-4">
+      <div id="match-gallery" className="mt-4 scroll-mt-4">
         <MatchGallery matchId={match.id} canManage={admin} />
       </div>
 
-      <div className="mt-4">
+      <div id="match-comments" className="mt-4 scroll-mt-4">
         <CommentSection matchId={match.id} />
       </div>
 
@@ -490,6 +517,30 @@ export function MatchPage() {
         </Modal>
       )}
     </div>
+  )
+}
+
+/** A small "jump to section" pill — scrolls an in-page anchor into view rather
+ *  than navigating, so every section stays reachable by scrolling exactly as
+ *  before; this is purely an optional shortcut on top of that. */
+function SectionJumpLink({
+  targetId,
+  icon,
+  children,
+}: {
+  targetId: string
+  icon: ReactNode
+  children: ReactNode
+}) {
+  return (
+    <button
+      onClick={() =>
+        document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+      className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
+    >
+      {icon} {children}
+    </button>
   )
 }
 

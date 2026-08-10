@@ -4,6 +4,13 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Scorer Experience (ROADMAP_V4)
 
+### Added — Scorecard page in-page navigation (ROADMAP_V4 Slice 3.3)
+- The public match page now has quick-jump links (Insights, Scorecard, Photos, Comments) right at
+  the top, so visitors don't have to scroll past head-to-head stats, the live panel, and analytics
+  graphs to reach the section they want. Each link only appears when that section actually has
+  content for the match; scrolling through the page manually still works exactly as before. This
+  closes out ROADMAP_V4 — every planned slice is now done or explicitly deferred.
+
 ### Added — In-scoring-screen scorecard view (ROADMAP_V4 Slice 3.2)
 - The live scoring screen's "Scorecard" button now opens the full scorecard in a modal instead of
   navigating away — including innings-switching for a completed first innings. Closing it leaves
