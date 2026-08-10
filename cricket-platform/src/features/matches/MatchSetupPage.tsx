@@ -300,7 +300,8 @@ export function MatchSetupPage() {
     set(key, cur.includes(pid) ? cur.filter((x) => x !== pid) : [...cur, pid])
   }
 
-  // step validation
+  // step validation — keep this and advanceBlockedReason() adjacent and in sync: every
+  // condition here should have a matching branch there explaining *why* it failed.
   function canAdvance(): boolean {
     if (step === 0) return form.title.trim().length > 0
     if (step === 1)
@@ -319,6 +320,45 @@ export function MatchSetupPage() {
         form.powerplayOvers <= form.oversPerInnings
       )
     return true
+  }
+
+  /** Why "Next" is disabled on the current step, for display next to the button.
+   *  Purely cosmetic — mirrors canAdvance()'s conditions but never changes gating. */
+  function advanceBlockedReason(): string | undefined {
+    if (step === 0) {
+      if (!form.title.trim()) return 'Enter a match title to continue.'
+      return undefined
+    }
+    if (step === 1) {
+      if (!form.teamAId) return 'Select Team A to continue.'
+      if (!form.teamBId) return 'Select Team B to continue.'
+      if (form.teamAId === form.teamBId) return 'Team A and Team B must be different teams.'
+      return undefined
+    }
+    if (step === 2) {
+      if (form.squadA.length < 2)
+        return `Pick at least 2 players for ${teamA?.shortName ?? 'Team A'}'s Playing XI.`
+      if (form.squadB.length < 2)
+        return `Pick at least 2 players for ${teamB?.shortName ?? 'Team B'}'s Playing XI.`
+      return undefined
+    }
+    if (step === 3) {
+      if (form.tossWinner === '') return 'Select who won the toss to continue.'
+      return undefined
+    }
+    if (step === 4) {
+      if (form.oversPerInnings < 1 || form.oversPerInnings > 120)
+        return 'Overs per innings must be between 1 and 120.'
+      if (form.ballsPerOver < 1 || form.ballsPerOver > 12)
+        return 'Balls per over must be between 1 and 12.'
+      if (form.teamSize < 2) return 'Team size must be at least 2.'
+      if (form.maxWickets < 1) return 'Number of wickets must be at least 1.'
+      if (form.powerplayOvers < 0) return 'Powerplay overs cannot be negative.'
+      if (form.powerplayOvers > form.oversPerInnings)
+        return 'Powerplay overs cannot exceed the total overs per innings.'
+      return undefined
+    }
+    return undefined
   }
 
   async function submit() {
@@ -800,9 +840,16 @@ export function MatchSetupPage() {
             <ChevronLeft size={16} /> {step === 0 ? 'Cancel' : 'Back'}
           </Button>
           {step < STEPS.length - 1 ? (
-            <Button onClick={() => setStep(step + 1)} disabled={!canAdvance()}>
-              Next <ChevronRight size={16} />
-            </Button>
+            <div className="flex flex-col items-end gap-1.5">
+              {!canAdvance() && advanceBlockedReason() && (
+                <span className="text-xs text-ink-500 dark:text-ink-400">
+                  {advanceBlockedReason()}
+                </span>
+              )}
+              <Button onClick={() => setStep(step + 1)} disabled={!canAdvance()}>
+                Next <ChevronRight size={16} />
+              </Button>
+            </div>
           ) : (
             <Button onClick={submit} loading={saving}>
               {editId ? 'Save match' : 'Create & score'}

@@ -59,7 +59,7 @@ compliance** line confirming this was checked, not assumed.
   live end-to-end**, including a real batting-team flip (not just a same-result round-trip) to
   conclusively prove `battingFirstTeamId` — not just `toss` — gets recomputed on save. Proceeding
   autonomously through the remaining P2/P3 slices per the user's standing authorization.
-- **Pass 12 (this one)**: **Slice 2.4 (auto-recompute stats/standings on completion) implemented and
+- **Pass 12**: **Slice 2.4 (auto-recompute stats/standings on completion) implemented and
   verified live end-to-end for both completion paths** (a natural run-chase finish via `recordBall`
   and a declared finish via `endInnings`), using before/after Stats-page snapshots rather than just
   checking for the absence of errors. Every P0/P1/P2 no-overlap slice is now done except 3.2 (P2,
@@ -72,6 +72,13 @@ compliance** line confirming this was checked, not assumed.
   conventions (and each slice's own original write-up) say to avoid. Proceeding to the remaining
   concretely-scoped slices: 1.1, 1.3, 1.2, 3.2, then 3.3 last (needs the freshest `MatchPage.tsx`
   read given its blast radius).
+- **Pass 13 (this one)**: **Slice 1.1 (setup wizard validation feedback) implemented and verified
+  live end-to-end**, walking every one of the six sub-cases across the wizard's five gated steps
+  (including the compound powerplay-exceeds-overs check) and confirming each shows the correct
+  specific reason and clears exactly when `canAdvance()` would allow "Next" — no data write involved,
+  so no test match needed creating or cleaning up. First slice of this pass to touch
+  `MatchSetupPage.tsx`; confirmed (per the file itself, unchanged from Pass 3's audit) it hasn't
+  picked up any conflicting edits since V3 merged. Proceeding to Slice 1.3 next.
 
 ## ⚠️ Critical correction from this pass: Slice 2.1 was wrong
 
@@ -125,7 +132,7 @@ architecture review and re-planning only.
 | P1 | ✅ 3.1 — Innings-break scorecard link | `ScoringPage.tsx` | No |
 | P1 | ✅ 4.2a — Mobile scorer audit (read-only) | none (measurement only) | No |
 | P2 | ✅ 4.2b — Mobile scorer fixes (hide Shortcuts button on touch devices) | `ScoringPage.tsx` | No |
-| P2 | 1.1 — Setup wizard validation feedback | `MatchSetupPage.tsx` | Low (Phase-5-polish note) |
+| P2 | ✅ 1.1 — Setup wizard validation feedback | `MatchSetupPage.tsx` | Low (Phase-5-polish note) |
 | P2 | ✅ 2.4 — Auto-recompute stats on completion | `scoring.service.ts` | No |
 | P2 | 3.2 — In-scoring scorecard view | `ScoringPage.tsx` (reuses `ScorecardView`) | No |
 | P2 | 3.3 — Scorecard in-page navigation | `MatchPage.tsx` | **Yes, heavily — hard-blocked** |
@@ -164,14 +171,15 @@ write-up). **Slice 4.2b is also now done** (hid the Shortcuts button on touch-pr
 its write-up). **Slice 1.4 is also now done** (toss re-confirmation on `PreMatch`; see its
 write-up). **Slice 2.4 is also now done** (auto-recompute stats/standings on completion; see its
 write-up). **Slices 4.1 and 4.3 have been formally closed as intentionally deferred** — no concrete
-case for either after re-evaluation; see their write-ups. **Slice 1.1 (setup wizard validation
-feedback) is next.**
+case for either after re-evaluation; see their write-ups. **Slice 1.1 is also now done** (setup
+wizard validation feedback; see its write-up). **Slice 1.3 (team size/wickets bounds sanity) is
+next.**
 
 ---
 
 ## Phase 1 — Match Setup & Playing Conditions
 
-### Slice 1.1 — Setup wizard validation feedback
+### Slice 1.1 — Setup wizard validation feedback ✅ Done (P2)
 **Problem**: `MatchSetupPage.tsx`'s `canAdvance()` silently disables "Next" with no message
 explaining why.
 
@@ -195,6 +203,27 @@ explaining why.
     deliberately leaving each step's condition unmet in turn.
   - Zero change in *when* `Next` is enabled/disabled versus current behavior.
   - `tsc`/`npm run build` clean; live-verified by walking the wizard end to end.
+
+**Implemented and verified exactly as planned.** Added `advanceBlockedReason(): string | undefined`
+directly after `canAdvance()`, one branch per step, kept adjacent with a cross-referencing comment
+on `canAdvance()` per the plan's own drift-mitigation note. Step 2's messages use the actual team's
+`shortName` (falling back to "Team A"/"Team B" if unresolved) rather than a generic "this team",
+reusing the already-derived `teamA`/`teamB` locals. The footer nav wraps the existing "Next" button
+in a `flex-col` with the reason rendered above it only when `!canAdvance() && advanceBlockedReason()`
+— purely additive, the `disabled={!canAdvance()}` gate itself untouched. `tsc -p
+tsconfig.app.json --noEmit` and `npm run build` both clean. **Verified live against the real
+database by walking the entire wizard, deliberately leaving each gated step's condition unmet in
+turn** (no match was created — this slice has no data-write path to test): Step 1 (Details) showed
+"Enter a match title to continue." and cleared once typed; Step 2 (Teams) showed "Select Team A to
+continue." → "Select Team B to continue." → "Team A and Team B must be different teams." across the
+three sub-cases, each clearing correctly as the form state resolved it; Step 3 (Playing XI) showed
+"Pick at least 2 players for MWA's Playing XI." then "Pick at least 2 players for MWB's Playing XI."
+using the real team short names; Step 4 (Toss) showed "Select who won the toss to continue."; Step 5
+(Match Rules) showed "Overs per innings must be between 1 and 120." when set to 0, and — the most
+compound of the six conditions — "Powerplay overs cannot exceed the total overs per innings." when
+powerplay overs (15) exceeded total overs (10), both clearing once reset to valid values with "Next"
+re-enabled. Confirmed `Next`'s disabled/enabled state matched the message's presence/absence at
+every step, exactly as required. No test match was created or needed to be cleaned up.
 
 ### Slice 1.2 — Quick rematch / duplicate match
 **Problem**: No way to reuse a previous match's teams/squads/Match Rules for a repeat fixture.
@@ -844,13 +873,13 @@ roadmaps' scope boundaries.
 - **`ROADMAP_V3` is complete, merged, and verified.** ROADMAP_V4 implementation is underway,
   proceeding one verified slice at a time in priority order, without pausing for per-slice approval.
 - Priority order within the no-overlap set: 2.1a ✅ → 2.2 ✅ → 2.3 ✅ → 3.1 ✅ → 4.2a ✅ → 4.2b ✅ →
-  1.4 ✅ → 2.4 ✅ → 4.1 🚫 (deferred) → 4.3 🚫 (deferred) → **1.1 (next)** → 1.3 → 1.2 → 3.2
+  1.4 ✅ → 2.4 ✅ → 4.1 🚫 (deferred) → 4.3 🚫 (deferred) → 1.1 ✅ → **1.3 (next)** → 1.2 → 3.2
   (re-check `MatchSetupPage.tsx` for any V3 Phase-5 UI-consistency-pass changes immediately before
-  starting 1.1/1.2/1.3).
+  starting 1.2/1.3 — done immediately before 1.1 and found no such changes).
 - **3.3** needs a fresh read of the merged `MatchPage.tsx` before being scoped further and should not
   start until its post-merge scope is re-confirmed, given its blast radius (the single
   largest-blast-radius file in this roadmap) — planned last for that reason.
 - Every slice ends with `tsc` + `npm run build` green and a live smoke test where auth allows it.
-- Eight of fifteen slices are done (2.1a, 2.2, 2.3, 3.1, 4.2a, 4.2b, 1.4, 2.4); two (4.1, 4.3) are
-  formally closed as intentionally deferred, no code shipped; the remaining five (1.1, 1.2, 1.3,
-  3.2, 3.3) are tracked above with full architecture/risk/rollback write-ups ready to implement.
+- Nine of fifteen slices are done (2.1a, 2.2, 2.3, 3.1, 4.2a, 4.2b, 1.4, 2.4, 1.1); two (4.1, 4.3) are
+  formally closed as intentionally deferred, no code shipped; the remaining four (1.2, 1.3, 3.2, 3.3)
+  are tracked above with full architecture/risk/rollback write-ups ready to implement.

@@ -1261,4 +1261,27 @@ reasoning.
     since neither produced any code. Zero files touched, so no `tsc`/`npm run build`/live-verification
     step applies — this entry documents a re-evaluate-and-defer decision, not an implementation.
 
+58. **`ROADMAP_V4.md` Slice 1.1 — Setup wizard validation feedback** — **Done**, no collision. First
+    slice to touch `MatchSetupPage.tsx`; confirmed the file's `canAdvance()` was unchanged from the
+    version audited in Pass 3 before adding anything. Added `advanceBlockedReason(): string |
+    undefined` directly after `canAdvance()`, one branch per step mirroring its conditions exactly,
+    with a cross-referencing comment on `canAdvance()` per the plan's own drift-mitigation note —
+    purely additive; the boolean gate (`disabled={!canAdvance()}`) itself was not touched or
+    restructured. Squad-size messages use the real team `shortName` (already-derived `teamA`/`teamB`
+    locals), not a generic placeholder. Zero lines of `scoring.ts` touched; no Firestore write
+    introduced by this slice at all (validation is pure client-side derivation). `tsc -p
+    tsconfig.app.json --noEmit` and `npm run build` both clean. **Verified live against the real
+    database by walking the wizard and deliberately leaving each gated step's condition unmet in
+    turn** — no test match was created, since this slice has no data-write path: Details step showed
+    "Enter a match title to continue." and cleared once typed; Teams step showed all three sub-case
+    messages in sequence ("Select Team A to continue." → "Select Team B to continue." → "Team A and
+    Team B must be different teams.") as the form state progressed; Playing XI step showed
+    "Pick at least 2 players for MWA's Playing XI." then the MWB equivalent, using real team short
+    names; Toss step showed "Select who won the toss to continue."; Match Rules step showed
+    "Overs per innings must be between 1 and 120." at 0 overs, and the compound
+    "Powerplay overs cannot exceed the total overs per innings." check specifically (15 powerplay
+    overs against 10 total). Confirmed the "Next" button's disabled state matched the message's
+    presence at every single one of these checks — the acceptance criterion that actually matters,
+    since a mismatch there would mean the messaging drifted from the real gate.
+
 (Appended to as further slices are picked up.)

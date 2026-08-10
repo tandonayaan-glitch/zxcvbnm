@@ -4,6 +4,11 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Scorer Experience (ROADMAP_V4)
 
+### Added — Setup wizard validation feedback (ROADMAP_V4 Slice 1.1)
+- The "Next" button in the match setup wizard now shows a specific reason when it's disabled
+  ("Enter a match title to continue.", "Select who won the toss to continue.", etc.) instead of
+  silently staying greyed out with no explanation.
+
 ### Added — Auto-recompute stats/standings on completion (ROADMAP_V4 Slice 2.4)
 - Completing a match — whether it finishes naturally on the last ball or the scorer force-closes
   the second innings — now recomputes leaderboards and (if applicable) tournament standings
