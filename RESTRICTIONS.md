@@ -1332,4 +1332,24 @@ reasoning.
     had started scoring, so no stats-cache pollution occurred and no post-cleanup recompute was
     needed (unlike Slice 2.4's test).
 
+61. **`ROADMAP_V4.md` Slice 3.2 — In-scoring-screen scorecard view** — **Done**, no collision.
+    Changed the live footer's "Scorecard" `Link` (navigated to `/match/:id`) into a `<button>`
+    opening the existing `Modal` component around `ScorecardView`, fed from `ScoringPage.tsx`'s
+    already-subscribed `match`/`players.data`/`deliveries` — no new data-fetching, no new component,
+    `ScorecardView.tsx` itself untouched. Removed the `Link` import from `react-router-dom` since
+    this was its only remaining usage in the file. Zero lines of `scoring.ts` touched. `tsc -p
+    tsconfig.app.json --noEmit` and `npm run build` both clean (same pre-existing, unrelated
+    `ScoreHeader` lint warning). **Verified live against the real database with two in-progress-state
+    checks stronger than the plan's own named example**: created a throwaway match, scored a
+    boundary to trigger the optional shot-detail prompt, and opened the scorecard modal while that
+    prompt was still open — confirmed the modal's figures (4/0, 0.1 ov, batter figures, strike rate)
+    matched the live `ScoreHeader` exactly, and confirmed closing the modal left the shot-detail
+    prompt untouched. Separately selected "Wide" as an active extra (the plan's own example) and
+    confirmed the "Wide selected..." banner survived a full open/close cycle. Also directly verified
+    the innings-switching claim rather than trusting the plan's architecture note alone: ended the
+    first innings, started the second, and confirmed the modal showed real "MWA innings"/
+    "MWB innings" tabs from `ScorecardView`'s own internal `Tabs` with zero additional code written
+    to support it. Test match soft-deleted after verification. **This was the last P0–P2 slice in
+    the roadmap — only Slice 3.3 (hard-blocked, P2) remains of the entire plan.**
+
 (Appended to as further slices are picked up.)

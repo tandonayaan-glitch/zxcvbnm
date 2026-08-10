@@ -4,6 +4,12 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Scorer Experience (ROADMAP_V4)
 
+### Added — In-scoring-screen scorecard view (ROADMAP_V4 Slice 3.2)
+- The live scoring screen's "Scorecard" button now opens the full scorecard in a modal instead of
+  navigating away — including innings-switching for a completed first innings. Closing it leaves
+  the scoring screen exactly as it was, including any in-progress input like a half-selected extra
+  or an open shot-detail prompt.
+
 ### Added — Quick rematch / duplicate match (ROADMAP_V4 Slice 1.2)
 - A new "Duplicate" action on the Matches list pre-fills a new match's teams, squads, tournament,
   and full Match Rules (format, overs, team size, wickets, powerplay, Last Man Standing, retired

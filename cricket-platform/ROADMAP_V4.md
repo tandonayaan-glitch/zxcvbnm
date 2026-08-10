@@ -95,6 +95,12 @@ compliance** line confirming this was checked, not assumed.
   rather than assuming the write succeeded, then corrected via the match's own Edit flow before
   re-testing. Eleven of thirteen implementable slices now done (two more, 4.1/4.3, formally
   deferred rather than implemented); only 3.2 and the hard-blocked 3.3 remain.
+- **Pass 16 (this one)**: **Slice 3.2 (in-scoring-screen scorecard modal) implemented and verified
+  live end-to-end**, including two in-progress-state checks stronger than the plan's own named
+  example (a mid-flight shot-detail prompt, not just a half-selected extra) and a direct check of
+  the innings-switching claim rather than trusting the architecture note. Twelve of thirteen
+  implementable slices now done — **Slice 3.3 is the only slice left in this entire roadmap**,
+  still correctly hard-blocked pending a fresh read of the merged `MatchPage.tsx`.
 
 ## ⚠️ Critical correction from this pass: Slice 2.1 was wrong
 
@@ -150,7 +156,7 @@ architecture review and re-planning only.
 | P2 | ✅ 4.2b — Mobile scorer fixes (hide Shortcuts button on touch devices) | `ScoringPage.tsx` | No |
 | P2 | ✅ 1.1 — Setup wizard validation feedback | `MatchSetupPage.tsx` | Low (Phase-5-polish note) |
 | P2 | ✅ 2.4 — Auto-recompute stats on completion | `scoring.service.ts` | No |
-| P2 | 3.2 — In-scoring scorecard view | `ScoringPage.tsx` (reuses `ScorecardView`) | No |
+| P2 | ✅ 3.2 — In-scoring scorecard view | `ScoringPage.tsx` (reuses `ScorecardView`) | No |
 | P2 | 3.3 — Scorecard in-page navigation | `MatchPage.tsx` | **Yes, heavily — hard-blocked** |
 | P3 | ✅ 1.2 — Quick rematch/duplicate match | `MatchesPage.tsx`, `MatchSetupPage.tsx` | Low |
 | P3 | ✅ 1.3 — Team size/wickets bounds validation | `MatchSetupPage.tsx` | Low |
@@ -191,7 +197,9 @@ case for either after re-evaluation; see their write-ups. **Slice 1.1 is also no
 wizard validation feedback; see its write-up). **Slice 1.3 is also now done** (team size/wickets
 bounds sanity; see its write-up). **Slice 1.2 is also now done** (quick rematch/duplicate match,
 including a real stale-mount bug found and fixed during verification; see its write-up). **Slice 3.2
-(in-scoring-screen scorecard view) is next**, leaving only 3.2 and the hard-blocked 3.3 remaining.
+is also now done** (in-scoring-screen scorecard modal; see its write-up). **Every slice in this
+roadmap is now done or formally deferred except Slice 3.3**, which remains hard-blocked pending a
+fresh read of the merged `MatchPage.tsx` — see below.
 
 ---
 
@@ -730,7 +738,7 @@ and confirmed it navigates to `/match/:id` showing the just-completed first inni
 ("MWA 0/0", "Innings break — 2nd innings about to begin"). Test match soft-deleted after
 verification.
 
-### Slice 3.2 — In-scoring-screen scorecard view (P2)
+### Slice 3.2 — In-scoring-screen scorecard view ✅ Done (P2)
 **Problem**: The live footer's "Scorecard" link navigates away entirely.
 
 - **Affected files**: `src/features/scoring/ScoringPage.tsx` (new modal state), reusing
@@ -749,6 +757,25 @@ verification.
 - **Acceptance criteria**: In-scoring scorecard modal shows figures matching the live `ScoreHeader`
   exactly (no staleness); closing it preserves in-progress UI state (e.g. a half-selected extra).
   `tsc`/`npm run build` clean.
+
+**Implemented and verified exactly as planned.** Added `scorecardOpen` state to `ScoringPage.tsx`,
+changed the live footer's "Scorecard" `Link` (which navigated to `/match/:id`) into a `<button>`
+opening the existing `Modal` component (`size="xl"`) around `ScorecardView`, fed directly from
+`ScoringPage`'s already-subscribed `match`/`players.data`/`deliveries` state — no new data-fetching,
+exactly as planned. Removed the now-unused `Link` import (the only remaining usage in this file was
+this one). Zero lines of `scoring.ts` or `ScorecardView.tsx` touched. `tsc -p tsconfig.app.json
+--noEmit` and `npm run build` both clean (same pre-existing, unrelated `ScoreHeader` lint warning).
+**Verified live against the real database, including two in-progress-state cases stronger than the
+plan's own example**: created a throwaway match, scored a boundary to trigger the optional
+shot-detail prompt (shot placement/line/length), and opened the scorecard modal *while that prompt
+was still showing* — confirmed the modal's figures (4/0, 0.1 ov, `H Pandya` 4 off 1 ball, 400.00 SR)
+matched the live `ScoreHeader` exactly, and confirmed closing the modal left the shot-detail prompt
+still open and untouched. Separately selected "Wide" as an active extra (the plan's own named
+example) and confirmed the "Wide selected — tap a number..." banner survived a full modal open/close
+cycle unchanged. Also verified the innings-switching claim directly rather than trusting the
+architecture note alone: ended the first innings, started the second, and confirmed the modal showed
+real "MWA innings"/"MWB innings" tabs from `ScorecardView`'s own internal `Tabs`, with no extra code
+written to support it. Test match soft-deleted after verification.
 
 ### Slice 3.3 — Scorecard page in-page navigation (P2, hard-blocked)
 **Problem**: `MatchPage.tsx` (639 lines pre-V3-merge) has no page-level section-jump navigation
@@ -952,11 +979,13 @@ roadmaps' scope boundaries.
 - **`ROADMAP_V3` is complete, merged, and verified.** ROADMAP_V4 implementation is underway,
   proceeding one verified slice at a time in priority order, without pausing for per-slice approval.
 - Priority order within the no-overlap set: 2.1a ✅ → 2.2 ✅ → 2.3 ✅ → 3.1 ✅ → 4.2a ✅ → 4.2b ✅ →
-  1.4 ✅ → 2.4 ✅ → 4.1 🚫 (deferred) → 4.3 🚫 (deferred) → 1.1 ✅ → 1.3 ✅ → 1.2 ✅ → **3.2 (next)**.
+  1.4 ✅ → 2.4 ✅ → 4.1 🚫 (deferred) → 4.3 🚫 (deferred) → 1.1 ✅ → 1.3 ✅ → 1.2 ✅ → 3.2 ✅ →
+  **3.3 (last remaining slice, hard-blocked)**.
 - **3.3** needs a fresh read of the merged `MatchPage.tsx` before being scoped further and should not
   start until its post-merge scope is re-confirmed, given its blast radius (the single
-  largest-blast-radius file in this roadmap) — planned last for that reason.
+  largest-blast-radius file in this roadmap) — this is now genuinely the last thing standing between
+  this roadmap and completion.
 - Every slice ends with `tsc` + `npm run build` green and a live smoke test where auth allows it.
-- Eleven of fifteen slices are done (2.1a, 2.2, 2.3, 3.1, 4.2a, 4.2b, 1.4, 2.4, 1.1, 1.3, 1.2); two
-  (4.1, 4.3) are formally closed as intentionally deferred, no code shipped; the remaining two (3.2,
-  3.3) are tracked above with full architecture/risk/rollback write-ups ready to implement.
+- Twelve of fifteen slices are done (2.1a, 2.2, 2.3, 3.1, 4.2a, 4.2b, 1.4, 2.4, 1.1, 1.3, 1.2, 3.2);
+  two (4.1, 4.3) are formally closed as intentionally deferred, no code shipped; **3.3 is the only
+  slice left**, blocked on the fresh `MatchPage.tsx` read described above.

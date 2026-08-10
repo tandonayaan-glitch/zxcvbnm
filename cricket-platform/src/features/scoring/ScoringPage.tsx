@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import {
   Undo2,
   Radio,
@@ -38,6 +38,7 @@ import {
 import { recomputeAllStats, recomputeTournamentStandings } from '@/services/stats.service'
 import { recordBallMeta } from '@/services/ballMeta.service'
 import { ShotDetailPrompt } from './ShotDetailPrompt'
+import { ScorecardView } from '@/features/scorecard/ScorecardView'
 import { ballsToOvers, runRate, requiredRate, formatRate } from '@/lib/format'
 import { useAuthStore } from '@/store/authStore'
 import { useBgStore } from '@/store/bgStore'
@@ -68,6 +69,7 @@ export function ScoringPage() {
   )
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [potmOpen, setPotmOpen] = useState(false)
+  const [scorecardOpen, setScorecardOpen] = useState(false)
   // Touch-primary devices (phones/tablets) have no physical keyboard, so the shortcuts this
   // button leads to don't apply — hide the discovery affordance rather than resize it. The
   // underlying keydown handling in ScoringShortcuts is untouched, so a keyboard-attached device
@@ -541,12 +543,12 @@ export function ScoringPage() {
           {busy && <Spinner size={14} />}
         </div>
         <div className="flex gap-2">
-          <Link
-            to={`/match/${match.id}`}
+          <button
+            onClick={() => setScorecardOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
           >
             <ClipboardList size={15} /> Scorecard
-          </Link>
+          </button>
           <button
             onClick={() => {
               if (confirm('End the current innings now?'))
@@ -585,6 +587,15 @@ export function ScoringPage() {
       )}
 
       <ShortcutsHelpModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+
+      <Modal
+        open={scorecardOpen}
+        onClose={() => setScorecardOpen(false)}
+        title="Scorecard"
+        size="xl"
+      >
+        <ScorecardView match={match} players={players.data ?? []} deliveries={deliveries} />
+      </Modal>
     </div>
   )
 }
