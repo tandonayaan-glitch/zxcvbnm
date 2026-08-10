@@ -18,7 +18,7 @@ import { SyncQueuePanel } from '@/components/ui/SyncQueuePanel'
 import { useToast } from '@/components/ui/toast'
 import { useAsync } from '@/hooks/useAsync'
 import { listPlayers } from '@/services/players.service'
-import { subscribeMatch } from '@/services/matches.service'
+import { subscribeMatch, updateMatch } from '@/services/matches.service'
 import {
   startMatch,
   setOpeners,
@@ -201,6 +201,19 @@ export function ScoringPage() {
     await guard(() => setPlayerOfTheMatch(match!.id, pid || null))
   }
 
+  async function editToss(wonByTeamId: string, decision: 'bat' | 'bowl') {
+    const m = match!
+    const battingFirstTeamId =
+      decision === 'bat'
+        ? wonByTeamId
+        : wonByTeamId === m.teamA.id
+          ? m.teamB.id
+          : m.teamA.id
+    await guard(() =>
+      updateMatch(m.id, { toss: { wonByTeamId, decision }, battingFirstTeamId }),
+    )
+  }
+
   /* ------------------------- lifecycle screens ------------------------- */
 
   if (match.status === 'setup') {
@@ -212,6 +225,7 @@ export function ScoringPage() {
         match={match}
         battingName={battingName}
         onStart={() => guard(() => startMatch(match))}
+        onEditToss={editToss}
         busy={busy}
       />
     )
@@ -954,13 +968,28 @@ function PreMatch({
   match,
   battingName,
   onStart,
+  onEditToss,
   busy,
 }: {
   match: Match
   battingName: string
   onStart: () => void
+  onEditToss: (wonByTeamId: string, decision: 'bat' | 'bowl') => void
   busy: boolean
 }) {
+  const [editingToss, setEditingToss] = useState(false)
+  const [tossWinner, setTossWinner] = useState<'A' | 'B'>(
+    match.toss?.wonByTeamId === match.teamB.id ? 'B' : 'A',
+  )
+  const [tossDecision, setTossDecision] = useState<'bat' | 'bowl'>(
+    match.toss?.decision ?? 'bat',
+  )
+
+  function saveToss() {
+    onEditToss(tossWinner === 'A' ? match.teamA.id : match.teamB.id, tossDecision)
+    setEditingToss(false)
+  }
+
   return (
     <div className="mx-auto max-w-lg py-10 text-center">
       <h1 className="text-2xl font-bold text-ink-900 dark:text-ink-50">{match.title}</h1>
@@ -972,13 +1001,82 @@ function PreMatch({
           <div>
             <b>Format:</b> {match.format} · {match.oversPerInnings} overs
           </div>
-          {match.toss && (
-            <div className="mt-1">
-              <b>Toss:</b>{' '}
-              {match.toss.wonByTeamId === match.teamA.id
-                ? match.teamA.name
-                : match.teamB.name}{' '}
-              chose to {match.toss.decision}
+          {!editingToss && match.toss && (
+            <div className="mt-1 flex items-center justify-between gap-2">
+              <span>
+                <b>Toss:</b>{' '}
+                {match.toss.wonByTeamId === match.teamA.id
+                  ? match.teamA.name
+                  : match.teamB.name}{' '}
+                chose to {match.toss.decision}
+              </span>
+              <button
+                onClick={() => {
+                  setTossWinner(match.toss?.wonByTeamId === match.teamB.id ? 'B' : 'A')
+                  setTossDecision(match.toss?.decision ?? 'bat')
+                  setEditingToss(true)
+                }}
+                className="shrink-0 text-xs font-semibold text-brand-600 hover:underline"
+              >
+                Edit
+              </button>
+            </div>
+          )}
+          {editingToss && (
+            <div className="mt-2 space-y-3 rounded-lg border border-ink-200 dark:border-ink-800 p-3">
+              <div>
+                <div className="mb-1.5 text-xs font-medium text-ink-700 dark:text-ink-300">
+                  Who won the toss?
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['A', 'B'] as const).map((slot) => {
+                    const t = slot === 'A' ? match.teamA : match.teamB
+                    return (
+                      <button
+                        key={slot}
+                        onClick={() => setTossWinner(slot)}
+                        className={cn(
+                          'rounded-lg border-2 p-2 text-left text-sm',
+                          tossWinner === slot
+                            ? 'border-brand-500 bg-brand-50'
+                            : 'border-ink-200 dark:border-ink-800 hover:border-ink-300',
+                        )}
+                      >
+                        {t.name}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+              <div>
+                <div className="mb-1.5 text-xs font-medium text-ink-700 dark:text-ink-300">
+                  Elected to
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['bat', 'bowl'] as const).map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => setTossDecision(d)}
+                      className={cn(
+                        'rounded-lg border-2 p-2 text-sm font-semibold capitalize',
+                        tossDecision === d
+                          ? 'border-brand-500 bg-brand-50 text-brand-700'
+                          : 'border-ink-200 dark:border-ink-800 text-ink-700 dark:text-ink-300 hover:border-ink-300',
+                      )}
+                    >
+                      {d} first
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => setEditingToss(false)}>
+                  Cancel
+                </Button>
+                <Button size="sm" onClick={saveToss} loading={busy}>
+                  Save toss
+                </Button>
+              </div>
             </div>
           )}
           <div className="mt-1">

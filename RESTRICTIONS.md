@@ -1191,4 +1191,27 @@ reasoning.
     real `keydown` event for `'1'` while the button was hidden and confirmed the score updated (0/0
     → 1/0) exactly as it would with the button visible. Test match cleaned up after verification.
 
+55. **`ROADMAP_V4.md` Slice 1.4 — Toss re-confirmation at match start** — **Done**, no collision.
+    Added an "Edit" toggle to the toss line on `ScoringPage.tsx`'s pre-match (`PreMatch`) screen,
+    duplicating (not extracting) the same two-row team/bat-or-bowl picker UI already used by
+    `MatchSetupPage.tsx`'s Toss step, per the plan's stated preference for small independent copies
+    over a shared component here. Saving calls a new `editToss()` handler that writes **both**
+    `toss` and a freshly re-derived `battingFirstTeamId` via the existing `updateMatch()`
+    (`matches.service.ts`) — re-reading `MatchSetupPage.tsx`'s creation-time logic confirmed
+    `battingFirstTeamId` is always explicitly stored at creation (not left for `toss` to drive
+    alone), so `battingFirstTeamId(match)`'s preference for the stored field over recomputing from
+    `toss` meant both fields had to be written together for an edited toss to actually take effect,
+    not just display differently. No existing function's signature changed; `PreMatch`'s `onStart`
+    and every live-scoring code path untouched. Zero lines of `scoring.ts` touched. `tsc -p
+    tsconfig.app.json --noEmit` and `npm run build` both clean (same pre-existing, unrelated
+    `ScoreHeader` lint warning). **Verified live against the real database with a genuine flip, not
+    just a round-trip**: a first throwaway match ("Toss Edit Test") whose edit produced the same
+    batting-first team as the original proved the `toss` field write path but left open whether
+    `battingFirstTeamId` had actually been recomputed or was just coincidentally already correct; a
+    second throwaway match ("Toss Edit Test 2") closed that gap by editing from "Team A win, bowl →
+    Team B bats first" to "Team A win, bat → Team A bats first" — a genuine flip — and confirmed
+    both the `PreMatch` summary and, after starting the match, the live `ScoreHeader` itself showed
+    Team A (not Team B) batting, conclusively proving the edited toss drove the real first innings.
+    Both throwaway matches deleted via the Matches page after verification.
+
 (Appended to as further slices are picked up.)

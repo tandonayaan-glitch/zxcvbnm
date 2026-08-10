@@ -49,12 +49,16 @@ compliance** line confirming this was checked, not assumed.
   genuine issue: the "Keyboard shortcuts" button is undersized *and* leads to information that's
   meaningless on a touch-only device. Slice 4.2b, previously unscoped, is now fully scoped to fix
   exactly that one thing.
-- **Pass 10 (this one)**: **Slice 4.2b (hide the Shortcuts button on touch-primary devices)
+- **Pass 10**: **Slice 4.2b (hide the Shortcuts button on touch-primary devices)
   implemented and verified live end-to-end**, including the discovery that the Browser pane's
   mobile viewport preset doesn't emulate `pointer: coarse` and the `matchMedia` override/SPA-remount
   workaround used to test it anyway. All P1-and-above slices are now done; only P2/P3 slices remain.
   User authorized continuing through the remaining ROADMAP_V4 slices in priority order without
-  pausing for per-slice approval — proceeding to Slice 1.4 next.
+  pausing for per-slice approval.
+- **Pass 11 (this one)**: **Slice 1.4 (toss re-confirmation at match start) implemented and verified
+  live end-to-end**, including a real batting-team flip (not just a same-result round-trip) to
+  conclusively prove `battingFirstTeamId` — not just `toss` — gets recomputed on save. Proceeding
+  autonomously through the remaining P2/P3 slices per the user's standing authorization.
 
 ## ⚠️ Critical correction from this pass: Slice 2.1 was wrong
 
@@ -114,13 +118,13 @@ architecture review and re-planning only.
 | P2 | 3.3 — Scorecard in-page navigation | `MatchPage.tsx` | **Yes, heavily — hard-blocked** |
 | P3 | 1.2 — Quick rematch/duplicate match | `MatchesPage.tsx`, `MatchSetupPage.tsx` | Low |
 | P3 | 1.3 — Team size/wickets bounds validation | `MatchSetupPage.tsx` | Low |
-| P3 | 1.4 — Toss re-confirmation at match start | `ScoringPage.tsx` | No |
+| P3 | ✅ 1.4 — Toss re-confirmation at match start | `ScoringPage.tsx` | No |
 | P3 | 4.1 — Faster scoring taps | `ScoringPage.tsx` | No |
 | P3 | 4.3 — Remembered scorer preferences | `MatchSetupPage.tsx`, new local store | Low |
 | 🚫 | Phase 5 items (now including true solo LMS batting) | `src/domain/scoring.ts` | N/A — permanently out of scope |
 
 ### What can start the instant V3 merges, no further check needed
-**1.4, 2.4, 4.1** (2.1a, 2.2, 2.3, 3.1, 4.2a, and 4.2b all done — see below) — files touched are
+**2.4, 4.1** (2.1a, 2.2, 2.3, 3.1, 4.2a, 4.2b, and 1.4 all done — see below) — files touched are
 exclusively `ScoringPage.tsx`/`ScoringModals.tsx`/`scoring.service.ts`, which nothing in V3's scope,
 current or planned, goes near. 2.2 and 2.3 both ended up landing entirely in this same zero-overlap
 set — each slice's own plan preferred keeping `MatchPage.tsx` untouched, and both stuck to it.
@@ -144,8 +148,9 @@ now implemented, `tsc`/`npm run build` clean, and verified live end-to-end, each
 separately per the one-verified-slice-at-a-time process. **Slices 2.3 and 3.1 (both P1) are also
 now done** — see their write-ups below. **Slice 4.2a is also now done** (read-only audit; see its
 write-up). **Slice 4.2b is also now done** (hid the Shortcuts button on touch-primary devices; see
-its write-up). **Slice 1.4 (Toss re-confirmation at match start) is next**, per this file's own
-stated no-overlap priority order.
+its write-up). **Slice 1.4 is also now done** (toss re-confirmation on `PreMatch`; see its
+write-up). **Slice 2.4 (auto-recompute stats on completion) is next**, per this file's own stated
+no-overlap priority order.
 
 ---
 
@@ -229,7 +234,7 @@ explaining why.
 - **Acceptance criteria**: Warning shows exactly when `maxWickets >= teamSize`; wizard still
   advances normally either way. `tsc`/`npm run build` clean.
 
-### Slice 1.4 — Toss re-confirmation at match start
+### Slice 1.4 — Toss re-confirmation at match start ✅ Done (P3)
 **Problem**: The toss is fixed at setup time, often before the real pitchside coin toss; no way to
 correct it without leaving the scoring flow.
 
@@ -255,6 +260,38 @@ correct it without leaving the scoring flow.
 - **Acceptance criteria**: Editing toss on `PreMatch` and starting the match produces a `Match`
   whose `toss`/`battingFirstTeamId`/first-innings `battingTeamId` reflect the edited toss, not the
   original. `tsc`/`npm run build` clean; live-verified once auth is available.
+
+**Implemented and verified exactly as planned.** Added local `editingToss`/`tossWinner`/
+`tossDecision` state to `PreMatch` and an inline "Edit" toggle next to the existing read-only toss
+line, reusing the same two-row team/bat-or-bowl button styling as `MatchSetupPage.tsx`'s Toss step
+(duplicated, not extracted, per the plan). Saving calls a new `editToss()` handler in `ScoringPage`
+that writes **both** `toss` and a freshly re-derived `battingFirstTeamId` in the same `updateMatch()`
+call — re-reading `MatchSetupPage.tsx`'s own creation-time derivation confirmed `battingFirstTeamId`
+is always explicitly written at match creation (bat → toss winner, bowl → the other team), so
+`battingFirstTeamId(match)` (which prefers the stored field over recomputing from `toss`) would
+otherwise silently keep pointing at the *original* toss's batting team even after the `toss` field
+itself was edited — writing both fields together was necessary to make the edit actually take
+effect, not just cosmetic. `PreMatch`'s own `onStart` and `ScorePad`/live-scoring code paths were
+untouched. `tsc -p tsconfig.app.json --noEmit` and `npm run build` both clean (same pre-existing,
+unrelated `ScoreHeader` lint warning). **Verified live against the real database, with a
+genuine flip, not just a round-trip**: created a throwaway match ("Toss Edit Test") where the
+original toss (Team A bat first) already matched what the edit produced — a same-result edit that
+proved the `toss` field write path (Firestore doc updated, both derived label and the toss line
+itself changed to reflect the new winner/decision) but not, on its own, that `battingFirstTeamId`
+specifically had been recomputed rather than left stale. Created a second throwaway match ("Toss
+Edit Test 2") specifically to close that gap: original toss (Team A win, bowl → Team B bats first),
+edited on `PreMatch` to (Team A win, bat → Team A bats first) — a genuine flip of the batting team,
+not just a re-save of the same outcome. Confirmed the `PreMatch` summary updated to "Batting first:
+MSW Test Team A" immediately after saving, then started the match and confirmed the live
+`ScoreHeader` showed **MWA** (Team A) batting, not MWB — conclusively proving the edited toss (and
+not the original, stale `battingFirstTeamId`) drove the actual first innings. **Testing nuance**:
+firing multiple synthetic `.click()` calls back-to-back in one synchronous script can hit stale
+React closures (a click on "Save toss" queried in the same script as the preceding "bat first"
+click can still bind to the pre-re-render handler, silently saving the *old* decision) — not an app
+bug, since a real user's clicks are naturally separated by render cycles; worked around by splitting
+each click into its own tool call with a short wait before the next, and confirming the intermediate
+selection's active-state CSS class before proceeding. Both throwaway matches deleted via the
+Matches page after verification — no leftover test data.
 
 ## Phase 2 — Live Scoring Correctness & Flow
 
@@ -741,11 +778,11 @@ roadmaps' scope boundaries.
 - **`ROADMAP_V3` is complete, merged, and verified.** ROADMAP_V4 implementation is underway,
   proceeding one verified slice at a time in priority order, without pausing for per-slice approval.
 - Priority order within the no-overlap set: 2.1a ✅ → 2.2 ✅ → 2.3 ✅ → 3.1 ✅ → 4.2a ✅ → 4.2b ✅ →
-  **1.4 (next)** → 2.4 → 4.1 → 1.1/1.2/1.3/4.3 (re-check `MatchSetupPage.tsx` for any V3 Phase-5
+  1.4 ✅ → **2.4 (next)** → 4.1 → 1.1/1.2/1.3/4.3 (re-check `MatchSetupPage.tsx` for any V3 Phase-5
   UI-consistency-pass changes immediately before starting each of these four).
 - **3.3** needs a fresh read of the merged `MatchPage.tsx` before being scoped further and should not
   start until its post-merge scope is re-confirmed, given its blast radius (the single
   largest-blast-radius file in this roadmap).
 - Every slice ends with `tsc` + `npm run build` green and a live smoke test where auth allows it.
-- Six of fifteen slices are done (2.1a, 2.2, 2.3, 3.1, 4.2a, 4.2b); the rest are tracked above with
-  full architecture/risk/rollback write-ups ready to implement in order.
+- Seven of fifteen slices are done (2.1a, 2.2, 2.3, 3.1, 4.2a, 4.2b, 1.4); the rest are tracked above
+  with full architecture/risk/rollback write-ups ready to implement in order.

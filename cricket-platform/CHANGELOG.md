@@ -4,6 +4,12 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Scorer Experience (ROADMAP_V4)
 
+### Added — Toss re-confirmation at match start (ROADMAP_V4 Slice 1.4)
+- The pre-match scoring screen now has an "Edit" link next to the toss result, letting the scorer
+  correct who won and what they chose right up until the match starts — no need to go back to the
+  setup wizard. The edit updates which team bats first everywhere, including the actual first
+  innings once the match starts.
+
 ### Fixed — Mobile scorer fixes (ROADMAP_V4 Slice 4.2b)
 - The "Keyboard shortcuts" button on the live scoring screen is now hidden on touch-primary devices
   (phones/tablets), which have no physical keyboard and so can never use what it leads to. Devices
