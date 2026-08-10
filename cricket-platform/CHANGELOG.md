@@ -4,6 +4,13 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Scorer Experience (ROADMAP_V4)
 
+### Added — Auto-recompute stats/standings on completion (ROADMAP_V4 Slice 2.4)
+- Completing a match — whether it finishes naturally on the last ball or the scorer force-closes
+  the second innings — now recomputes leaderboards and (if applicable) tournament standings
+  automatically, in the background. The manual "Update stats" button still works the same for a
+  deliberate re-run (e.g. after a post-match scorecard correction); abandoning a match still does
+  not trigger a recompute, since there's no result worth aggregating.
+
 ### Added — Toss re-confirmation at match start (ROADMAP_V4 Slice 1.4)
 - The pre-match scoring screen now has an "Edit" link next to the toss result, letting the scorer
   correct who won and what they chose right up until the match starts — no need to go back to the

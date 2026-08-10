@@ -15,6 +15,7 @@ import { trackedWrite } from '@/store/writeQueueStore'
 import { notify } from './notifications.service'
 import { logActivity } from './activity.service'
 import { getPlayersByIds } from './players.service'
+import { recomputeAllStats, recomputeTournamentStandings } from './stats.service'
 import { detectMilestones, type MilestoneType } from '@/domain/milestones'
 import {
   applyBall,
@@ -75,6 +76,19 @@ async function notifyMatchDone(match: Match, result: MatchResult, innings?: Inni
     }
   } catch (e) {
     console.error('milestone detection failed', e)
+  }
+}
+
+/** Fire-and-forget stats/standings recompute for a just-completed match — mirrors the
+ *  existing manual "Update stats" button's calls, but never blocks or breaks the
+ *  scorer's completion flow if it's slow or fails. Not called for an abandoned match
+ *  (no result worth recomputing stats against). */
+function autoRecomputeStats(match: Match) {
+  void recomputeAllStats().catch((e) => console.error('auto stats recompute failed', e))
+  if (match.tournamentId) {
+    void recomputeTournamentStandings(match.tournamentId).catch((e) =>
+      console.error('auto standings recompute failed', e),
+    )
   }
 }
 
@@ -264,7 +278,10 @@ export async function recordBall(
   batch.update(doc(db, COL.matches, match.id), patch as Record<string, unknown>)
   await trackedWrite(`Ball ${args.sequence}`, batch.commit())
 
-  if (patch.status === 'completed' && patch.result) void notifyMatchDone(match, patch.result, innings)
+  if (patch.status === 'completed' && patch.result) {
+    void notifyMatchDone(match, patch.result, innings)
+    autoRecomputeStats(match)
+  }
 
   return { delivery, innings: state }
 }
@@ -341,7 +358,10 @@ export async function endInnings(match: Match): Promise<void> {
     patch.result = computeResult(match, innings)
   }
   await updateDoc(doc(db, COL.matches, match.id), patch as Record<string, unknown>)
-  if (patch.status === 'completed' && patch.result) void notifyMatchDone(match, patch.result, innings)
+  if (patch.status === 'completed' && patch.result) {
+    void notifyMatchDone(match, patch.result, innings)
+    autoRecomputeStats(match)
+  }
 }
 
 export async function completeMatch(

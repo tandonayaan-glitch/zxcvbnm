@@ -55,10 +55,16 @@ compliance** line confirming this was checked, not assumed.
   workaround used to test it anyway. All P1-and-above slices are now done; only P2/P3 slices remain.
   User authorized continuing through the remaining ROADMAP_V4 slices in priority order without
   pausing for per-slice approval.
-- **Pass 11 (this one)**: **Slice 1.4 (toss re-confirmation at match start) implemented and verified
+- **Pass 11**: **Slice 1.4 (toss re-confirmation at match start) implemented and verified
   live end-to-end**, including a real batting-team flip (not just a same-result round-trip) to
   conclusively prove `battingFirstTeamId` — not just `toss` — gets recomputed on save. Proceeding
   autonomously through the remaining P2/P3 slices per the user's standing authorization.
+- **Pass 12 (this one)**: **Slice 2.4 (auto-recompute stats/standings on completion) implemented and
+  verified live end-to-end for both completion paths** (a natural run-chase finish via `recordBall`
+  and a declared finish via `endInnings`), using before/after Stats-page snapshots rather than just
+  checking for the absence of errors. Every P0/P1/P2 no-overlap slice is now done except 3.2 (P2,
+  still open) and 3.3 (P2, hard-blocked pending a fresh `MatchPage.tsx` read); remaining P3 slices
+  (1.2, 1.3, 4.1, 4.3) and 1.1 (P2, `MatchSetupPage.tsx`) are also still open.
 
 ## ⚠️ Critical correction from this pass: Slice 2.1 was wrong
 
@@ -113,7 +119,7 @@ architecture review and re-planning only.
 | P1 | ✅ 4.2a — Mobile scorer audit (read-only) | none (measurement only) | No |
 | P2 | ✅ 4.2b — Mobile scorer fixes (hide Shortcuts button on touch devices) | `ScoringPage.tsx` | No |
 | P2 | 1.1 — Setup wizard validation feedback | `MatchSetupPage.tsx` | Low (Phase-5-polish note) |
-| P2 | 2.4 — Auto-recompute stats on completion | `scoring.service.ts` | No |
+| P2 | ✅ 2.4 — Auto-recompute stats on completion | `scoring.service.ts` | No |
 | P2 | 3.2 — In-scoring scorecard view | `ScoringPage.tsx` (reuses `ScorecardView`) | No |
 | P2 | 3.3 — Scorecard in-page navigation | `MatchPage.tsx` | **Yes, heavily — hard-blocked** |
 | P3 | 1.2 — Quick rematch/duplicate match | `MatchesPage.tsx`, `MatchSetupPage.tsx` | Low |
@@ -124,7 +130,7 @@ architecture review and re-planning only.
 | 🚫 | Phase 5 items (now including true solo LMS batting) | `src/domain/scoring.ts` | N/A — permanently out of scope |
 
 ### What can start the instant V3 merges, no further check needed
-**2.4, 4.1** (2.1a, 2.2, 2.3, 3.1, 4.2a, 4.2b, and 1.4 all done — see below) — files touched are
+**4.1** (2.1a, 2.2, 2.3, 3.1, 4.2a, 4.2b, 1.4, and 2.4 all done — see below) — files touched are
 exclusively `ScoringPage.tsx`/`ScoringModals.tsx`/`scoring.service.ts`, which nothing in V3's scope,
 current or planned, goes near. 2.2 and 2.3 both ended up landing entirely in this same zero-overlap
 set — each slice's own plan preferred keeping `MatchPage.tsx` untouched, and both stuck to it.
@@ -149,8 +155,10 @@ separately per the one-verified-slice-at-a-time process. **Slices 2.3 and 3.1 (b
 now done** — see their write-ups below. **Slice 4.2a is also now done** (read-only audit; see its
 write-up). **Slice 4.2b is also now done** (hid the Shortcuts button on touch-primary devices; see
 its write-up). **Slice 1.4 is also now done** (toss re-confirmation on `PreMatch`; see its
-write-up). **Slice 2.4 (auto-recompute stats on completion) is next**, per this file's own stated
-no-overlap priority order.
+write-up). **Slice 2.4 is also now done** (auto-recompute stats/standings on completion; see its
+write-up). **Slice 4.1 (faster scoring taps) is next to evaluate**, per this file's own stated
+no-overlap priority order — though it's flagged in its own section as deliberately unspecified
+pending a concrete slow-sequence finding.
 
 ---
 
@@ -515,7 +523,7 @@ on the public `/match/:id` scorecard's "Player of the match" section, then clear
 award / clear" and confirmed the button reverts to unset — the full pick → verify-on-public-page →
 clear cycle, not just the happy path. Test match cleaned up (soft-deleted) after verification.
 
-### Slice 2.4 — Auto-recompute stats/standings on completion (P2)
+### Slice 2.4 — Auto-recompute stats/standings on completion ✅ Done (P2)
 **Problem**: "Update stats" is a manual, separate click after completion — easy to forget.
 
 - **Affected files**: `src/services/scoring.service.ts` — specifically the two places `status`
@@ -552,6 +560,32 @@ clear cycle, not just the happy path. Test match cleaned up (soft-deleted) after
   - Manual "Update stats" still works unchanged for a deliberate re-run.
   - Abandoning a match (Slice 2.2) does **not** trigger a stats recompute.
   - `tsc`/`npm run build` clean.
+
+**Implemented and verified exactly as planned.** Added a private `autoRecomputeStats(match)` helper
+in `scoring.service.ts` (imports `recomputeAllStats`/`recomputeTournamentStandings` from
+`stats.service.ts` — confirmed no circular-import risk, since `stats.service.ts` doesn't import
+`scoring.service.ts`) that fires both fire-and-forget with `.catch(e => console.error(...))`,
+mirroring `notifyMatchDone`'s existing error-swallowing convention exactly. Called it from both of
+`recordBall()`'s and `endInnings()`'s `patch.status === 'completed'` branches, right alongside the
+existing `notifyMatchDone(...)` call in each — the same two, and only two, places `status` flips to
+`'completed'` confirmed live (`completeMatch()` remains untouched, still dead code, still deferred
+to the Phase 5 note). `abandonMatch()` was not touched at all, so it categorically cannot trigger a
+recompute. `tsc -p tsconfig.app.json --noEmit` and `npm run build` both clean (same pre-existing,
+unrelated `ScoreHeader` lint warning). **Verified live against the real database, both completion
+paths, with before/after stats snapshots — not just absence of errors**: recorded the public Stats
+page's baseline (130 runs scored platform-wide, J Bumrah at 2 innings/10 runs). Created a throwaway
+1-over match ("Auto Recompute Test A") and let the second innings complete **naturally via a scored
+ball** (`recordBall()`'s own completion branch, chasing a 1-run target) — without ever clicking
+"Update stats", the Stats page immediately reflected 131 runs and J Bumrah at 3 innings/11 runs.
+Created a second throwaway match ("Auto Recompute Test B") and completed it by tapping "End innings"
+on the **second** innings directly (`endInnings()`'s completion branch, a declared/tied finish) —
+again without touching "Update stats", the Teams leaderboard picked up both new teams at "P: 2"
+each. Both throwaway matches were then trashed via the Matches page; since deleting a match doesn't
+itself trigger a recompute, ran the existing manual "Recompute leaderboards & standings" action
+(Platform Tools) once afterward to restore the public leaderboard to its clean 130-run baseline —
+confirmed by re-checking the Stats page. This cleanup step is specific to this slice's own test
+methodology (intentionally polluting then un-polluting the shared cache), not a new gap in the
+underlying feature.
 
 ## Phase 3 — Innings Transition & Scorecard Navigation
 
@@ -778,11 +812,12 @@ roadmaps' scope boundaries.
 - **`ROADMAP_V3` is complete, merged, and verified.** ROADMAP_V4 implementation is underway,
   proceeding one verified slice at a time in priority order, without pausing for per-slice approval.
 - Priority order within the no-overlap set: 2.1a ✅ → 2.2 ✅ → 2.3 ✅ → 3.1 ✅ → 4.2a ✅ → 4.2b ✅ →
-  1.4 ✅ → **2.4 (next)** → 4.1 → 1.1/1.2/1.3/4.3 (re-check `MatchSetupPage.tsx` for any V3 Phase-5
-  UI-consistency-pass changes immediately before starting each of these four).
+  1.4 ✅ → 2.4 ✅ → **4.1 (next to evaluate)** → 1.1/1.2/1.3/4.3 (re-check `MatchSetupPage.tsx` for
+  any V3 Phase-5 UI-consistency-pass changes immediately before starting each of these four); 3.2
+  can also start any time (no dependency on the others).
 - **3.3** needs a fresh read of the merged `MatchPage.tsx` before being scoped further and should not
   start until its post-merge scope is re-confirmed, given its blast radius (the single
   largest-blast-radius file in this roadmap).
 - Every slice ends with `tsc` + `npm run build` green and a live smoke test where auth allows it.
-- Seven of fifteen slices are done (2.1a, 2.2, 2.3, 3.1, 4.2a, 4.2b, 1.4); the rest are tracked above
-  with full architecture/risk/rollback write-ups ready to implement in order.
+- Eight of fifteen slices are done (2.1a, 2.2, 2.3, 3.1, 4.2a, 4.2b, 1.4, 2.4); the rest are tracked
+  above with full architecture/risk/rollback write-ups ready to implement in order.

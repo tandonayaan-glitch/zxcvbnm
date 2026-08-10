@@ -1214,4 +1214,33 @@ reasoning.
     Team A (not Team B) batting, conclusively proving the edited toss drove the real first innings.
     Both throwaway matches deleted via the Matches page after verification.
 
+56. **`ROADMAP_V4.md` Slice 2.4 — Auto-recompute stats/standings on completion** — **Done**, no
+    collision. Added a private `autoRecomputeStats(match)` helper to `scoring.service.ts`, importing
+    `recomputeAllStats`/`recomputeTournamentStandings` from `stats.service.ts` (confirmed no
+    circular-import risk by reading `stats.service.ts`'s own imports first — it does not import
+    `scoring.service.ts`). Both calls are fire-and-forget with `.catch(e => console.error(...))`,
+    mirroring the file's existing `notifyMatchDone` error-swallowing convention exactly, so a slow or
+    failed recompute can never block or break the scorer's completion flow. Wired into **exactly**
+    the two places `status` flips to `'completed'` today — `recordBall()`'s and `endInnings()`'s
+    completion branches, confirmed by grep to be the only two live paths (`completeMatch()` remains
+    confirmed dead code, zero call sites, untouched). `abandonMatch()` was not touched in any way, so
+    it categorically cannot trigger a recompute — satisfies the "abandoning must not auto-recompute"
+    requirement by construction, not by an added guard. Zero lines of `scoring.ts` touched. `tsc -p
+    tsconfig.app.json --noEmit` and `npm run build` both clean (same pre-existing, unrelated
+    `ScoreHeader` lint warning). **Verified live against the real database, both completion paths,
+    with before/after Stats-page snapshots** (not just absence of console errors): baseline was 130
+    runs scored platform-wide, J Bumrah at 2 innings/10 runs. A throwaway 1-over match ("Auto
+    Recompute Test A") completed its second innings **naturally via a scored ball** chasing a 1-run
+    target — hitting `recordBall()`'s completion branch specifically — and without any manual
+    "Update stats" click, the Stats page immediately showed 131 runs and J Bumrah at 3 innings/11
+    runs. A second throwaway match ("Auto Recompute Test B") was completed by tapping "End innings"
+    on the second innings directly — hitting `endInnings()`'s completion branch specifically (a
+    declared/tied finish, no balls scored) — and the Teams leaderboard picked up both new teams at
+    "P: 2" each, again with no manual click. Both throwaway matches were trashed via the Matches
+    page; since deleting a match doesn't itself trigger a recompute, ran the existing manual
+    "Recompute leaderboards & standings" action (Platform Tools) once afterward and confirmed the
+    Stats page returned to its clean 130-run baseline — a cleanup step specific to this slice's own
+    test methodology (intentionally polluting the shared stats cache to prove the wiring, then
+    un-polluting it), not a gap in the shipped feature itself.
+
 (Appended to as further slices are picked up.)
