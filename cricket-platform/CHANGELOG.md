@@ -4,6 +4,13 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Scorer Experience (ROADMAP_V4)
 
+### Added — Quick rematch / duplicate match (ROADMAP_V4 Slice 1.2)
+- A new "Duplicate" action on the Matches list pre-fills a new match's teams, squads, tournament,
+  and full Match Rules (format, overs, team size, wickets, powerplay, Last Man Standing, retired
+  hurt, Super Over) from any existing match — while leaving title, date/time, toss, and knockout
+  stage unset, so a rematch never accidentally inherits the wrong fixture identity or gets tagged
+  as the same knockout stage as its source.
+
 ### Added — Team size/wickets bounds sanity check (ROADMAP_V4 Slice 1.3)
 - The match setup wizard now shows a non-blocking heads-up when the number of wickets is at or
   above the team size — an unusual but not invalid configuration worth a second look before

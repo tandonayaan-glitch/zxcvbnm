@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus, Swords, Trash2, Radio, Eye, Play, Pencil, Archive, ArchiveRestore, Upload } from 'lucide-react'
+import { Plus, Swords, Trash2, Radio, Eye, Play, Pencil, Archive, ArchiveRestore, Upload, Copy } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
   Badge,
@@ -198,6 +198,16 @@ export function MatchesPage() {
                     >
                       <Eye size={15} /> View
                     </Link>
+                    {canScore(profile) && (
+                      <Link
+                        to={`/matches/new?duplicate=${m.id}`}
+                        aria-label={`Duplicate ${m.title}`}
+                        title="Duplicate for a rematch"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-2 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
+                      >
+                        <Copy size={15} /> Duplicate
+                      </Link>
+                    )}
                     {canScore(profile) && live && (
                       <Link
                         to={`/scoring/${m.id}`}

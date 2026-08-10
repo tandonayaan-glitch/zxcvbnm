@@ -1301,4 +1301,35 @@ reasoning.
     proving the check is genuinely advisory-only; reset wickets to 1 and confirmed the warning
     disappeared cleanly.
 
+60. **`ROADMAP_V4.md` Slice 1.2 — Quick rematch / duplicate match** — **Done**, no collision, with
+    one real bug found and fixed during verification. Added a "Duplicate" `Link` on
+    `MatchesPage.tsx`'s row actions (gated by `canScore(profile)`, available regardless of match
+    status) and a `duplicateId` load effect on `MatchSetupPage.tsx` mirroring the existing edit-mode
+    effect's field mapping, explicitly excluding title/date/time/toss/stage per the plan. Since
+    `editId` stays unset, `submit()`'s existing create branch runs unmodified — a genuinely new
+    document, zero lines of `submit()` touched. Zero lines of `scoring.ts` touched.
+    **Bug found live, not by code review**: the first version reset title/date/time/toss *by
+    omission* (relying on the form's initial blank state) rather than explicitly — this only breaks
+    if `MatchSetupPage` stays mounted across a mode switch, which the real product UI never triggers
+    (the "Duplicate" link lives on `/matches`, a different route, always forcing a remount), but was
+    exposed by testing an `?edit=` → `?duplicate=` SPA navigation on the same route (no remount) as
+    part of verifying the stage-reset regression check. Fixed by explicitly setting all five fields
+    instead of relying on implicit initial state; re-verified the same scenario shows a correctly
+    blank title afterward. `tsc -p tsconfig.app.json --noEmit` and `npm run build` both clean after
+    the fix. **Verified live against the real database, full cycle**: created a throwaway source
+    match on the knockout-capable "CricketHub Cup" tournament with distinctive values throughout
+    (asymmetric 3-vs-2 squads, `CUSTOM` 15-over format, venue, LMS on, retired hurt off, Super Over
+    on) — also caught and corrected a test-methodology mistake here: the first attempt to set the
+    source's knockout stage to "Final" during creation silently didn't take (a tool-sequencing
+    artifact, not an app bug), which was caught by checking the actual saved value rather than
+    assuming success, then fixed via the match's own Edit flow so the regression check would be
+    testing something real. With the source genuinely at `stage: 'final'`, duplicating it produced:
+    title blank, toss unset, teams/asymmetric squad counts/format/overs/venue/team-size/wickets/
+    powerplay/LMS/retired-hurt/Super-Over all carried over exactly, tournament carried over, and
+    knockout stage correctly reset to group/league phase — not "Final". Completed the duplicate,
+    confirmed its ID differs from the source's, and confirmed the source's own fields were
+    unaffected by the duplication. Both throwaway matches soft-deleted after verification; neither
+    had started scoring, so no stats-cache pollution occurred and no post-cleanup recompute was
+    needed (unlike Slice 2.4's test).
+
 (Appended to as further slices are picked up.)

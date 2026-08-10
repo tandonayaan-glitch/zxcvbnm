@@ -79,11 +79,22 @@ compliance** line confirming this was checked, not assumed.
   so no test match needed creating or cleaning up. First slice of this pass to touch
   `MatchSetupPage.tsx`; confirmed (per the file itself, unchanged from Pass 3's audit) it hasn't
   picked up any conflicting edits since V3 merged.
-- **Pass 14 (this one)**: **Slice 1.3 (team size/wickets bounds sanity) implemented and verified
+- **Pass 14**: **Slice 1.3 (team size/wickets bounds sanity) implemented and verified
   live end-to-end**, confirming the advisory warning appears with live-interpolated values exactly
   when `maxWickets >= teamSize`, stays out of the way at normal defaults and after the existing
-  team-size-change auto-recompute, and never blocks "Next" — no test match needed. Proceeding to
-  Slice 1.2 next.
+  team-size-change auto-recompute, and never blocks "Next" — no test match needed.
+- **Pass 15 (this one)**: **Slice 1.2 (quick rematch/duplicate match) implemented and verified live
+  end-to-end, with one real bug found and fixed during verification** — the duplicate-load effect
+  originally reset title/date/time/toss *by omission* (relying on the form's initial blank state)
+  rather than explicitly, which leaked stale values if `MatchSetupPage` stayed mounted across a mode
+  switch (not reachable via the real product UI, but a genuine latent robustness gap caught by
+  testing an SPA-navigation edge case, not by code review alone). Fixed and re-verified. Also caught
+  and corrected a test-methodology mistake along the way: the first attempt to set a knockout stage
+  on the throwaway source match silently didn't take (a tool-sequencing artifact), which would have
+  made the stage-reset regression check pass vacuously — caught by checking the actual saved value
+  rather than assuming the write succeeded, then corrected via the match's own Edit flow before
+  re-testing. Eleven of thirteen implementable slices now done (two more, 4.1/4.3, formally
+  deferred rather than implemented); only 3.2 and the hard-blocked 3.3 remain.
 
 ## ⚠️ Critical correction from this pass: Slice 2.1 was wrong
 
@@ -141,7 +152,7 @@ architecture review and re-planning only.
 | P2 | ✅ 2.4 — Auto-recompute stats on completion | `scoring.service.ts` | No |
 | P2 | 3.2 — In-scoring scorecard view | `ScoringPage.tsx` (reuses `ScorecardView`) | No |
 | P2 | 3.3 — Scorecard in-page navigation | `MatchPage.tsx` | **Yes, heavily — hard-blocked** |
-| P3 | 1.2 — Quick rematch/duplicate match | `MatchesPage.tsx`, `MatchSetupPage.tsx` | Low |
+| P3 | ✅ 1.2 — Quick rematch/duplicate match | `MatchesPage.tsx`, `MatchSetupPage.tsx` | Low |
 | P3 | ✅ 1.3 — Team size/wickets bounds validation | `MatchSetupPage.tsx` | Low |
 | P3 | ✅ 1.4 — Toss re-confirmation at match start | `ScoringPage.tsx` | No |
 | P3 | 🚫 4.1 — Faster scoring taps *(deferred, no concrete case)* | `ScoringPage.tsx` | No |
@@ -178,7 +189,9 @@ write-up). **Slice 2.4 is also now done** (auto-recompute stats/standings on com
 write-up). **Slices 4.1 and 4.3 have been formally closed as intentionally deferred** — no concrete
 case for either after re-evaluation; see their write-ups. **Slice 1.1 is also now done** (setup
 wizard validation feedback; see its write-up). **Slice 1.3 is also now done** (team size/wickets
-bounds sanity; see its write-up). **Slice 1.2 (quick rematch/duplicate match) is next.**
+bounds sanity; see its write-up). **Slice 1.2 is also now done** (quick rematch/duplicate match,
+including a real stale-mount bug found and fixed during verification; see its write-up). **Slice 3.2
+(in-scoring-screen scorecard view) is next**, leaving only 3.2 and the hard-blocked 3.3 remaining.
 
 ---
 
@@ -230,7 +243,7 @@ powerplay overs (15) exceeded total overs (10), both clearing once reset to vali
 re-enabled. Confirmed `Next`'s disabled/enabled state matched the message's presence/absence at
 every step, exactly as required. No test match was created or needed to be cleaned up.
 
-### Slice 1.2 — Quick rematch / duplicate match
+### Slice 1.2 — Quick rematch / duplicate match ✅ Done (P3)
 **Problem**: No way to reuse a previous match's teams/squads/Match Rules for a repeat fixture.
 
 - **Affected files**: `src/features/matches/MatchesPage.tsx` (new "Duplicate" row action),
@@ -265,6 +278,50 @@ every step, exactly as required. No test match was created or needed to be clean
   - Duplicating a knockout-stage match does not carry the stage tag onto the new match (explicit
     regression check for the bug found in this pass).
   - `tsc`/`npm run build` clean; live-verified once auth is available.
+
+**Implemented and verified, with one real bug found and fixed during verification.** Added a
+`Duplicate` `Link` (`Copy` icon) to `MatchesPage.tsx`'s row actions, next to "View", gated by
+`canScore(profile)` only — available at any match status, unlike "Edit"/"Start" which are
+`setup`-only, since a rematch is meaningful for a completed or abandoned match too. Added a
+`duplicateId` load `useEffect` in `MatchSetupPage.tsx` mirroring the edit-mode effect's field
+mapping, using a functional `setForm((f) => ({...f, ...}))` update so unlisted fields keep the
+form's current value, with `title`/`date`/`time`/`tossWinner`/`tossDecision`/`stage` explicitly
+listed and reset rather than simply omitted (see bug below for why "omitted" isn't safe here). Since
+`editId` stays unset for a duplicate, `submit()`'s existing `else` branch (`createMatch(payload)`)
+runs unchanged — a genuinely new document, zero changes needed to `submit()` itself. `tsc -p
+tsconfig.app.json --noEmit` and `npm run build` both clean (same pre-existing, unrelated
+`ScoreHeader` lint warning).
+**Bug found during live verification, fixed before considering this slice done**: the first
+implementation reset `title`/`date`/`time`/`tossWinner`/`tossDecision` by *omission* — relying on
+the form's initial blank `useState` defaults rather than explicitly setting them — which works when
+`MatchSetupPage` mounts fresh (the real, only user-reachable path: the "Duplicate" link is on
+`/matches`, a different route, so React always remounts the page), but fails if the component
+somehow stays mounted across a mode switch (discovered while testing edit-mode's stage field via
+`history.pushState`/`popstate` SPA navigation from `?edit=` straight to `?duplicate=` on the same
+`/matches/new` route, which does **not** force a remount) — a stale `title` from the prior edit
+session leaked through. Fixed by explicitly setting all five fields in the duplicate effect instead
+of relying on implicit initial state, and re-verified the exact same stale-mount scenario shows a
+correctly blank title. Not reachable via the actual product UI today, but a real latent bug in the
+component's own robustness, worth fixing rather than leaving as a "won't happen in practice"
+assumption.
+**Verified live against the real database, full cycle, including the corrected stage-reset
+regression check**: created a real throwaway source match ("Duplicate Source Test") on the
+knockout-capable "CricketHub Cup" tournament with distinctive values throughout (`CUSTOM` format,
+15 overs, a real venue, asymmetric 3-vs-2 squads, Last Man Standing on, Retired Hurt off, Super Over
+on) — the *first* attempt to also set its knockout stage to "Final" during creation silently failed
+(a `form_input` write to a select that hadn't re-rendered yet, an artifact of the tool sequencing,
+not an app bug), which was caught by directly checking the saved value afterward rather than
+assuming the write took — corrected via the match's own Edit flow before re-testing. With the
+source genuinely at `stage: 'final'`, duplicating it produced a form with: title blank ("Enter a
+match title to continue." shown, confirming no carry-over), teams/asymmetric squad counts (3/2)
+carried over exactly, toss unset ("Select who won the toss to continue." shown), format/overs/
+venue/team-size/wickets/powerplay/LMS/no-retired-hurt/Super-Over all carried over exactly matching
+the source, tournament ("CricketHub Cup") carried over, and — the specific regression check —
+**knockout stage reset to "Group / league phase" (`''`), not "Final"**. Completed the duplicate
+match creation and confirmed its ID differs from the source's; confirmed the source match's own
+tournament/venue/format/toss were unaffected by the duplication (read via its own Edit screen).
+Both throwaway matches soft-deleted after verification; neither had ever started scoring, so no
+stats-cache pollution occurred (unlike Slice 2.4's test, no post-cleanup recompute was needed).
 
 ### Slice 1.3 — Team size / wickets bounds sanity ✅ Done (P3)
 **Problem**: No upper bound or sanity check when wickets ≥ team size.
@@ -895,11 +952,11 @@ roadmaps' scope boundaries.
 - **`ROADMAP_V3` is complete, merged, and verified.** ROADMAP_V4 implementation is underway,
   proceeding one verified slice at a time in priority order, without pausing for per-slice approval.
 - Priority order within the no-overlap set: 2.1a ✅ → 2.2 ✅ → 2.3 ✅ → 3.1 ✅ → 4.2a ✅ → 4.2b ✅ →
-  1.4 ✅ → 2.4 ✅ → 4.1 🚫 (deferred) → 4.3 🚫 (deferred) → 1.1 ✅ → 1.3 ✅ → **1.2 (next)** → 3.2.
+  1.4 ✅ → 2.4 ✅ → 4.1 🚫 (deferred) → 4.3 🚫 (deferred) → 1.1 ✅ → 1.3 ✅ → 1.2 ✅ → **3.2 (next)**.
 - **3.3** needs a fresh read of the merged `MatchPage.tsx` before being scoped further and should not
   start until its post-merge scope is re-confirmed, given its blast radius (the single
   largest-blast-radius file in this roadmap) — planned last for that reason.
 - Every slice ends with `tsc` + `npm run build` green and a live smoke test where auth allows it.
-- Ten of fifteen slices are done (2.1a, 2.2, 2.3, 3.1, 4.2a, 4.2b, 1.4, 2.4, 1.1, 1.3); two (4.1, 4.3)
-  are formally closed as intentionally deferred, no code shipped; the remaining three (1.2, 3.2, 3.3)
-  are tracked above with full architecture/risk/rollback write-ups ready to implement.
+- Eleven of fifteen slices are done (2.1a, 2.2, 2.3, 3.1, 4.2a, 4.2b, 1.4, 2.4, 1.1, 1.3, 1.2); two
+  (4.1, 4.3) are formally closed as intentionally deferred, no code shipped; the remaining two (3.2,
+  3.3) are tracked above with full architecture/risk/rollback write-ups ready to implement.

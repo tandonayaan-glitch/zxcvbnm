@@ -109,6 +109,7 @@ export function MatchSetupPage() {
   const toast = useToast()
   const [params] = useSearchParams()
   const editId = params.get('edit')
+  const duplicateId = params.get('duplicate')
   const profile = useAuthStore((s) => s.profile)
 
   const teams = useAsync(listTeams, [])
@@ -119,6 +120,7 @@ export function MatchSetupPage() {
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
   const [loadingEdit, setLoadingEdit] = useState(!!editId)
+  const [loadingDuplicate, setLoadingDuplicate] = useState(!!duplicateId)
   const [editReason, setEditReason] = useState('')
   const [form, setForm] = useState<FormState>({
     title: '',
@@ -189,6 +191,50 @@ export function MatchSetupPage() {
       setLoadingEdit(false)
     })
   }, [editId])
+
+  // Load a source match to pre-fill a rematch. Deliberately excludes title (would
+  // literally duplicate it), date/time (a rematch is a new fixture, not the same
+  // timestamp), toss (a new match needs its own coin toss), and stage (a duplicated
+  // "Final" would silently carry the knockout-stage tag onto an unrelated new match).
+  useEffect(() => {
+    if (!duplicateId) return
+    getMatch(duplicateId).then((m) => {
+      if (m) {
+        setForm((f) => ({
+          ...f,
+          // Explicitly reset rather than relying on the form's initial blank state —
+          // MatchSetupPage doesn't necessarily remount between modes (e.g. React Router
+          // won't remount it going from ?edit= to ?duplicate= on the same route), so a
+          // stale title/date/time/toss from a prior mode could otherwise leak through.
+          title: '',
+          date: '',
+          time: '',
+          tossWinner: '',
+          tossDecision: 'bat',
+          tournamentId: m.tournamentId ?? '',
+          stage: '',
+          format: m.format,
+          oversPerInnings: m.oversPerInnings,
+          ballsPerOver: m.ballsPerOver,
+          venue: m.venue ?? '',
+          isPublic: m.isPublic,
+          scorerId: m.scorerId ?? '',
+          teamAId: m.teamA.id,
+          teamBId: m.teamB.id,
+          squadA: m.squadA,
+          squadB: m.squadB,
+          teamSize: m.teamSize ?? DEFAULT_TEAM_SIZE,
+          maxWickets: m.maxWickets ?? defaultMaxWickets(m.teamSize ?? DEFAULT_TEAM_SIZE),
+          powerplayMode: m.powerplayMode ?? 'auto',
+          powerplayOvers: m.powerplayOvers ?? computeAutoPowerplayOvers(m.oversPerInnings),
+          lastManStanding: m.lastManStanding ?? false,
+          retiredHurtEnabled: m.retiredHurtEnabled ?? true,
+          superOverEnabled: m.superOverEnabled ?? false,
+        }))
+      }
+      setLoadingDuplicate(false)
+    })
+  }, [duplicateId])
 
   const scope = ownerScope(profile)
   const scopedTeams = useMemo(
@@ -453,7 +499,7 @@ export function MatchSetupPage() {
     }
   }
 
-  if (teams.loading || players.loading || loadingEdit) return <PageLoader />
+  if (teams.loading || players.loading || loadingEdit || loadingDuplicate) return <PageLoader />
 
   const scorers = (users.data ?? []).filter(
     (u) => u.role === 'SCORER' || u.role === 'ADMIN',
