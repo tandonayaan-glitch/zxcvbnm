@@ -744,6 +744,13 @@ export function MatchSetupPage() {
               </Field>
             </div>
 
+            {form.maxWickets >= form.teamSize && (
+              <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                Wickets ({form.maxWickets}) is at or above team size ({form.teamSize}) — unusual,
+                but not invalid. Double-check this is intentional.
+              </p>
+            )}
+
             <div>
               <div className="mb-2 text-sm font-medium text-ink-700 dark:text-ink-300">
                 Powerplay

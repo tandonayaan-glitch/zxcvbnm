@@ -4,6 +4,11 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Scorer Experience (ROADMAP_V4)
 
+### Added — Team size/wickets bounds sanity check (ROADMAP_V4 Slice 1.3)
+- The match setup wizard now shows a non-blocking heads-up when the number of wickets is at or
+  above the team size — an unusual but not invalid configuration worth a second look before
+  continuing.
+
 ### Added — Setup wizard validation feedback (ROADMAP_V4 Slice 1.1)
 - The "Next" button in the match setup wizard now shows a specific reason when it's disabled
   ("Enter a match title to continue.", "Select who won the toss to continue.", etc.) instead of

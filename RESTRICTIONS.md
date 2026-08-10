@@ -1284,4 +1284,21 @@ reasoning.
     presence at every single one of these checks — the acceptance criterion that actually matters,
     since a mismatch there would mean the messaging drifted from the real gate.
 
+59. **`ROADMAP_V4.md` Slice 1.3 — Team size/wickets bounds sanity** — **Done**, no collision. Added a
+    conditional amber advisory paragraph below the Team size / Number of wickets fields in
+    `MatchSetupPage.tsx`, shown only when `form.maxWickets >= form.teamSize`, deliberately using this
+    codebase's existing non-blocking-hint amber styling rather than `Field`'s red `error` prop (which
+    would visually read as a hard block it isn't). No new branch added to `canAdvance()` or Slice
+    1.1's `advanceBlockedReason()` — an independent, parallel, purely advisory check per the plan.
+    Zero lines of `scoring.ts` touched; no Firestore write involved. `tsc -p tsconfig.app.json
+    --noEmit` and `npm run build` both clean. **Verified live against the real database** — no test
+    match created, since this slice has no data-write path: confirmed no warning at wizard defaults
+    (11-a-side, 10 wickets); set team size to 2 and confirmed the existing `onTeamSizeChange`
+    auto-recompute (which drops wickets to 1 for a 2-a-side squad) does not produce a false-positive
+    warning; set wickets to 2 (equal to team size) and confirmed the exact live-interpolated text
+    ("Wickets (2) is at or above team size (2)..."); set wickets to 5 and confirmed the numbers in
+    the message updated accordingly; confirmed "Next" stayed enabled at every one of these states,
+    proving the check is genuinely advisory-only; reset wickets to 1 and confirmed the warning
+    disappeared cleanly.
+
 (Appended to as further slices are picked up.)

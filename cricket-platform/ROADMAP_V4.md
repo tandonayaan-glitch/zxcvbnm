@@ -72,13 +72,18 @@ compliance** line confirming this was checked, not assumed.
   conventions (and each slice's own original write-up) say to avoid. Proceeding to the remaining
   concretely-scoped slices: 1.1, 1.3, 1.2, 3.2, then 3.3 last (needs the freshest `MatchPage.tsx`
   read given its blast radius).
-- **Pass 13 (this one)**: **Slice 1.1 (setup wizard validation feedback) implemented and verified
+- **Pass 13**: **Slice 1.1 (setup wizard validation feedback) implemented and verified
   live end-to-end**, walking every one of the six sub-cases across the wizard's five gated steps
   (including the compound powerplay-exceeds-overs check) and confirming each shows the correct
   specific reason and clears exactly when `canAdvance()` would allow "Next" — no data write involved,
   so no test match needed creating or cleaning up. First slice of this pass to touch
   `MatchSetupPage.tsx`; confirmed (per the file itself, unchanged from Pass 3's audit) it hasn't
-  picked up any conflicting edits since V3 merged. Proceeding to Slice 1.3 next.
+  picked up any conflicting edits since V3 merged.
+- **Pass 14 (this one)**: **Slice 1.3 (team size/wickets bounds sanity) implemented and verified
+  live end-to-end**, confirming the advisory warning appears with live-interpolated values exactly
+  when `maxWickets >= teamSize`, stays out of the way at normal defaults and after the existing
+  team-size-change auto-recompute, and never blocks "Next" — no test match needed. Proceeding to
+  Slice 1.2 next.
 
 ## ⚠️ Critical correction from this pass: Slice 2.1 was wrong
 
@@ -137,7 +142,7 @@ architecture review and re-planning only.
 | P2 | 3.2 — In-scoring scorecard view | `ScoringPage.tsx` (reuses `ScorecardView`) | No |
 | P2 | 3.3 — Scorecard in-page navigation | `MatchPage.tsx` | **Yes, heavily — hard-blocked** |
 | P3 | 1.2 — Quick rematch/duplicate match | `MatchesPage.tsx`, `MatchSetupPage.tsx` | Low |
-| P3 | 1.3 — Team size/wickets bounds validation | `MatchSetupPage.tsx` | Low |
+| P3 | ✅ 1.3 — Team size/wickets bounds validation | `MatchSetupPage.tsx` | Low |
 | P3 | ✅ 1.4 — Toss re-confirmation at match start | `ScoringPage.tsx` | No |
 | P3 | 🚫 4.1 — Faster scoring taps *(deferred, no concrete case)* | `ScoringPage.tsx` | No |
 | P3 | 🚫 4.3 — Remembered scorer preferences *(deferred, no concrete case)* | `MatchSetupPage.tsx`, new local store | Low |
@@ -172,8 +177,8 @@ its write-up). **Slice 1.4 is also now done** (toss re-confirmation on `PreMatch
 write-up). **Slice 2.4 is also now done** (auto-recompute stats/standings on completion; see its
 write-up). **Slices 4.1 and 4.3 have been formally closed as intentionally deferred** — no concrete
 case for either after re-evaluation; see their write-ups. **Slice 1.1 is also now done** (setup
-wizard validation feedback; see its write-up). **Slice 1.3 (team size/wickets bounds sanity) is
-next.**
+wizard validation feedback; see its write-up). **Slice 1.3 is also now done** (team size/wickets
+bounds sanity; see its write-up). **Slice 1.2 (quick rematch/duplicate match) is next.**
 
 ---
 
@@ -261,7 +266,7 @@ every step, exactly as required. No test match was created or needed to be clean
     regression check for the bug found in this pass).
   - `tsc`/`npm run build` clean; live-verified once auth is available.
 
-### Slice 1.3 — Team size / wickets bounds sanity
+### Slice 1.3 — Team size / wickets bounds sanity ✅ Done (P3)
 **Problem**: No upper bound or sanity check when wickets ≥ team size.
 
 - **Affected files**: `src/features/matches/MatchSetupPage.tsx` only.
@@ -277,6 +282,23 @@ every step, exactly as required. No test match was created or needed to be clean
 - **Restrictions compliance**: ✅ Compliant.
 - **Acceptance criteria**: Warning shows exactly when `maxWickets >= teamSize`; wizard still
   advances normally either way. `tsc`/`npm run build` clean.
+
+**Implemented and verified exactly as planned.** Added a conditional amber advisory `<p>` (matching
+this codebase's existing non-blocking-hint amber styling, e.g. `ScorePad`'s active-extra hint —
+deliberately not `Field`'s red `error` prop, which would visually read as blocking even though
+nothing here is) directly below the Team size / Number of wickets field grid, shown only when
+`form.maxWickets >= form.teamSize`. No new validation branch added to `canAdvance()` or
+`advanceBlockedReason()` — this is a parallel, independent check with no interaction with Slice
+1.1's gating logic. `tsc -p tsconfig.app.json --noEmit` and `npm run build` both clean. **Verified
+live against the real database** — no test match was created, since this slice has no data-write
+path: reached the Match Rules step with the wizard's defaults (11-a-side, 10 wickets, no warning,
+confirming no false positive at normal values), set team size to 2 (auto-adjusted wickets down to 1
+via the existing `onTeamSizeChange` default-recompute — still no warning, confirming that
+interaction doesn't produce a false positive either), then set wickets to 2 (equal to team size) and
+confirmed the exact warning text with live values interpolated ("Wickets (2) is at or above team
+size (2)..."), then to 5 (wickets exceeding team size, text updated to "Wickets (5)..."), confirming
+`Next` stayed enabled at every one of these states (the actual acceptance criterion — advisory, not
+blocking), then reset wickets to 1 and confirmed the warning disappeared cleanly.
 
 ### Slice 1.4 — Toss re-confirmation at match start ✅ Done (P3)
 **Problem**: The toss is fixed at setup time, often before the real pitchside coin toss; no way to
@@ -873,13 +895,11 @@ roadmaps' scope boundaries.
 - **`ROADMAP_V3` is complete, merged, and verified.** ROADMAP_V4 implementation is underway,
   proceeding one verified slice at a time in priority order, without pausing for per-slice approval.
 - Priority order within the no-overlap set: 2.1a ✅ → 2.2 ✅ → 2.3 ✅ → 3.1 ✅ → 4.2a ✅ → 4.2b ✅ →
-  1.4 ✅ → 2.4 ✅ → 4.1 🚫 (deferred) → 4.3 🚫 (deferred) → 1.1 ✅ → **1.3 (next)** → 1.2 → 3.2
-  (re-check `MatchSetupPage.tsx` for any V3 Phase-5 UI-consistency-pass changes immediately before
-  starting 1.2/1.3 — done immediately before 1.1 and found no such changes).
+  1.4 ✅ → 2.4 ✅ → 4.1 🚫 (deferred) → 4.3 🚫 (deferred) → 1.1 ✅ → 1.3 ✅ → **1.2 (next)** → 3.2.
 - **3.3** needs a fresh read of the merged `MatchPage.tsx` before being scoped further and should not
   start until its post-merge scope is re-confirmed, given its blast radius (the single
   largest-blast-radius file in this roadmap) — planned last for that reason.
 - Every slice ends with `tsc` + `npm run build` green and a live smoke test where auth allows it.
-- Nine of fifteen slices are done (2.1a, 2.2, 2.3, 3.1, 4.2a, 4.2b, 1.4, 2.4, 1.1); two (4.1, 4.3) are
-  formally closed as intentionally deferred, no code shipped; the remaining four (1.2, 1.3, 3.2, 3.3)
+- Ten of fifteen slices are done (2.1a, 2.2, 2.3, 3.1, 4.2a, 4.2b, 1.4, 2.4, 1.1, 1.3); two (4.1, 4.3)
+  are formally closed as intentionally deferred, no code shipped; the remaining three (1.2, 3.2, 3.3)
   are tracked above with full architecture/risk/rollback write-ups ready to implement.
