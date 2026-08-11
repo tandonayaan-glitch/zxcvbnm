@@ -1379,4 +1379,15 @@ reasoning.
     scrollable document (the browser cannot scroll past the page end), still comfortably visible.
     **This closes out `ROADMAP_V4` in its entirety — every slice is done or formally deferred.**
 
+63. **Removed dead `completeMatch()` from `scoring.service.ts`** — post-roadmap cleanup, not a
+    `ROADMAP_V4` slice. Flagged during Slice 2.4's implementation as exported with zero call sites
+    anywhere in the app (superseded by `recordBall`/`endInnings` handling completion inline);
+    user asked for it to be removed after the roadmap closed out. Re-confirmed zero call sites via
+    a fresh grep across `src/` immediately before deleting the function, so nothing was silently
+    depending on it. `MatchResult` (its parameter type) stayed imported — confirmed still used
+    elsewhere in the file (`notifyMatchDone`, `abandonMatch`, `computeResult`'s return type), so no
+    unused-import cleanup was needed either. Zero lines of `scoring.ts` touched. `tsc -p
+    tsconfig.app.json --noEmit` and `npm run build` both clean. No live-verification step applies —
+    dead code has no UI flow to exercise, before or after removal.
+
 (Appended to as further slices are picked up.)

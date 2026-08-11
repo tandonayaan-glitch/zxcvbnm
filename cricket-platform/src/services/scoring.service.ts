@@ -364,20 +364,6 @@ export async function endInnings(match: Match): Promise<void> {
   }
 }
 
-export async function completeMatch(
-  match: Match,
-  result?: MatchResult,
-): Promise<void> {
-  const finalResult = result ?? computeResult(match, match.innings)
-  await updateDoc(doc(db, COL.matches, match.id), {
-    status: 'completed',
-    completedAt: Date.now(),
-    result: finalResult,
-    updatedAt: Date.now(),
-  })
-  void notifyMatchDone(match, finalResult)
-}
-
 export async function abandonMatch(match: Match): Promise<void> {
   const result: MatchResult = {
     outcome: 'abandoned',

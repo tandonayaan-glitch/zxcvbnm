@@ -4,6 +4,11 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Scorer Experience (ROADMAP_V4)
 
+### Removed — Dead `completeMatch()` function
+- Removed `completeMatch()` from `scoring.service.ts` — flagged during ROADMAP_V4's Slice 2.4 audit
+  as exported with zero call sites anywhere in the app, superseded by `recordBall`/`endInnings`
+  handling match completion inline. No behavior change; nothing called it.
+
 ### Added — Scorecard page in-page navigation (ROADMAP_V4 Slice 3.3)
 - The public match page now has quick-jump links (Insights, Scorecard, Photos, Comments) right at
   the top, so visitors don't have to scroll past head-to-head stats, the live panel, and analytics

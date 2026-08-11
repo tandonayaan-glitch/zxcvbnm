@@ -1010,13 +1010,13 @@ scoped slice reusing the `favStore`/`bgStore` pattern already noted here.
 - **Drinks-break / mid-innings-stoppage timestamps** — would need new fields on `InningsState`
   (off-limits shape).
 
-**Also flagged, not a Phase 5 item but worth a separate note**: `completeMatch()`
-(`scoring.service.ts`) is exported but has zero call sites anywhere in the app — genuinely dead
-code (distinct from `abandonMatch()`'s prior state, which was unused-but-needed; this one appears
-to be superseded by `recordBall`/`endInnings` handling completion inline). Candidate for
-`ROADMAP_V3` Phase 5's own "genuine bug fixes" pass (dead-code removal) rather than a `ROADMAP_V4`
-slice, since it's not scorer-experience-shaped — noting it here so it isn't lost between the two
-roadmaps' scope boundaries.
+**Also flagged, not a Phase 5 item — ✅ resolved**: `completeMatch()` (`scoring.service.ts`) was
+exported with zero call sites anywhere in the app — genuinely dead code (distinct from
+`abandonMatch()`'s prior state, which was unused-but-needed; this one was superseded by
+`recordBall`/`endInnings` handling completion inline). Re-confirmed zero call sites via a fresh
+grep immediately before removal, then deleted the function outright. `MatchResult` (its parameter
+type) stayed imported — still used elsewhere in the file. `tsc`/`npm run build` both clean; no
+live-verification path applies (dead code has no UI flow to exercise, before or after removal).
 
 ---
 
