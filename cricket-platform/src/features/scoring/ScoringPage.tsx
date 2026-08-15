@@ -581,6 +581,7 @@ export function ScoringPage() {
             bowlingSquad.includes(p.id),
           )}
           retiredHurtEnabled={match.retiredHurtEnabled !== false}
+          activeExtra={activeExtra}
           onConfirm={confirmWicket}
           onClose={() => setWicketOpen(false)}
         />

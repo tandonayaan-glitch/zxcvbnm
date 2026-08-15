@@ -3,7 +3,16 @@ import { Modal } from '@/components/ui/Modal'
 import { Avatar, Button, Field, Select } from '@/components/ui/primitives'
 import { WICKET_TYPE_LABELS } from '@/lib/format'
 import { wicketCountsAsDismissal } from '@/domain/scoring'
-import type { Player, WicketType } from '@/types'
+import type { ExtraType, Player, WicketType } from '@/types'
+
+/** Wicket types that are cricket-legal on a Wide (only a run-out or stumping can happen —
+ *  the ball is dead for bowled/caught/lbw/hit-wicket) or a No ball (only a run-out — even
+ *  stumped is disallowed, since the delivery is illegal regardless of where it's played).
+ *  "Retired"/"Other" aren't about how the ball was bowled, so they stay allowed either way. */
+const LEGAL_TYPES_BY_EXTRA: Partial<Record<ExtraType, WicketType[]>> = {
+  wide: ['run_out', 'stumped', 'retired_out', 'retired_hurt', 'other'],
+  no_ball: ['run_out', 'retired_out', 'retired_hurt', 'other'],
+}
 
 interface PlayerOption {
   id: string
@@ -65,6 +74,7 @@ export function WicketModal({
   battingPlayers,
   fieldingPlayers,
   retiredHurtEnabled = true,
+  activeExtra = null,
   onConfirm,
   onClose,
 }: {
@@ -74,15 +84,21 @@ export function WicketModal({
   fieldingPlayers: Player[]
   /** Whether "Retired hurt" is offered as a wicket type, per the match's rules. */
   retiredHurtEnabled?: boolean
+  /** The extra currently selected on the score pad, if any — narrows which dismissal
+   *  types are cricket-legal (e.g. no "bowled" on a Wide or No ball). */
+  activeExtra?: ExtraType | null
   onConfirm: (r: WicketResult) => void
   onClose: () => void
 }) {
-  const [type, setType] = useState<WicketType>('bowled')
+  const legalTypes = activeExtra ? LEGAL_TYPES_BY_EXTRA[activeExtra] : null
+  const [type, setType] = useState<WicketType>(legalTypes ? legalTypes[0] : 'bowled')
   const [outBatterId, setOutBatterId] = useState(strikerId)
   const [fielderId, setFielderId] = useState('')
   const [runs, setRuns] = useState(0)
   const wicketTypes = Object.entries(WICKET_TYPE_LABELS).filter(
-    ([k]) => retiredHurtEnabled || k !== 'retired_hurt',
+    ([k]) =>
+      (retiredHurtEnabled || k !== 'retired_hurt') &&
+      (!legalTypes || legalTypes.includes(k as WicketType)),
   )
 
   const needsFielder = type === 'caught' || type === 'stumped' || type === 'run_out'
