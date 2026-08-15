@@ -55,12 +55,14 @@ export async function listPendingRequests(): Promise<AdminRequest[]> {
     .sort((a, b) => b.createdAt - a.createdAt)
 }
 
-/** Approve: promote the user to ADMIN and mark the request approved. */
+/** Approve: promote the user to TOURNAMENT_MANAGER (scoped to running their own
+ *  tournament, matching what the request form actually asks for) and mark the
+ *  request approved. */
 export async function approveRequest(
   req: AdminRequest,
   masterUid: string,
 ): Promise<void> {
-  await setUserRole(req.uid, 'ADMIN')
+  await setUserRole(req.uid, 'TOURNAMENT_MANAGER')
   await updateDoc(doc(reqCol(), req.id), {
     status: 'approved',
     decidedAt: Date.now(),
@@ -70,7 +72,7 @@ export async function approveRequest(
     req.uid,
     'account',
     'Admin request approved',
-    `You're now an admin for "${req.tournamentName}".`,
+    `You're now the tournament manager for "${req.tournamentName}".`,
     '/dashboard',
   )
 }

@@ -40,7 +40,7 @@ export function RequestsPage() {
     setBusyId(req.id)
     try {
       await approveRequest(req, me.id)
-      toast.success(`${req.displayName} is now an admin`)
+      toast.success(`${req.displayName} is now a tournament manager`)
       requests.refetch()
     } catch {
       toast.error('Could not approve request')
