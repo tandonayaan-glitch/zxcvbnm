@@ -54,8 +54,8 @@ external decisions needed).** Build these first: fast, verifiable, zero business
 1. **A1 — Batter vs Bowler analytics** ✅ Done (new)
 2. **A2 — Partnership analytics** ✅ Done (full per-innings breakdown; cross-match records
    deliberately descoped, see write-up below)
-3. **A3 — Expected Score** (real first-innings projection model, paired with the existing Win
-   Probability module)
+3. **A3 — Expected Score** ✅ Done (real first-innings projection model, paired with the existing
+   Win Probability module)
 4. **A4 — Career-level Wagon Wheel + Bowling Heat Map** (reuse the existing pure domain functions
    across a player's whole match history, not just one match)
 
@@ -165,7 +165,7 @@ the new full list exactly. Confirmed the Thunder Kings innings' final partnershi
 "unbroken" (Thunder Kings won by 3 wickets — they had wickets in hand, so their last partnership was
 never broken), the one label this feature couldn't get right by accident.
 
-### A3 — Expected Score
+### A3 — Expected Score ✅ Done
 **Problem**: the only "projected score" today is a naive linear extrapolation with no wickets-lost
 or innings-phase awareness.
 
@@ -178,6 +178,32 @@ or innings-phase awareness.
   needs the naive version once this ships.
 - **Risks**: Low-moderate — needs a sensible formula, but it's still pure and easily unit-tested by
   hand against known match trajectories.
+
+**Audit before implementing**: `projectedScore()` (`lib/format.ts`) had exactly one consumer
+(`MatchPage.tsx`'s `LivePanel`) — confirmed by grep, not assumption — and ignored wickets entirely.
+`LivePanel` already computes a `wicketsRemaining` value for the sibling `chaseWinProbability` call
+(`(squadSize||11) - 1 - inn.wickets`, matching a standard-XI assumption already accepted there) but
+never passed it to the score projection. **Implemented and verified.** New
+`projectFirstInningsScore()` extrapolates the current run rate across the overs remaining, then
+scales that extrapolation by a wickets-in-hand factor (`0.5 + 0.5 * min(1, wicketsRemaining/10)`) —
+mirroring `chaseWinProbability`'s own `/10` normalization exactly rather than inventing a second,
+differently-scaled convention for the same input in the same component. Explicitly documented as a
+heuristic, not Duckworth-Lewis or a fitted model — same honesty `winProbability.ts` already commits
+to, for the same reason (no historical dataset to calibrate either against). Reused the already-
+computed `wicketsRemaining` from `LivePanel` rather than recomputing it. Updated the on-page label
+from "Projected X on this run rate" to "Expected score: X" since the number is no longer pure-rate-
+based. **Confirmed `projectedScore()` had zero other consumers after the swap and removed it**
+from `lib/format.ts` — dead code, not left behind "just in case." Zero lines of `scoring.ts`
+touched — every input (runs, balls, wickets) is real recorded match data, nothing fabricated.
+`tsc -p tsconfig.app.json --noEmit`, `npm run build`, and `oxlint` all clean (one pre-existing,
+unrelated `react-hooks/exhaustive-deps` warning on a different `useMemo` in the same file, not
+introduced by this change). **Verified live against the real database with the formula hand-computed
+twice, not just eyeballed for plausibility**: created a throwaway 3-a-side match, scored 24 runs off
+6 balls (0 wickets), and confirmed the displayed "Expected score: 298" matched a hand calculation
+using the exact same formula to the integer. Then took a wicket (wickets remaining 2→1) and confirmed
+the number dropped to exactly 237 — also hand-verified — proving the wicket-sensitivity actually
+works, not just that some number renders. Test match deleted after verification (never reached
+`completed` status, so no stats-cache pollution to clean up, unlike Slice 2.4's test).
 
 ### A4 — Career-level Wagon Wheel + Bowling Heat Map
 **Problem**: `wagonWheelData()`/`pitchMapData()` already generalize across matches (pure functions,

@@ -4,6 +4,13 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Changed — Real Expected Score model (ROADMAP_V5 Slice A3)
+- The live first-innings score projection now accounts for wickets lost, not just the current run
+  rate — a side that's lost several wickets gets a more conservative projection than a naive
+  run-rate extrapolation would give. Documented as a heuristic, matching the existing win-probability
+  estimate's own honesty about not being a fitted model. Replaces the old naive projection, which is
+  removed (no other callers).
+
 ### Added — Full partnership breakdown on match insights (ROADMAP_V5 Slice A2)
 - Match insights now list every partnership of an innings (batter pair, runs, balls, and which
   wicket it ended on, or "unbroken"), not just the best one.
@@ -12,6 +19,19 @@ All notable changes to CricketHub. Newest first.
 - Player pages now have a "vs Bowler" tab showing a batter's career record against every bowler
   they've faced — runs, balls, dismissals, average, strike rate, fours and sixes per matchup,
   sorted by balls faced. Only shown for players with a batting record.
+
+## [Unreleased] — Scoring Engine (ROADMAP_V5)
+
+### Fixed — Wicket modal allowed illegal dismissal types on Wide/No ball (ROADMAP_V5 Slice 7.1)
+- The Wicket picker now only offers dismissal types that are actually legal for the currently active
+  extra — Run out/Stumped/Retired/Other on a Wide, and Run out/Retired/Other on a No ball (bowled,
+  caught, lbw, and hit-wicket cannot happen on either). With no extra active, nothing changes.
+
+### Added — Super Over scoring (ROADMAP_V5 Slice 2.1)
+- A tied match with "Super Over" enabled now has a real "Start Super Over" action instead of just a
+  note. It creates a genuinely new, linked match (1 over per side, 2-wicket threshold, same two
+  teams and squads) scored through the normal live-scoring screen, with both matches linking to each
+  other on their scoring-complete screen and public match page.
 
 ## [Unreleased] — Scorer Experience (ROADMAP_V4)
 

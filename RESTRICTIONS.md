@@ -1447,4 +1447,35 @@ reasoning.
     correctly reads "unbroken" rather than a bogus wicket number — the one label a copy-paste error
     could easily have gotten wrong.
 
+66. **`ROADMAP_V5_PLATFORM.md` Slice A3 — Expected Score** — **Done**, no collision. Audited first:
+    confirmed via grep that `projectedScore()` (`lib/format.ts`) had exactly one consumer
+    (`MatchPage.tsx`'s `LivePanel`) and ignored wickets entirely, and that `LivePanel` already
+    computes a `wicketsRemaining` value for the sibling `chaseWinProbability` call but never passed
+    it into the score projection. New `src/domain/expectedScore.ts`'s `projectFirstInningsScore()`
+    extrapolates the current run rate across overs remaining, scaled by a wickets-in-hand factor
+    (`0.5 + 0.5 * min(1, wicketsRemaining/10)`) that mirrors `chaseWinProbability`'s own `/10`
+    normalization exactly, rather than a second, differently-scaled convention for the same input in
+    the same component. Explicitly documented as a heuristic, not Duckworth-Lewis or a fitted model
+    — the same honesty `winProbability.ts` already commits to, for the identical reason (no
+    historical ball-by-ball dataset in this app to calibrate either against). Every input (runs,
+    balls bowled, wickets lost) is real recorded match data — nothing fabricated or estimated where
+    real data doesn't exist. Reused `LivePanel`'s already-computed `wicketsRemaining` rather than
+    recomputing it; updated the on-page label from "Projected X on this run rate" to "Expected
+    score: X" since the number is no longer pure-rate-based. **Confirmed zero other consumers of
+    `projectedScore()` after the swap and removed it** from `lib/format.ts` outright — dead code,
+    not left behind speculatively. Zero lines of `scoring.ts` touched. `tsc -p tsconfig.app.json
+    --noEmit`, `npm run build`, and `oxlint` all clean (one pre-existing, unrelated
+    `react-hooks/exhaustive-deps` warning on a different `useMemo` in the same file, not introduced
+    by this change — confirmed by reading the flagged code, which this slice never touched).
+    **Verified live against the real database with the formula hand-computed twice, not eyeballed
+    for plausibility**: created a throwaway 3-a-side match, scored 24 runs off 6 balls with 0
+    wickets down, and confirmed the displayed "Expected score: 298" matched an independent hand
+    calculation of the exact same formula to the integer. Took a wicket (wickets remaining 2→1,
+    squad of 3) and confirmed the number dropped to exactly 237 — also independently hand-verified —
+    proving the wicket-sensitivity genuinely works, not just that a number renders. Confirmed no new
+    console errors beyond pre-existing, unrelated Firebase Storage CORS noise from the photo gallery.
+    Test match deleted after verification; it never reached `completed` status, so no stats-cache
+    pollution occurred and no post-cleanup recompute was needed (unlike Slice 2.4's test in
+    `ROADMAP_V4.md`).
+
 (Appended to as further slices are picked up.)

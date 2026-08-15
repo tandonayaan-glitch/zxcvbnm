@@ -51,6 +51,7 @@ import { AddToCalendarButton } from '@/components/ui/AddToCalendarButton'
 import { computeHeadToHead } from '@/domain/headToHead'
 import { matchTopPerformers } from '@/domain/matchPerformers'
 import { chaseWinProbability } from '@/domain/winProbability'
+import { projectFirstInningsScore } from '@/domain/expectedScore'
 import { useAuthStore, canScore, isAdmin } from '@/store/authStore'
 import { useBgStore } from '@/store/bgStore'
 import {
@@ -59,7 +60,6 @@ import {
   formatRate,
   runRate,
   requiredRate,
-  projectedScore,
 } from '@/lib/format'
 import type { Delivery, Match, ScorecardConfig } from '@/types'
 
@@ -234,6 +234,17 @@ export function MatchPage() {
         {match.result && (
           <div className="bg-pitch-50 px-5 py-2.5 text-center font-semibold text-pitch-700">
             {match.result.summary}
+          </div>
+        )}
+
+        {match.linkedMatchId && (
+          <div className="border-t border-ink-100 dark:border-ink-800 px-5 py-2.5 text-center text-sm">
+            <Link
+              to={`/match/${match.linkedMatchId}`}
+              className="font-medium text-brand-700 hover:underline dark:text-brand-400"
+            >
+              View linked Super Over match
+            </Link>
           </div>
         )}
 
@@ -561,14 +572,20 @@ function LivePanel({
   const ballsLeft = match.oversPerInnings * match.ballsPerOver - inn.legalBalls
   const need = inn.target != null ? Math.max(0, inn.target - inn.totalRuns) : 0
   const rrr = chasing ? requiredRate(need, ballsLeft, match.ballsPerOver) : 0
-  // "On this run rate" projection — only meaningful for a first innings with
-  // no target yet; a chase compares crr against the required rate instead.
-  const projected = !chasing
-    ? projectedScore(inn.totalRuns, inn.legalBalls, ballsLeft)
-    : 0
   const battingSquadSize =
     inn.battingTeamId === match.teamA.id ? match.squadA.length : match.squadB.length
   const wicketsRemaining = Math.max(0, (battingSquadSize || 11) - 1 - inn.wickets)
+  // Expected Score — only meaningful for a first innings with no target yet;
+  // a chase compares crr against the required rate instead.
+  const projected = !chasing
+    ? projectFirstInningsScore({
+        currentRuns: inn.totalRuns,
+        ballsBowled: inn.legalBalls,
+        ballsRemaining: ballsLeft,
+        wicketsRemaining,
+        ballsPerOver: match.ballsPerOver,
+      })
+    : 0
   const winProbability = chasing
     ? chaseWinProbability({
         runsNeeded: need,
@@ -595,7 +612,7 @@ function LivePanel({
           </div>
           {!chasing && ballsLeft > 0 && inn.legalBalls > 0 && (
             <div className="text-xs text-ink-400 dark:text-ink-500">
-              Projected {projected} on this run rate
+              Expected score: {projected}
             </div>
           )}
         </div>

@@ -39,22 +39,6 @@ export function formatRate(rate: number): string {
   return rate.toFixed(2)
 }
 
-/**
- * Projected final score if the current run rate holds for the rest of the
- * innings — the standard "on this run rate, they're on course for X"
- * broadcast estimate. Read-only maths over already-live innings state; not a
- * prediction model.
- */
-export function projectedScore(
-  runs: number,
-  ballsBowled: number,
-  ballsRemaining: number,
-): number {
-  if (ballsBowled <= 0) return runs
-  const runsPerBall = runs / ballsBowled
-  return Math.round(runs + runsPerBall * Math.max(0, ballsRemaining))
-}
-
 /** Batting average (runs / dismissals). */
 export function battingAverage(runs: number, dismissals: number): string {
   if (dismissals <= 0) return runs > 0 ? runs.toFixed(2) : '—'
