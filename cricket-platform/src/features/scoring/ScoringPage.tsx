@@ -31,6 +31,7 @@ import {
   abandonMatch,
   reopenMatch,
   setPlayerOfTheMatch,
+  startSuperOver,
   battingFirstTeamId,
   squadFor,
   subscribeDeliveries,
@@ -241,10 +242,33 @@ export function ScoringPage() {
         <p className="mt-2 text-lg font-semibold text-pitch-700">
           {match.result?.summary}
         </p>
-        {match.result?.outcome === 'tie' && match.superOverEnabled && (
-          <p className="mt-1 text-sm text-ink-500 dark:text-ink-400">
-            Super Over enabled per match rules — to be scored as a separate match.
-          </p>
+        {match.linkedMatchId ? (
+          <div className="mt-3">
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/match/${match.linkedMatchId}`)}
+            >
+              <Eye size={16} /> View linked Super Over
+            </Button>
+          </div>
+        ) : (
+          match.result?.outcome === 'tie' &&
+          match.superOverEnabled && (
+            <div className="mt-3">
+              <Button
+                variant="outline"
+                loading={busy}
+                onClick={() =>
+                  guard(async () => {
+                    const id = await startSuperOver(match, profile!.id)
+                    navigate(`/scoring/${id}`)
+                  })
+                }
+              >
+                Start Super Over
+              </Button>
+            </div>
+          )
         )}
         <div className="mt-6 flex justify-center gap-3">
           <Button onClick={() => navigate(`/match/${match.id}`)}>

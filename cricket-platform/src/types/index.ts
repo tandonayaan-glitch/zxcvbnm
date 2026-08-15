@@ -466,10 +466,13 @@ export interface Match {
   /** Whether "retired hurt" is offered as a wicket type in the scoring UI.
    *  Undefined/true preserves existing behaviour for older matches. */
   retiredHurtEnabled?: boolean
-  /** Rule flag only — whether tied matches are followed by a Super Over per the
-   *  match/tournament rules. No Super Over scoring is implemented; this just
-   *  drives a confirmation note on a tied result. */
+  /** Whether tied matches are followed by a Super Over per the match/tournament rules. */
   superOverEnabled?: boolean
+  /** Links this match to its Super Over (set on the original, tied match) or back to the
+   *  original match it was started from (set on the Super Over match itself) — a Super
+   *  Over is a normal, separate `Match` document scored through the same unmodified
+   *  engine, not a special mode of this one. */
+  linkedMatchId?: string | null
   venue?: string
   scheduledAt?: number | null
   scorerId?: string | null

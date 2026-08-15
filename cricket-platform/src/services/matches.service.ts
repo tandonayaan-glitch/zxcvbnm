@@ -43,6 +43,7 @@ export interface CreateMatchInput {
   lastManStanding?: boolean
   retiredHurtEnabled?: boolean
   superOverEnabled?: boolean
+  linkedMatchId?: string | null
   venue?: string
   scheduledAt?: number | null
   scorerId?: string | null
@@ -76,6 +77,7 @@ export async function createMatch(input: CreateMatchInput): Promise<string> {
     lastManStanding: input.lastManStanding,
     retiredHurtEnabled: input.retiredHurtEnabled,
     superOverEnabled: input.superOverEnabled,
+    linkedMatchId: input.linkedMatchId ?? null,
     venue: input.venue ?? '',
     scheduledAt: input.scheduledAt ?? null,
     scorerId: input.scorerId ?? null,

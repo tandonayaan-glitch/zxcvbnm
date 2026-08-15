@@ -16,6 +16,7 @@ import { notify } from './notifications.service'
 import { logActivity } from './activity.service'
 import { getPlayersByIds } from './players.service'
 import { recomputeAllStats, recomputeTournamentStandings } from './stats.service'
+import { createMatch, updateMatch } from './matches.service'
 import { detectMilestones, type MilestoneType } from '@/domain/milestones'
 import {
   applyBall,
@@ -404,6 +405,57 @@ export async function setPlayerOfTheMatch(matchId: string, playerId: string | nu
     playerOfTheMatchId: playerId,
     updatedAt: Date.now(),
   })
+}
+
+/**
+ * Start a Super Over for a tied match — a genuinely new, separate `Match` document,
+ * scored through the same unmodified engine as any other match (1 over per side).
+ * `callerId` becomes the new match's owner (matching how every other match is
+ * created — the creating user, not necessarily the parent's owner, e.g. when a
+ * delegated scorer starts it), so the write satisfies the same `create` rule
+ * every match creation already goes through.
+ */
+export async function startSuperOver(match: Match, callerId: string): Promise<string> {
+  if (match.result?.outcome !== 'tie') {
+    throw new Error('A Super Over can only be started from a tied match.')
+  }
+  if (match.linkedMatchId) {
+    throw new Error('This match already has a linked Super Over.')
+  }
+  // Per standard playing conditions, the team that batted second (chased) in the
+  // original match bats first in the Super Over. Set as a normal toss so the
+  // Super Over's own PreMatch toss editor can override it if the scorer's
+  // competition rules differ, same as any other match.
+  const secondInningsBattingTeamId = match.innings[1]?.battingTeamId ?? match.teamA.id
+  const newId = await createMatch({
+    title: `${match.title} — Super Over`,
+    tournamentId: match.tournamentId,
+    tournamentName: match.tournamentName,
+    format: 'CUSTOM',
+    oversPerInnings: 1,
+    ballsPerOver: match.ballsPerOver,
+    teamA: match.teamA,
+    teamB: match.teamB,
+    squadA: match.squadA,
+    squadB: match.squadB,
+    toss: { wonByTeamId: secondInningsBattingTeamId, decision: 'bat' },
+    battingFirstTeamId: secondInningsBattingTeamId,
+    maxWickets: Math.min(match.maxWickets ?? 10, 2),
+    teamSize: match.teamSize,
+    powerplayMode: 'manual',
+    powerplayOvers: 0,
+    lastManStanding: match.lastManStanding,
+    retiredHurtEnabled: match.retiredHurtEnabled,
+    superOverEnabled: false,
+    linkedMatchId: match.id,
+    venue: match.venue,
+    scorerId: match.scorerId,
+    isPublic: match.isPublic,
+    createdBy: callerId,
+    ownerId: callerId,
+  })
+  await updateMatch(match.id, { linkedMatchId: newId })
+  return newId
 }
 
 /* -------------------------- result -------------------------- */
