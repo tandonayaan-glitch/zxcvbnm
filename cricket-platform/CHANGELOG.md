@@ -4,6 +4,11 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Fixed — Admin requests grant Tournament Manager, not full Admin (ROADMAP_V5 Slice B1)
+- Approving a self-serve "request admin access" submission previously always granted full platform
+  `ADMIN`, even though the request form only ever asks for a specific tournament to run. Approving now
+  grants `TOURNAMENT_MANAGER` instead, matching what the form actually asks for.
+
 ### Added — Career wagon wheel and bowling heat map (ROADMAP_V5 Slice A4)
 - Player pages now have a "Shot & Line Analysis" tab showing a career-wide shot-placement wagon
   wheel and bowling line/length heat map, aggregated across every match the player has featured in

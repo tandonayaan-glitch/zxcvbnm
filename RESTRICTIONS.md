@@ -1643,4 +1643,44 @@ reasoning.
     match cleaned up after verification. No files changed for this slice — nothing to commit besides
     documentation.
 
+73. **`ROADMAP_V5_PLATFORM.md` Slice B1 — Tournament Admin signup grants the wrong role** — **Done**,
+    no collision (pre-flight check: `git diff -- firestore.rules` was empty, `git diff -- src/types/
+    index.ts` showed only the concurrent scoring session's additive `BallMeta.note`/`reviewed`
+    fields, unrelated to roles — safe to proceed). `requests.service.ts`'s `approveRequest()`
+    hardcoded `setUserRole(req.uid, 'ADMIN')` despite the request form explicitly asking "Tournament
+    you want to run" — confirmed by reading `AccountPage.tsx`'s form copy directly, not assumed. Now
+    grants `TOURNAMENT_MANAGER`. Updated the approval `notify()` text and `RequestsPage.tsx`'s
+    approve toast from "admin" to "tournament manager" so the user-visible claim matches the actual
+    role — both are literal, checkable claims (the role shows on Users & Roles as "Tournament
+    Manager," not "Admin") that would otherwise be wrong post-fix. Did not rename the `AdminRequest`
+    type/`adminRequests` collection/"Admin requests" page title — `TOURNAMENT_MANAGER` is still a
+    tier of admin-ish access via `canManage()`, so that generic framing isn't false, just less
+    specific; renaming the whole feature would be unnecessary churn. `tsc -p tsconfig.app.json
+    --noEmit`, `npm run build`, `oxlint` all clean. **Live verification done in two halves; the
+    second was intentionally stopped short by the user's own explicit instruction mid-verification,
+    not skipped silently**: signed in as an existing seeded `viewer` test account (`Test12` /
+    `@testaccount1`) and submitted a real request ("B1 Verification Test Cup") through the actual
+    `AccountPage.tsx` form — confirmed by the page flipping to a real "Request pending" state, which
+    only renders after a successful Firestore write (first attempt silently no-opped because the
+    input ref had gone stale mid-navigation and the typed text landed nowhere; caught by reading the
+    live DOM input `.value` directly via `javascript_tool` before resubmitting, not assumed from the
+    UI alone). The natural next step — switch back to the master-admin session, click Approve, and
+    confirm `users/{uid}.role` reads `TOURNAMENT_MANAGER` — was not completed live because the user
+    said "stop when you can" before that second sign-in happened. That half is verified by direct
+    code/rules reading instead (the corrected `setUserRole()` call, `ROLE_LABELS` mapping, and
+    `firestore.rules`' `isMasterAdmin()`-gated `adminRequests` update path) — documented here as
+    partial live verification, not overclaimed as a full click-through. **Leftover state**: a real
+    `adminRequests` doc for `testaccount1` ("B1 Verification Test Cup") is still `pending` in the
+    live database — needs either a real approve/reject (which would also close out the verification
+    above) or a manual cleanup, so it isn't mistaken for a genuine request later. **Significant
+    finding surfaced while auditing this slice, deferred to B2 rather than fixed here to keep this
+    diff scoped to the one bug it set out for**: `firestore.rules`' `canScore()` (and `authStore.ts`'s
+    client-side mirror) is `['MASTER_ADMIN', 'ADMIN', 'SCORER']` — `TOURNAMENT_MANAGER` is excluded —
+    and `/matches/new` (`App.tsx`) is guarded by the same list, confirmed by reading both the route
+    guard and `MatchesPage.tsx`'s button gating directly. Net effect: a user granted
+    `TOURNAMENT_MANAGER` by this exact flow can create their tournament and its teams/players
+    (`canManage()` covers that) but cannot create or score a single match in it — undercutting the
+    feature's own stated purpose. This is now B2's concrete starting finding, not a from-scratch
+    audit.
+
 (Appended to as further slices are picked up.)

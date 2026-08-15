@@ -258,15 +258,85 @@ same cleanup discipline as `ROADMAP_V4.md`'s Slice 2.4.
 
 ---
 
+## Phase B slices
+
+### B1 — Fix Tournament Admin signup ✅ Done, live-verification partial (see below)
+**Problem**: `requests.service.ts`'s self-serve `AdminRequest` flow asks "Tournament you want to
+run" and says "Admins can create and run their own tournaments," but `approveRequest()` hardcoded
+`setUserRole(req.uid, 'ADMIN')` — a full platform admin grant regardless of that scoped intent.
+
+- **Pre-flight concurrent-session check** (per standing rule): `git diff -- firestore.rules` was
+  empty (no uncommitted changes) and `git diff -- src/types/index.ts` showed only the scoring
+  session's additive `BallMeta.note`/`reviewed` fields (unrelated to roles) — safe to proceed.
+- **Fix**: `approveRequest()` now grants `TOURNAMENT_MANAGER` instead of `ADMIN`. Updated the
+  approval `notify()` message and `RequestsPage.tsx`'s approve toast to say "tournament manager"
+  instead of "admin," since those are now literal, user-visible role claims that would otherwise be
+  wrong. Did not rename the feature itself (`AdminRequest` type, `adminRequests` collection,
+  "Admin requests" page title) — that's a much larger, unnecessary rename; `TOURNAMENT_MANAGER` is
+  still a tier of admin-ish access via `canManage()`, so the existing generic "admin access" framing
+  isn't false, just less specific than the new notification text.
+- **Verified**: `tsc -p tsconfig.app.json --noEmit`, `npm run build`, `oxlint` on both touched files
+  all clean.
+- **Live verification, done in two halves, second half intentionally stopped short**: signed in as
+  an existing seeded `viewer`-role test account (`Test12` / `@testaccount1`) and submitted a real
+  request ("B1 Verification Test Cup") through the actual `AccountPage.tsx` form — confirmed it
+  landed as a real `adminRequests` doc (the page flipped to "Request pending… The master admin will
+  review it soon," which only renders after a successful Firestore write). Switching back to the
+  master-admin session to click "Approve" and confirm the resulting `users/{uid}.role` reads
+  `TOURNAMENT_MANAGER` was the natural next step, but the user asked to stop before that second
+  sign-in happened — so the *approval* half is verified by direct code/rules reading (the new
+  `setUserRole(req.uid, 'TOURNAMENT_MANAGER')` call, `ROLE_LABELS` mapping, and
+  `firestore.rules`' unrestricted `isMasterAdmin()` update path for `adminRequests`) rather than a
+  live click-through. **Not a correctness risk** — `setUserRole()` is a one-line `updateDoc` already
+  proven correct by A1-A4's own repeated use of the same Firestore write pattern — but flagged here
+  rather than silently claimed as fully live-verified.
+- **Leftover state needing cleanup**: the real `adminRequests` doc for `testaccount1`
+  ("B1 Verification Test Cup") is still sitting in `pending` status in the live database. Needs
+  either a real approve/reject click-through (which would also close out the verification above) or
+  a manual reject/delete, so it doesn't get mistaken for a genuine request later.
+- **Significant finding surfaced while auditing this slice, deferred to B2**: `firestore.rules`'
+  `isAdmin()` (line 38) is `['MASTER_ADMIN', 'ADMIN']` only — a *different, narrower* helper than
+  `canManage()` (line 46, includes `TOURNAMENT_MANAGER`). More importantly, `canScore()` (rules AND
+  `authStore.ts` both) is `['MASTER_ADMIN', 'ADMIN', 'SCORER']` — **`TOURNAMENT_MANAGER` is excluded**,
+  and the `/matches/new` route (`App.tsx`) is guarded by the same list. Net effect, confirmed by
+  reading the route guards and `MatchesPage.tsx`'s button gating directly: a user newly granted
+  `TOURNAMENT_MANAGER` by this exact flow can create their tournament and its teams/players
+  (`canManage()` covers that), but **cannot create or score a single match in it** — the "New match"
+  button doesn't render for them and `/matches/new` would reject them even by direct URL. This looks
+  like an unintended gap rather than a deliberate design choice (there's no equivalent restriction
+  reasoning documented anywhere, and it directly undercuts "create and run their own tournament").
+  This is exactly B2's stated scope ("map every `TOURNAMENT_MANAGER` write path, close gaps") — not
+  fixed as part of B1 to keep this slice's diff scoped to the one bug it set out to fix, but it's now
+  B2's primary, concrete finding rather than a from-scratch audit.
+
+### B2 — Tournament Admin permissions audit — not yet started
+Primary known finding going in (see B1 write-up above): `TOURNAMENT_MANAGER` is excluded from
+`canScore()`/the `/matches/new` route guard in both `firestore.rules` and `authStore.ts`, so a
+tournament manager can't create or run matches in their own tournament today. Needs a full audit of
+every other `TOURNAMENT_MANAGER`-relevant write path (`usernameLookup`, `auditLogs`, `invitations`,
+standings, deliveries/ballMeta, playerStats/teamStats) before deciding the fix's exact shape — likely
+extending `canScore()`/the route guard to include `TOURNAMENT_MANAGER`, scoped the same
+owner-scoped way `ADMIN` already is, rather than a bespoke new permission concept.
+
+### B3 — Standard account audit — not yet started
+### B4 — Phone verification and privacy — not yet started
+
+---
+
 ## Notes
 - **Phase A is complete** — A1, A2, A3, A4 all implemented, verified live against the real database
   (each with either hand-computed or deliberately-tagged known ground truth, not just "renders
   without error"), and committed separately. Zero lines of `scoring.ts` touched across all four.
   A2's cross-match "partnership records" half was descoped before implementation (see its write-up)
   rather than built expensively or half-right; everything else shipped as originally scoped.
-- **Phase B is next, not yet started.** Needs a fresh `firestore.rules`/`types/index.ts` concurrent-
-  session check immediately before B1/B2 specifically, since those touch roles and permissions —
-  the scoring-engine session has been actively landing changes to both files throughout Phase A.
+- **Phase B is in progress.** B1 is code-complete and committed, with live verification partial (see
+  its write-up — a real test request exists in `pending` status and needs cleanup). B2's scope is
+  now concretely known (fix `TOURNAMENT_MANAGER`'s missing `canScore()` access) rather than needing a
+  from-scratch audit. B3/B4 not started. Confirmed via fresh `git status`/diff immediately before B1
+  that `firestore.rules` had zero uncommitted changes and `types/index.ts`'s only in-flight change
+  (the scoring session's `BallMeta.note`/`reviewed` fields) was unrelated to roles — safe to proceed;
+  re-check again immediately before B2, since B2 touches the same two files the scoring session has
+  been active on throughout.
 - Phase C is scoped but paused pending: (1) which billing provider to target for the abstraction's
   first real implementation (Stripe is the common default for this kind of app, but that's your
   call), and (2) confirmation you want architecture/scaffolding built now vs. only once you're ready
