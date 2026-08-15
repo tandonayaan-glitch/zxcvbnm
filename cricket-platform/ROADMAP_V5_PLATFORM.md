@@ -52,7 +52,8 @@ Grounded in reading the actual code, not assumption:
 external decisions needed).** Build these first: fast, verifiable, zero business/legal ambiguity.
 
 1. **A1 — Batter vs Bowler analytics** ✅ Done (new)
-2. **A2 — Partnership analytics** (expose full breakdown + cross-match records)
+2. **A2 — Partnership analytics** ✅ Done (full per-innings breakdown; cross-match records
+   deliberately descoped, see write-up below)
 3. **A3 — Expected Score** (real first-innings projection model, paired with the existing Win
    Probability module)
 4. **A4 — Career-level Wagon Wheel + Bowling Heat Map** (reuse the existing pure domain functions
@@ -119,7 +120,7 @@ delivery he faced from each bowler by hand — all three computed rows (vs Jadej
 matched exactly. Confirmed the tab is absent for a pure bowler with no batting innings. See
 `RESTRICTIONS.md` entry #64 for the full verification log.
 
-### A2 — Partnership analytics
+### A2 — Partnership analytics ✅ Done, scope corrected before implementation
 **Problem**: `insights.ts` already computes every partnership per innings but only exposes the best
 one; no cross-match "best partnerships" record.
 
@@ -129,6 +130,40 @@ one; no cross-match "best partnerships" record.
   existing pattern), UI: full breakdown in `MatchInsights.tsx`, records in the Stats page's
   "Records" tab (already an established pattern per `CLAUDE.md`).
 - **Risks**: Low — additive to an already-correct, already-tested computation.
+
+**Scope correction, found before writing any code, not after**: re-reading `records.ts` closely
+showed the "mirrors `records.ts`'s existing pattern" assumption above was wrong. `records.ts` is
+cheap specifically because it reads only the already-loaded `Match.innings[].battingCard`/
+`bowlingCard` — the denormalised snapshot every match doc already carries. Partnerships are **not**
+denormalised anywhere; they only ever exist as a computation over raw `Delivery[]`. A cross-match
+partnership leaderboard would therefore need either (a) fetching every delivery from every completed
+match platform-wide (the same `admin.service.ts` pattern A1 uses, but for the *whole platform* on
+every Stats-page load, not one player's matches — too expensive to do live), or (b) denormalising
+partnership data onto `InningsState` at scoring time, which touches `scoring.ts` and is off-limits.
+Neither is a fit for "mirrors an existing cheap pattern" as originally scoped. **Descoped**: this
+slice ships the full per-innings breakdown only (cheap, valuable, matches the actual problem
+statement). The cross-match leaderboard is not built speculatively — if there's real demand for it
+later, the honest path is a cached/recomputed doc (like `playerStats`/`standings` already are),
+refreshed via the existing "Update stats" trigger, not a live per-request platform-wide delivery
+scan. Noted as a deferred idea, not implemented.
+
+**Implemented and verified.** `insights.ts`'s `InningsInsights` gained a `partnerships: Partnership[]`
+field (the full array already computed internally, previously discarded down to just
+`bestPartnership`) — purely additive, the one existing consumer (`MatchInsights.tsx`) needed no
+changes to its existing fields. Added a "Partnerships" list to `MatchInsights.tsx` between the stat
+tiles and the boundary/wicket timeline: each row shows the batter pair, runs (balls), and either
+"Wkt N" or "unbroken" for a partnership still in progress when the innings ended. Zero lines of
+`scoring.ts` touched. `tsc -p tsconfig.app.json --noEmit` and `npm run build` both clean.
+**Verified live against the real database, cross-validated against independently-displayed data on
+the same page, not just "renders without crashing"**: opened the same seeded "Royal Strikers vs
+Thunder Kings" match used to verify A1. All five Royal Strikers partnerships (12, 16, 10, 14, 6 runs)
+summed and cross-checked exactly against that same page's own "Fall of wickets" list (12-1, 28-2,
+38-3, 52-4, 58-5 — each gap matches a partnership's runs exactly) — two independently-rendered
+sections of the page agreeing confirms the new computation is correct, not just plausible-looking.
+Confirmed the "Best partnership" tile (16 (10), S Iyer & R Sharma) matches the corresponding row in
+the new full list exactly. Confirmed the Thunder Kings innings' final partnership correctly shows
+"unbroken" (Thunder Kings won by 3 wickets — they had wickets in hand, so their last partnership was
+never broken), the one label this feature couldn't get right by accident.
 
 ### A3 — Expected Score
 **Problem**: the only "projected score" today is a naive linear extrapolation with no wickets-lost

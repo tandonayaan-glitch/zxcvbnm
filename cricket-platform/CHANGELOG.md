@@ -4,6 +4,10 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Added — Full partnership breakdown on match insights (ROADMAP_V5 Slice A2)
+- Match insights now list every partnership of an innings (batter pair, runs, balls, and which
+  wicket it ended on, or "unbroken"), not just the best one.
+
 ### Added — Batter vs Bowler analytics (ROADMAP_V5 Slice A1)
 - Player pages now have a "vs Bowler" tab showing a batter's career record against every bowler
   they've faced — runs, balls, dismissals, average, strike rate, fours and sixes per matchup,

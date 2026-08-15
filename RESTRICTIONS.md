@@ -1418,4 +1418,33 @@ reasoning.
     id independently seen on the Stats leaderboard). Confirmed the regression case: a pure bowler
     with zero batting innings (Yuzvendra Chahal) shows no "vs Bowler" tab at all.
 
+65. **`ROADMAP_V5_PLATFORM.md` Slice A2 — Partnership analytics** — **Done**, no collision, scope
+    corrected before writing any code. The original plan assumed a cross-match "partnership records"
+    module could mirror `records.ts`'s cheap pattern; re-reading `records.ts` closely showed that's
+    wrong — it's cheap specifically because it reads only the denormalised `Match.innings[]`
+    batting/bowling cards already on each match doc, and partnerships are never denormalised
+    anywhere (they only ever exist as a computation over raw `Delivery[]`). A cross-match leaderboard
+    would need either a platform-wide delivery fetch on every Stats-page load (too expensive to do
+    live, unlike A1's single-player scope) or denormalising partnership data onto `InningsState` at
+    scoring time (touches `scoring.ts`, off-limits). **Descoped before implementation**, not
+    discovered mid-build: shipped only the full per-innings breakdown, the cheap and actually-asked-
+    for half of the original problem statement; the cross-match leaderboard is documented as a
+    deferred idea (would need a cached/recomputed doc like `playerStats`/`standings`, not a live
+    scan) rather than built speculatively or half-right. Widened `InningsInsights` with a
+    `partnerships: Partnership[]` field (the full array `insights.ts` already computed internally
+    and previously discarded down to just `bestPartnership`) — purely additive; confirmed via grep
+    that `MatchInsights.tsx` is the only consumer of this type anywhere in `src/`, so no other call
+    site needed updating. Added a "Partnerships" list section to `MatchInsights.tsx`. Zero lines of
+    `scoring.ts` touched. `tsc -p tsconfig.app.json --noEmit` and `npm run build` both clean.
+    **Verified live against the real database, cross-validated against independently-rendered data
+    on the same page rather than assumed correct**: reused the same seeded "Royal Strikers vs
+    Thunder Kings" match from entry #64. All five Royal Strikers partnerships (12, 16, 10, 14, 6
+    runs) summed and matched exactly against that same page's own, independently-computed "Fall of
+    wickets" list (12-1, 28-2, 38-3, 52-4, 58-5) — two separately-rendered parts of the page agreeing
+    is real evidence of correctness, not just "it rendered without an error." Confirmed the existing
+    "Best partnership" tile (16 (10), S Iyer & R Sharma) matches the corresponding row in the new
+    full list exactly. Confirmed the Thunder Kings innings' final, still-unbroken partnership
+    correctly reads "unbroken" rather than a bogus wicket number — the one label a copy-paste error
+    could easily have gotten wrong.
+
 (Appended to as further slices are picked up.)

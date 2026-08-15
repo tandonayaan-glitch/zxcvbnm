@@ -58,6 +58,9 @@ export interface InningsInsights {
   biggestOver?: { over: number; runs: number; wickets: number; bowlerId: string }
   /** Best (highest-run) partnership of the innings. */
   bestPartnership?: Partnership
+  /** Every partnership of the innings, in order (including an unbroken one
+   *  still in progress at the end) — not just the best. */
+  partnerships: Partnership[]
   /** Best (lowest-economy) 2-4 over stretch by a single bowler. */
   bestSpell?: BowlingSpell
   fours: number
@@ -305,6 +308,7 @@ export function inningsInsights(
     legalBalls,
     biggestOver,
     bestPartnership,
+    partnerships,
     bestSpell,
     fours,
     sixes,

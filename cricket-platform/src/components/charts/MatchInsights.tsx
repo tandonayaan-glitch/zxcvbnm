@@ -129,6 +129,34 @@ function InningsRow({
         )}
       </div>
 
+      {ins.partnerships.length > 0 && (
+        <div className="mt-3 border-t border-ink-100 dark:border-ink-800 pt-3">
+          <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-ink-400 dark:text-ink-500">
+            Partnerships
+          </div>
+          <div className="space-y-1">
+            {ins.partnerships.map((p, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between rounded-lg bg-ink-50 dark:bg-ink-800/60 px-3 py-1.5 text-sm"
+              >
+                <span className="text-ink-700 dark:text-ink-300">
+                  {name(p.batterA)} &amp; {name(p.batterB)}
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="font-semibold text-ink-900 dark:text-ink-50">
+                    {p.runs} ({p.balls})
+                  </span>
+                  <span className="text-xs text-ink-400 dark:text-ink-500">
+                    {p.endedOnWicket > 0 ? `Wkt ${p.endedOnWicket}` : 'unbroken'}
+                  </span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {ins.events.length > 0 && (
         <div className="mt-3 border-t border-ink-100 dark:border-ink-800 pt-3">
           <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-ink-400 dark:text-ink-500">
