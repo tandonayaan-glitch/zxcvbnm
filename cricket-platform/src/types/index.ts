@@ -322,6 +322,11 @@ export interface BallMeta {
   zone?: ShotZone
   line?: BowlingLine
   length?: BowlingLength
+  /** Free-text scorer note on this delivery — e.g. "given out, review requested". */
+  note?: string
+  /** Flagged for review (e.g. a wicket decision under dispute). Purely informational —
+   *  doesn't gate or trigger anything on its own. */
+  reviewed?: boolean
   createdAt: number
 }
 

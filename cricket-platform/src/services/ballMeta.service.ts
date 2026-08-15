@@ -12,7 +12,7 @@ function ballMetaCol(matchId: string) {
 export async function recordBallMeta(
   matchId: string,
   deliveryId: string,
-  patch: Partial<Pick<BallMeta, 'zone' | 'line' | 'length'>>,
+  patch: Partial<Pick<BallMeta, 'zone' | 'line' | 'length' | 'note' | 'reviewed'>>,
 ): Promise<void> {
   await setDoc(
     doc(ballMetaCol(matchId), deliveryId),

@@ -28,6 +28,11 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Scoring Engine (ROADMAP_V5)
 
+### Added — Delivery notes and review flag (ROADMAP_V5 Slice 4.1)
+- The optional shot-detail panel shown after each ball now also has a "Flag for review" toggle and
+  a free-text note field, alongside the existing shot placement/line/length tags — useful for
+  marking a disputed decision ahead of a correction, or just leaving commentary color on a delivery.
+
 ### Fixed — Assigned scorers couldn't actually score their matches (ROADMAP_V5 Slice 6.1)
 - Assigning a match to a scorer other than yourself (via the setup wizard's "Assign scorer" field)
   previously produced a match that scorer couldn't even see in their own list, let alone score —

@@ -56,7 +56,7 @@ already supports arbitrarily short innings (`oversPerInnings: 1`), so a Super Ov
 | P1 | ✅ 7.1 — Wicket modal allows illegal dismissal types on Wide/No-ball | `ScoringModals.tsx`, `ScoringPage.tsx` | Correctness bug |
 | P1 | ✅ 2.1 — Super Over scoring (linked match, reuses engine unmodified) | `matches.service.ts`, `ScoringPage.tsx`, `scoring.service.ts`, `MatchPage.tsx`, `types/index.ts` | Feature |
 | P2 | 3.1 — Wicket-decision correction ("review") via `rebuildInnings()` | `scoring.service.ts`, `ScoringModals.tsx`, `ScoringPage.tsx` | Feature |
-| P2 | 4.1 — Extend delivery metadata (ballMeta) with a review/DRS tag and free-text note | `ballMeta.service.ts`, `types/index.ts` (BallMeta only) | Feature |
+| P2 | ✅ 4.1 — Extend delivery metadata (ballMeta) with a review/DRS tag and free-text note | `ballMeta.service.ts`, `types/index.ts` (BallMeta only) | Feature |
 | P2 | 8.1 — "Did not bat" list on the scorecard | `ScorecardView.tsx` | Feature |
 | P2 | 6.2 — `ballMeta` write rule has no owner scoping (hygiene, not exploitable today) | `firestore.rules` | Security hygiene |
 | P3 | 5.1 — Optional-field fallback audit across Match/Delivery/InningsState | none (audit only) / `Platform Tools` maintenance script | Audit + maybe tooling |
@@ -377,7 +377,7 @@ delivery, not just the last one.
 
 ## P2 — Delivery metadata
 
-### Slice 4.1 — Extend `ballMeta` with a review/DRS tag and a free-text note
+### Slice 4.1 — Extend `ballMeta` with a review/DRS tag and a free-text note ✅ Done
 **Problem**: `ballMeta.service.ts` already exists as exactly the right extension point — "optional
 and additive — never called from the scoring engine or its write path," currently carrying
 `zone`/`line`/`length` for the wagon wheel / pitch map. Nothing currently lets a scorer attach an
@@ -400,6 +400,26 @@ just "great yorker" commentary color) or flag it as reviewed.
 - **Acceptance criteria**: A note/review flag can be attached to a delivery and persists/displays
   correctly; older deliveries with no `ballMeta` doc at all are unaffected. `tsc`/`npm run build`
   clean; live-verified against a real delivery.
+
+**Implemented and verified, with the UI landing in `ShotDetailPrompt` rather than a new surface.**
+Added `note?: string` and `reviewed?: boolean` to `BallMeta` and widened `recordBallMeta`'s
+`Partial<Pick<...>>` to include them — no other logic change to `ballMeta.service.ts`. For the UI,
+reused `ShotDetailPrompt` (already shown after every scored ball via the existing `pendingMeta`
+state, including after a wicket) rather than building a new component or a separate ball-by-ball
+affordance: added a "Flag for review" toggle (disabled once flagged, matching the one-way nature of
+a review flag for a single delivery) and a note input + Save button, both calling the same
+`saveShotMeta()` merge-write already used for zone/line/length — no new write path, no new failure
+mode. `pendingMeta` gained a local `reviewed` boolean so the button's disabled/label state reflects
+the current delivery's status without a re-fetch. Zero lines of `scoring.ts` touched. `tsc -p
+tsconfig.app.json --noEmit` and `npm run build` both clean. **Verified live against the real
+database with a direct document read, not just UI state**: created a throwaway match, scored a
+boundary to trigger the prompt, typed a note and saved it, then flagged for review — confirmed the
+button switched to "Flagged for review" and disabled itself. Rather than trusting the UI alone,
+dynamically imported `ballMeta.service.ts` via Vite's dev-server module serving
+(`await import('/src/services/ballMeta.service.ts')`) directly in the browser and called
+`listBallMeta()` for the match, confirming the actual stored document: `{note: "Given out, review
+requested", reviewed: true}` — proving the write reached Firestore correctly, not just that the
+button re-rendered. Test match abandoned and deleted after verification.
 
 ---
 

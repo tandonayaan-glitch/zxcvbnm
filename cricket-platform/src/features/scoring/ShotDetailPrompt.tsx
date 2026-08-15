@@ -1,4 +1,5 @@
-import { X } from 'lucide-react'
+import { useState } from 'react'
+import { Flag, X } from 'lucide-react'
 import { BOWLING_LENGTHS, BOWLING_LINES } from '@/domain/pitchMap'
 import { cn } from '@/lib/cn'
 import type { BowlingLength, BowlingLine, ShotZone } from '@/types'
@@ -36,17 +37,25 @@ const LENGTH_LABELS: Record<BowlingLength, string> = {
  */
 export function ShotDetailPrompt({
   showZone,
+  reviewed = false,
   onPickZone,
   onPickLine,
   onPickLength,
+  onFlagReview,
+  onSaveNote,
   onDismiss,
 }: {
   showZone: boolean
+  /** Whether this delivery is already flagged for review. */
+  reviewed?: boolean
   onPickZone: (z: ShotZone) => void
   onPickLine: (l: BowlingLine) => void
   onPickLength: (l: BowlingLength) => void
+  onFlagReview: () => void
+  onSaveNote: (note: string) => void
   onDismiss: () => void
 }) {
+  const [note, setNote] = useState('')
   return (
     <div className="mt-3 rounded-lg border border-brand-200 bg-brand-50 p-3 dark:border-brand-800 dark:bg-brand-950/30">
       <div className="mb-2 flex items-center justify-between">
@@ -107,6 +116,36 @@ export function ShotDetailPrompt({
             </button>
           ))}
         </div>
+      </div>
+      <div className="mt-2 flex items-center gap-1.5 border-t border-brand-200 pt-2 dark:border-brand-800">
+        <button
+          onClick={onFlagReview}
+          disabled={reviewed}
+          className={cn(
+            'flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium',
+            reviewed
+              ? 'border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-400'
+              : 'border-brand-300 bg-white text-brand-800 hover:bg-brand-100 dark:border-brand-700 dark:bg-ink-900 dark:text-brand-300 dark:hover:bg-brand-900',
+          )}
+        >
+          <Flag size={11} /> {reviewed ? 'Flagged for review' : 'Flag for review'}
+        </button>
+        <input
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Note (optional)"
+          className="min-w-0 flex-1 rounded-md border border-brand-300 bg-white px-2 py-1 text-[11px] text-ink-800 placeholder:text-ink-400 dark:border-brand-700 dark:bg-ink-900 dark:text-ink-200"
+        />
+        <button
+          onClick={() => {
+            if (!note.trim()) return
+            onSaveNote(note.trim())
+            setNote('')
+          }}
+          className="rounded-md border border-brand-300 bg-white px-2 py-1 text-[11px] font-medium text-brand-800 hover:bg-brand-100 dark:border-brand-700 dark:bg-ink-900 dark:text-brand-300 dark:hover:bg-brand-900"
+        >
+          Save
+        </button>
       </div>
     </div>
   )

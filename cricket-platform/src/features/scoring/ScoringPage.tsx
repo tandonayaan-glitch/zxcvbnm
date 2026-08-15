@@ -65,9 +65,11 @@ export function ScoringPage() {
   const [activeExtra, setActiveExtra] = useState<ExtraType | null>(null)
   const [wicketOpen, setWicketOpen] = useState(false)
   const [publishing, setPublishing] = useState(false)
-  const [pendingMeta, setPendingMeta] = useState<{ deliveryId: string; showZone: boolean } | null>(
-    null,
-  )
+  const [pendingMeta, setPendingMeta] = useState<{
+    deliveryId: string
+    showZone: boolean
+    reviewed: boolean
+  } | null>(null)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [potmOpen, setPotmOpen] = useState(false)
   const [scorecardOpen, setScorecardOpen] = useState(false)
@@ -149,7 +151,7 @@ export function ScoringPage() {
         scorerId: profile?.id,
       })
       setActiveExtra(null)
-      setPendingMeta({ deliveryId: delivery.id, showZone: extra !== 'wide' })
+      setPendingMeta({ deliveryId: delivery.id, showZone: extra !== 'wide', reviewed: false })
     })
   }
 
@@ -170,7 +172,7 @@ export function ScoringPage() {
         sequence: nextSeq,
         scorerId: profile?.id,
       })
-      setPendingMeta({ deliveryId: delivery.id, showZone: r.type !== 'run_out' })
+      setPendingMeta({ deliveryId: delivery.id, showZone: r.type !== 'run_out', reviewed: false })
     })
   }
 
@@ -183,6 +185,12 @@ export function ScoringPage() {
     } catch {
       // best-effort — never interrupt scoring for an optional enrichment
     }
+  }
+
+  async function flagForReview() {
+    if (!pendingMeta) return
+    setPendingMeta({ ...pendingMeta, reviewed: true })
+    await saveShotMeta({ reviewed: true })
   }
 
   async function publish() {
@@ -447,9 +455,12 @@ export function ScoringPage() {
         {pendingMeta && (
           <ShotDetailPrompt
             showZone={pendingMeta.showZone}
+            reviewed={pendingMeta.reviewed}
             onPickZone={(z) => saveShotMeta({ zone: z })}
             onPickLine={(l) => saveShotMeta({ line: l })}
             onPickLength={(l) => saveShotMeta({ length: l })}
+            onFlagReview={flagForReview}
+            onSaveNote={(note) => saveShotMeta({ note })}
             onDismiss={() => setPendingMeta(null)}
           />
         )}

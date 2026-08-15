@@ -1592,4 +1592,22 @@ reasoning.
     `ROADMAP_V5_PLATFORM.md` in full** (A1–A4 all done); Phase B (Tournament Admin signup/permissions,
     account audit, phone verification) has not been started.
 
+71. **`ROADMAP_V5.md` Slice 4.1 — Extend delivery metadata with a review/DRS tag and note** —
+    **Done**, no collision. Added `note?: string`/`reviewed?: boolean` to `BallMeta` and widened
+    `recordBallMeta`'s `Partial<Pick<...>>` accordingly — no logic change to `ballMeta.service.ts`
+    itself. UI landed in the existing `ShotDetailPrompt` (already shown after every scored ball via
+    `pendingMeta`, including after a wicket) rather than a new component: a "Flag for review" toggle
+    (disables itself once flagged) and a note input + Save, both routed through the same
+    `saveShotMeta()` merge-write already used for zone/line/length — no new write path introduced.
+    `pendingMeta` gained a local `reviewed` boolean so the button reflects the current delivery's
+    state without a re-fetch. Zero lines of `scoring.ts` touched. `tsc -p tsconfig.app.json --noEmit`
+    and `npm run build` both clean. **Verified live against the real database with a direct document
+    read, not just trusting the UI**: created a throwaway match, scored a boundary to trigger the
+    prompt, saved a note and flagged for review, confirmed the button switched to "Flagged for
+    review" and disabled. Rather than stopping there, dynamically imported `ballMeta.service.ts` via
+    Vite's dev-server module serving directly in the browser
+    (`await import('/src/services/ballMeta.service.ts')`) and called `listBallMeta()` for the match,
+    confirming the actual stored Firestore document: `{note: "Given out, review requested", reviewed:
+    true}`. Test match abandoned and deleted after verification.
+
 (Appended to as further slices are picked up.)
