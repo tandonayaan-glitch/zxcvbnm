@@ -51,6 +51,25 @@ service cloud.firestore {
       return isMasterAdmin() || (isSignedIn() && ownerId == request.auth.uid);
     }
 
+    // A match's `scorerId` (set via the setup wizard's "Assign scorer" picker, which
+    // already restricts candidates to SCORER/ADMIN) may differ from `ownerId`. That
+    // assigned scorer needs write access to actually score the match, but only through
+    // the exact fields the real scoring flow writes — never ownerId/scorerId/teams/
+    // squads/title/etc., which stay owner/master-only. `resource.data.scorerId` (the
+    // value already stored before this write) is what's checked, not the incoming
+    // value, so a non-owner can't grant themselves access by writing their own uid
+    // into scorerId — only the match's owner (who already has full write access) can
+    // set that field in the first place.
+    function isDelegatedScorer() {
+      return canScore() && isSignedIn()
+        && resource.data.scorerId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'innings', 'currentInnings', 'startedAt', 'completedAt',
+          'result', 'playerOfTheMatchId', 'toss', 'battingFirstTeamId', 'updatedAt',
+          'linkedMatchId'
+        ]);
+    }
+
     // ---- Users -------------------------------------------------
     match /users/{uid} {
       allow read: if true; // profiles are needed for stats display
@@ -182,7 +201,8 @@ service cloud.firestore {
       allow read: if true;
       allow create: if canScore()
         && (isMasterAdmin() || request.resource.data.ownerId == request.auth.uid);
-      allow update, delete: if isOwnerOrMaster(resource.data.ownerId);
+      allow update: if isOwnerOrMaster(resource.data.ownerId) || isDelegatedScorer();
+      allow delete: if isOwnerOrMaster(resource.data.ownerId);
       match /deliveries/{ballId} {
         allow read: if true;
         allow write: if canScore();

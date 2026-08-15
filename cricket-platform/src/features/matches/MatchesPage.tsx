@@ -38,7 +38,10 @@ export function MatchesPage() {
 
   const filtered = useMemo(() => {
     let list = matches.data ?? []
-    if (scope) list = list.filter((m) => m.ownerId === scope)
+    // Owner-scoped, but a match assigned to this user as `scorerId` (via the setup
+    // wizard's "Assign scorer" picker) should be visible even if they don't own it —
+    // otherwise a delegated scorer could never find the match they're meant to score.
+    if (scope) list = list.filter((m) => m.ownerId === scope || m.scorerId === scope)
     if (tab === 'archived') return list.filter((m) => m.archived)
     list = list.filter((m) => !m.archived)
     if (tab === 'all') return list

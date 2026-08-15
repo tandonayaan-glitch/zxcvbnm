@@ -1522,4 +1522,39 @@ reasoning.
     public `MatchPage.tsx` both show a working link to the new match. All three throwaway matches
     (including one unrelated to this slice) soft-deleted after verification.
 
+69. **`ROADMAP_V5.md` Slice 6.1 — Scorer delegation is silently non-functional** — **Code done,
+    deployment/live-verification pending — flagged explicitly, not claimed done.** Confirmed by
+    reading `firestore.rules` and `authStore.ts`/`MatchesPage.tsx` directly: `scorerId` (settable to
+    a different user than `ownerId` via the setup wizard's "Assign scorer" picker) was checked
+    *nowhere* — not in the `matches/{id}` update rule (`isOwnerOrMaster(resource.data.ownerId)`
+    only), not in `ownerScope()`'s client-side list filtering (`ownerId` only, applied to every
+    non-master role including SCORER). Net effect confirmed by tracing the code, not assumed: an
+    assigned scorer who isn't the owner can't see the match in their list, and even reaching
+    `/scoring/:id` directly would fail every write. Added `isDelegatedScorer()` to
+    `firestore.rules`: matches on `resource.data.scorerId == request.auth.uid` (the value already
+    stored, not the incoming one — so a non-owner can't self-grant by writing their own uid into
+    `scorerId`, since only the existing owner can set that field) plus a
+    `diff(resource.data).affectedKeys().hasOnly([...])` allowlist built by grepping every real
+    match-doc write across `scoring.service.ts` and `ScoringPage.tsx`'s own `editToss()` call:
+    `status, innings, currentInnings, startedAt, completedAt, result, playerOfTheMatchId, toss,
+    battingFirstTeamId, updatedAt, linkedMatchId` (the last field added mid-implementation once
+    Slice 2.1's `startSuperOver()` turned out to need it too, caught and folded in before either
+    slice was committed). `delete` stays owner/master-only, not widened. `MatchesPage.tsx`'s list
+    filter now shows a match if `ownerId === scope || scorerId === scope`. Re-confirmed the wizard's
+    scorer picker already restricts candidates to SCORER/ADMIN roles, so the rule doesn't need its
+    own separate role check. Zero lines of `scoring.ts` touched. `tsc -p tsconfig.app.json --noEmit`
+    and `npm run build` both clean.
+    **Explicitly not verified, and why, rather than silently skipped**: this sandbox has neither the
+    Firebase CLI (needed to deploy `firestore.rules` — without deployment the rule has zero live
+    effect) nor Java (needed for the Firestore rules emulator, the only offline way to test rule
+    enforcement without deploying). Both were checked directly (`firebase --version` and `java
+    -version` both fail — not installed) rather than assumed unavailable. The unchanged owner/master
+    path is low regression risk, but the actual fix — a non-owner `scorerId`-delegate gaining access,
+    everyone else still denied — has not been exercised against real Firestore. Committed anyway
+    (rather than left indefinitely uncommitted) since the code is correct by direct, field-by-field
+    trace against the real write paths, and leaving a confirmed, traceable security/functionality gap
+    unfixed in the repository is worse than shipping a well-reasoned fix pending deployment. **Needs
+    from the user**: run `firebase deploy --only firestore:rules`, then ideally spot-check with a
+    genuine second, non-owner `scorerId`-assigned account.
+
 (Appended to as further slices are picked up.)

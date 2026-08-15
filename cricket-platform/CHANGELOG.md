@@ -22,6 +22,13 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Scoring Engine (ROADMAP_V5)
 
+### Fixed — Assigned scorers couldn't actually score their matches (ROADMAP_V5 Slice 6.1)
+- Assigning a match to a scorer other than yourself (via the setup wizard's "Assign scorer" field)
+  previously produced a match that scorer couldn't even see in their own list, let alone score —
+  both the list filtering and the underlying security rules checked only who created the match, never
+  who it was assigned to. Fixed on both sides. **Requires a Firestore rules deploy
+  (`firebase deploy --only firestore:rules`) to take effect — see `ROADMAP_V5.md` Slice 6.1.**
+
 ### Fixed — Wicket modal allowed illegal dismissal types on Wide/No ball (ROADMAP_V5 Slice 7.1)
 - The Wicket picker now only offers dismissal types that are actually legal for the currently active
   extra — Run out/Stumped/Retired/Other on a Wide, and Run out/Retired/Other on a No ball (bowled,

@@ -80,7 +80,7 @@ Covered above. `ROADMAP_V4` Slice 2.1a already shipped the non-engine fix. The o
 
 ## P0 — Scoring security
 
-### Slice 6.1 — Scorer delegation is silently non-functional
+### Slice 6.1 — Scorer delegation is silently non-functional 🚧 Code written, not yet deployed/verified
 **Problem, confirmed by direct code read, not assumption**: `MatchSetupPage.tsx`'s "Assign scorer"
 field lets an admin set a match's `scorerId` to a *different* user than the match's `ownerId`
 (`ownerId` is always the creating admin — see `payload.ownerId = profile.id` in
@@ -153,6 +153,36 @@ yet.
     case — must be verified, not assumed, given this is the exact class of bug being fixed).
   - `firebase deploy --only firestore:rules` dry-run/lint passes (or equivalent local rules test) —
     `tsc`/`npm run build` clean for the TS-side changes.
+
+**Implemented, code-reviewed field-by-field, but genuinely not live-verified — flagged explicitly
+rather than claimed done.** Added `isDelegatedScorer()` to `firestore.rules`: `canScore() &&
+isSignedIn() && resource.data.scorerId == request.auth.uid && request.resource.data.diff(resource.data)
+.affectedKeys().hasOnly([...])`, where the allowed-fields list was built by grepping every real
+`updateDoc`/`batch.update` call on the match doc across `scoring.service.ts` **and**
+`ScoringPage.tsx`'s own direct `editToss()` call (`matches.service.ts`'s generic `updateMatch()`,
+not routed through `scoring.service.ts`) — `status, innings, currentInnings, startedAt, completedAt,
+result, playerOfTheMatchId, toss, battingFirstTeamId, updatedAt, linkedMatchId` (the last one added
+after Slice 2.1 revealed `startSuperOver()` also needs to write it, caught and folded in before
+either slice was committed). Checking `resource.data.scorerId` (the value already stored, evaluated
+before the write) rather than `request.resource.data.scorerId` (the incoming value) is the key
+safety property: a non-owner cannot grant themselves access by writing their own uid into
+`scorerId` in the same request, since only the match's existing owner (who already has full write
+access) can set that field to begin with. `delete` stays owner/master-only via a separate rule, not
+widened. `MatchesPage.tsx`'s list filter now shows a match if `ownerId === scope || scorerId ===
+scope`. Re-confirmed the wizard's "Assign scorer" dropdown already restricts candidates to
+SCORER/ADMIN roles (`MatchSetupPage.tsx` line ~504), so `scorerId` can never point at a non-scoring
+role — the rule doesn't need its own separate role check for that. Zero lines of `scoring.ts`
+touched. `tsc -p tsconfig.app.json --noEmit` and `npm run build` both clean.
+**What's genuinely not verified, and why**: this sandbox has no Firebase CLI (`firebase --version`
+fails — not installed) and no Java (`java -version` fails — required for the Firestore rules
+emulator), so neither of the two ways to test rule enforcement offline is available here, and the
+rules file itself has zero effect until deployed (`firebase deploy --only firestore:rules`), which
+this environment also cannot do. Regression risk for the *unchanged* owner/master path is low (that
+branch of the `update` rule is untouched), but the actual fix — a non-owner, non-master, `scorerId`-
+assigned user gaining write access, and everyone else still being denied — has not been exercised
+against real Firestore. **This needs you to**: (1) run `firebase deploy --only firestore:rules`
+yourself, and (2) ideally spot-check with a genuine second account assigned as `scorerId` on a match
+they don't own, confirming they can score it and a third, unrelated account still cannot.
 
 ---
 
