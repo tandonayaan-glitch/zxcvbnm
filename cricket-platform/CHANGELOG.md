@@ -2,6 +2,13 @@
 
 All notable changes to CricketHub. Newest first.
 
+## [Unreleased] — Platform / Analytics (ROADMAP_V5)
+
+### Added — Batter vs Bowler analytics (ROADMAP_V5 Slice A1)
+- Player pages now have a "vs Bowler" tab showing a batter's career record against every bowler
+  they've faced — runs, balls, dismissals, average, strike rate, fours and sixes per matchup,
+  sorted by balls faced. Only shown for players with a batting record.
+
 ## [Unreleased] — Scorer Experience (ROADMAP_V4)
 
 ### Removed — Dead `completeMatch()` function

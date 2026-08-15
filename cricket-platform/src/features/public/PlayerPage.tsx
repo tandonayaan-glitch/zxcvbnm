@@ -9,16 +9,18 @@ import { Tabs } from '@/components/ui/Tabs'
 import { useMemo, useState } from 'react'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocumentMeta } from '@/hooks/useDocumentMeta'
-import { getPlayer } from '@/services/players.service'
+import { getPlayer, getPlayersByIds } from '@/services/players.service'
 import { getTeamsByIds } from '@/services/teams.service'
 import { getPlayerStats, getPlayerPerformances } from '@/services/stats.service'
 import { listAllMatches } from '@/services/matches.service'
 import { listTournaments } from '@/services/tournaments.service'
 import { listSeasons } from '@/services/seasons.service'
+import { getDeliveries } from '@/services/scoring.service'
 import { computeAchievements, computeAwards } from '@/domain/achievements'
 import { playerTournamentSplits, playerSeasonSplits } from '@/domain/playerSplits'
 import { playerTimeline } from '@/domain/playerTimeline'
 import { aggregatePlayerStats } from '@/domain/stats'
+import { batterVsBowlerBreakdown } from '@/domain/batterVsBowler'
 import { playerToCSV, playerToJSON } from '@/domain/playerExport'
 import { downloadBlob, slugify } from '@/lib/download'
 import { AchievementsPanel } from '@/components/stats/AchievementsPanel'
@@ -51,6 +53,10 @@ export function PlayerPage() {
     [player.data],
   )
   const [tab, setTab] = useState('overview')
+  // Lazy-loaded: fetching every delivery across every match this player
+  // batted in is meaningfully more expensive than the other tabs' already-
+  // aggregated data, so only fire it once the visitor actually opens the tab.
+  const [vsBowlerOpened, setVsBowlerOpened] = useState(false)
 
   // These recompute over every completed match, so they're memoised on the
   // underlying data. Hooks must run unconditionally before the loading/
@@ -122,6 +128,27 @@ export function PlayerPage() {
     }
     return map
   }, [splits, matches.data, id])
+
+  const vsBowlerDeliveries = useAsync(async () => {
+    if (!vsBowlerOpened) return []
+    const battedMatchIds = (perfs.data ?? [])
+      .filter((p) => p.batting)
+      .map((p) => p.matchId)
+    const lists = await Promise.all(battedMatchIds.map((mid) => getDeliveries(mid)))
+    return lists.flat()
+  }, [vsBowlerOpened, perfs.data])
+  const vsBowlerRows = useMemo(
+    () => batterVsBowlerBreakdown(vsBowlerDeliveries.data ?? [], id),
+    [vsBowlerDeliveries.data, id],
+  )
+  const vsBowlerNames = useAsync(
+    () => getPlayersByIds(vsBowlerRows.map((r) => r.bowlerId)),
+    [vsBowlerRows],
+  )
+  const vsBowlerNameById = useMemo(
+    () => new Map((vsBowlerNames.data ?? []).map((pl) => [pl.id, pl.fullName])),
+    [vsBowlerNames.data],
+  )
 
   useDocumentMeta(
     player.data?.fullName ?? 'Player',
@@ -242,7 +269,10 @@ export function PlayerPage() {
       <Tabs
         className="mb-4"
         active={tab}
-        onChange={setTab}
+        onChange={(k) => {
+          setTab(k)
+          if (k === 'vsbowler') setVsBowlerOpened(true)
+        }}
         tabs={[
           { key: 'overview', label: 'Overview' },
           ...(splits.length > 0
@@ -253,6 +283,9 @@ export function PlayerPage() {
             ? [{ key: 'timeline', label: 'Timeline' }]
             : []),
           { key: 'achievements', label: 'Achievements' },
+          ...((perfs.data ?? []).some((p) => p.batting)
+            ? [{ key: 'vsbowler', label: 'vs Bowler' }]
+            : []),
           { key: 'matches', label: 'Match log' },
           { key: 'activity', label: 'Activity' },
         ]}
@@ -294,6 +327,62 @@ export function PlayerPage() {
             )}
             awards={computeAwards(id, matches.data ?? [])}
           />
+        ))}
+
+      {tab === 'vsbowler' &&
+        (vsBowlerDeliveries.loading ? (
+          <PageLoader />
+        ) : vsBowlerRows.length === 0 ? (
+          <EmptyState
+            title="No deliveries yet"
+            description="This player hasn't faced a ball in a completed match yet."
+          />
+        ) : (
+          <Card className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 text-left text-xs uppercase tracking-wide text-ink-500 dark:text-ink-400">
+                  <th className="px-4 py-2.5 font-semibold">Bowler</th>
+                  <th className="px-2 py-2.5 text-right font-semibold">Runs</th>
+                  <th className="px-2 py-2.5 text-right font-semibold">Balls</th>
+                  <th className="px-2 py-2.5 text-right font-semibold">Dis.</th>
+                  <th className="px-2 py-2.5 text-right font-semibold">Avg</th>
+                  <th className="px-2 py-2.5 text-right font-semibold">SR</th>
+                  <th className="px-2 py-2.5 text-right font-semibold">4s</th>
+                  <th className="px-3 py-2.5 text-right font-semibold">6s</th>
+                </tr>
+              </thead>
+              <tbody>
+                {vsBowlerRows.map((r) => (
+                  <tr key={r.bowlerId} className="border-b border-ink-50 dark:border-ink-800">
+                    <td className="px-4 py-2.5">
+                      <Link
+                        to={`/player/${r.bowlerId}`}
+                        className="font-medium text-ink-900 dark:text-ink-50 hover:text-brand-700"
+                      >
+                        {vsBowlerNameById.get(r.bowlerId) ?? '—'}
+                      </Link>
+                    </td>
+                    <td className="px-2 py-2.5 text-right font-semibold text-ink-900 dark:text-ink-50">
+                      {r.runs}
+                    </td>
+                    <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">{r.balls}</td>
+                    <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">
+                      {r.dismissals}
+                    </td>
+                    <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">
+                      {battingAverage(r.runs, r.dismissals)}
+                    </td>
+                    <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">
+                      {strikeRate(r.runs, r.balls)}
+                    </td>
+                    <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">{r.fours}</td>
+                    <td className="px-3 py-2.5 text-right text-ink-600 dark:text-ink-400">{r.sixes}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
         ))}
 
       {tab === 'overview' &&

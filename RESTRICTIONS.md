@@ -1390,4 +1390,32 @@ reasoning.
     tsconfig.app.json --noEmit` and `npm run build` both clean. No live-verification step applies —
     dead code has no UI flow to exercise, before or after removal.
 
+64. **`ROADMAP_V5_PLATFORM.md` Slice A1 — Batter vs Bowler analytics** — **Done**, no collision.
+    New pure `src/domain/batterVsBowler.ts` (`batterVsBowlerBreakdown`/`batterVsOneBowler`), one row
+    per bowler actually faced (no zero-filled enum, unlike the wagon-wheel/pitch-map grids — there's
+    no fixed "every possible bowler" list to pad out), sorted by balls faced. "Balls faced" excludes
+    wides, matching `scoring.ts`'s own `striker.balls += 1 unless extra === 'wide'` convention
+    exactly (read, not modified) so this stays consistent with every other balls-faced figure in the
+    app. New "vs Bowler" tab on `PlayerPage.tsx`, lazy-loaded — the underlying fetch (every delivery
+    across every match the player batted in, via `getDeliveries()` per match, mirroring
+    `admin.service.ts`'s existing `gatherPlatformBackup()` concurrent-fetch pattern) only fires once
+    the tab is actually opened, not on every page load. Tab itself only rendered for players with at
+    least one batting performance. Zero lines of `scoring.ts` touched — reads `Delivery` fields
+    already recorded, no schema change. **Concurrent-session note**: this session's own
+    `ROADMAP_V5.md` was clobbered mid-write by a concurrent scoring-engine session using the same
+    filename for its own (differently-scoped) V5 roadmap; left their file untouched and moved this
+    session's roadmap to `ROADMAP_V5_PLATFORM.md` instead. Confirmed via `git status` that this
+    slice's own touched files (`PlayerPage.tsx`, new `batterVsBowler.ts`) don't overlap the
+    concurrent session's in-flight changes (`firestore.rules`, `MatchesPage.tsx`) before implementing
+    or staging. `tsc -p tsconfig.app.json --noEmit`, `npm run build`, and `oxlint` on the touched
+    files all clean. **Verified live against the real database, hand-checked ball-by-ball, not just
+    "looks plausible"**: opened Shreyas Iyer's real seeded match history, confirmed the "vs Bowler"
+    tab shows three rows (R Jadeja, Y Chahal, M Shami); pulled the actual full ball-by-ball
+    commentary for that match and manually tallied every delivery Iyer faced from each bowler by
+    hand — all three rows matched exactly (Jadeja: 6 balls/13 runs/1 dismissal/2 sixes; Chahal: 5
+    balls/8 runs/1 four; Shami: 4 balls/9 runs/2 fours), sorted correctly by balls faced descending.
+    Confirmed the bowler-name link resolves to the correct player id (Jadeja → `ptk3`, matching the
+    id independently seen on the Stats leaderboard). Confirmed the regression case: a pure bowler
+    with zero batting innings (Yuzvendra Chahal) shows no "vs Bowler" tab at all.
+
 (Appended to as further slices are picked up.)
