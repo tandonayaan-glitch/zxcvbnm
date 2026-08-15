@@ -56,8 +56,8 @@ external decisions needed).** Build these first: fast, verifiable, zero business
    deliberately descoped, see write-up below)
 3. **A3 — Expected Score** ✅ Done (real first-innings projection model, paired with the existing
    Win Probability module)
-4. **A4 — Career-level Wagon Wheel + Bowling Heat Map** (reuse the existing pure domain functions
-   across a player's whole match history, not just one match)
+4. **A4 — Career-level Wagon Wheel + Bowling Heat Map** ✅ Done (reuse the existing pure domain
+   functions across a player's whole match history, not just one match)
 
 **Phase B — Tournament admin & account (touches roles/permissions/rules — more care, still no
 external business decisions).**
@@ -205,7 +205,7 @@ the number dropped to exactly 237 — also hand-verified — proving the wicket-
 works, not just that some number renders. Test match deleted after verification (never reached
 `completed` status, so no stats-cache pollution to clean up, unlike Slice 2.4's test).
 
-### A4 — Career-level Wagon Wheel + Bowling Heat Map
+### A4 — Career-level Wagon Wheel + Bowling Heat Map ✅ Done
 **Problem**: `wagonWheelData()`/`pitchMapData()` already generalize across matches (pure functions,
 optional player filter) but are only ever called with one match's deliveries — no player ever sees
 their career shot chart or career line/length profile.
@@ -218,12 +218,55 @@ their career shot chart or career line/length profile.
   loading state for prolific players. No domain logic changes needed, `wagonWheelData`/`pitchMapData`
   are reused exactly as they are.
 
+**Audit before implementing, confirmed unchanged since Pass 1's earlier read**: re-diffed
+`wagonWheel.ts`, `pitchMap.ts`, and `ballMeta.service.ts` against 4 commits back — zero changes, so
+the earlier audit's conclusions (both domain functions already accept an optional player filter and
+are pure; `listBallMeta(matchId)` is scoped to one match) still held. Confirmed `WagonWheel`/
+`PitchMap` (the chart components) take only `{zones}`/`{cells}` — no data-fetching of their own, safe
+to reuse unmodified. **Implemented and verified.** Reused `perfs.data` (already fetched for A1) to
+get the player's full match-id list — this also means the fetch correctly only ever includes
+*finished* matches (`playerPerformances()` gates on `isFinished(m)`), so an in-progress live match's
+provisional data can never leak into "career" analytics; confirmed this exact behavior live, see
+below. For each match, fetches `getDeliveries()` and `listBallMeta()` in parallel, concatenates
+across all matches, then calls `wagonWheelData`/`pitchMapData` once each on the combined set with
+`filterBatterId`/`filterBowlerId` set to the viewed player — both functions already do the
+per-player filtering internally, so one combined cross-match fetch feeds both charts with no new
+domain logic. Lazy-loaded behind its own `analysisOpened` flag (heavier than A1's fetch — deliveries
+*and* ballMeta per match — so given its own gate rather than piggy-backing on `vsBowlerOpened`).
+New "Shot & Line Analysis" tab, gated on the player having any performance at all (batting or
+bowling); inner content shows each chart only if that specific player's filtered data actually has
+a non-zero cell, with a clear empty state ("Shot placement and line/length data only exist for
+deliveries the scorer chose to tag while scoring") when neither has any — never a blank chart
+implying data that doesn't exist, and never a fabricated placeholder. Zero lines of `scoring.ts`
+touched. `tsc -p tsconfig.app.json --noEmit`, `npm run build`, and `oxlint` all clean.
+**Verified live against the real database with deliberately-tagged, known ground truth, not
+existing seed data (confirmed via audit that the existing seeded "Royal Strikers vs Thunder Kings"
+match has zero tagged deliveries — neither chart would have had anything to show there)**: created a
+throwaway match, scored two boundaries as the same player who was also bowling to himself (a
+deliberate test setup so one player's page would exercise *both* charts at once), tagging one ball
+Mid-wicket/Stumps/Good (4 runs) and the other Long-on/Off/Full (6 runs) through the real
+`ShotDetailPrompt` UI — not seeded directly into the database. **Regression-checked the finished-
+matches-only behavior explicitly**: before ending the match, the new tab correctly showed the empty
+state (the live match's tags didn't leak into "career" data); after force-completing both innings via
+"End innings", the same tab showed both charts with the exact tagged values (wagon wheel: 4 runs/1
+ball in one zone, 6 runs/1 ball in another, six other zones correctly zero-filled; heat map: 4 at
+Good×Stumps, 6 at Full×Outside-off) — an exact match to what was deliberately tagged, not just
+"a chart appeared." Test match deleted after verification; since it had reached `completed` status,
+ran the existing "Recompute leaderboards & standings" action afterward and confirmed the player's
+stats page and the Analysis tab both reverted to their clean pre-test baseline (empty state again),
+same cleanup discipline as `ROADMAP_V4.md`'s Slice 2.4.
+
 ---
 
 ## Notes
-- Phase A starting now, one slice at a time, verified before moving on.
-- Phase B needs no external input but does need the `firestore.rules` concurrent-session check
-  re-run immediately before B1/B2 specifically, since those touch roles.
+- **Phase A is complete** — A1, A2, A3, A4 all implemented, verified live against the real database
+  (each with either hand-computed or deliberately-tagged known ground truth, not just "renders
+  without error"), and committed separately. Zero lines of `scoring.ts` touched across all four.
+  A2's cross-match "partnership records" half was descoped before implementation (see its write-up)
+  rather than built expensively or half-right; everything else shipped as originally scoped.
+- **Phase B is next, not yet started.** Needs a fresh `firestore.rules`/`types/index.ts` concurrent-
+  session check immediately before B1/B2 specifically, since those touch roles and permissions —
+  the scoring-engine session has been actively landing changes to both files throughout Phase A.
 - Phase C is scoped but paused pending: (1) which billing provider to target for the abstraction's
   first real implementation (Stripe is the common default for this kind of app, but that's your
   call), and (2) confirmation you want architecture/scaffolding built now vs. only once you're ready

@@ -16,17 +16,23 @@ import { listAllMatches } from '@/services/matches.service'
 import { listTournaments } from '@/services/tournaments.service'
 import { listSeasons } from '@/services/seasons.service'
 import { getDeliveries } from '@/services/scoring.service'
+import { listBallMeta } from '@/services/ballMeta.service'
 import { computeAchievements, computeAwards } from '@/domain/achievements'
 import { playerTournamentSplits, playerSeasonSplits } from '@/domain/playerSplits'
 import { playerTimeline } from '@/domain/playerTimeline'
 import { aggregatePlayerStats } from '@/domain/stats'
 import { batterVsBowlerBreakdown } from '@/domain/batterVsBowler'
+import { wagonWheelData } from '@/domain/wagonWheel'
+import { pitchMapData } from '@/domain/pitchMap'
 import { playerToCSV, playerToJSON } from '@/domain/playerExport'
 import { downloadBlob, slugify } from '@/lib/download'
 import { AchievementsPanel } from '@/components/stats/AchievementsPanel'
 import { PlayerForm } from '@/components/charts/PlayerForm'
 import { PlayerRadar } from '@/components/charts/PlayerRadar'
+import { WagonWheel } from '@/components/charts/WagonWheel'
+import { PitchMap } from '@/components/charts/PitchMap'
 import { playerRadarProfile } from '@/domain/radar'
+import type { BallMeta, Delivery } from '@/types'
 import {
   battingAverage,
   strikeRate,
@@ -150,6 +156,38 @@ export function PlayerPage() {
     [vsBowlerNames.data],
   )
 
+  // Career wagon wheel / bowling heat map — same lazy-load-on-tab-open reasoning
+  // as vsBowler above, but heavier still (deliveries *and* ballMeta per match),
+  // so gated behind its own "opened" flag rather than piggy-backing on
+  // vsBowlerOpened. wagonWheelData/pitchMapData already filter internally by
+  // player id, so one combined fetch across every match this player featured
+  // in (batted or bowled) feeds both charts.
+  const [analysisOpened, setAnalysisOpened] = useState(false)
+  const analysisData = useAsync(async () => {
+    if (!analysisOpened) return { deliveries: [] as Delivery[], ballMeta: [] as BallMeta[] }
+    const matchIds = [...new Set((perfs.data ?? []).map((p) => p.matchId))]
+    const pairs = await Promise.all(
+      matchIds.map(async (mid) => ({
+        deliveries: await getDeliveries(mid),
+        ballMeta: await listBallMeta(mid),
+      })),
+    )
+    return {
+      deliveries: pairs.flatMap((p) => p.deliveries),
+      ballMeta: pairs.flatMap((p) => p.ballMeta),
+    }
+  }, [analysisOpened, perfs.data])
+  const wagonZones = useMemo(
+    () => wagonWheelData(analysisData.data?.deliveries ?? [], analysisData.data?.ballMeta ?? [], id),
+    [analysisData.data, id],
+  )
+  const pitchCells = useMemo(
+    () => pitchMapData(analysisData.data?.deliveries ?? [], analysisData.data?.ballMeta ?? [], id),
+    [analysisData.data, id],
+  )
+  const hasWagonData = wagonZones.some((z) => z.balls > 0)
+  const hasPitchData = pitchCells.some((c) => c.balls > 0)
+
   useDocumentMeta(
     player.data?.fullName ?? 'Player',
     player.data
@@ -272,6 +310,7 @@ export function PlayerPage() {
         onChange={(k) => {
           setTab(k)
           if (k === 'vsbowler') setVsBowlerOpened(true)
+          if (k === 'analysis') setAnalysisOpened(true)
         }}
         tabs={[
           { key: 'overview', label: 'Overview' },
@@ -285,6 +324,9 @@ export function PlayerPage() {
           { key: 'achievements', label: 'Achievements' },
           ...((perfs.data ?? []).some((p) => p.batting)
             ? [{ key: 'vsbowler', label: 'vs Bowler' }]
+            : []),
+          ...((perfs.data ?? []).length > 0
+            ? [{ key: 'analysis', label: 'Shot & Line Analysis' }]
             : []),
           { key: 'matches', label: 'Match log' },
           { key: 'activity', label: 'Activity' },
@@ -383,6 +425,21 @@ export function PlayerPage() {
               </tbody>
             </table>
           </Card>
+        ))}
+
+      {tab === 'analysis' &&
+        (analysisData.loading ? (
+          <PageLoader />
+        ) : !hasWagonData && !hasPitchData ? (
+          <EmptyState
+            title="No tagged deliveries yet"
+            description="Shot placement and line/length data only exist for deliveries the scorer chose to tag while scoring — none of this player's matches have any yet."
+          />
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {hasWagonData && <WagonWheel zones={wagonZones} />}
+            {hasPitchData && <PitchMap cells={pitchCells} />}
+          </div>
         ))}
 
       {tab === 'overview' &&

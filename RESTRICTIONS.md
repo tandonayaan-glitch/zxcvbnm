@@ -1557,4 +1557,39 @@ reasoning.
     from the user**: run `firebase deploy --only firestore:rules`, then ideally spot-check with a
     genuine second, non-owner `scorerId`-assigned account.
 
+70. **`ROADMAP_V5_PLATFORM.md` Slice A4 — Career-level Wagon Wheel + Bowling Heat Map** — **Done**,
+    no collision. Audited first, re-diffing `wagonWheel.ts`/`pitchMap.ts`/`ballMeta.service.ts`
+    against 4 commits back to confirm zero changes since the original audit — both domain functions
+    already accept an optional player-id filter and are pure, `listBallMeta(matchId)` is scoped to
+    one match, and the `WagonWheel`/`PitchMap` chart components take only `{zones}`/`{cells}`, no
+    data-fetching of their own. Reused A1's already-fetched `perfs.data` for the player's match-id
+    list — this also means the fetch inherits `playerPerformances()`'s existing `isFinished(m)` gate,
+    so an in-progress live match's provisional tags can never leak into "career" analytics; this
+    exact behavior was verified live, not assumed. For each match, fetches `getDeliveries()` and
+    `listBallMeta()` in parallel, concatenates across matches, then calls `wagonWheelData`/
+    `pitchMapData` once each on the combined set — both already filter internally by player id, so
+    one combined cross-match fetch feeds both charts with zero new domain logic. Lazy-loaded behind
+    its own `analysisOpened` flag, separate from A1's `vsBowlerOpened`, since this fetch is heavier
+    (deliveries *and* ballMeta per match). New "Shot & Line Analysis" tab; inner content shows each
+    chart only when that specific player's filtered data has a non-zero cell, with an explicit empty
+    state when neither does — never a fabricated or misleadingly-blank chart. Zero lines of
+    `scoring.ts` touched. `tsc -p tsconfig.app.json --noEmit`, `npm run build`, and `oxlint` all
+    clean. **Verified live against the real database with deliberately-tagged, known ground truth —
+    confirmed first that the existing seeded "Royal Strikers vs Thunder Kings" match has zero tagged
+    deliveries, so it could not have been used for this check**: created a throwaway match, had one
+    player bat *and* bowl to himself (deliberately, so his own player page would exercise both charts
+    at once), and tagged two real deliveries through the actual `ShotDetailPrompt` UI — Mid-wicket/
+    Stumps/Good for a 4, Long-on/Off/Full for a 6 — never seeded directly into Firestore.
+    **Explicitly regression-checked the finished-matches-only behavior**: confirmed the tab showed
+    the empty state while the match was still live, then confirmed both charts appeared with the
+    exact tagged values only after force-completing the match via "End innings" on both innings.
+    Confirmed the wagon wheel showed 4 runs/1 ball and 6 runs/1 ball in the correct two zones (six
+    others correctly zero-filled) and the heat map showed 4 at Good×Stumps and 6 at Full×Outside-off
+    — an exact match to what was deliberately tagged. Test match deleted after verification; since it
+    had reached `completed` status, ran "Recompute leaderboards & standings" afterward and confirmed
+    the player's stats and the Analysis tab both reverted to their clean pre-test baseline (empty
+    state again) — same cleanup discipline as `ROADMAP_V4.md` Slice 2.4. **This completes Phase A of
+    `ROADMAP_V5_PLATFORM.md` in full** (A1–A4 all done); Phase B (Tournament Admin signup/permissions,
+    account audit, phone verification) has not been started.
+
 (Appended to as further slices are picked up.)

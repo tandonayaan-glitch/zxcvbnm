@@ -4,6 +4,12 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Added — Career wagon wheel and bowling heat map (ROADMAP_V5 Slice A4)
+- Player pages now have a "Shot & Line Analysis" tab showing a career-wide shot-placement wagon
+  wheel and bowling line/length heat map, aggregated across every match the player has featured in
+  (not just one) — reusing the same charts already shown on individual match pages. Only shown where
+  the scorer actually tagged shot/line data; no chart is fabricated where none exists.
+
 ### Changed — Real Expected Score model (ROADMAP_V5 Slice A3)
 - The live first-innings score projection now accounts for wickets lost, not just the current run
   rate — a side that's lost several wickets gets a more conservative projection than a naive
