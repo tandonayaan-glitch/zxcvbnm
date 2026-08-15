@@ -1478,4 +1478,48 @@ reasoning.
     pollution occurred and no post-cleanup recompute was needed (unlike Slice 2.4's test in
     `ROADMAP_V4.md`).
 
+67. **`ROADMAP_V5.md` Slice 7.1 — Wicket modal allows illegal dismissal types on Wide/No ball** —
+    **Done**, no collision. Added `LEGAL_TYPES_BY_EXTRA` (`ScoringModals.tsx`) mapping `wide` to
+    `[run_out, stumped, retired_out, retired_hurt, other]` and `no_ball` to `[run_out, retired_out,
+    retired_hurt, other]` — the actual laws of cricket for what can happen on those deliveries — and
+    an `activeExtra` prop on `WicketModal` (default `null`, so the change is inert unless a caller
+    opts in; there is exactly one caller, `ScoringPage.tsx`). Combined with the existing
+    `retiredHurtEnabled` filter rather than replacing it. Default selected type now starts at the
+    first legal option (`run_out` when restricted) instead of unconditionally `bowled`, so the modal
+    never opens pre-selected on an invalid choice. Zero lines of `scoring.ts` touched — the engine
+    still accepts any `WicketType` it's given; this only narrows what the picker *offers*. `tsc -p
+    tsconfig.app.json --noEmit` and `npm run build` both clean. **Verified live against the real
+    database**: with no extra active, confirmed all 9 types still show (regression check); activated
+    Wide and confirmed the modal showed exactly Run out/Stumped/Retired out/Retired hurt/Other;
+    switched to No ball and confirmed exactly Run out/Retired out/Retired hurt/Other (Stumped
+    correctly absent here, present for Wide — the one detail most likely to be gotten wrong, checked
+    explicitly rather than assumed symmetric). Test match deleted after verification.
+
+68. **`ROADMAP_V5.md` Slice 2.1 — Super Over scoring (linked match)** — **Done**, no collision. Added
+    `linkedMatchId?: string | null` to `Match` and `CreateMatchInput`/`createMatch()`. New
+    `startSuperOver(match, callerId)` in `scoring.service.ts` derives the correct first-batting team
+    (the team that batted second in the original match, per standard playing conditions), creates a
+    new `Match` through the existing, unmodified `createMatch()` (1 over, `maxWickets: min(parent,
+    2)`, same teams/squads, a synthetic toss the scorer can still edit via `ROADMAP_V4` Slice 1.4's
+    toss editor), and writes `linkedMatchId` back onto the parent. **Correctness detail caught during
+    implementation, not after**: `ownerId`/`createdBy` on the new match are explicitly set to
+    `callerId` (whoever clicks "Start Super Over"), not inherited from the parent — required because
+    `firestore.rules`'s `create` rule checks the write against the actual caller's uid, which only
+    equals the parent's `ownerId` if the same person is scoring both matches; using the parent's
+    `ownerId` unconditionally would have broken Super Over creation for anyone else (including a
+    delegated scorer, once Slice 6.1 is deployed). `ScoringPage.tsx`'s completed-tie screen replaced
+    the old static "to be scored as a separate match" note with a real "Start Super Over" / "View
+    linked Super Over" action (one conditional block covers both directions plus the not-yet-started
+    state); `MatchPage.tsx` shows the same link publicly. Zero lines of `scoring.ts` touched — a
+    Super Over is scored through the exact same `applyBall`/`newInnings` as any other match. `tsc -p
+    tsconfig.app.json --noEmit` and `npm run build` both clean. **Verified live against the real
+    database, full cycle, with a genuine tie, not a shortcut**: created a throwaway 1-over-per-side
+    match with Super Over enabled, scored six real dot balls in each innings (not a force-end) to
+    reach an actual 0-0 tie via `computeResult`'s own logic, confirmed a real "Start Super Over"
+    button appeared, clicked it, and confirmed every derived value on the new match: `CUSTOM · 1
+    overs`, toss correctly awarded to the team that batted second originally, `Wickets: 2`,
+    `Powerplay: 0 overs`, squads inherited. Confirmed the parent's own completed screen and its
+    public `MatchPage.tsx` both show a working link to the new match. All three throwaway matches
+    (including one unrelated to this slice) soft-deleted after verification.
+
 (Appended to as further slices are picked up.)
