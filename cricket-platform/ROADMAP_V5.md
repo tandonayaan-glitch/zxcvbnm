@@ -55,7 +55,7 @@ already supports arbitrarily short innings (`oversPerInnings: 1`), so a Super Ov
 | **P0** | 🚧 6.1 — Scorer delegation is silently non-functional (code written, deploy pending) | `firestore.rules`, `matches.service.ts`, `MatchesPage.tsx` | Security/correctness bug |
 | P1 | ✅ 7.1 — Wicket modal allows illegal dismissal types on Wide/No-ball | `ScoringModals.tsx`, `ScoringPage.tsx` | Correctness bug |
 | P1 | ✅ 2.1 — Super Over scoring (linked match, reuses engine unmodified) | `matches.service.ts`, `ScoringPage.tsx`, `scoring.service.ts`, `MatchPage.tsx`, `types/index.ts` | Feature |
-| P2 | 3.1 — Wicket-decision correction ("review") via `rebuildInnings()` | `scoring.service.ts`, `ScoringModals.tsx`, `ScoringPage.tsx` | Feature |
+| P2 | ✅🔄 3.1 — Wicket-decision correction ("review") — resolved via existing Undo, re-scoped | none — no code needed | Resolved, no-op |
 | P2 | ✅ 4.1 — Extend delivery metadata (ballMeta) with a review/DRS tag and free-text note | `ballMeta.service.ts`, `types/index.ts` (BallMeta only) | Feature |
 | P2 | 8.1 — "Did not bat" list on the scorecard | `ScorecardView.tsx` | Feature |
 | P2 | 6.2 — `ballMeta` write rule has no owner scoping (hygiene, not exploitable today) | `firestore.rules` | Security hygiene |
@@ -322,7 +322,7 @@ soft-deleted after verification.
 
 ## P2 — DRS / Reviews (scoped, not full DRS)
 
-### Slice 3.1 — Correct a wicket decision after the fact, via `rebuildInnings()`
+### Slice 3.1 — Correct a wicket decision after the fact, via `rebuildInnings()` ⚠️ Re-scoped, see correction below
 **Problem**: No review/correction mechanism exists at all today. A full DRS system (review-count
 limits per innings, an "under review" pending UI state, umpire's-call semantics) is Phase-5-shaped —
 `ROADMAP_V4` already flagged real DRS as needing "a new mutation path into already-recorded
@@ -372,6 +372,67 @@ delivery, not just the last one.
   - `tsc`/`npm run build` clean; live-verified with a real throwaway match: record a wicket, score a
     few more balls, correct the wicket to "not out", and confirm the resulting state matches what
     directly scoring the corrected sequence from scratch would produce.
+
+## ⚠️ Critical correction: the general "correct any past wicket" plan above was wrong
+
+Before writing any implementation, re-read `rebuildInnings()` in full (`domain/scoring.ts` lines
+437–480) rather than trusting the summary above, which assumed it recomputes each ball's
+striker/non-striker fresh from the accumulated engine state. **It does not**:
+
+```
+// scoring.ts, rebuildInnings(), line 446-448
+s.strikerId = d.strikerId
+s.nonStrikerId = d.nonStrikerId
+s.bowlerId = d.bowlerId
+```
+
+Every delivery's `strikerId`/`nonStrikerId`/`bowlerId` are taken directly from that delivery's own
+**stored** fields — not recomputed — and the "who came in after this wicket" inference
+(line 461–469) works by diffing the *next* delivery's stored striker/non-striker against who was at
+the crease before the wicket. This is exactly correct for `undoLastBall()`'s actual use case
+(dropping the tail of the list — every kept delivery's stored fields are still accurate, since
+nothing before them changed) but **silently wrong** for editing a wicket in the *middle* of the list
+while keeping everything after it: every delivery after the edited one still has its old stored
+striker/non-striker, reflecting the historical replacement batter — replaying them un-modified would
+put the wrong batter at the crease for the rest of the innings, with no error or warning, just quietly
+incorrect data. This is not a hypothetical; it's the literal, traced behavior of the actual code.
+
+**Resolution, mirroring how `ROADMAP_V4` handled its own analogous Slice-2.1 correction**: don't
+build the general version. Reduce to what's both safe and actually the realistic use case — **a DRS
+review, in real cricket, is almost always resolved before the next ball is bowled.** Correcting the
+***most recent*** delivery's wicket has no "stale downstream deliveries" problem at all, since there
+are none — and that exact operation already reduces to two already-verified, already-shipped
+primitives: `undoLastBall()` (already wired to the existing "Undo" button, and already proven safe
+for wickets specifically — `ROADMAP_V4` Slice 2.1a's own verification played a wicket then relied on
+this exact codepath) followed by re-scoring the corrected outcome through the normal score
+pad/Wicket modal. **No new service function, and no new UI, is required for this — it already
+works today.** Verified live rather than just reasoned about, with two scenarios, not one: first
+undid a wicket that was literally the innings' first ball — correctly reset all the way to the
+pristine pre-openers state (nothing to restore *to*, since the wicket immediately followed
+`newInnings()`), confirming that boundary case doesn't error. Then, to actually exercise "restore a
+dismissed batter mid-innings" (the real target of this slice), set openers, scored one normal ball
+first (2 runs, even — no strike rotation, so the pre-wicket baseline had a known, specific striker),
+scored a wicket (striker bowled, a new batter came in and became the striker), then tapped "Undo" —
+confirmed the state reverted to exactly `2/0` with the **originally-dismissed batter** back at
+striker showing his exact prior figures (`2 runs, 1 ball`), not the batter who'd replaced him, and
+partnership/bowler figures all correctly reverted too. Completed the correction by re-scoring that
+ball as a single instead of a wicket — final state (`3/0`, strike correctly rotated for the odd run)
+matched exactly what directly scoring that corrected sequence from scratch would have produced.
+Test match cleaned up after verification; no code was shipped for this slice, so nothing to commit.
+
+**Correcting an *older* wicket (not the most recent ball) is moved to permanently out of scope**,
+alongside Phase 5's engine-change items — not because it's unimportant, but because doing it
+correctly requires either (a) modifying `rebuildInnings()` itself to recompute striker/non-striker
+from the engine's own accumulated state instead of trusting stored fields (an engine change,
+off-limits without explicit sign-off), or (b) reimplementing strike-rotation/incoming-batter logic
+independently in `scoring.service.ts` to correctly patch every downstream delivery's stored fields
+before replaying — which would mean maintaining a second, parallel copy of exactly the logic the
+"treated as verified, don't reimplement" restriction exists to prevent duplicating. Neither is worth
+the risk for a rare, retrospective-correction scenario when the realistic case (an in-flow review) is
+already fully served by existing functionality.
+
+**This slice is resolved via existing functionality plus a scope correction — no new code shipped,
+and none was needed.** `tsc`/`npm run build` not applicable (no files changed for this slice).
 
 ---
 
@@ -533,9 +594,10 @@ deliberate audit pass confirming every read site has a correct fallback, rather 
   `firebase deploy --only firestore:rules` (no CLI available in this sandbox), and ideally a
   post-deploy spot-check with a genuine non-owner, non-master `scorerId`-assigned account.
 - **7.1 and 2.1 are done and fully verified.**
-- Recommended order for what's left: **4.1 (P2, small, pairs with 3.1) → 3.1 (P2, review
-  corrections) → 8.1 (P2, scorecard) → 6.2 (P2, needs your product call) → 5.1 (P3, audit)** — say
-  the word to reorder or drop anything.
+- Recommended order for what's left: **8.1 (P2, scorecard) → 6.2 (P2, needs your product call) →
+  5.1 (P3, audit)** — 4.1 and 3.1 are both done (3.1 resolved via existing functionality, no code
+  needed — see its own write-up for the correctness bug caught before implementing the original
+  plan). Say the word to reorder or drop anything.
 - Every slice ends with `tsc` + `npm run build` green and a live smoke test against the real
   database, exactly like every `ROADMAP_V4` slice.
 - `git status --short` (both `cricket-platform/` and the repo root) is checked immediately before

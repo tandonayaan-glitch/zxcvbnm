@@ -1610,4 +1610,37 @@ reasoning.
     confirming the actual stored Firestore document: `{note: "Given out, review requested", reviewed:
     true}`. Test match abandoned and deleted after verification.
 
+72. **`ROADMAP_V5.md` Slice 3.1 — Wicket-decision correction via `rebuildInnings()`** — **Resolved
+    via existing functionality, re-scoped after catching a real correctness bug in the original
+    plan before writing any code.** The original plan assumed `rebuildInnings()` (`domain/scoring.ts`
+    lines 437-480) recomputes each delivery's striker/non-striker fresh from accumulated engine
+    state during replay. Re-reading it directly disproved this: lines 446-448 (`s.strikerId =
+    d.strikerId` etc.) show every delivery's striker/non-striker/bowler are taken from that
+    delivery's own **stored** fields, and the incoming-batter inference (lines 461-469) works by
+    diffing the *next* delivery's stored fields — correct for `undoLastBall()`'s actual use (dropping
+    the tail, where every kept delivery's stored fields are still accurate) but **silently wrong**
+    for patching a wicket in the *middle* of the delivery list while keeping everything after it:
+    every later delivery still has its old stored striker/non-striker reflecting the historical
+    replacement batter, so replaying them unmodified would put the wrong batter at the crease for the
+    rest of the innings with no error, just quietly incorrect data. Not a hypothetical — traced
+    directly from the code. **Resolution**: correcting the *most recent* delivery's wicket has no
+    such problem (no later deliveries to go stale) and already reduces to two already-verified
+    primitives — `undoLastBall()` (already wired to the existing "Undo" button) followed by
+    re-scoring through the normal flow — so no new code was needed at all. Correcting an *older*
+    wicket is moved to permanently out of scope alongside the Phase 5 engine-change items, since
+    doing it correctly would require either modifying `rebuildInnings()` itself (an engine change,
+    off-limits) or reimplementing strike-rotation/incoming-batter logic independently in
+    `scoring.service.ts` — maintaining a second, parallel copy of exactly the logic the "verified,
+    don't reimplement" restriction exists to prevent duplicating. **Verified live with two scenarios,
+    not just reasoned about**: undoing a wicket that was the innings' literal first ball correctly
+    reset all the way to the pristine pre-openers state (nothing to restore to). Then, to actually
+    exercise mid-innings restoration, scored one normal ball (2 runs, even — no rotation, so the
+    pre-wicket baseline had a known striker), scored a wicket (new batter came in), then undid it —
+    confirmed the state reverted to exactly `2/0` with the **originally-dismissed batter** back at
+    striker showing his exact prior figures (2 runs, 1 ball), not the replacement, and completed the
+    correction by re-scoring the ball as a single instead — final state (`3/0`, strike correctly
+    rotated) matched exactly what directly scoring the corrected sequence would have produced. Test
+    match cleaned up after verification. No files changed for this slice — nothing to commit besides
+    documentation.
+
 (Appended to as further slices are picked up.)
