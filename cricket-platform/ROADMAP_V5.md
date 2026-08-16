@@ -57,7 +57,7 @@ already supports arbitrarily short innings (`oversPerInnings: 1`), so a Super Ov
 | P1 | ✅ 2.1 — Super Over scoring (linked match, reuses engine unmodified) | `matches.service.ts`, `ScoringPage.tsx`, `scoring.service.ts`, `MatchPage.tsx`, `types/index.ts` | Feature |
 | P2 | ✅🔄 3.1 — Wicket-decision correction ("review") — resolved via existing Undo, re-scoped | none — no code needed | Resolved, no-op |
 | P2 | ✅ 4.1 — Extend delivery metadata (ballMeta) with a review/DRS tag and free-text note | `ballMeta.service.ts`, `types/index.ts` (BallMeta only) | Feature |
-| P2 | 8.1 — "Did not bat" list on the scorecard | `ScorecardView.tsx` | Feature |
+| P2 | ✅ 8.1 — "Did not bat" list on the scorecard | `ScorecardView.tsx` | Feature |
 | P2 | 6.2 — `ballMeta` write rule has no owner scoping (hygiene, not exploitable today) | `firestore.rules` | Security hygiene |
 | P3 | 5.1 — Optional-field fallback audit across Match/Delivery/InningsState | none (audit only) / `Platform Tools` maintenance script | Audit + maybe tooling |
 | P3 | 9.1 | — | 🚫 Deferred — see below |
@@ -486,7 +486,7 @@ button re-rendered. Test match abandoned and deleted after verification.
 
 ## P2 — Scorecard changes
 
-### Slice 8.1 — "Did not bat" list
+### Slice 8.1 — "Did not bat" list ✅ Done
 **Problem, confirmed by reading `ScorecardView.tsx`**: the batting card only lists players who
 actually appear in `InningsState.battingCard` (populated by `ensureBatter()` when they face a ball
 or are run out etc.) — any squad member who never got to bat (very common: a low-overs chase won
@@ -506,6 +506,23 @@ Standard cricket scorecards list these under "Did not bat."
   "Did not bat" list; a match where everyone batted (or an incomplete innings) shows nothing extra.
   `tsc`/`npm run build` clean; live-verified against a real match with a genuine unused-squad-member
   case (or one constructed via a small throwaway match).
+
+**Implemented and verified exactly as planned.** Changed `InningsCard`'s existing `yetToBat` line
+(already computed correctly — `squadFor(match, battingTeamId).filter(pid => !battingCard.some(b =>
+b.playerId === pid))`, only the label was wrong) to `{inn.isComplete ? 'Did not bat' : 'Yet to bat'}`.
+No new computation, no new prop — the list of unused squad members was already being derived
+correctly; only a completed innings should call it "Did not bat" rather than "Yet to bat," and
+`InningsState.isComplete` was already available on the same object. Zero lines of `scoring.ts`
+touched. `tsc -p tsconfig.app.json --noEmit` and `npm run build` both clean. **Verified live against
+the real database, against real (not throwaway) match data**: opened the completed "Royal Strikers
+vs Thunder Kings" match's public scorecard — Thunder Kings won by 3 wickets, so two of their squad
+(M Shami, Y Chahal) never batted — and confirmed the innings card now reads "Did not bat: M Shami, Y
+Chahal" instead of the old "Yet to bat: M Shami, Y Chahal". Regression case (an innings still in
+progress showing "Yet to bat") wasn't hunted down live — every currently-live match in this dev
+database is a minimal throwaway with a 2-3 player squad that's already fully exhausted by the time
+any ball is scored, so none exercises the `yetToBat.length > 0` branch at all — but the change is a
+single-line ternary whose false branch is byte-identical to the pre-existing string, so the regression
+risk is definitionally zero, not just argued to be low.
 
 ---
 
@@ -575,7 +592,16 @@ deliberate audit pass confirming every read site has a correct fallback, rather 
   particularly on: (a) priority/order across the slices above, (b) the 6.2 product question, (c)
   explicit confirmation that Last Man Standing's true-solo-batting sub-feature stays out of scope
   (as currently proposed) unless you say otherwise.
-- **Pass 2 (this one)**: User confirmed the recommended order. **Slice 6.1's code was written**
+- **Pass 3 (this one)**: **Slice 8.1 implemented and verified live** against a real completed match
+  (Royal Strikers vs Thunder Kings) — confirmed the scorecard now reads "Did not bat: M Shami, Y
+  Chahal" for the squad members its winning-by-3-wickets chase never needed. A single-line change
+  (`yetToBat`'s existing, already-correct data just needed `isComplete`-conditional label text).
+  Found the working tree carrying a concurrent session's own uncommitted, in-progress changes
+  (`firestore.rules`, `App.tsx`, `authStore.ts` — adding `TOURNAMENT_MANAGER` to `canScore()` and the
+  scoring route guards, per `RESTRICTIONS.md` entry #73's "B2" finding) alongside this slice's
+  `ScorecardView.tsx` edit; left those three files untouched and staged only this slice's own file,
+  consistent with this roadmap's standing rule to never touch concurrent, non-scoring-owned work.
+- **Pass 2**: User confirmed the recommended order. **Slice 6.1's code was written**
   (`firestore.rules` + `MatchesPage.tsx`) and traced field-by-field against every real scoring write
   path, but hit two genuine environment blockers: no Firebase CLI here to deploy the rules, and no
   Java for the rules emulator to test enforcement offline — so this slice's actual security
@@ -593,11 +619,11 @@ deliberate audit pass confirming every read site has a correct fallback, rather 
 - **6.1's code is written but not deployed or live-verified** — needs you to run
   `firebase deploy --only firestore:rules` (no CLI available in this sandbox), and ideally a
   post-deploy spot-check with a genuine non-owner, non-master `scorerId`-assigned account.
-- **7.1 and 2.1 are done and fully verified.**
-- Recommended order for what's left: **8.1 (P2, scorecard) → 6.2 (P2, needs your product call) →
-  5.1 (P3, audit)** — 4.1 and 3.1 are both done (3.1 resolved via existing functionality, no code
-  needed — see its own write-up for the correctness bug caught before implementing the original
-  plan). Say the word to reorder or drop anything.
+- **7.1, 2.1, 4.1, and 8.1 are done and fully verified. 3.1 is resolved (no code needed — see its
+  own write-up for the correctness bug caught before implementing the original plan).**
+- What's left: **6.2 (P2, needs your product call — see its own section for the actual question) →
+  5.1 (P3, audit-only)**. Proceeding to 5.1 next since it's audit-only and doesn't need a product
+  decision; 6.2 stays open pending your answer.
 - Every slice ends with `tsc` + `npm run build` green and a live smoke test against the real
   database, exactly like every `ROADMAP_V4` slice.
 - `git status --short` (both `cricket-platform/` and the repo root) is checked immediately before

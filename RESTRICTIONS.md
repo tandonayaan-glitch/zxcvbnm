@@ -1683,4 +1683,24 @@ reasoning.
     feature's own stated purpose. This is now B2's concrete starting finding, not a from-scratch
     audit.
 
+74. **`ROADMAP_V5.md` Slice 8.1 — "Did not bat" list on the scorecard** — **Done**, no collision
+    (pre-flight check: `git status --short` showed the working tree also carrying a concurrent
+    session's own uncommitted changes to `firestore.rules`/`App.tsx`/`authStore.ts` — the "B2" work
+    entry #73 flagged, adding `TOURNAMENT_MANAGER` to `canScore()` and the scoring route guards —
+    left all three untouched and staged only this slice's own file). The unused-squad-member list
+    (`squadFor(match, battingTeamId).filter(pid => !battingCard.some(b => b.playerId === pid))`) was
+    already computed correctly in `ScorecardView.tsx`'s `InningsCard`; only the label was wrong —
+    always "Yet to bat" regardless of whether the innings had actually finished. Changed the label to
+    `inn.isComplete ? 'Did not bat' : 'Yet to bat'`, reusing `InningsState.isComplete` already present
+    on the same object — no new computation, no new prop. Zero lines of `scoring.ts` touched. `tsc -p
+    tsconfig.app.json --noEmit` and `npm run build` both clean. **Verified live against real (not
+    throwaway) match data**: the completed "Royal Strikers vs Thunder Kings" match — Thunder Kings won
+    by 3 wickets, so two of their squad (M Shami, Y Chahal) never batted — now reads "Did not bat: M
+    Shami, Y Chahal" on its public scorecard, confirmed by reading the live rendered DOM text via
+    `javascript_tool`, not just visual inspection. Did not chase down a live regression case (every
+    currently-live match in this dev database is a minimal throwaway squad already fully exhausted
+    by the time any ball is scored, so none exercises the "innings still in progress" branch) — the
+    change is a single-line ternary whose false branch is byte-identical to the pre-existing string,
+    so the regression risk is zero by construction, not just argued to be low.
+
 (Appended to as further slices are picked up.)

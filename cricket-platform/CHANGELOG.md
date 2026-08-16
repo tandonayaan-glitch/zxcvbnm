@@ -33,6 +33,11 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Scoring Engine (ROADMAP_V5)
 
+### Fixed — Scorecard now says "Did not bat" for a completed innings (ROADMAP_V5 Slice 8.1)
+- Squad members who never came out to bat in a completed innings were labeled "Yet to bat," which
+  reads oddly once the match is over. Now shows "Did not bat" once the innings is complete, and
+  "Yet to bat" while it's still in progress, matching standard scorecard convention.
+
 ### Added — Delivery notes and review flag (ROADMAP_V5 Slice 4.1)
 - The optional shot-detail panel shown after each ball now also has a "Flag for review" toggle and
   a free-text note field, alongside the existing shot placement/line/length tags — useful for
