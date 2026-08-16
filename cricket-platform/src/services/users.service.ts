@@ -55,6 +55,11 @@ export interface ProfileUpdate {
   bio?: string
   photoURL?: string | null
   email?: string
+  phone?: string
+  // Only ever a caller-supplied `false` (editing the phone number invalidates any prior
+  // verification) — `updateUserProfile` never sets this true itself; only a completed
+  // `confirmPhoneVerificationCode()` does that.
+  phoneVerified?: false
 }
 
 /** Update the user's own editable profile fields. */

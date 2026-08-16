@@ -18,12 +18,16 @@ import {
   reauthenticateWithCredential,
   EmailAuthProvider,
   getAuth,
+  RecaptchaVerifier,
+  linkWithPhoneNumber,
   type User as FirebaseUser,
+  type ConfirmationResult,
 } from 'firebase/auth'
 import {
   doc,
   getDoc,
   setDoc,
+  updateDoc,
   runTransaction,
   collection,
   query,
@@ -343,6 +347,49 @@ export async function changePassword(
   await updatePassword(user, newPassword)
 }
 
+/* ------------------- Phone verification -------------------
+ * Verifying ownership of a phone number, not signing in with one — the app's own auth stays
+ * username/password throughout. `linkWithPhoneNumber` attaches a phone credential to the already
+ * signed-in user and requires an interactive reCAPTCHA challenge, so this can only run in a real
+ * browser tab with a rendered container, never headlessly or from a script. Requires the "Phone"
+ * sign-in provider to be enabled in the Firebase console for this project — this app has no way to
+ * enable that itself, and enabling it can incur real per-SMS cost once used with real numbers. See
+ * RESTRICTIONS.md for why this code path could not be live-tested from this sandbox. */
+
+let recaptchaVerifier: RecaptchaVerifier | null = null
+
+/** Renders (or reuses) an invisible reCAPTCHA challenge in `containerId` and sends a verification
+ *  SMS to `phoneNumber` (E.164 format, e.g. "+15551234567") for the currently signed-in user. */
+export async function sendPhoneVerificationCode(
+  phoneNumber: string,
+  containerId: string,
+): Promise<ConfirmationResult> {
+  const user = auth.currentUser
+  if (!user) throw new Error('You must be signed in.')
+  if (!recaptchaVerifier) {
+    recaptchaVerifier = new RecaptchaVerifier(auth, containerId, { size: 'invisible' })
+  }
+  return linkWithPhoneNumber(user, phoneNumber, recaptchaVerifier)
+}
+
+/** Confirms the code sent by `sendPhoneVerificationCode` and marks the profile's phone verified. */
+export async function confirmPhoneVerificationCode(
+  confirmation: ConfirmationResult,
+  code: string,
+): Promise<void> {
+  await confirmation.confirm(code)
+  const user = auth.currentUser
+  if (!user) return
+  await updateDoc(doc(db, COL.users, user.uid), { phoneVerified: true, updatedAt: Date.now() })
+}
+
+/** Clears the reCAPTCHA widget after a failed/abandoned attempt so the next call to
+ *  `sendPhoneVerificationCode` renders a fresh challenge instead of reusing a spent one. */
+export function resetPhoneVerification(): void {
+  recaptchaVerifier?.clear()
+  recaptchaVerifier = null
+}
+
 /** Subscribe to auth state; loads the Firestore profile (with retry to absorb
  *  the brief window right after signup before the profile write commits). */
 export function observeAuth(
@@ -390,6 +437,17 @@ export function authErrorMessage(err: unknown): string {
     case 'auth/invalid-api-key':
     case 'auth/api-key-not-valid.-please-pass-a-valid-api-key.':
       return 'Firebase configuration looks invalid. Check your .env.local values.'
+    case 'auth/invalid-phone-number':
+      return 'Enter a phone number with country code, e.g. +15551234567.'
+    case 'auth/code-expired':
+      return 'That code expired. Send a new one.'
+    case 'auth/invalid-verification-code':
+      return "That code doesn't match. Check it and try again."
+    case 'auth/credential-already-in-use':
+    case 'auth/provider-already-linked':
+      return 'That phone number is already linked to another account.'
+    case 'auth/operation-not-allowed':
+      return 'Phone verification isn’t enabled for this project yet.'
     default:
       return err instanceof Error ? err.message : 'Something went wrong.'
   }
