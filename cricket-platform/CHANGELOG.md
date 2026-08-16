@@ -4,6 +4,11 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Added — Phone verification (ROADMAP_V5 Slice B4)
+- Account Settings has a new Phone field and a verification flow (send a code by SMS, confirm it).
+  Your phone number is never shown on the public site, same as your email. Needs the Phone sign-in
+  provider enabled in the Firebase console before it works — see RESTRICTIONS.md.
+
 ### Added — "Recent activity" on Account Settings (ROADMAP_V5 Slice B3)
 - Account Settings now shows your own recent account activity — logins, role changes, trash actions —
   separate from the master admin's platform-wide audit log. Requires a Firestore rules deploy before

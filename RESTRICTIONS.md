@@ -1810,4 +1810,60 @@ reasoning.
     proves client-side UI/route-gating behavior in this sandbox, never actual rule enforcement — that
     needs the user to deploy, independent of whether a session is available to click through.
 
+79. **`ROADMAP_V5_PLATFORM.md` Slice B2 addendum — Users & Roles couldn't assign Team/Tournament
+    Manager** — **Done**, small fix found while placing a field for B4. `UsersPage.tsx`'s role
+    dropdown (`ASSIGNABLE_ROLES`) was `['ADMIN', 'SCORER', 'VIEWER']` — the master admin could not
+    directly promote anyone to `TEAM_MANAGER`/`TOURNAMENT_MANAGER` from that page at all, only via
+    the separate Invitations flow (`InvitationsPage.tsx`'s own `ASSIGNABLE_ROLES` already included
+    both). Now consistent between both places that grant a role. `tsc`/`oxlint` clean.
+
+80. **`ROADMAP_V5_PLATFORM.md` Slice B4 — Phone verification and privacy** — **Done**, code complete,
+    genuinely cannot be live-tested in this sandbox at any level. `UserProfile` gained `phone?:
+    string`/`phoneVerified?: boolean`, same never-public privacy tier as the existing `email` field
+    (confirmed no rule change needed for storage itself — `/users/{uid}`'s `allow update` only
+    restricts `role`/`status` on self-edit, not a field allowlist, so any other field including a new
+    one is already writable by the owner). Account Settings gained a `Phone (optional)` field next to
+    Email, and a new "Phone verification" card: verified badge once confirmed, otherwise send-code →
+    enter-code → confirm, via Firebase Phone Auth (`RecaptchaVerifier` + `linkWithPhoneNumber` against
+    the already-signed-in user — this only proves phone *ownership*; the app's sign-in method stays
+    username/password throughout, this doesn't add a second way to log in). Editing the phone number
+    resets `phoneVerified` to `false` — a stale-true flag against a *different* number would be worse
+    than no flag. `authErrorMessage()` gained cases for `invalid-phone-number`, `code-expired`,
+    `invalid-verification-code`, `credential-already-in-use`/`provider-already-linked`, and
+    `operation-not-allowed` (the code Firebase returns if the Phone provider isn't enabled for this
+    project — genuinely don't know if it is, no console access to check).
+    **Real, separate privacy finding surfaced while building this, deliberately not fixed in this
+    slice**: `/users/{uid}`'s `allow read: if true` (needed for public stats/scorer-credit display)
+    can't redact individual fields on a `get()` — confirmed this app's own code never itself leaks
+    `email`/`phone` to a public context (`getPublicProfile()` already hand-curates a `PublicProfile`
+    subset excluding `email`; the only full-document reader, `loadProfile()`, is only ever called for
+    the already-authenticated caller's own uid, traced every call site to confirm), but the *rule*
+    itself doesn't enforce that — a direct Firestore API call bypassing this app's UI could still read
+    any user's full profile including phone/email. Fixing this properly needs splitting
+    `email`/`phone`/`phoneVerified` into a separate `users/{uid}/private/contact`-shaped document with
+    its own `isSignedIn() && (request.auth.uid == uid || isMasterAdmin())` rule (the same pattern
+    `invitationRoleGrants`/`teamInvitationGrants` already use for exactly this reason) — a real schema
+    migration touching `registerUser()`, `updateUserProfile()`, `loadProfile()`, and every already-
+    stored `email` value, too large to take on unilaterally mid-slice. Not swept under the rug either:
+    found and fixed a stale, *false* claim in this same page's existing privacy copy ("Bio/email are
+    visible to other admins on the Users & Roles page") — grepped `UsersPage.tsx` directly and
+    confirmed email/bio were never actually rendered there, so the claim already didn't match the code
+    before this slice touched anything; corrected the copy to describe only what the app actually does
+    (never shown on the public site) instead of extending the same false claim to phone.
+    `tsc -p tsconfig.app.json --noEmit`, `npm run build` (a real, if partial, check — confirms
+    `RecaptchaVerifier`/`linkWithPhoneNumber`'s import surface is valid against this project's
+    installed `firebase` package version), `oxlint` on all four touched files clean (one pre-existing
+    `no-useless-catch` warning in `auth.service.ts`'s untouched `createLinkedAccount`, unrelated).
+    **Cannot be live-verified here, structurally different from every other slice this phase**: beyond
+    this session's login-access gap and the Firebase CLI/Java deploy gap already affecting B2/B3,
+    Phone Auth specifically also needs (1) the "Phone" sign-in provider enabled in the Firebase
+    console — this app has no way to enable or even check that itself; (2) a real phone number able
+    to receive SMS, which this sandbox cannot provide; (3) an interactive reCAPTCHA challenge, which
+    cannot run headlessly under any circumstance. **Needs from the user**: confirm/enable the Phone
+    provider in Firebase console, then test send-code → confirm with a real number once signed in.
+    **This completes Phase B (B1-B4) of `ROADMAP_V5_PLATFORM.md`** — all four slices implemented and
+    committed; none could be live-verified in this sandbox due to a combination of session/login
+    access, an undeployed `firestore.rules`, and (for B4 specifically) external Firebase-console
+    configuration and hardware this environment cannot provide.
+
 (Appended to as further slices are picked up.)

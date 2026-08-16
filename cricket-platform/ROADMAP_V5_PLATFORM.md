@@ -385,7 +385,58 @@ security activity").
   further rules-touching slice in this session: a browser login only ever proves client-side
   UI/route-gating behavior, never actual rule enforcement, until the user deploys.
 
-### B4 — Phone verification and privacy — not yet started
+### B4 — Phone verification and privacy ✅ Code done, cannot be live-tested in this sandbox at all
+**Fix**: `UserProfile` gained `phone?: string` / `phoneVerified?: boolean`, same privacy tier as the
+existing `email` field (never public, editable by the owner). Account Settings gained a `Phone
+(optional)` field next to Email, and a new "Phone verification" card: shows a verified badge once
+confirmed, otherwise a "Send verification code" → SMS code entry → "Confirm" flow using Firebase
+Phone Auth (`RecaptchaVerifier` + `linkWithPhoneNumber` against the already-signed-in user — this
+attaches a phone credential for verification purposes, it does **not** change how the app signs
+people in; username/password stays the only sign-in method). Editing the phone number resets
+`phoneVerified` to `false` (an unverified stale flag against a *different* number would be worse than
+no flag at all). `authErrorMessage()` gained cases for the phone-specific Firebase error codes
+(`invalid-phone-number`, `code-expired`, `invalid-verification-code`, `credential-already-in-use`,
+`operation-not-allowed`).
+
+**Real, separate privacy finding surfaced while building this, deliberately not fixed in this
+slice**: `firestore.rules`' `/users/{uid}` has `allow read: if true` (needed so displayName/bio/
+photoURL/role can back public stats/scorer-credit display) — but Firestore rules cannot redact
+individual fields on a `get()`, so this rule *technically* allows anyone who queries the Firestore
+API directly (bypassing this app's UI entirely) to read a user's full profile document, including
+`email` (pre-existing, not introduced by this slice) and now `phone`. Confirmed this app's own code
+never *itself* leaks these fields to a public context — `getPublicProfile()` already hand-curates a
+`PublicProfile` subset that excludes `email`, and every other full-document read (`loadProfile()`) is
+only ever called for the already-authenticated caller's own uid — but the underlying *rule* doesn't
+enforce that boundary, app code convention does. **Correcting this properly needs a real, bigger data-
+model change**: splitting `email`/`phone`/`phoneVerified` out of the main `users/{uid}` doc into a
+separate `users/{uid}/private/contact`-style sub-document with its own tight rule
+(`isSignedIn() && (request.auth.uid == uid || isMasterAdmin())`), since that's the standard Firestore
+pattern for a document with both public and private fields (mirrors why `invitationRoleGrants`/
+`teamInvitationGrants` are already separate, `allow read: if false` documents in this same file).
+That's a genuine schema migration touching `registerUser()`, `updateUserProfile()`, `loadProfile()`,
+and every existing `email` value already stored under the old shape — too large and consequential to
+take on unilaterally mid-slice while the user was away and unable to review a bigger architectural
+change. **Not silently shipped either way**: corrected this page's own "What's visible publicly" copy,
+which previously made a false claim ("Bio/email are visible to other admins on the Users & Roles
+page") — grepped `UsersPage.tsx` directly and confirmed email/bio are not actually rendered there at
+all, so the claim was already stale before this slice; fixed the copy to describe only what the app
+actually does today (never shown on the public site) rather than extend a false claim to phone too.
+Flagged the deeper rule-level fix here and in `RESTRICTIONS.md` as a real, actionable finding for a
+future slice, not swept under the rug.
+
+**Verified**: `tsc -p tsconfig.app.json --noEmit`, `npm run build` (confirms `RecaptchaVerifier`/
+`linkWithPhoneNumber`'s import surface is valid against this project's installed `firebase` package
+version — a real, if partial, check, not nothing), `oxlint` on all four touched files clean (one
+pre-existing `no-useless-catch` warning in `auth.service.ts`'s untouched `createLinkedAccount`,
+unrelated to this slice). **Cannot be live-verified in this sandbox at all, at any level, and this is
+structurally different from every other undeployed-rules slice**: even setting aside the session's
+login-access limitation and the Firebase-CLI/Java deploy gap already affecting B2/B3, Phone Auth
+specifically also needs (1) the "Phone" sign-in provider enabled in the Firebase console for this
+project — this app cannot enable that itself, and it's unknown whether it's currently enabled; (2) a
+real phone number able to receive SMS, which this sandbox has no way to provide; (3) an interactive
+reCAPTCHA challenge, which cannot run headlessly. **Needs from the user**: confirm/enable the Phone
+provider in Firebase console, then test the send-code → confirm flow with a real number once signed
+in.
 
 ---
 
@@ -395,8 +446,11 @@ security activity").
   without error"), and committed separately. Zero lines of `scoring.ts` touched across all four.
   A2's cross-match "partnership records" half was descoped before implementation (see its write-up)
   rather than built expensively or half-right; everything else shipped as originally scoped.
-- **Phase B is in progress.** B1, B2, and B3 are all code-complete, verified (tsc/build/lint), and
-  committed. B4 not started.
+- **Phase B is code-complete.** B1, B2, B3, and B4 are all implemented, verified to the extent this
+  sandbox allows (tsc/build/lint clean on every slice), and committed — including a small B2 addendum
+  (Users & Roles' role dropdown was missing Team/Tournament Manager as assignable options) found while
+  building B4. No live click-through was possible for any of B1-B4 this session — see the two-part
+  breakdown below plus B4's own additional, phone-specific blockers in its write-up.
 - **Two independent verification gaps, not to be conflated**: (1) B1/B2's UI click-through (does a
   `TOURNAMENT_MANAGER` account actually see "New match") needs an authenticated browser session —
   blocked because this session's dev server came up on a new port with no carried-over sign-in, and
