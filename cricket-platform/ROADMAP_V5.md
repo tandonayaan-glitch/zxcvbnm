@@ -58,8 +58,8 @@ already supports arbitrarily short innings (`oversPerInnings: 1`), so a Super Ov
 | P2 | ✅🔄 3.1 — Wicket-decision correction ("review") — resolved via existing Undo, re-scoped | none — no code needed | Resolved, no-op |
 | P2 | ✅ 4.1 — Extend delivery metadata (ballMeta) with a review/DRS tag and free-text note | `ballMeta.service.ts`, `types/index.ts` (BallMeta only) | Feature |
 | P2 | ✅ 8.1 — "Did not bat" list on the scorecard | `ScorecardView.tsx` | Feature |
-| P2 | 6.2 — `ballMeta` write rule has no owner scoping (hygiene, not exploitable today) | `firestore.rules` | Security hygiene |
-| P3 | 5.1 — Optional-field fallback audit across Match/Delivery/InningsState | none (audit only) / `Platform Tools` maintenance script | Audit + maybe tooling |
+| P2 | 🚧 6.2 — `ballMeta` write rule has no owner scoping (code written, deploy pending) | `firestore.rules` | Security hygiene |
+| P3 | ✅ 5.1 — Optional-field fallback audit across Match/Delivery/InningsState (no gaps found) | none (audit only) | Audit |
 | P3 | 9.1 | — | 🚫 Deferred — see below |
 | P3 | 1.1 | — | 🚫 Deferred — see below |
 
@@ -528,7 +528,7 @@ risk is definitionally zero, not just argued to be low.
 
 ## P2 — Scoring security (hygiene, not exploitable today)
 
-### Slice 6.2 — `ballMeta` write rule has no owner scoping
+### Slice 6.2 — `ballMeta` write rule has no owner scoping 🚧 Code written, not yet deployed/verified
 **Problem**: `firestore.rules`'s `matches/{id}/ballMeta/{ballId}` allows write to **any**
 `canScore()` user — no `isOwnerOrMaster` check, unlike the match doc itself. Unlike the
 `deliveries` subcollection (which is *always* written inside the same atomic batch as a
@@ -550,11 +550,35 @@ any match they don't own.
 - **Restrictions compliance**: ✅ Compliant.
 - **Acceptance criteria**: TBD pending the product decision above.
 
+**Product decision (asked, not defaulted)**: tighten to owner-scoped, matching the match doc.
+**Implemented, code-reviewed, but genuinely not live-verified — same environment blocker as 6.1.**
+Added `isOwnerMasterOrDelegatedScorer(matchId)` to `firestore.rules`, right after `isDelegatedScorer()`:
+`isOwnerOrMaster(m.ownerId) || (canScore() && isSignedIn() && m.scorerId == request.auth.uid)`, where
+`m` is the parent match doc fetched via `get()`. This is deliberately a *new* function rather than
+reusing `isDelegatedScorer()` directly: that function reads `resource.data.scorerId`, which is only
+the match doc when the rule is evaluated from within `/matches/{id}`'s own `allow update` — inside
+the nested `ballMeta` match, `resource` is the ballMeta doc itself (no `scorerId` field), so calling
+`isDelegatedScorer()` there would silently check the wrong document. The nested match's own `id`
+variable (bound by the outer `match /matches/{id}`) is passed straight into the new function, so no
+extra path-parsing is needed. `ballMeta/{ballId}`'s `allow write` changed from bare `canScore()` to
+`isOwnerMasterOrDelegatedScorer(id)`. `deliveries` was deliberately left unchanged — it's always
+written inside the same atomic batch as a match-doc update, so the match doc's own owner check is
+already the real gate; only the *standalone* `ballMeta` write needed its own. Zero lines of
+`scoring.ts` touched; `tsc -p tsconfig.app.json --noEmit` clean (no TS files changed by this slice —
+rules-only). **What's genuinely not verified, and why**: identical gap to Slice 6.1 — no Firebase
+CLI (`firebase --version` fails) and no Java (`java -version` fails) in this sandbox, so neither
+offline path to test rule enforcement is available, and the rules file has zero live effect until
+`firebase deploy --only firestore:rules` is run, which this environment also can't do. **This needs
+you to**: (1) deploy alongside Slice 6.1's rule change (same file, can go out in one deploy), and
+(2) ideally spot-check that a scorer/admin who is neither the match's owner/master nor its assigned
+`scorerId` can no longer tag shot metadata on someone else's match, while the owner/master/delegated
+scorer still can.
+
 ---
 
 ## P3 — Compatibility / migration work
 
-### Slice 5.1 — Optional-field fallback audit
+### Slice 5.1 — Optional-field fallback audit ✅ Done, no gaps found
 **Problem**: This codebase has a strong, consistent convention (documented inline at each field:
 `Match.maxWickets`, `teamSize`, `powerplayMode`, `powerplayOvers`, `retiredHurtEnabled`, etc. all use
 `??`/`!== false` fallbacks for pre-existing docs) — plus a full export/import round-trip already
@@ -577,6 +601,45 @@ deliberate audit pass confirming every read site has a correct fallback, rather 
 - **Restrictions compliance**: ✅ Compliant — audit only.
 - **Acceptance criteria**: A findings list (fields checked, fallback confirmed correct or a gap
   found), no code change unless a gap is found, in which case it becomes its own slice.
+
+**Findings — every field checked, no gaps found, no code changed.** Grepped every read site of each
+optional field across `src/` (excluding the type declarations themselves):
+- **`Match.maxWickets`**: `scoring.service.ts`'s `effectiveSquadSize()` (`match.maxWickets != null ?
+  maxWickets + 1 : squadFor(...).length`), `ScoringPage.tsx`'s display (`match.maxWickets ??
+  Math.max(squadA.length, squadB.length) - 1`), and `startSuperOver()` (`match.maxWickets ?? 10`) all
+  degrade correctly and consistently with the field's own doc comment — the two different-looking
+  fallback shapes in the first two (squad length vs. squad length − 1) are correct, not inconsistent:
+  one computes squad *size*, the other a wicket *threshold*.
+- **`teamSize`, `powerplayMode`, `powerplayOvers`, `retiredHurtEnabled`, `lastManStanding`,
+  `superOverEnabled`**: every read site uses `??` or an explicit `!== false`/`=== false` check
+  matching each field's own doc comment (`insights.ts`'s powerplay-overs heuristic,
+  `MatchSetupPage.tsx`'s edit-form hydration, `ScoringPage.tsx`'s `retiredHurtEnabled !== false`
+  passed into `WicketModal`). No site assumes presence.
+- **`linkedMatchId`** (new in Slice 2.1): every read (`ScoringPage.tsx`, `MatchPage.tsx`,
+  `scoring.service.ts`'s own re-entry guard) is a plain truthy check (`if (match.linkedMatchId)`) —
+  correct for a field that's `null`/absent on every match that isn't a Super Over or hasn't started
+  one yet.
+- **`Match.scorerId` / `Delivery.scorerId`**: `notifyMatchDone`'s recipient `Set` filters with
+  `.filter((id): id is string => !!id)`; `MatchesPage.tsx`'s list filter and
+  `platformAnalytics.ts`'s scorer-activity aggregation both truthy-check before using it;
+  `MatchSetupPage.tsx`'s edit-form hydration uses `m.scorerId ?? ''`. All correct — this is also the
+  exact field Slices 6.1/6.2 just added new security-rule dependencies on, so its fallback behavior
+  was already under extra scrutiny during those slices, not just this pass.
+- **`BallMeta.zone`/`line`/`length`/`note`/`reviewed`**: `domain/wagonWheel.ts` and
+  `domain/pitchMap.ts` both filter with `.filter(m => m.zone/line != null)` before building chart
+  data, and their own `hasWagonWheelData`/`hasPitchMapData` gate whether the chart renders at all;
+  `MatchPage.tsx`/`PlayerPage.tsx` gate on `(ballMeta.data?.length ?? 0) > 0` for the case where the
+  whole `ballMeta` subcollection is empty (pre-Slice-4.1 matches, or any match the scorer never
+  tagged). `note`/`reviewed` are read in exactly one place (`ScoringPage.tsx`'s `ShotDetailPrompt`,
+  the same feature that introduced them) and nowhere assumes their presence.
+- **`InningsState`**: has zero optional fields — the engine always writes it in full — so there was
+  nothing to audit here.
+- Not re-audited: fields already exercised by name in a prior roadmap's own slice write-up
+  (`tournamentId`/`tournamentName`, `venue`, `stage`, `archived`/`deletedAt` — all pre-V5, already
+  covered by `ROADMAP_V2`/`V3`/`V4`'s own verification passes per `RESTRICTIONS.md`).
+
+No fix slice needed — every fallback already matches its own documented intent. `tsc`/`npm run
+build` not applicable (no files changed; audit only).
 
 ---
 
@@ -615,15 +678,28 @@ deliberate audit pass confirming every read site has a correct fallback, rather 
   Expected Score work while this slice's changes to those same files were still uncommitted —
   diffed the commit against what was intended and confirmed byte-for-byte identical, nothing lost.
 
+- **Pass 4 (this one)**: User answered the 6.2 product question directly: tighten to owner-scoped.
+  **Slice 6.2 implemented** — added `isOwnerMasterOrDelegatedScorer(matchId)` to `firestore.rules`
+  and scoped `ballMeta`'s write rule to it, same environment-blocker caveat as 6.1 (no Firebase
+  CLI/Java here to deploy or test enforcement offline). Mid-edit, the working firestore.rules file
+  showed as externally modified — re-read it in full and diffed against HEAD to confirm the concern
+  was unfounded: the concurrent session had committed its own "B2" work (`e6d85a8`, granting
+  `TOURNAMENT_MANAGER` scoring access) cleanly underneath, and this slice's own hunk was intact and
+  isolated (`git diff -- firestore.rules` showed exactly the two intended changes, nothing lost or
+  duplicated) — verified rather than assumed. **Slice 5.1's fallback audit completed, no gaps
+  found** — every optional `Match`/`Delivery`/`BallMeta` field's read sites checked against its own
+  documented fallback intent (see the slice's own write-up for the full field-by-field findings);
+  `InningsState` has no optional fields at all. No fix slice generated; audit-only, no files changed
+  for 5.1 itself.
+
 ### Notes
-- **6.1's code is written but not deployed or live-verified** — needs you to run
-  `firebase deploy --only firestore:rules` (no CLI available in this sandbox), and ideally a
-  post-deploy spot-check with a genuine non-owner, non-master `scorerId`-assigned account.
-- **7.1, 2.1, 4.1, and 8.1 are done and fully verified. 3.1 is resolved (no code needed — see its
-  own write-up for the correctness bug caught before implementing the original plan).**
-- What's left: **6.2 (P2, needs your product call — see its own section for the actual question) →
-  5.1 (P3, audit-only)**. Proceeding to 5.1 next since it's audit-only and doesn't need a product
-  decision; 6.2 stays open pending your answer.
+- **6.1 and 6.2's rules code is written but not deployed or live-verified** — needs you to run
+  `firebase deploy --only firestore:rules` once (both slices are in the same file, one deploy covers
+  both), and ideally a post-deploy spot-check: a `scorerId`-assigned non-owner can score the match and
+  tag its ballMeta, while an unrelated third account can do neither.
+- **7.1, 2.1, 4.1, and 8.1 are done and fully verified. 3.1 is resolved (no code needed). 5.1 is done
+  (audit, no gaps, no code needed).** All nine V5 phases now have every planned slice either done,
+  resolved, or (6.1/6.2) code-complete pending your deploy.
 - Every slice ends with `tsc` + `npm run build` green and a live smoke test against the real
   database, exactly like every `ROADMAP_V4` slice.
 - `git status --short` (both `cricket-platform/` and the repo root) is checked immediately before

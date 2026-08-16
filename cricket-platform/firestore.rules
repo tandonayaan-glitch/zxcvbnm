@@ -70,6 +70,16 @@ service cloud.firestore {
         ]);
     }
 
+    // Same owner/master/delegated-scorer shape as the match doc's own update rule, but for a
+    // subcollection (ballMeta) whose own `resource` isn't the match doc — evaluated against the
+    // parent match via get() instead of reusing isDelegatedScorer() (which relies on `resource`
+    // being the match doc itself, only true when called from within /matches/{id}'s own rule).
+    function isOwnerMasterOrDelegatedScorer(matchId) {
+      let m = get(/databases/$(database)/documents/matches/$(matchId)).data;
+      return isOwnerOrMaster(m.ownerId)
+        || (canScore() && isSignedIn() && m.scorerId == request.auth.uid);
+    }
+
     // ---- Users -------------------------------------------------
     match /users/{uid} {
       allow read: if true; // profiles are needed for stats display
@@ -207,11 +217,13 @@ service cloud.firestore {
         allow read: if true;
         allow write: if canScore();
       }
-      // Optional shot-zone/line-length tags — same access shape as
-      // deliveries, but written separately from the scoring engine's batch.
+      // Optional shot-zone/line-length tags — written separately from the scoring
+      // engine's batch, so (unlike `deliveries`, always inside the same atomic batch
+      // as a match-doc update) this rule is the *only* gate for the write. Scoped to
+      // the match's own owner/master/delegated-scorer, matching the match doc itself.
       match /ballMeta/{ballId} {
         allow read: if true;
-        allow write: if canScore();
+        allow write: if isOwnerMasterOrDelegatedScorer(id);
       }
       // Spectator tap-reactions — one doc per reacting user, doc id == their own uid.
       match /reactions/{uid} {

@@ -1762,7 +1762,7 @@ reasoning.
     complete both B1's and B2's outstanding live-verification in one step whenever a session is
     available.
 
-76. **`ROADMAP_V5.md` Slice 5.1 — Optional-field fallback audit** — **Done, no gaps found, no code
+77. **`ROADMAP_V5.md` Slice 5.1 — Optional-field fallback audit** — **Done, no gaps found, no code
     changed.** Grepped every read site of every optional `Match`/`Delivery`/`BallMeta` field across
     `src/` and confirmed each degrades correctly against its own documented intent: `maxWickets`
     (`effectiveSquadSize()`, `ScoringPage.tsx`'s display, `startSuperOver()` all correct, including
