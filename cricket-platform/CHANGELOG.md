@@ -4,6 +4,11 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Added — "Recent activity" on Account Settings (ROADMAP_V5 Slice B3)
+- Account Settings now shows your own recent account activity — logins, role changes, trash actions —
+  separate from the master admin's platform-wide audit log. Requires a Firestore rules deploy before
+  it works for non-master accounts (see RESTRICTIONS.md).
+
 ### Fixed — Tournament Managers can now create and score matches (ROADMAP_V5 Slice B2)
 - A user granted Tournament Manager could already create a tournament and its teams/players, but
   couldn't create or score a single match in it — the "New match" action and the scoring screen were

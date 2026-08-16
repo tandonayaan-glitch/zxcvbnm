@@ -353,7 +353,38 @@ see and use "New match") could not be completed. Code-level verification (route 
 call sites, real `logAudit()` call sites) was done to the same standard as every other slice; the
 live click-through is the one piece still outstanding for both B1 and B2, tracked together below.
 
-### B3 — Standard account audit — not yet started
+### B3 — Standard account audit ✅ Done, rules change not deployed
+**Fix**: new "Recent activity" card on Account Settings (`UserSettingsPage.tsx`), between "Privacy &
+sessions" and "Account" — shows the signed-in user's own audit trail (logins, role changes, trash
+actions) pulled from the same `auditLogs` collection Platform Tools already shows the master admin in
+full, but scoped to the caller's own entries. This is a genuinely different audience from the
+existing admin-facing audit log, not a duplicate of it (confirmed via the original audit table: "Only
+the master admin reads the audit trail... nothing user-facing shows an individual their own account/
+security activity").
+
+- **Service**: `audit.service.ts` gained `listMyAuditLogs(uid, max=20)` — `where('actorId', '==',
+  uid)` + a generous `fbLimit` read cap, sorted/sliced client-side, deliberately *not*
+  `where(...).orderBy('createdAt')` together, which needs a composite index this project doesn't
+  ship. Same pattern `notifications.service.ts`'s `listNotifications` already documents and uses —
+  reused the convention rather than inventing a new one.
+- **Rules**: `auditLogs`' `allow read` widened from `isMasterAdmin()`-only to also allow
+  `isSignedIn() && resource.data.actorId == request.auth.uid` — same shape as `notifications`' own
+  read rule. `create`/`update`/`delete` unchanged.
+- **Verified**: `tsc -p tsconfig.app.json --noEmit`, `npm run build`, `oxlint` on all three touched
+  files clean.
+- **Not live-verified, and this time not a login/environment-access issue — a structural one**:
+  confirmed this sandbox has neither the Firebase CLI (`firebase --version` fails) nor Java (`java
+  -version` fails), matching the scoring session's own established finding on Slices 6.1/6.2. This
+  means **no `firestore.rules` change from this entire Phase B is live yet** — B2's `canScore()`/
+  `auditLogs`-create widening and B3's `auditLogs`-read widening all still need one
+  `firebase deploy --only firestore:rules` to take effect, alongside the scoring session's own
+  pending Slices 6.1/6.2 changes already in the same file. Until deployed, a non-master user's own
+  "Recent activity" read is rejected by the still-live old rule (empty/error state, not real data);
+  the master admin's own view of the new section works today regardless, since they already passed
+  the pre-existing rule before this change. This reframes what "live verification" can mean for any
+  further rules-touching slice in this session: a browser login only ever proves client-side
+  UI/route-gating behavior, never actual rule enforcement, until the user deploys.
+
 ### B4 — Phone verification and privacy — not yet started
 
 ---
@@ -364,20 +395,30 @@ live click-through is the one piece still outstanding for both B1 and B2, tracke
   without error"), and committed separately. Zero lines of `scoring.ts` touched across all four.
   A2's cross-match "partnership records" half was descoped before implementation (see its write-up)
   rather than built expensively or half-right; everything else shipped as originally scoped.
-- **Phase B is in progress.** B1 and B2 are both code-complete, verified (tsc/build/lint), and
-  committed. Both have their live-verification click-through outstanding for the same reason: a real
-  pending test request ("B1 Verification Test Cup") sits in the database ready to approve, but the
-  session lost its authenticated browser origin (dev server came up on a new port) and the user asked
-  not to be prompted for further logins before stepping away. Approving that one request completes
-  both slices' outstanding verification in a single step next session. B3/B4 not started.
-- **Concurrent-session note, current as of B2**: confirmed via fresh `git status`/diff immediately
+- **Phase B is in progress.** B1, B2, and B3 are all code-complete, verified (tsc/build/lint), and
+  committed. B4 not started.
+- **Two independent verification gaps, not to be conflated**: (1) B1/B2's UI click-through (does a
+  `TOURNAMENT_MANAGER` account actually see "New match") needs an authenticated browser session —
+  blocked because this session's dev server came up on a new port with no carried-over sign-in, and
+  the user asked not to be prompted for further logins before stepping away. A real pending test
+  request ("B1 Verification Test Cup") is sitting in the database ready to approve, which would
+  complete this in one step next session. (2) Separately and more fundamentally, **no
+  `firestore.rules` change in this entire Phase B (or the scoring session's Slices 6.1/6.2) is
+  actually live** — this sandbox has neither the Firebase CLI nor Java, so nothing has been deployed.
+  A login would only ever prove client-side UI/route-gating, never real rule enforcement, until the
+  user runs `firebase deploy --only firestore:rules` (covers B2's `canScore()`/`auditLogs`-create,
+  B3's `auditLogs`-read, and the scoring session's Slices 6.1/6.2, all in the one file — one deploy
+  clears all of it).
+- **Concurrent-session note, current as of B3**: confirmed via fresh `git status`/diff immediately
   before B1 that `firestore.rules` had zero uncommitted changes and `types/index.ts`'s only in-flight
   change (the scoring session's `BallMeta.note`/`reviewed` fields) was unrelated to roles. By the
   time B2 started, the scoring session had already independently landed its own `canScore()`/
   `auditLogs` fix (plus its own separate Slice 6.2, `ballMeta` owner-scoping) directly into the same
   file, uncommitted — reviewed and accepted the former into B2 after independent verification,
-  surgically excluded and restored the latter untouched. Re-check `firestore.rules`/`types/index.ts`
-  fresh again before B3/B4, same discipline.
+  surgically excluded and restored the latter untouched; it was committed cleanly on their side
+  immediately after (Slice 6.2, no conflict). The scoring session's own roadmap now shows its last
+  planned slice (5.1) closed out, so it may be wrapping up. Re-check `firestore.rules`/`types/
+  index.ts` fresh again before B4, same discipline.
 - Phase C is scoped but paused pending: (1) which billing provider to target for the abstraction's
   first real implementation (Stripe is the common default for this kind of app, but that's your
   call), and (2) confirmation you want architecture/scaffolding built now vs. only once you're ready

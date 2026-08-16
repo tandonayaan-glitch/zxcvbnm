@@ -1781,4 +1781,33 @@ reasoning.
     verification pass (`tournamentId`/`venue`/`stage`/`archived`/`deletedAt`, all pre-V5). No fix
     slice generated; this closes out the last planned V5 scoring-engine slice.
 
+78. **`ROADMAP_V5_PLATFORM.md` Slice B3 — Standard account audit** — **Done**, code complete,
+    rules change not deployed. Original audit (this roadmap's own table) had found "adjacent infra
+    exists, not this" — `audit.service.ts`/`auditLogs` already logs privileged actions platform-wide,
+    visible only to the master admin via Platform Tools, but nothing showed an individual their own
+    account/security activity. Added a "Recent activity" card to `UserSettingsPage.tsx` (Account
+    Settings), between "Privacy & sessions" and "Account", sourced from the same `auditLogs`
+    collection but scoped to the caller's own `actorId`. New `listMyAuditLogs(uid, max=20)` in
+    `audit.service.ts`: `where('actorId', '==', uid)` + a generous `fbLimit` cap, sorted/sliced
+    client-side rather than `where(...).orderBy('createdAt')` together — deliberately avoiding a
+    composite-index requirement this project doesn't ship, reusing the exact pattern
+    `notifications.service.ts`'s `listNotifications` already documents for the identical reason.
+    Widened `auditLogs`' `allow read` from `isMasterAdmin()`-only to also permit
+    `isSignedIn() && resource.data.actorId == request.auth.uid` — same shape as `notifications`' own
+    read rule; `create`/`update`/`delete` untouched. `tsc -p tsconfig.app.json --noEmit`,
+    `npm run build`, `oxlint` on all three touched files clean. **Not live-verified — confirmed this
+    is a structural sandbox limitation, not a login/access gap**: this environment has neither the
+    Firebase CLI (`firebase --version` fails) nor Java (`java -version` fails), matching the scoring
+    session's own established finding on Slices 6.1/6.2 (entries #69/#75). This means **every
+    `firestore.rules` change across this entire Phase B is undeployed** — B2's `canScore()`/
+    `auditLogs`-create widening (entry #76) and this slice's `auditLogs`-read widening all still need
+    one `firebase deploy --only firestore:rules`, alongside the scoring session's own pending Slices
+    6.1/6.2 changes already sitting in the same file — all four could go out in that single deploy.
+    Until then, a non-master user's own "Recent activity" read is rejected by the still-live old rule
+    (an empty/error state, not real data); the master admin's own view of the new section works today
+    regardless, since master admin already satisfied the pre-existing rule before this change. Also
+    surfaces a broader point for any future rules-touching slice: a browser login alone only ever
+    proves client-side UI/route-gating behavior in this sandbox, never actual rule enforcement — that
+    needs the user to deploy, independent of whether a session is available to click through.
+
 (Appended to as further slices are picked up.)
