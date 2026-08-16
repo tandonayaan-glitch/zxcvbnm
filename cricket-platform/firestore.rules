@@ -39,7 +39,7 @@ service cloud.firestore {
     }
 
     function canScore() {
-      return hasRole(['MASTER_ADMIN', 'ADMIN', 'SCORER']);
+      return hasRole(['MASTER_ADMIN', 'ADMIN', 'SCORER', 'TOURNAMENT_MANAGER']);
     }
 
     function canManage() {
@@ -270,9 +270,13 @@ service cloud.firestore {
 
     // ---- Audit logs -------------------------------------------
     match /auditLogs/{id} {
-      // Only the master admin reads the audit trail; any admin can append.
+      // Only the master admin reads the audit trail. `logAudit()` (the only writer, a best-effort
+      // helper that swallows errors) is called for every signed-in role, not just ADMIN — a plain
+      // login, or a TEAM_MANAGER/TOURNAMENT_MANAGER trash action, must be able to append their own
+      // entry too. Self-attribution (`actorId == request.auth.uid`) is what keeps this safe to open
+      // up, not the role check — same shape as `notifications`'/`activity`'s create rules below.
       allow read: if isMasterAdmin();
-      allow create: if isAdmin()
+      allow create: if isSignedIn()
         && request.resource.data.actorId == request.auth.uid;
       allow update, delete: if false;
     }

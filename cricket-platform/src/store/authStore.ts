@@ -87,7 +87,7 @@ export const canManage = (p: UserProfile | null) =>
   hasRole(p, 'MASTER_ADMIN', 'ADMIN', 'TEAM_MANAGER', 'TOURNAMENT_MANAGER')
 
 export const canScore = (p: UserProfile | null) =>
-  hasRole(p, 'MASTER_ADMIN', 'ADMIN', 'SCORER')
+  hasRole(p, 'MASTER_ADMIN', 'ADMIN', 'SCORER', 'TOURNAMENT_MANAGER')
 
 export const canManagePlayers = (p: UserProfile | null) =>
   hasRole(p, 'MASTER_ADMIN', 'ADMIN', 'TEAM_MANAGER')

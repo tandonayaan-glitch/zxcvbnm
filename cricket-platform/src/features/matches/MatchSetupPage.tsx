@@ -502,7 +502,7 @@ export function MatchSetupPage() {
   if (teams.loading || players.loading || loadingEdit || loadingDuplicate) return <PageLoader />
 
   const scorers = (users.data ?? []).filter(
-    (u) => u.role === 'SCORER' || u.role === 'ADMIN',
+    (u) => u.role === 'SCORER' || u.role === 'ADMIN' || u.role === 'TOURNAMENT_MANAGER',
   )
 
   return (

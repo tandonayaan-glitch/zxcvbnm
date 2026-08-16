@@ -262,11 +262,11 @@ export default function App() {
           }
         />
 
-        {/* Live scoring (full screen, scorer/admin only) */}
+        {/* Live scoring (full screen, scorer/admin/tournament-manager only) */}
         <Route
           path="/scoring/:id"
           element={
-            <ProtectedRoute roles={['MASTER_ADMIN', 'ADMIN', 'SCORER']}>
+            <ProtectedRoute roles={['MASTER_ADMIN', 'ADMIN', 'SCORER', 'TOURNAMENT_MANAGER']}>
               <div className="min-h-screen px-4 py-6">
                 <ScoringPage />
               </div>
@@ -287,7 +287,7 @@ export default function App() {
           <Route
             path="/matches/new"
             element={
-              <ProtectedRoute roles={['MASTER_ADMIN', 'ADMIN', 'SCORER']}>
+              <ProtectedRoute roles={['MASTER_ADMIN', 'ADMIN', 'SCORER', 'TOURNAMENT_MANAGER']}>
                 <MatchSetupPage />
               </ProtectedRoute>
             }
