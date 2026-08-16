@@ -18,6 +18,7 @@ import {
   LogOut,
   Bell,
   FlaskConical,
+  History,
 } from 'lucide-react'
 import type { NotificationCategory } from '@/types'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -31,6 +32,8 @@ import {
   Field,
   Input,
   Textarea,
+  PageLoader,
+  EmptyState,
 } from '@/components/ui/primitives'
 import { ImageUploadField } from '@/components/ui/ImageUploadField'
 import { useToast } from '@/components/ui/toast'
@@ -40,9 +43,11 @@ import { usePrefsStore, type TextScale, type ThemeMode } from '@/store/prefsStor
 import { BackgroundControl } from '@/components/background/BackgroundControl'
 import { updateUserProfile } from '@/services/users.service'
 import { changePassword, authErrorMessage, logout } from '@/services/auth.service'
-import { formatDate, formatDateTime } from '@/lib/format'
+import { listMyAuditLogs } from '@/services/audit.service'
+import { formatDate, formatDateTime, briefUA } from '@/lib/format'
 import { downloadBlob, slugify } from '@/lib/download'
 import { cn } from '@/lib/cn'
+import { useAsync } from '@/hooks/useAsync'
 
 export function UserSettingsPage() {
   const toast = useToast()
@@ -62,6 +67,11 @@ export function UserSettingsPage() {
   const [newPw, setNewPw] = useState('')
   const [confirmPw, setConfirmPw] = useState('')
   const [savingPw, setSavingPw] = useState(false)
+
+  const myActivity = useAsync(
+    () => (profile ? listMyAuditLogs(profile.id) : Promise.resolve([])),
+    [profile?.id],
+  )
 
   if (!profile) return null
 
@@ -427,6 +437,46 @@ export function UserSettingsPage() {
             run. Changing your password (above) invalidates password-based sign-in everywhere except
             devices that are already mid-session.
           </p>
+        </CardBody>
+      </Card>
+
+      {/* Recent activity */}
+      <Card className="mb-4">
+        <CardHeader
+          title={
+            <span className="flex items-center gap-2">
+              <History size={18} /> Recent activity
+            </span>
+          }
+          subtitle="Logins, role changes and other actions on your account. Only you and the master admin can see this."
+        />
+        <CardBody className="p-0">
+          {myActivity.loading ? (
+            <PageLoader />
+          ) : (myActivity.data ?? []).length === 0 ? (
+            <div className="p-5">
+              <EmptyState title="No activity yet" />
+            </div>
+          ) : (
+            <div className="divide-y divide-ink-50 dark:divide-ink-800">
+              {(myActivity.data ?? []).map((a) => (
+                <div key={a.id} className="px-4 py-3">
+                  <div className="text-sm font-medium text-ink-900 dark:text-ink-50">
+                    {a.action}
+                  </div>
+                  {a.details && (
+                    <div className="text-xs text-ink-500 dark:text-ink-400">{a.details}</div>
+                  )}
+                  <div className="mt-0.5 text-xs text-ink-400 dark:text-ink-500">
+                    {formatDateTime(a.createdAt)}
+                    {a.userAgent && (
+                      <span title={a.userAgent}> · {briefUA(a.userAgent)}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardBody>
       </Card>
 

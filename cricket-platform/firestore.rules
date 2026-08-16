@@ -282,12 +282,16 @@ service cloud.firestore {
 
     // ---- Audit logs -------------------------------------------
     match /auditLogs/{id} {
-      // Only the master admin reads the audit trail. `logAudit()` (the only writer, a best-effort
-      // helper that swallows errors) is called for every signed-in role, not just ADMIN — a plain
-      // login, or a TEAM_MANAGER/TOURNAMENT_MANAGER trash action, must be able to append their own
-      // entry too. Self-attribution (`actorId == request.auth.uid`) is what keeps this safe to open
-      // up, not the role check — same shape as `notifications`'/`activity`'s create rules below.
-      allow read: if isMasterAdmin();
+      // The master admin reads the whole trail (Platform Tools); a user may also read their own
+      // entries (the "Recent activity" section on the Account Settings page) — same self-scoped
+      // shape as `notifications`' read rule below, not a platform-wide list either way.
+      // `logAudit()` (the only writer, a best-effort helper that swallows errors) is called for
+      // every signed-in role, not just ADMIN — a plain login, or a TEAM_MANAGER/TOURNAMENT_MANAGER
+      // trash action, must be able to append their own entry too. Self-attribution
+      // (`actorId == request.auth.uid`) is what keeps this safe to open up, not the role check —
+      // same shape as `notifications`'/`activity`'s create rules below.
+      allow read: if isMasterAdmin()
+        || (isSignedIn() && resource.data.actorId == request.auth.uid);
       allow create: if isSignedIn()
         && request.resource.data.actorId == request.auth.uid;
       allow update, delete: if false;

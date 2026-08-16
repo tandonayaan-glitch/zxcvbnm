@@ -5,6 +5,7 @@ import {
   getDocs,
   query,
   orderBy,
+  where,
   limit as fbLimit,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
@@ -50,4 +51,25 @@ export async function listAuditLogs(max = 100): Promise<AuditLog[]> {
   )
   const snap = await getDocs(q)
   return snap.docs.map((d) => d.data() as AuditLog)
+}
+
+// A `where('actorId', ...)` + `orderBy('createdAt')` pair would need a composite index this
+// project doesn't ship, so — same pattern as `notifications.service.ts`'s `listNotifications` —
+// this reads a where-only, generously capped batch and sorts/slices client-side instead.
+const MY_LOGS_READ_CAP = 500
+
+/** A user's own audit trail (logins, role changes, trash actions, etc.), newest first — the
+ *  "Recent activity" section on the Account Settings page. Firestore's `auditLogs` read rule
+ *  scopes this to entries where `actorId` matches the caller, same as `notifications`. */
+export async function listMyAuditLogs(uid: string, max = 20): Promise<AuditLog[]> {
+  const q = query(
+    collection(db, COL.auditLogs),
+    where('actorId', '==', uid),
+    fbLimit(MY_LOGS_READ_CAP),
+  )
+  const snap = await getDocs(q)
+  return snap.docs
+    .map((d) => d.data() as AuditLog)
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, max)
 }
