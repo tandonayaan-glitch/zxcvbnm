@@ -18,8 +18,9 @@ import { useAuthStore } from '@/store/authStore'
 import { formatDate } from '@/lib/format'
 import type { Role } from '@/types'
 
-/** Roles the master admin can assign (the master role itself is reserved). */
-const ASSIGNABLE_ROLES: Role[] = ['ADMIN', 'SCORER', 'VIEWER']
+/** Roles the master admin can assign (the master role itself is reserved). Matches
+ *  InvitationsPage.tsx's own ASSIGNABLE_ROLES — both are ways to grant the same role set. */
+const ASSIGNABLE_ROLES: Role[] = ['ADMIN', 'SCORER', 'TEAM_MANAGER', 'TOURNAMENT_MANAGER', 'VIEWER']
 
 const ROLE_TONE: Record<Role, 'red' | 'blue' | 'green' | 'amber' | 'gray' | 'purple'> = {
   MASTER_ADMIN: 'purple',
