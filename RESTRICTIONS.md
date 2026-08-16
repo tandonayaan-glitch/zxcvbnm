@@ -1703,4 +1703,82 @@ reasoning.
     change is a single-line ternary whose false branch is byte-identical to the pre-existing string,
     so the regression risk is zero by construction, not just argued to be low.
 
+75. **`ROADMAP_V5.md` Slice 6.2 — `ballMeta` write rule has no owner scoping** — **Code written,
+    not yet deployed/verified** (same environment blocker as entry #69/Slice 6.1). This slice was
+    explicitly left as an open product question rather than defaulted either way in the original
+    audit (entry #67 pass); asked directly and the user chose "tighten to owner-scoped," matching
+    the match doc's own access. Added `isOwnerMasterOrDelegatedScorer(matchId)` to `firestore.rules`
+    — a *new* function, not a reuse of the existing `isDelegatedScorer()`, because that function
+    reads `resource.data.scorerId` which only resolves to the match doc when evaluated from within
+    `/matches/{id}`'s own rule; inside the nested `ballMeta` match, `resource` is the ballMeta doc
+    itself (no `scorerId` field), so calling it there would silently check the wrong document — the
+    new function instead fetches the parent match via `get(...matches/$(matchId))` using the outer
+    match's own `id` binding. Changed `ballMeta/{ballId}`'s `allow write` from bare `canScore()` to
+    `isOwnerMasterOrDelegatedScorer(id)`. Deliberately left `deliveries` unchanged — it's always
+    written inside the same atomic batch as a match-doc update, so the match doc's own owner check
+    is already the real gate; only the standalone `ballMeta` write needed its own. Zero lines of
+    `scoring.ts` touched; rules-only change, no TS files affected. **Not live-verified**, identical
+    reason to Slice 6.1: no Firebase CLI and no Java in this sandbox, so neither offline path to test
+    rule enforcement is available, and the rules file has zero effect until deployed. **Needs the
+    user to**: deploy (can go out in the same `firebase deploy --only firestore:rules` as Slice 6.1's
+    change, since both are in the one file) and ideally spot-check that a non-owner/non-master/
+    non-assigned-scorer can no longer tag shot metadata on someone else's match.
+
+76. **`ROADMAP_V5_PLATFORM.md` Slice B2 — Tournament Admin permissions audit** — **Done**, code
+    complete and committed, live verification blocked by session/environment constraints (not
+    skipped — see below). B1's audit had already found `canScore()` excluded `TOURNAMENT_MANAGER`
+    while `canManage()` included it, confirmed by reading the `/matches/new`/`/scoring/:id` route
+    guards and `MatchesPage.tsx`'s button gating directly — a tournament manager could create their
+    tournament/teams/players but not a single match in it. Added `TOURNAMENT_MANAGER` to `canScore()`
+    in both `firestore.rules` and `authStore.ts`, and to both route guards — actual per-match writes
+    stay gated by `isOwnerOrMaster(resource.data.ownerId)`, so this doesn't grant access beyond the
+    tournament manager's own matches, same shape `ADMIN` already has. Also widened
+    `MatchSetupPage.tsx`'s "Assign scorer" candidate filter (`SCORER`/`ADMIN`) to include
+    `TOURNAMENT_MANAGER` for UI consistency with the new `canScore()` standing.
+    **Unclaimed related fix, independently verified before accepting**: `auditLogs`' `create` rule
+    was `isAdmin()`-only (`MASTER_ADMIN`/`ADMIN`), but grepping every real `logAudit()` call site
+    found `auth.service.ts` logs *every* login regardless of role and `trash.service.ts` (reachable
+    by `TEAM_MANAGER`/`TOURNAMENT_MANAGER` via the Trash page) logs soft-delete/restore/permanent-
+    delete — `logAudit()` swallows its own errors, so both were failing silently pre-existing this
+    slice. Loosened to `isSignedIn()` + self-attribution (`actorId == request.auth.uid`), matching
+    `notifications`/`activity`'s existing create-rule shape.
+    **Provenance, disclosed rather than silently absorbed**: the `canScore()`/route-guard/`auditLogs`
+    changes were found already sitting uncommitted in the shared working tree — another Claude Code
+    chat is running its own dev server in this same folder and had independently arrived at the same
+    fix (plus the `auditLogs` half I hadn't found yet). Every hunk was reviewed with the same rigor as
+    original work (route guards and button gating traced directly, every `logAudit()` call site
+    grepped) before being accepted, not trusted blindly. The same file also had that session's own
+    Slice 6.2 (entry #75 above, unrelated to `TOURNAMENT_MANAGER`) mixed in — surgically reverted
+    just that hunk, committed B2's actual diff, then restored Slice 6.2 exactly as it was (verified
+    byte-identical via a second diff) so it stays that session's own commit to make.
+    `tsc -p tsconfig.app.json --noEmit`, `npm run build`, `oxlint` on all four touched `.ts`/`.tsx`
+    files clean. **Live verification not completed, environment-blocked**: a fresh `preview_start`
+    landed this session's dev server on a different port than the one already open in the Browser
+    pane (`5173` was occupied by the other chat's server), producing a new browser origin with no
+    carried-over sign-in. The user asked not to be prompted for further logins before stepping away,
+    so the planned click-through — approve the still-pending "B1 Verification Test Cup" request,
+    then confirm the resulting `TOURNAMENT_MANAGER` account can see and use "New match" — could not
+    be completed. That request is still sitting `pending` in the live database; approving it will
+    complete both B1's and B2's outstanding live-verification in one step whenever a session is
+    available.
+
+76. **`ROADMAP_V5.md` Slice 5.1 — Optional-field fallback audit** — **Done, no gaps found, no code
+    changed.** Grepped every read site of every optional `Match`/`Delivery`/`BallMeta` field across
+    `src/` and confirmed each degrades correctly against its own documented intent: `maxWickets`
+    (`effectiveSquadSize()`, `ScoringPage.tsx`'s display, `startSuperOver()` all correct, including
+    confirming the two differently-shaped fallbacks — squad size vs. squad size minus one — are both
+    intentional, not inconsistent), `teamSize`/`powerplayMode`/`powerplayOvers`/`retiredHurtEnabled`/
+    `lastManStanding`/`superOverEnabled` (all `??`/`!==false` matching their own doc comments),
+    `linkedMatchId` (every read is a plain truthy check, correct for a field absent on non-Super-Over
+    matches), `Match.scorerId`/`Delivery.scorerId` (already under extra scrutiny from Slices 6.1/6.2's
+    own new dependencies on it — `notifyMatchDone`'s `.filter(id => !!id)`, `MatchesPage.tsx`'s list
+    filter, `platformAnalytics.ts`'s aggregation, `MatchSetupPage.tsx`'s form hydration all correct),
+    and `BallMeta.zone`/`line`/`length`/`note`/`reviewed` (`wagonWheel.ts`/`pitchMap.ts`'s `!= null`
+    filters plus their own `hasWagonWheelData`/`hasPitchMapData` gates, `MatchPage.tsx`/`PlayerPage.tsx`
+    gating on `(ballMeta.data?.length ?? 0) > 0` for the whole-subcollection-missing case). Confirmed
+    `InningsState` has zero optional fields — the engine always writes it in full — so there was
+    nothing to check there. Did not re-audit fields already exercised by a prior roadmap's own
+    verification pass (`tournamentId`/`venue`/`stage`/`archived`/`deletedAt`, all pre-V5). No fix
+    slice generated; this closes out the last planned V5 scoring-engine slice.
+
 (Appended to as further slices are picked up.)

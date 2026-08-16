@@ -4,6 +4,14 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Fixed — Tournament Managers can now create and score matches (ROADMAP_V5 Slice B2)
+- A user granted Tournament Manager could already create a tournament and its teams/players, but
+  couldn't create or score a single match in it — the "New match" action and the scoring screen were
+  both restricted to Admin/Scorer roles. Fixed. They can also now be assigned as another match's
+  delegate scorer. Separately, fixed audit-log entries silently failing to save for every non-admin
+  login and every Team/Tournament Manager trash action (moving something to Trash, restoring it, or
+  deleting it for good).
+
 ### Fixed — Admin requests grant Tournament Manager, not full Admin (ROADMAP_V5 Slice B1)
 - Approving a self-serve "request admin access" submission previously always granted full platform
   `ADMIN`, even though the request form only ever asks for a specific tournament to run. Approving now
@@ -32,6 +40,13 @@ All notable changes to CricketHub. Newest first.
   sorted by balls faced. Only shown for players with a batting record.
 
 ## [Unreleased] — Scoring Engine (ROADMAP_V5)
+
+### Fixed — Shot-metadata tags on a delivery are now owner-scoped (ROADMAP_V5 Slice 6.2)
+- Any scorer/admin could previously attach shot-placement notes/tags to a delivery on *any* match,
+  not just one they own or were assigned to score — the underlying security rule had no owner check,
+  unlike the match doc itself. Now scoped to the match's owner, master admin, or its assigned scorer,
+  matching the match doc's own access. **Requires a Firestore rules deploy
+  (`firebase deploy --only firestore:rules`) to take effect — see `ROADMAP_V5.md` Slice 6.2.**
 
 ### Fixed — Scorecard now says "Did not bat" for a completed innings (ROADMAP_V5 Slice 8.1)
 - Squad members who never came out to bat in a completed innings were labeled "Yet to bat," which
