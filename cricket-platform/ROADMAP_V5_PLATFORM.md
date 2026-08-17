@@ -507,6 +507,97 @@ nothing gated yet.
   key → always renders children; loading state correctly suppressed for signed-out users rather than
   hanging) rather than a live click-through.
 
+### C3 addendum — the confirmed Free vs Paid registry applied ✅ Done
+The user provided the final, confirmed Free vs Paid feature registry (38 named paid items, 15 named
+free items, plus Custom Roles and Team Documents as their own special cases). Every named item was
+mapped to its real implementation by auditing the codebase directly — reading the actual component,
+domain module, and render site, never assumed from the name alone — before any gate was applied.
+
+**Method**: `PREMIUM_FEATURES` (`domain/entitlements.ts`) now has 23 keys wired to a real, existing
+UI gate, plus 10 keys registered with a description explaining why nothing exists to gate yet (no
+fake placeholder functionality built for any of them, per instruction). Several paid items share one
+key where they clearly describe the same implementation from different angles — documented per entry
+in the registry itself, not hidden:
+- **Tournament comparison** + **Comparison views** → one key (`tournament_comparison`), all three of
+  CompareTournamentsPage/CompareSeasonsPage/CompareClubsPage.
+- **Sponsor showcase** + **Sponsor banners** → one key (`sponsor_showcase`), the one
+  `Tournament.sponsors` display.
+- **Tournament media** + **Tournament galleries** + **Tournament photos** + **Photo management** →
+  one key (`tournament_media`), the one `<EntityGallery>` instance on a tournament page (including
+  its own upload/delete controls — there's no separate "photo management" surface to gate instead).
+
+**`PremiumGate` gained an `ownerId` prop** to support this registry correctly: several paid items
+(sponsors, branding, tournament media, tournament announcements, club activity feeds, match photo
+galleries) are content an owner publishes for *anyone* to see — gating those by the current
+*viewer's* plan would mean a paying tournament owner's sponsors/banner/gallery become invisible to
+their own (mostly free-tier) visitors, which is backwards. `<PremiumGate ownerId={t.ownerId}>` checks
+the *content owner's* subscription instead via a new `useSubscriptionFor(uid)` hook, and renders
+nothing (not even the upsell fallback) while that owner's subscription is still loading, to avoid a
+flash. Every other gate (analytics, exports, tools) checks the current viewer's own plan via the
+existing `usePremiumFeature()` — right for things a viewer personally unlocks regardless of whose
+content they're looking at.
+
+**Applied** (see `domain/entitlements.ts` for the full description + exact file/component per key):
+`auto_powerplay` (MatchSetupPage's Auto/Manual toggle — Manual stays fully free, this only gates the
+auto-fill convenience), `tournament_statistics` (a tournament's Leaders + Records tabs),
+`season_splits`, `recent_form_charts` (team AND player), `player_radar`, `team_records`,
+`records_by_venue`, `qualification_tracking` (distinct from the free Groups tab), `tournament_timeline`,
+`pitch_map` (not Wagon Wheel, which stays free), `partnership_analytics`, `performance_charts`
+(MatchGraphs), `tournament_comparison`, `sponsor_showcase`, `club_activity_feeds` (only the ClubPage
+instance — the same `<ActivityFeed>` on Player/Team/Tournament/Season/Dashboard stays free),
+`embeddable_widgets`, `match_photo_galleries`, `tournament_media`, `follow_seasons` (only
+`kind="seasons"` — following players/teams/tournaments/clubs stays free), `tournament_branding`,
+`tournament_announcements`, `fixtures_calendar` (both the per-match Add-to-calendar button and the
+tournament-wide Calendar view/ICS-download, since the latter's own component is literally named
+`FixturesCalendar`), `data_export` (CSV/JSON on match/player/tournament pages — not
+`domain/platformExport.ts`, the unrelated master-admin-only platform backup tool).
+
+**Defined only, no code changed**: `unlimited_tournaments`, `unlimited_seasons` (no count limit
+exists for any tier today), `shareable_statistics` (the existing `<ShareButton>` is core
+infrastructure used everywhere, not this feature — must not be gated), `media_storage_allowance` (no
+storage quota is enforced today), `tournament_documents` (no document-attachment feature exists),
+`custom_urls` (every entity is addressed by its Firestore doc id), `seo_enhancements`
+(`useDocumentMeta()` is automatic infrastructure for every page/tier, not a discretionary feature —
+gating it would remove free users' existing SEO, not add a paid one), `advanced_reports` (no distinct
+"reports" surface separate from `data_export`), `api_access` (this app has no public API of its
+own — only Firestore reads/writes through firestore.rules), `custom_domains` (needs real DNS/hosting
+infrastructure this project has no backend to provide).
+
+**Free list, confirmed untouched by direct inspection, not assumed**: grepped every `PremiumGate`/
+`usePremiumFeature` call site (33 total) and cross-checked none touch Batter-vs-Bowler
+(`PlayerPage.tsx`'s `vsbowler` tab), Player history (`timeline` tab), Player-vs-player comparison
+(`ComparePage.tsx` — zero gates in that file), or any of the core match creation/scoring/scorecard/
+auth/security infrastructure (`ScoringPage.tsx` — zero gates in that file either).
+
+**Team Documents and Custom Roles**: confirmed via grep that neither feature exists anywhere in the
+codebase (no document-attachment UI for teams, no custom-role creation/configuration UI at all —
+`ASSIGNABLE_ROLES` in `UsersPage.tsx`/`InvitationsPage.tsx` is a fixed list of the built-in `Role`
+enum, not user-defined roles). Nothing to gate or permission-check because nothing exists yet.
+Documented in the registry (`tournament_documents`'s description) that Team Documents must be
+permission-controlled by team membership when eventually built, never premium-gated, per instruction.
+
+**One real ambiguity flagged, not silently resolved either way**: `CompareTeamsPage.tsx`
+(`/compare/teams`, team-vs-team comparison) is not explicitly named in either list. It's structurally
+identical to the explicitly-free `ComparePage.tsx` (player-vs-player) — same "compare two entities of
+the same kind" pattern, just teams instead of players — rather than to the paid tournament/season/
+club comparison pages (which compare aggregate entities, not head-to-head opponents). Left ungated
+(free) as the more conservative, non-inventive reading, since gating it would mean assuming
+"Comparison views" implicitly covers team comparison too, which isn't stated. Flagged here for
+confirmation rather than guessed silently either direction.
+
+**Verified**: `tsc -p tsconfig.app.json --noEmit`, `npm run build`, `oxlint` all clean across every
+touched file (three pre-existing, unrelated warnings confirmed by direct inspection: a
+`no-useless-catch` in `auth.service.ts`'s untouched `createLinkedAccount`, and two
+`react-hooks/exhaustive-deps` warnings in `MatchPage.tsx`/`TournamentPage.tsx` on `useMemo` hooks
+nowhere near any gate added this slice). No test suite exists in this project (per `CLAUDE.md`) — 
+"run relevant tests" per the instruction's checklist is satisfied by the type-check/build/lint chain,
+same as every other slice this session. **Not live-tested**, same standing reason as every other
+Phase B/C slice this session: no authenticated browser session available, and the user's instruction
+was to keep moving without pausing on it. Free/Paid access, team-document permissions, and
+custom-role Free/Paid limits were all verified by direct code audit (grep + read, documented above)
+rather than a live click-through, since two of the three ("team documents", "custom roles") have no
+code path to click through at all yet.
+
 ---
 
 ## Notes
@@ -542,14 +633,18 @@ nothing gated yet.
   immediately after (Slice 6.2, no conflict). The scoring session's own roadmap now shows its last
   planned slice (5.1) closed out, so it may be wrapping up. Re-check `firestore.rules`/`types/
   index.ts` fresh again before B4, same discipline.
-- **Phase C's C1-C3 are code-complete.** Subscription/entitlement data model, provider-independent
-  billing interface + mock implementation, and the generic premium-gating mechanism are all
-  implemented, tsc/build/lint clean, and committed. Explicitly not built: any real payment provider,
-  real payment processing, a specific provider choice, C4 (donations), or a checkout/upgrade UI (that
-  last one is premature — the feature registry that would justify it is still empty, by instruction).
-  None of this was live-tested, per direct instruction to defer all Firebase-dependent verification
-  (deploy included) and not require a new login — verification here is careful code-level re-review,
-  not a click-through, same honesty standard as every rules-touching Phase B slice.
+- **Phase C's C1-C3 are code-complete, and the confirmed Free/Paid registry is now fully applied.**
+  Subscription/entitlement data model, provider-independent billing interface + mock implementation,
+  and the premium-gating mechanism are implemented; 23 of the user's 38 named paid items are wired to
+  a real, audited gate, the other 10 are registered with a documented reason nothing exists to gate
+  yet, and every named free item (plus Team Documents and Custom Roles, both confirmed not to exist)
+  was checked and left untouched. One genuine ambiguity (`CompareTeamsPage.tsx`, unnamed in either
+  list) was left ungated and flagged rather than guessed. Explicitly not built: any real payment
+  provider, real payment processing, a specific provider choice, C4 (donations), or a checkout/
+  upgrade UI. None of this was live-tested, per direct instruction to defer all Firebase-dependent
+  verification (deploy included) and not require a new login — verification here is careful
+  code-level re-review and direct grep-based auditing, not a click-through, same honesty standard as
+  every rules-touching Phase B slice.
 - **Standing item for the later single production pass** (per instruction, not done now): deploy
   `firestore.rules` (covers every undeployed change across Phase B and C1's `subscriptions` rule),
   enable Phone sign-in in the Firebase console, test the B4 phone-verification flow with a real

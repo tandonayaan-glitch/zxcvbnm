@@ -11,6 +11,7 @@ import {
 import { ShareButton } from '@/components/ui/ShareButton'
 import { QRCodeButton } from '@/components/ui/QRCodeButton'
 import { FollowButton } from '@/components/ui/FollowButton'
+import { PremiumGate } from '@/components/guards/PremiumGate'
 import { ActivityFeed } from '@/components/activity/ActivityFeed'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocumentMeta } from '@/hooks/useDocumentMeta'
@@ -109,7 +110,9 @@ export function SeasonPage() {
           <div className="flex items-center gap-2">
             <ShareButton variant="icon" title={s.name} />
             <QRCodeButton title={s.name} />
-            <FollowButton kind="seasons" id={s.id} />
+            <PremiumGate feature="follow_seasons" fallback={null}>
+              <FollowButton kind="seasons" id={s.id} />
+            </PremiumGate>
           </div>
         </div>
         {s.description && (

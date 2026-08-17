@@ -35,6 +35,7 @@ import {
 } from '@/services/matches.service'
 import { snapshotVersion, changedKeys } from '@/services/versionHistory.service'
 import { useAuthStore, ownerScope } from '@/store/authStore'
+import { usePremiumFeature } from '@/hooks/useMySubscription'
 import { cn } from '@/lib/cn'
 import { MATCH_FORMAT_LABELS, MATCH_FORMAT_OVERS } from '@/lib/format'
 import { STAGE_ORDER, STAGE_LABELS, hasKnockoutPhase } from '@/domain/bracket'
@@ -111,6 +112,7 @@ export function MatchSetupPage() {
   const editId = params.get('edit')
   const duplicateId = params.get('duplicate')
   const profile = useAuthStore((s) => s.profile)
+  const canAutoPowerplay = usePremiumFeature('auto_powerplay')
 
   const teams = useAsync(listTeams, [])
   const players = useAsync(listPlayers, [])
@@ -802,21 +804,28 @@ export function MatchSetupPage() {
                 Powerplay
               </div>
               <div className="grid grid-cols-2 gap-3">
-                {(['auto', 'manual'] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    onClick={() => onPowerplayModeChange(mode)}
-                    className={cn(
-                      'rounded-xl border-2 p-3 text-left font-semibold capitalize',
-                      form.powerplayMode === mode
-                        ? 'border-brand-500 bg-brand-50 text-brand-700'
-                        : 'border-ink-200 dark:border-ink-800 text-ink-700 dark:text-ink-300 hover:border-ink-300',
-                    )}
-                  >
-                    {mode}
-                  </button>
-                ))}
+                {(['auto', 'manual'] as const)
+                  .filter((mode) => mode !== 'auto' || canAutoPowerplay)
+                  .map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => onPowerplayModeChange(mode)}
+                      className={cn(
+                        'rounded-xl border-2 p-3 text-left font-semibold capitalize',
+                        form.powerplayMode === mode
+                          ? 'border-brand-500 bg-brand-50 text-brand-700'
+                          : 'border-ink-200 dark:border-ink-800 text-ink-700 dark:text-ink-300 hover:border-ink-300',
+                      )}
+                    >
+                      {mode}
+                    </button>
+                  ))}
               </div>
+              {!canAutoPowerplay && (
+                <p className="mt-1.5 text-xs text-ink-400 dark:text-ink-500">
+                  Automatic powerplay calculation is a premium feature — set it manually below.
+                </p>
+              )}
               <div className="mt-3 max-w-[220px]">
                 <Field
                   label="Powerplay overs"

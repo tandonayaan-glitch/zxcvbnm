@@ -53,6 +53,7 @@ import { matchTopPerformers } from '@/domain/matchPerformers'
 import { chaseWinProbability } from '@/domain/winProbability'
 import { projectFirstInningsScore } from '@/domain/expectedScore'
 import { useAuthStore, canScore, isAdmin } from '@/store/authStore'
+import { PremiumGate } from '@/components/guards/PremiumGate'
 import { useBgStore } from '@/store/bgStore'
 import {
   ballsToOvers,
@@ -201,8 +202,12 @@ export function MatchPage() {
             </div>
             <ShareButton variant="icon" title={`${match.teamA.name} vs ${match.teamB.name}`} />
             <QRCodeButton title={`${match.teamA.name} vs ${match.teamB.name}`} />
-            <EmbedButton matchId={match.id} />
-            <AddToCalendarButton match={match} />
+            <PremiumGate feature="embeddable_widgets" fallback={null}>
+              <EmbedButton matchId={match.id} />
+            </PremiumGate>
+            <PremiumGate feature="fixtures_calendar" fallback={null}>
+              <AddToCalendarButton match={match} />
+            </PremiumGate>
           </div>
           <h1 className="text-xl font-bold">
             {match.teamA.name} vs {match.teamB.name}
@@ -431,7 +436,9 @@ export function MatchPage() {
       {/* Analytics graphs */}
       {deliveries.length > 0 && (
         <div id="match-insights" className="mb-4 scroll-mt-4">
-          <MatchGraphs match={match} deliveries={deliveries} />
+          <PremiumGate feature="performance_charts">
+            <MatchGraphs match={match} deliveries={deliveries} />
+          </PremiumGate>
         </div>
       )}
 
@@ -450,7 +457,9 @@ export function MatchPage() {
             <WagonWheel zones={wagonWheelData(deliveries, ballMeta.data!)} />
           )}
           {hasPitchMapData(ballMeta.data!) && (
-            <PitchMap cells={pitchMapData(deliveries, ballMeta.data!)} />
+            <PremiumGate feature="pitch_map">
+              <PitchMap cells={pitchMapData(deliveries, ballMeta.data!)} />
+            </PremiumGate>
           )}
         </div>
       )}
@@ -465,18 +474,20 @@ export function MatchPage() {
           <span className="text-xs font-medium uppercase tracking-wide text-ink-400 dark:text-ink-500">
             Export
           </span>
-          <button
-            onClick={exportCSV}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
-          >
-            <Download size={15} /> CSV
-          </button>
-          <button
-            onClick={exportJSON}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
-          >
-            <FileJson size={15} /> JSON
-          </button>
+          <PremiumGate feature="data_export" fallback={null}>
+            <button
+              onClick={exportCSV}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
+            >
+              <Download size={15} /> CSV
+            </button>
+            <button
+              onClick={exportJSON}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
+            >
+              <FileJson size={15} /> JSON
+            </button>
+          </PremiumGate>
           <button
             onClick={() => window.print()}
             title="Opens the browser print dialog — choose &quot;Save as PDF&quot; as the destination for a PDF file"
@@ -497,7 +508,9 @@ export function MatchPage() {
       </div>
 
       <div id="match-gallery" className="mt-4 scroll-mt-4">
-        <MatchGallery matchId={match.id} canManage={admin} />
+        <PremiumGate feature="match_photo_galleries" ownerId={match.ownerId}>
+          <MatchGallery matchId={match.id} canManage={admin} />
+        </PremiumGate>
       </div>
 
       <div id="match-comments" className="mt-4 scroll-mt-4">

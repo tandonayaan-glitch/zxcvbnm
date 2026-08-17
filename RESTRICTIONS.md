@@ -1916,4 +1916,95 @@ reasoning.
     provide) and a billing provider choice (Stripe suggested earlier as a common default, still
     unconfirmed).
 
+82. **`ROADMAP_V5_PLATFORM.md` Slice C3 addendum — confirmed Free vs Paid registry applied** —
+    **Done**. The user supplied the final registry: 38 named paid items, 15 named free items, plus
+    Custom Roles (exists on both tiers, different customization depth) and Team Documents
+    (explicitly permission-controlled, never premium) as special cases. Every named item was
+    audited against the actual codebase before any gate was written — grepped and read the real
+    component/domain-module/render-site, never inferred from the name alone.
+    **23 keys wired to a real gate** in `PREMIUM_FEATURES` (`domain/entitlements.ts`), each with a
+    description naming its exact file/component: `auto_powerplay` (`MatchSetupPage.tsx`'s Auto/
+    Manual toggle — Manual stays fully free, confirmed by tracing that `powerplayMode` only gates
+    the *convenience* auto-fill, never blocks manual entry, so "Full normal match creation" is
+    unaffected), `tournament_statistics` (a tournament's Leaders + Records tabs — the most
+    interpretive mapping in the set, documented as such), `season_splits`, `recent_form_charts`
+    (both `TeamForm.tsx` and `PlayerForm.tsx` — the paid item doesn't distinguish team vs player),
+    `player_radar`, `team_records`, `records_by_venue`, `qualification_tracking` (confirmed distinct
+    from the free Groups tab by reading both `domain/groups.ts` — group-stage standings, structural/
+    core — and `domain/qualification.ts` — the qualified/eliminated tracker, analytical overlay —
+    their doc comments made the distinction unambiguous), `tournament_timeline`, `pitch_map` (only
+    `PitchMap.tsx`, confirmed `WagonWheel.tsx` renders as a fully separate conditional block in both
+    `MatchPage.tsx` and `PlayerPage.tsx` so it could be excluded cleanly), `partnership_analytics`
+    (the ROADMAP_V5 Slice A2 feature), `performance_charts` (`MatchGraphs.tsx`, confirmed distinct
+    from the admin-only `GrowthChart.tsx` used in Platform Tools/Analytics — traced both components'
+    actual usage sites before concluding), `tournament_comparison` (consolidates the separately-named
+    "Comparison views" — all three of CompareTournamentsPage/CompareSeasonsPage/CompareClubsPage,
+    confirmed `ComparePage.tsx`, the player-vs-player page, is architecturally separate and untouched),
+    `sponsor_showcase` (consolidates "Sponsor banners" — the one `Tournament.sponsors` display, whose
+    own doc comment in `types/index.ts` literally says "sponsor showcase"), `club_activity_feeds`
+    (only the `<ActivityFeed>` instance on `ClubPage.tsx` — confirmed via grep the same shared
+    component is reused ungated on Player/Team/Tournament/Season/Dashboard pages, none of which are
+    named), `embeddable_widgets` (`<EmbedButton>` on `MatchPage.tsx`), `match_photo_galleries`
+    (`<MatchGallery>`), `tournament_media` (consolidates "Tournament galleries"/"Tournament photos"/
+    "Photo management" — one `<EntityGallery>` instance including its own upload/delete controls,
+    since there's no separate photo-management surface), `follow_seasons` (only
+    `<FollowButton kind="seasons">` on `SeasonPage.tsx` — the same component follows players/teams/
+    tournaments/clubs elsewhere, unnamed and unchanged), `tournament_branding` (`Tournament.bannerURL`
+    display only — the edit field in the form modal was deliberately left unrestricted, see below),
+    `tournament_announcements` (`<AnnouncementsPanel>`), `fixtures_calendar` (both the per-match
+    `<AddToCalendarButton>` and the tournament-wide Calendar toggle/ICS download — the latter's own
+    component is literally named `FixturesCalendar`, found only after grepping `calendarExport.ts`'s
+    other consumers), `data_export` (CSV/JSON buttons on match/player/tournament pages — explicitly
+    NOT `domain/platformExport.ts`, confirmed that's the master-admin-only Platform Tools backup
+    tool, an unrelated, already-privileged surface).
+    **Owner-based gating, a real architectural decision, not the default**: `sponsor_showcase`,
+    `tournament_branding`, `tournament_media`, `tournament_announcements`, `club_activity_feeds`, and
+    `match_photo_galleries` check the *content owner's* plan (`<PremiumGate ownerId={t.ownerId}>`),
+    not the viewer's — reasoned explicitly before implementing: gating a tournament's sponsors by the
+    *visitor's* plan would make a paying owner's sponsors invisible to their own (mostly free-tier)
+    audience, which is backwards for a real business. Added `useSubscriptionFor(uid)` to
+    `hooks/useMySubscription.ts` and an `ownerId` prop to `<PremiumGate>` to support this; while an
+    owner's subscription is loading, the gate renders nothing at all (not even the fallback) to avoid
+    a flash of the wrong state on a public page. Every other gate checks the current viewer's own
+    plan via the pre-existing `usePremiumFeature()` — right for things a viewer personally unlocks.
+    **10 keys registered with no code gate**, each with a concrete, checked reason: `unlimited_
+    tournaments`/`unlimited_seasons` (grepped for any tournament/season count limit — none exists for
+    any tier), `shareable_statistics` (the existing `<ShareButton>` is core infrastructure on every
+    entity page — confirmed it must NOT be gated, no distinct stat-sharing feature exists to gate
+    instead), `media_storage_allowance` (no storage quota enforced anywhere), `tournament_documents`
+    (no document-attachment feature exists for tournaments), `custom_urls` (every entity addressed by
+    Firestore doc id), `seo_enhancements` (`useDocumentMeta()` is automatic infra applied identically
+    to every page/tier — gating it would remove free users' existing SEO, not add a paid one, so it
+    was explicitly left alone rather than gated), `advanced_reports` (no distinct reports surface
+    beyond `data_export`), `api_access` (no public API — only Firestore + firestore.rules),
+    `custom_domains` (needs real DNS/hosting this project has no backend for).
+    **Free list confirmed untouched, not assumed**: grepped all 33 `PremiumGate`/`usePremiumFeature`
+    call sites and confirmed zero touch `PlayerPage.tsx`'s `vsbowler`/`timeline` tabs, zero touch
+    `ComparePage.tsx` (player-vs-player — the file has no `PremiumGate` import at all), and zero
+    touch `ScoringPage.tsx` (also zero imports) — Full normal match creation/scoring, core
+    auth/security, and basic scorecards/statistics are structurally incapable of being affected by
+    this slice's changes.
+    **Custom Roles and Team Documents**: grepped the entire codebase for any custom-role or team-
+    document feature — neither exists. `ASSIGNABLE_ROLES` in `UsersPage.tsx`/`InvitationsPage.tsx`
+    is a fixed list of the six built-in `Role` enum values, not a user-defined-roles system. Nothing
+    to gate or permission-check because neither has any code path yet; documented in the registry
+    (`tournament_documents`'s own entry) that Team Documents must be permission-controlled by team
+    membership whenever it is built, never premium-gated, per direct instruction.
+    **One real ambiguity, flagged rather than silently resolved**: `CompareTeamsPage.tsx`
+    (`/compare/teams`) is not named in either list. Structurally it's the free `ComparePage.tsx`
+    pattern (head-to-head between two entities of the same kind) applied to teams instead of
+    players, not the paid tournament/season/club comparison pattern (aggregate stats across a whole
+    entity). Left ungated as the more conservative, non-inventive reading — gating it would require
+    assuming "Comparison views" implicitly covers team comparison, which isn't stated anywhere.
+    `tsc -p tsconfig.app.json --noEmit`, `npm run build`, `oxlint` all clean across all 14 touched
+    files (three pre-existing warnings confirmed unrelated by direct inspection: `auth.service.ts`'s
+    untouched `createLinkedAccount`, and `useMemo` dependency warnings in `MatchPage.tsx`/
+    `TournamentPage.tsx` nowhere near any gate added this slice). No test suite exists in this
+    project; "run relevant tests" is satisfied by the type-check/build/lint chain, consistent with
+    every other slice this session. **Not live-tested**, same standing reason as every Phase B/C
+    slice: no authenticated browser session available, and the explicit instruction was to keep
+    moving rather than pause on it — Free/Paid access, team-document permissions, and custom-role
+    limits were all verified by direct code audit instead, documented above, since two of those three
+    have no code path at all yet to click through.
+
 (Appended to as further slices are picked up.)

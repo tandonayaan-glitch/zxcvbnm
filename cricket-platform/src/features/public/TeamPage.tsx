@@ -38,6 +38,7 @@ import { TeamForm, type TeamFormPoint } from '@/components/charts/TeamForm'
 import { computeTeamHonours, hasTeamRecords } from '@/domain/teamRecords'
 import { teamOpponentRecords } from '@/domain/teamOpponents'
 import { teamVenueRecords } from '@/domain/teamVenues'
+import { PremiumGate } from '@/components/guards/PremiumGate'
 import { PLAYER_ROLE_LABELS, formatDate, ballsToOvers } from '@/lib/format'
 
 export function TeamPage() {
@@ -231,7 +232,9 @@ export function TeamPage() {
 
       {formSeries.length > 0 && (
         <div className="mb-4">
-          <TeamForm data={formSeries} />
+          <PremiumGate feature="recent_form_charts">
+            <TeamForm data={formSeries} />
+          </PremiumGate>
         </div>
       )}
 
@@ -292,6 +295,7 @@ export function TeamPage() {
       )}
 
       {hasTeamRecords(honours) && (
+        <PremiumGate feature="team_records">
         <div className="mb-4">
           <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-400 dark:text-ink-500">
             Team records
@@ -369,6 +373,7 @@ export function TeamPage() {
             )}
           </div>
         </div>
+        </PremiumGate>
       )}
 
       {opponentRecords.length > 0 && (
@@ -417,6 +422,7 @@ export function TeamPage() {
       )}
 
       {venueRecords.length > 0 && (
+        <PremiumGate feature="records_by_venue">
         <Card className="mb-4 overflow-x-auto">
           <CardHeader title="Record by venue" />
           <table className="w-full text-sm">
@@ -450,6 +456,7 @@ export function TeamPage() {
             </tbody>
           </table>
         </Card>
+        </PremiumGate>
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">

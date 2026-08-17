@@ -21,3 +21,13 @@ export function usePremiumFeature(key: string): boolean {
   const { subscription } = useMySubscription()
   return hasEntitlement(subscription, key)
 }
+
+/** An arbitrary uid's subscription — for content (a tournament, a match, a club…) whose owner may
+ *  differ from whoever is currently viewing it. Some registered features (sponsor showcase,
+ *  tournament branding/media/announcements, club activity feeds) are gated on the *content owner's*
+ *  plan, not the viewer's: a free visitor should still see a paying owner's sponsors, not lose them
+ *  because the visitor themselves isn't subscribed. `<PremiumGate ownerId={...}>` uses this. */
+export function useSubscriptionFor(uid: string | null | undefined) {
+  const sub = useAsync(() => (uid ? getSubscription(uid) : Promise.resolve(null)), [uid])
+  return { subscription: sub.data ?? null, loading: uid ? sub.loading : false }
+}

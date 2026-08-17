@@ -4,6 +4,16 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Changed — Premium plan gating applied to the confirmed feature list (ROADMAP_V5 Slice C3)
+- A signed-in Free-plan user will now see an upsell in place of: tournament statistics, records,
+  timeline and qualification tracking, season splits, recent-form charts, player radar, team records
+  and venue records, the Pitch Map, partnership analytics, match performance charts, tournament/season/
+  club comparison, embeddable match widgets, the fixtures calendar, and CSV/JSON/data export. A
+  tournament, club, or match whose owner is on the Free plan will show without sponsors, custom
+  banner, photo galleries, announcements, or its club activity feed for every visitor, regardless of
+  the visitor's own plan. Everything else — including Batter-vs-Bowler analytics, player history,
+  player comparison, and all match creation/scoring — is unaffected and stays free for everyone.
+
 ### Added — Subscription architecture foundation (ROADMAP_V5 Slices C1-C3)
 - Internal only, nothing user-facing changes yet: a subscription/entitlement data model, a
   provider-independent billing interface with a mock (no real payment) implementation, and a generic

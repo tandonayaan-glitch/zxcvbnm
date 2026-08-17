@@ -8,6 +8,7 @@ import {
   PageLoader,
 } from '@/components/ui/primitives'
 import { ActivityFeed } from '@/components/activity/ActivityFeed'
+import { PremiumGate } from '@/components/guards/PremiumGate'
 import { ShareButton } from '@/components/ui/ShareButton'
 import { QRCodeButton } from '@/components/ui/QRCodeButton'
 import { FollowButton } from '@/components/ui/FollowButton'
@@ -149,7 +150,9 @@ export function ClubPage() {
         <Activity size={16} /> Activity
       </div>
       <Card className="p-4">
-        <ActivityFeed refId={id} max={10} />
+        <PremiumGate feature="club_activity_feeds" ownerId={c.ownerId}>
+          <ActivityFeed refId={id} max={10} />
+        </PremiumGate>
       </Card>
     </div>
   )

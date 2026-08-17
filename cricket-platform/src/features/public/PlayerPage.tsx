@@ -32,6 +32,7 @@ import { PlayerRadar } from '@/components/charts/PlayerRadar'
 import { WagonWheel } from '@/components/charts/WagonWheel'
 import { PitchMap } from '@/components/charts/PitchMap'
 import { playerRadarProfile } from '@/domain/radar'
+import { PremiumGate } from '@/components/guards/PremiumGate'
 import type { BallMeta, Delivery } from '@/types'
 import {
   battingAverage,
@@ -278,20 +279,25 @@ export function PlayerPage() {
               Compare
             </Link>
             <div className="flex gap-1.5">
-              <button
-                onClick={exportCSV}
-                title="Export CSV"
-                className="inline-flex items-center gap-1 rounded-lg border border-ink-300 dark:border-ink-700 px-2 py-1 text-xs font-medium text-ink-600 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800"
+              <PremiumGate
+                feature="data_export"
+                fallback={null}
               >
-                <Download size={13} /> CSV
-              </button>
-              <button
-                onClick={exportJSON}
-                title="Export JSON"
-                className="inline-flex items-center gap-1 rounded-lg border border-ink-300 dark:border-ink-700 px-2 py-1 text-xs font-medium text-ink-600 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800"
-              >
-                <FileJson size={13} /> JSON
-              </button>
+                <button
+                  onClick={exportCSV}
+                  title="Export CSV"
+                  className="inline-flex items-center gap-1 rounded-lg border border-ink-300 dark:border-ink-700 px-2 py-1 text-xs font-medium text-ink-600 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800"
+                >
+                  <Download size={13} /> CSV
+                </button>
+                <button
+                  onClick={exportJSON}
+                  title="Export JSON"
+                  className="inline-flex items-center gap-1 rounded-lg border border-ink-300 dark:border-ink-700 px-2 py-1 text-xs font-medium text-ink-600 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800"
+                >
+                  <FileJson size={13} /> JSON
+                </button>
+              </PremiumGate>
               <button
                 onClick={() => window.print()}
                 title="Print / Save as PDF"
@@ -438,7 +444,11 @@ export function PlayerPage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {hasWagonData && <WagonWheel zones={wagonZones} />}
-            {hasPitchData && <PitchMap cells={pitchCells} />}
+            {hasPitchData && (
+              <PremiumGate feature="pitch_map">
+                <PitchMap cells={pitchCells} />
+              </PremiumGate>
+            )}
           </div>
         ))}
 
@@ -467,8 +477,12 @@ export function PlayerPage() {
                 ))}
               </div>
             )}
-            <PlayerForm performances={perfs.data ?? []} />
-            <PlayerRadar axes={playerRadarProfile(s)} />
+            <PremiumGate feature="recent_form_charts">
+              <PlayerForm performances={perfs.data ?? []} />
+            </PremiumGate>
+            <PremiumGate feature="player_radar">
+              <PlayerRadar axes={playerRadarProfile(s)} />
+            </PremiumGate>
             <div className="grid gap-4 sm:grid-cols-2">
             <StatBlock
               title="Batting"
@@ -584,6 +598,7 @@ export function PlayerPage() {
       )}
 
       {tab === 'seasons' && (
+        <PremiumGate feature="season_splits">
         <Card className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -642,6 +657,7 @@ export function PlayerPage() {
             </tbody>
           </table>
         </Card>
+        </PremiumGate>
       )}
 
       {tab === 'timeline' && (

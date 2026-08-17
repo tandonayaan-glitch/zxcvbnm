@@ -65,6 +65,7 @@ import {
 } from '@/domain/tournamentExport'
 import { downloadBlob, slugify } from '@/lib/download'
 import { canManageTournaments, useAuthStore } from '@/store/authStore'
+import { PremiumGate } from '@/components/guards/PremiumGate'
 import { formatDate, formatRate, ballsToOvers } from '@/lib/format'
 import type { Match, StandingsRow, SponsorTier } from '@/types'
 
@@ -217,11 +218,13 @@ export function TournamentPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
       {t.bannerURL && (
-        <img
-          src={t.bannerURL}
-          alt={`${t.name} banner`}
-          className="mb-4 h-40 w-full rounded-xl object-cover sm:h-56"
-        />
+        <PremiumGate feature="tournament_branding" ownerId={t.ownerId} fallback={null}>
+          <img
+            src={t.bannerURL}
+            alt={`${t.name} banner`}
+            className="mb-4 h-40 w-full rounded-xl object-cover sm:h-56"
+          />
+        </PremiumGate>
       )}
       <Card className="mb-4 p-5">
         <div className="flex items-start justify-between">
@@ -280,6 +283,7 @@ export function TournamentPage() {
       </Card>
 
       {t.sponsors && t.sponsors.length > 0 && (
+        <PremiumGate feature="sponsor_showcase" ownerId={t.ownerId} fallback={null}>
         <div className="mb-4 flex flex-wrap items-center justify-center gap-5 rounded-xl border border-ink-100 bg-ink-50/60 px-4 py-3 dark:border-ink-800 dark:bg-ink-900/40">
           {[...t.sponsors]
             .sort((a, b) => SPONSOR_TIER_ORDER[a.tier] - SPONSOR_TIER_ORDER[b.tier])
@@ -305,6 +309,7 @@ export function TournamentPage() {
               </a>
             ))}
         </div>
+        </PremiumGate>
       )}
 
       {hasExport && (
@@ -312,30 +317,32 @@ export function TournamentPage() {
           <span className="text-xs font-medium uppercase tracking-wide text-ink-400 dark:text-ink-500">
             Export
           </span>
-          <button
-            onClick={() =>
-              downloadBlob(
-                `${exportBase}.csv`,
-                tournamentToCSV(exportData),
-                'text/csv;charset=utf-8',
-              )
-            }
-            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
-          >
-            <Download size={15} /> CSV
-          </button>
-          <button
-            onClick={() =>
-              downloadBlob(
-                `${exportBase}.json`,
-                tournamentToJSON(exportData),
-                'application/json',
-              )
-            }
-            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
-          >
-            <FileJson size={15} /> JSON
-          </button>
+          <PremiumGate feature="data_export" fallback={null}>
+            <button
+              onClick={() =>
+                downloadBlob(
+                  `${exportBase}.csv`,
+                  tournamentToCSV(exportData),
+                  'text/csv;charset=utf-8',
+                )
+              }
+              className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
+            >
+              <Download size={15} /> CSV
+            </button>
+            <button
+              onClick={() =>
+                downloadBlob(
+                  `${exportBase}.json`,
+                  tournamentToJSON(exportData),
+                  'application/json',
+                )
+              }
+              className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
+            >
+              <FileJson size={15} /> JSON
+            </button>
+          </PremiumGate>
           <button
             onClick={() => window.print()}
             title="Opens the browser print dialog — choose &quot;Save as PDF&quot; as the destination for a PDF file"
@@ -414,6 +421,7 @@ export function TournamentPage() {
       )}
 
       {tab === 'qualification' && (
+        <PremiumGate feature="qualification_tracking">
         <div className="space-y-4">
           {qualification.map((g) => (
             <div key={g.group}>
@@ -424,6 +432,7 @@ export function TournamentPage() {
             </div>
           ))}
         </div>
+        </PremiumGate>
       )}
 
       {tab === 'bracket' && (
@@ -467,33 +476,41 @@ export function TournamentPage() {
               >
                 List
               </button>
-              <button
-                onClick={() => setMatchesView('calendar')}
-                className={`rounded-md px-2.5 py-1 text-xs font-medium ${
-                  matchesView === 'calendar'
-                    ? 'bg-brand-600 text-white'
-                    : 'text-ink-600 dark:text-ink-400'
-                }`}
-              >
-                Calendar
-              </button>
+              <PremiumGate feature="fixtures_calendar" fallback={null}>
+                <button
+                  onClick={() => setMatchesView('calendar')}
+                  className={`rounded-md px-2.5 py-1 text-xs font-medium ${
+                    matchesView === 'calendar'
+                      ? 'bg-brand-600 text-white'
+                      : 'text-ink-600 dark:text-ink-400'
+                  }`}
+                >
+                  Calendar
+                </button>
+              </PremiumGate>
             </div>
-            <button
-              onClick={() => {
-                const ics = matchesToICS(tMatches, `${t.name} fixtures`)
-                if (!ics) {
-                  toast.error('No scheduled matches to add to a calendar yet')
-                  return
-                }
-                downloadBlob(`${slugify(t.name)}-fixtures.ics`, ics, 'text/calendar;charset=utf-8')
-              }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-xs font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
-            >
-              <CalendarPlus size={13} /> Download calendar
-            </button>
+            <PremiumGate feature="fixtures_calendar" fallback={null}>
+              <button
+                onClick={() => {
+                  const ics = matchesToICS(tMatches, `${t.name} fixtures`)
+                  if (!ics) {
+                    toast.error('No scheduled matches to add to a calendar yet')
+                    return
+                  }
+                  downloadBlob(`${slugify(t.name)}-fixtures.ics`, ics, 'text/calendar;charset=utf-8')
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-xs font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
+              >
+                <CalendarPlus size={13} /> Download calendar
+              </button>
+            </PremiumGate>
           </div>
 
-          {matchesView === 'calendar' && <FixturesCalendar matches={tMatches} />}
+          {matchesView === 'calendar' && (
+            <PremiumGate feature="fixtures_calendar" fallback={null}>
+              <FixturesCalendar matches={tMatches} />
+            </PremiumGate>
+          )}
 
           {matchesView === 'list' &&
             (tMatches.length === 0 ? (
@@ -534,6 +551,7 @@ export function TournamentPage() {
       )}
 
       {tab === 'timeline' && (
+        <PremiumGate feature="tournament_timeline">
         <div className="space-y-2">
           {timeline.length === 0 ? (
             <EmptyState title="No matches yet" />
@@ -566,9 +584,11 @@ export function TournamentPage() {
             ))
           )}
         </div>
+        </PremiumGate>
       )}
 
       {tab === 'leaders' && (
+        <PremiumGate feature="tournament_statistics">
         <div className="grid gap-4 sm:grid-cols-2">
           <LeaderCard
             title="Most runs"
@@ -589,6 +609,7 @@ export function TournamentPage() {
             }))}
           />
         </div>
+        </PremiumGate>
       )}
 
       {tab === 'awards' && (
@@ -618,6 +639,7 @@ export function TournamentPage() {
       )}
 
       {tab === 'records' && (
+        <PremiumGate feature="tournament_statistics">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {records.highestTeamTotal && (
             <RecordCard
@@ -717,6 +739,7 @@ export function TournamentPage() {
             </p>
           )}
         </div>
+        </PremiumGate>
       )}
 
       {tab === 'teams' && (
@@ -747,25 +770,31 @@ export function TournamentPage() {
       )}
 
       {tab === 'gallery' && (
-        <EntityGallery
-          folder={`tournaments/${id}`}
-          title="Tournament gallery"
-          canManage={canManageTournaments(profile)}
-          hideWhenEmpty={false}
-        />
+        <PremiumGate feature="tournament_media" ownerId={t.ownerId}>
+          <EntityGallery
+            folder={`tournaments/${id}`}
+            title="Tournament gallery"
+            canManage={canManageTournaments(profile)}
+            hideWhenEmpty={false}
+          />
+        </PremiumGate>
       )}
 
       {tab === 'announcements' && (
-        <AnnouncementsPanel
-          tournamentId={id}
-          tournamentOwnerId={t.ownerId}
-          canManage={canManageTournaments(profile)}
-          profile={profile}
-        />
+        <PremiumGate feature="tournament_announcements" ownerId={t.ownerId}>
+          <AnnouncementsPanel
+            tournamentId={id}
+            tournamentOwnerId={t.ownerId}
+            canManage={canManageTournaments(profile)}
+            profile={profile}
+          />
+        </PremiumGate>
       )}
 
       {tab === 'downloads' && (
-        <DownloadsPanel tournamentId={id} canManage={canManageTournaments(profile)} />
+        <PremiumGate feature="data_export">
+          <DownloadsPanel tournamentId={id} canManage={canManageTournaments(profile)} />
+        </PremiumGate>
       )}
     </div>
   )

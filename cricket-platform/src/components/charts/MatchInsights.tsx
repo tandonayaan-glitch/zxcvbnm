@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Flame, Handshake, Rocket, CircleDot, Zap, ShieldCheck, Gauge, TrendingUp } from 'lucide-react'
 import { Card } from '@/components/ui/primitives'
 import { matchInsights, type InningsInsights } from '@/domain/insights'
+import { PremiumGate } from '@/components/guards/PremiumGate'
 import type { Delivery, Match } from '@/types'
 
 export function MatchInsights({
@@ -130,6 +131,7 @@ function InningsRow({
       </div>
 
       {ins.partnerships.length > 0 && (
+        <PremiumGate feature="partnership_analytics" fallback={null}>
         <div className="mt-3 border-t border-ink-100 dark:border-ink-800 pt-3">
           <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-ink-400 dark:text-ink-500">
             Partnerships
@@ -155,6 +157,7 @@ function InningsRow({
             ))}
           </div>
         </div>
+        </PremiumGate>
       )}
 
       {ins.events.length > 0 && (
