@@ -4,6 +4,12 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Added — Subscription architecture foundation (ROADMAP_V5 Slices C1-C3)
+- Internal only, nothing user-facing changes yet: a subscription/entitlement data model, a
+  provider-independent billing interface with a mock (no real payment) implementation, and a generic
+  mechanism for gating a feature behind a premium plan. No feature is actually gated — that list is
+  still to be decided. Account Settings shows a "Plan" row (everyone is Free today).
+
 ### Added — Phone verification (ROADMAP_V5 Slice B4)
 - Account Settings has a new Phone field and a verification flow (send a code by SMS, confirm it).
   Your phone number is never shown on the public site, same as your email. Needs the Phone sign-in

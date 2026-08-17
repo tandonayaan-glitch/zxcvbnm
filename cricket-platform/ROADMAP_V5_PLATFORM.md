@@ -440,6 +440,75 @@ in.
 
 ---
 
+## Phase C slices
+
+Scope confirmed explicitly before starting: C1 (data model), C2 (provider-independent billing
+interface + mock implementation), and C3 (generic gating mechanism) only. Not approved and not
+built: connecting a real payment provider, processing real payments, choosing Stripe/Razorpay/etc.,
+or C4 (donations) in any form. Firebase deployment stays deferred, same as Phase B, until a later
+single production pass.
+
+### C1 — Subscription / entitlement architecture ✅ Done
+**Fix**: `Subscription` lives in its own `subscriptions/{uid}` doc (mirrors `userPrefs`), not bolted
+onto `UserProfile` — billing state and profile state are different concerns with different growth
+paths (a real provider will eventually want `providerCustomerId`, invoice history, etc., none of
+which belongs on the profile doc every public page already reads). `domain/entitlements.ts`'s
+`effectiveTier()` treats anything other than an `active`-status subscription as free, regardless of
+what `tier` was purchased — a canceled or past-due subscription doesn't silently keep granting
+access. `PremiumFeatureDef`/`PREMIUM_FEATURES` (the C3 registry) were added here since they're part
+of the same type module, but the registry itself ships empty — populating it is explicitly out of
+scope until the user provides the real feature list.
+- **Rules**: `subscriptions/{uid}` — self-or-master read; create/update restricted to the master
+  admin or the doc's own owner *and only when `provider == 'mock'`* — flagged explicitly in the rule's
+  own comment that this allowance needs narrowing once a real provider exists, since there's no
+  trusted server context (no Cloud Functions in this project) to verify a real provider's writes from
+  the client the way the mock's simulated ones can be trusted.
+- **Verified**: `tsc -p tsconfig.app.json --noEmit`, `npm run build`, `oxlint` clean. **Not live-
+  tested — deliberately, per instruction, not an oversight**: the user explicitly said not to require
+  a new login and to defer all Firebase-dependent verification (deploy included) to a later single
+  pass. Verification here is code-level: careful re-review of `effectiveTier()`/`hasEntitlement()`'s
+  logic by hand (canceled/past-due/missing subscription → free; active + matching tier → premium;
+  unregistered feature key → always true) and of the rule's self-write restriction, not a live
+  click-through.
+
+### C2 — Billing-provider abstraction ✅ Done
+**Fix**: `BillingProvider` (`billing.types.ts`) is a two-method interface — `startCheckout(uid, tier)`
+/ `cancelSubscription(uid)` — keyed by `uid` rather than any provider-specific id, so call sites never
+need to know which provider is behind it. `MockBillingProvider` (`mockBilling.service.ts`) is the
+only implementation: it never moves money or contacts any payment network, it writes a `Subscription`
+doc directly to simulate an instantly-successful purchase (30-day period, `status: 'active'`). A
+thin `billing.ts` resolver (`getBillingProvider()`) means swapping in a real provider later is a
+one-line change there, not a find-and-replace across every future caller.
+- **No UI calls this yet, deliberately**: a checkout button right now would be selling access to
+  zero actual premium features (C3's registry is empty) — building that experience before there's
+  anything real behind it risks user confusion later. Wiring a real "Upgrade" flow is left for once
+  the feature registry is populated.
+- **Verified**: `tsc -p tsconfig.app.json --noEmit`, `npm run build`, `oxlint` clean. Not live-tested,
+  same reasoning as C1 — this module has no rules dependency of its own beyond C1's, so there's
+  nothing further blocked on deployment specifically, but no browser session was available either way
+  per instruction.
+
+### C3 — Premium feature-gating system ✅ Done, generic mechanism only, zero features gated
+**Fix**: `useMySubscription()` (subscription + effective tier + a `loading` flag, so a caller can
+avoid flashing an upsell before the initial Firestore read resolves) and `usePremiumFeature(key)` (the
+plain boolean check, deliberately shaped like the existing `useFeatureFlag()` hook rather than
+inventing a new hook convention). `<PremiumGate feature="key">` renders its children when entitled —
+which today means *unconditionally*, for any key not yet in `PREMIUM_FEATURES` — or a small upsell
+card (or a caller-supplied `fallback`) otherwise. Added a read-only "Plan" row to Account Settings
+(Free/Premium badge, next to Role/Joined) so C1's data flow is visibly exercised end-to-end even with
+nothing gated yet.
+- **Explicitly did not**: infer, guess, or populate `PREMIUM_FEATURES` with any existing feature —
+  per direct instruction, that list is the user's to provide, and the only feature discussed by name
+  (Batter-vs-Bowler analytics) was confirmed to stay free, which the empty registry already guarantees
+  by construction (an unregistered key is always entitled). Also did not build a checkout/upgrade page
+  — see C2's write-up for why that's premature with nothing real to sell.
+- **Verified**: `tsc -p tsconfig.app.json --noEmit`, `npm run build`, `oxlint` clean. Not live-tested,
+  same reasoning as C1/C2 — reviewed `<PremiumGate>`'s and the two hooks' logic by hand (unregistered
+  key → always renders children; loading state correctly suppressed for signed-out users rather than
+  hanging) rather than a live click-through.
+
+---
+
 ## Notes
 - **Phase A is complete** — A1, A2, A3, A4 all implemented, verified live against the real database
   (each with either hand-computed or deliberately-tagged known ground truth, not just "renders
@@ -473,7 +542,19 @@ in.
   immediately after (Slice 6.2, no conflict). The scoring session's own roadmap now shows its last
   planned slice (5.1) closed out, so it may be wrapping up. Re-check `firestore.rules`/`types/
   index.ts` fresh again before B4, same discipline.
-- Phase C is scoped but paused pending: (1) which billing provider to target for the abstraction's
-  first real implementation (Stripe is the common default for this kind of app, but that's your
-  call), and (2) confirmation you want architecture/scaffolding built now vs. only once you're ready
-  to actually launch payments.
+- **Phase C's C1-C3 are code-complete.** Subscription/entitlement data model, provider-independent
+  billing interface + mock implementation, and the generic premium-gating mechanism are all
+  implemented, tsc/build/lint clean, and committed. Explicitly not built: any real payment provider,
+  real payment processing, a specific provider choice, C4 (donations), or a checkout/upgrade UI (that
+  last one is premature — the feature registry that would justify it is still empty, by instruction).
+  None of this was live-tested, per direct instruction to defer all Firebase-dependent verification
+  (deploy included) and not require a new login — verification here is careful code-level re-review,
+  not a click-through, same honesty standard as every rules-touching Phase B slice.
+- **Standing item for the later single production pass** (per instruction, not done now): deploy
+  `firestore.rules` (covers every undeployed change across Phase B and C1's `subscriptions` rule),
+  enable Phone sign-in in the Firebase console, test the B4 phone-verification flow with a real
+  number, approve the pending "B1 Verification Test Cup" request, and run a final production/security
+  audit.
+- **Still needed before C4 (or any real payment work) can start**: the actual Free-vs-Premium feature
+  registry (the user's to provide — not inferred or guessed at any point in C1-C3) and a billing
+  provider choice (Stripe was suggested as a common default earlier, still unconfirmed).
