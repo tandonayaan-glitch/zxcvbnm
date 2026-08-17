@@ -58,6 +58,7 @@ import { formatDate, formatDateTime, briefUA } from '@/lib/format'
 import { downloadBlob, slugify } from '@/lib/download'
 import { cn } from '@/lib/cn'
 import { useAsync } from '@/hooks/useAsync'
+import { useMySubscription } from '@/hooks/useMySubscription'
 
 const RECAPTCHA_CONTAINER_ID = 'phone-verify-recaptcha'
 
@@ -67,6 +68,7 @@ export function UserSettingsPage() {
   const profile = useAuthStore((s) => s.profile)
   const setProfile = useAuthStore((s) => s.setProfile)
   const { prefs, set: setPref, reset: resetPrefs } = usePrefsStore()
+  const { tier: planTier } = useMySubscription()
   const [signingOut, setSigningOut] = useState(false)
 
   const [displayName, setDisplayName] = useState(profile?.displayName ?? '')
@@ -623,6 +625,10 @@ export function UserSettingsPage() {
             <dt className="text-ink-500 dark:text-ink-400">Role</dt>
             <dd className="text-right">
               <Badge tone="blue">{profile.role.replace('_', ' ').toLowerCase()}</Badge>
+            </dd>
+            <dt className="text-ink-500 dark:text-ink-400">Plan</dt>
+            <dd className="text-right">
+              <Badge tone={planTier === 'premium' ? 'amber' : 'gray'}>{planTier}</Badge>
             </dd>
             <dt className="text-ink-500 dark:text-ink-400">Joined</dt>
             <dd className="text-right text-ink-700 dark:text-ink-300">{formatDate(profile.createdAt)}</dd>
