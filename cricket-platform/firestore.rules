@@ -451,5 +451,22 @@ service cloud.firestore {
         && (isMasterAdmin() || request.resource.data.ownerId == request.auth.uid);
       allow update, delete: if isOwnerOrMaster(resource.data.ownerId);
     }
+
+    // ---- Subscriptions (ROADMAP_V5 Phase C — architecture only, no real billing yet) --------
+    match /subscriptions/{uid} {
+      // A user reads their own plan; the master admin reads any (support, manual grants).
+      allow read: if isMasterAdmin()
+        || (isSignedIn() && request.auth.uid == uid);
+      // The master admin can grant/revoke for anyone. A user may otherwise only write their own
+      // doc, and only through the 'mock' provider — this project has no real billing integration,
+      // so there is no trusted server context (webhook) to write a real provider's confirmed
+      // status yet. Once a real provider is connected, its writes must come from that trusted
+      // backend, not the client, and this self-write allowance will need to exclude it explicitly.
+      allow create, update: if isMasterAdmin()
+        || (isSignedIn()
+            && request.auth.uid == uid
+            && request.resource.data.provider == 'mock');
+      allow delete: if isMasterAdmin();
+    }
   }
 }

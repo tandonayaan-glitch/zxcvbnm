@@ -38,6 +38,9 @@ export const COL = {
   comments: 'comments', // flat spectator comments, scoped to a matchId
   reactions: 'reactions', // subcollection under matches/{id}; one doc per reacting user
   announcements: 'announcements', // scoped by tournamentId
+  // Doc id == uid, one per user (mirrors userPrefs). `provider` is always 'mock' today — this
+  // project has no real billing integration yet, see billing.types.ts.
+  subscriptions: 'subscriptions',
 } as const
 
 export const SETTINGS_DOC = 'app'

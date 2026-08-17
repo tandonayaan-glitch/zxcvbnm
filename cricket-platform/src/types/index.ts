@@ -848,3 +848,45 @@ export interface IntegrityIssue {
   label: string
   description: string
 }
+
+/* -------------------------- Subscriptions / entitlements (ROADMAP_V5 Phase C) --------------------
+ * Architecture only — no real payment provider is connected yet (see billing.types.ts). Every
+ * subscription in this codebase today has provider: 'mock', created by MockBillingProvider's
+ * simulated checkout, never a real charge. */
+
+export type PlanTier = 'free' | 'premium'
+
+export type SubscriptionStatus =
+  | 'none' // never subscribed — the implicit default, most users never get a Subscription doc at all
+  | 'active'
+  | 'canceled' // canceled but the doc is kept for history; effectiveTier() still reads 'free'
+  | 'past_due' // a real provider would set this on a failed renewal charge; unused by the mock
+
+/** Which billing backend wrote this doc. Only 'mock' exists today — real providers (Stripe,
+ *  Razorpay, etc.) are a later, separate decision; see billing.types.ts's own doc comment. */
+export type BillingProviderId = 'mock'
+
+/** Doc id == uid, one per user, in the `subscriptions` collection (mirrors `userPrefs`). */
+export interface Subscription {
+  uid: string
+  tier: PlanTier
+  status: SubscriptionStatus
+  provider: BillingProviderId
+  providerCustomerId?: string
+  providerSubscriptionId?: string
+  currentPeriodEnd?: number | null
+  cancelAtPeriodEnd?: boolean
+  createdAt: number
+  updatedAt: number
+}
+
+/** A gateable feature's registration. The `key` is what call sites pass to `hasEntitlement()`/
+ *  `<PremiumGate>`; `tier` is the minimum plan required. This registry is intentionally empty in
+ *  this codebase today — no existing feature is locked behind premium yet. Populating it is a
+ *  product decision, not a technical one; the gating mechanism itself is ready either way. */
+export interface PremiumFeatureDef {
+  key: string
+  name: string
+  description: string
+  tier: Exclude<PlanTier, 'free'>
+}
