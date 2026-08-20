@@ -45,9 +45,9 @@ const RecoverPage = lazy(() =>
 const ActivatePage = lazy(() =>
   import('@/features/auth/ActivatePage').then((m) => ({ default: m.ActivatePage })),
 )
-const DashboardPage = lazy(() =>
-  import('@/features/dashboard/DashboardPage').then((m) => ({
-    default: m.DashboardPage,
+const DashboardSwitcher = lazy(() =>
+  import('@/features/dashboard/DashboardSwitcher').then((m) => ({
+    default: m.DashboardSwitcher,
   })),
 )
 const PlayersPage = lazy(() =>
@@ -282,7 +282,7 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/dashboard" element={<DashboardSwitcher />} />
           <Route path="/matches" element={<MatchesPage />} />
           <Route
             path="/matches/new"
