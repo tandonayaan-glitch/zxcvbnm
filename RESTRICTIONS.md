@@ -2007,4 +2007,185 @@ reasoning.
     limits were all verified by direct code audit instead, documented above, since two of those three
     have no code path at all yet to click through.
 
+83. **`ROADMAP_V5_PLATFORM.md` Phase D, Slice D1 — Tournament creation requires role + verified
+    phone, enforced server-side** — **Done**, code complete, not deployed. User-directed work (a new,
+    large instruction covering auth relaxation, tournament-creation gating, a Tournament Dashboard,
+    onboarding, and Hosting removal), audited against this session's own prior Phase B/C work before
+    writing anything — most of "AUTH + ROLES"/"TOURNAMENT ADMIN"/premium-entitlement asks were already
+    built (Phase B/C above); this slice targeted the one genuine, confirmed gap: tournament creation
+    had **no phone-verification check anywhere**, client or server (`firestore.rules`' `/tournaments`
+    create rule was just `canManage()` + `ownerId` match — `canManage()` also, confirmed by reading it
+    directly, includes `TEAM_MANAGER`, which the user's three-tier model doesn't intend). Asked the
+    user two direct questions rather than guessing on either: (a) should new signups get scoring
+    rights immediately (folded into D2, since it's the same rule family) — confirmed yes; (b) should
+    `TEAM_MANAGER` lose tournament-creation rights — confirmed yes.
+    **Real, currently-exploitable security hole found and closed, not just the asked-for gate added**:
+    before adding a phone-verification gate, checked whether `phoneVerified` could actually be trusted
+    — it could not. `firestore.rules`' `/users/{uid}` self-update rule restricted `role`/`status` but
+    had **zero restriction on `phoneVerified`**, meaning any signed-in user could call
+    `updateDoc(userRef, {phoneVerified: true})` directly via the client SDK, with no real verification
+    behind it, and it would have succeeded — this is exactly the spoofing scenario the user's own
+    SECURITY section named explicitly. Closed it with a new `phoneVerifiedIsHonest()` function:
+    `phoneVerified` may only become `true` in a self-update when the caller's own Firebase Auth ID
+    token carries a `phone_number` claim right now — a claim Firebase only sets once a real
+    `linkWithPhoneNumber()` + SMS-code flow actually succeeds, and which cannot be forged by writing
+    the Firestore field directly (the token is signed by Firebase, not client-supplied data). Applied
+    to both self-update branches of the rule. Updated `auth.service.ts`'s
+    `confirmPhoneVerificationCode()` to call `user.getIdToken(true)` (force a fresh token) *before*
+    the `phoneVerified: true` write, since without it the cached pre-verification token wouldn't carry
+    the claim yet and the write would be wrongly rejected on the very request that just verified.
+    New `canCreateTournament()`: `MASTER_ADMIN` bypasses; `ADMIN`/`TOURNAMENT_MANAGER` additionally
+    need `phoneVerified == true`; `TEAM_MANAGER` excluded entirely. Mirrored client-side in
+    `authStore.ts` (`canCreateTournament`) for UX only — the rule above is the real gate.
+    **Client-side UX fixes found and closed in the same slice, not deferred**: `TournamentsPage.tsx`'s
+    "New tournament" button had **zero role gating** — shown to every signed-in user regardless of
+    role, only failing at the write; now gated on `canCreateTournament(profile)` with an honest inline
+    explanation of what's missing (verify phone vs. request Tournament Manager access) rather than
+    silently hiding the action. `TournamentPage.tsx`'s management controls (Refresh/Add Match/gallery-
+    manage/announcements-manage/downloads-manage) were gated on `canManageTournaments(profile)` alone
+    — role-only, no ownership check — meaning any `TOURNAMENT_MANAGER`/`ADMIN` saw management UI on
+    tournaments they don't own (the write was always owner-scoped server-side, so not a security hole,
+    but misleading UI that would just fail). Fixed by combining with `ownsOrMaster(profile,
+    t.ownerId)` into one `canManageThis` value, used at all four call sites. **Caught and fixed a
+    self-introduced bug before it shipped**: a `replace_all` edit meant to swap the four
+    `canManageTournaments(profile)` call sites for `canManageThis` also clobbered `canManageThis`'s
+    own definition line into `const canManageThis = canManageThis && ...` — a self-referential
+    temporal-dead-zone bug that would have crashed the page at runtime. Caught by re-reading the file
+    immediately after the edit rather than trusting the tool call succeeded correctly, fixed before
+    any verification step ran. Zero lines of `scoring.ts` touched.
+    **Verified**: `tsc -p tsconfig.app.json --noEmit`, `npm run build`, `oxlint` all clean on every
+    touched file (only pre-existing, unrelated warnings elsewhere in `TournamentPage.tsx`/
+    `auth.service.ts`, confirmed by direct inspection). **Not live-tested** — no authenticated browser
+    session available and the user explicitly said to finish without asking/waiting. **What needs the
+    user**: (1) `firebase deploy --only firestore:rules` — this rule has zero live effect until
+    deployed, same standing gap as every prior Phase B/C rules change in this project; (2) a real
+    phone number to exercise the verify-then-create-tournament flow end to end; (3) confirm a
+    `TEAM_MANAGER` test account can no longer create a tournament and a phone-unverified
+    `TOURNAMENT_MANAGER` is correctly blocked with the explanatory message, post-deploy.
+
+84. **`ROADMAP_V5_PLATFORM.md` Phase D, Slice D2 — New signups can score immediately** — **Done**,
+    code complete, not deployed. Per the user's confirmed answer to D1's first question:
+    `auth.service.ts`'s `registerUser()` granted `VIEWER` to every non-bootstrap signup regardless of
+    what the caller passed in (confirmed by reading the code directly — the `role` field on
+    `RegisterInput`/`signup()` was already being silently ignored, not a new discovery). Changed the
+    self-signup default to `SCORER` (`canScore()` already includes it, so this grants create/score
+    rights immediately without touching `canManage()`/tournament creation — `SCORER` was never in
+    `canManage()`'s list, so a fresh account still cannot create a tournament, matching the user's
+    explicit "NOT create tournaments unless..." requirement by construction, not by an added check).
+    Mirrored server-side in `firestore.rules`' `/users/{uid}` create rule (self-signup branch:
+    `role == 'VIEWER'` → `role == 'SCORER'`) — the actual enforcement point; the client-side default
+    passed from `SignupPage.tsx` was already vestigial (server ignores it) but updated for honesty
+    anyway. Did **not** touch the admin-created "pending_registration" linked-player path (still
+    `VIEWER`+pending — a different flow, not what was asked to change) or `SetupPage.tsx`'s one-time
+    master-admin bootstrap. Updated `SignupPage.tsx`'s stale doc comment and on-page copy ("Ask an
+    admin for scoring access") which was no longer true. Confirmed `homeForRole()` already routes any
+    non-VIEWER role to `/dashboard` (was already correct, no change needed) so a new SCORER signup
+    lands in the right place automatically.
+    **Verified**: `tsc`, `npm run build`, `oxlint` clean. **Not live-tested** — same reason as D1; a
+    real signup → immediate match-creation click-through is the natural verification once a browser
+    session is available. **Needs the user**: nothing beyond D1's rules deploy (same file); no new
+    Firebase Console configuration.
+
+85. **`ROADMAP_V5_PLATFORM.md` Phase D, Slice D3 — Tournament Dashboard + Global/Tournament switcher**
+    — **Done**, no rules change, nothing to deploy. Per the user's explicit "do NOT duplicate the
+    entire dashboard code unnecessarily — reuse components, switch the data source/context" —
+    `DashboardPage.tsx` (`src/features/dashboard/`) now takes an optional `tournamentId` prop; every
+    widget (live/recent/upcoming/top run scorers/top wicket takers/activity), the stat-card row, and
+    the header all branch on scope internally rather than existing as two components. Tournament mode
+    filters matches by `m.tournamentId`, derives teams/player-count/standings the same way
+    `TournamentPage.tsx` already does (`computeStandings`, denormalised `teamNameById` from match
+    data, confirmed by reading that file's existing pattern rather than inventing a new one), and adds
+    a Standings section using its own table.
+    **Extracted `StandingsTable` into a new shared file (`components/stats/StandingsTable.tsx`)
+    instead of importing it from `TournamentPage.tsx` directly** — caught before it became a real
+    problem: `TournamentPage.tsx` is a large file with many transitive imports (bracket/qualification/
+    awards/records domain modules), and `DashboardPage.tsx` is its own separately lazy-loaded route
+    chunk (`React.lazy` per `App.tsx`); importing a named export from `TournamentPage.tsx` into it
+    would have pulled that whole module's import graph into the dashboard's chunk, undermining the
+    project's own established per-route code-splitting convention. Moved the component to a shared
+    location instead, imported by both pages — zero functional difference, meaningfully different
+    bundle impact.
+    `ActivityFeed`'s existing `refId` prop (already used this way on `TournamentPage.tsx`) is reused
+    for the tournament-scoped activity widget — confirmed `refId={undefined}` (global mode) correctly
+    falls back to the existing unfiltered query by reading `listActivity()` directly, not assumed.
+    New `DashboardSwitcher.tsx` wraps `DashboardPage`: for anyone managing zero tournaments
+    (`canManageTournaments(profile) && ownsOrMaster(profile, t.ownerId)`, matching D1's ownership fix
+    exactly), it renders bare `DashboardPage` with none of the switcher UI, so an ordinary user's
+    dashboard is pixel-identical to before this slice. For a Tournament Manager/owning Admin, a
+    Global/Tournament tab control appears (works on every screen size) plus a hand-rolled touch-swipe
+    gesture (touchstart/touchend delta, threshold-gated, ignores mostly-vertical swipes so it doesn't
+    fight page scroll) — no gesture library was added; this codebase has none and builds all
+    interaction by hand (confirmed by grep before deciding), so a new dependency would have broken
+    that established pattern for one gesture. **Only one `DashboardPage` is ever mounted at a time**,
+    a deliberate choice after confirming `useAsync` (this project's data-fetching hook) has no cache —
+    mounting both permanently (as a live-follow-finger drag implementation would require) would double
+    every dashboard's Firestore reads (`listAllMatches`/`listPlayers`/`listTeams`/`listTournaments`)
+    on every load, for a cosmetic animation. Switching commits instantly with a CSS fade
+    (`.animate-fade-in-opacity`, an existing utility class in `index.css` — confirmed it existed rather
+    than inventing a new, undefined Tailwind arbitrary-animation class, which an earlier draft of this
+    slice briefly did by mistake and which would have silently done nothing).
+    **Verified**: `tsc`, `npm run build`, `oxlint` clean (the `StandingsTable` extraction removed two
+    now-unused imports from `TournamentPage.tsx`, caught by lint and cleaned up immediately). Live-
+    checked what doesn't require auth: the public Tournament page still renders its standings table
+    correctly post-extraction (real data, `Thunder Kings`/`Royal Strikers` rows), confirming the move
+    didn't regress anything. **Not live-tested for the switcher/tournament-scoped data itself** — needs
+    an authenticated session as a real Tournament Manager, no credentials available this session.
+
+86. **`ROADMAP_V5_PLATFORM.md` Phase D, Slice D4 — First-time tutorial** — **Done**, no rules change.
+    Confirmed via grep that no onboarding/tutorial component existed anywhere in the codebase before
+    this slice. New `TutorialButton.tsx` (`components/layout/`), modeled directly on the existing
+    `WhatsNewButton.tsx`'s exact shape (self-contained header icon button + `Modal`, a `localStorage`
+    "seen" flag) rather than inventing a new pattern — reused because it's the closest existing
+    precedent for "one-time overlay, replayable later, no server round-trip." Seven steps covering
+    exactly the list the user specified (dashboard, creating a match, scoring, tournaments, becoming a
+    Tournament Manager, the Tournament Dashboard, premium features), each naming the real, already-
+    built feature it describes (e.g. the Tournament Manager step explicitly says "verify your phone
+    number... from Account Settings," matching D1's actual gate, not a vague generality). Auto-opens
+    once per browser for any account that hasn't seen it (checked once on `AppShell` mount, which only
+    renders for a signed-in user on a protected route — so it fires on first dashboard visit, not on
+    the public site or the login page); replayable any time via the same header button. Persisted in
+    `localStorage`, matching this codebase's own established convention for personal, non-critical UI
+    state (`favStore`, `dashboardLayoutStore`, and `WhatsNewButton`'s own "seen version" flag are all
+    the same shape) rather than adding a new Firestore field for something this low-stakes.
+    **Verified**: `tsc`, `npm run build`, `oxlint` clean (the two `AppShell.tsx` lint warnings that
+    appear near this change are pre-existing, at a line this slice didn't touch, confirmed by direct
+    inspection). **Not live-tested** — needs an authenticated session to confirm the auto-open fires
+    correctly for a genuinely fresh account and that "Skip"/step navigation/replay all behave as
+    intended; no credentials available this session.
+
+87. **`ROADMAP_V5_PLATFORM.md` Phase D, Slice D5 — Firebase Hosting removed from local deploy config**
+    — **Done**. Per the user's explicit instruction to identify exactly what's configured before
+    touching anything: `firebase.json` had three top-level keys (`firestore`, `storage`, `hosting`);
+    only `hosting` (`public: "dist"`, a single SPA rewrite rule) was in scope for removal — `firestore`
+    (rules/indexes) and `storage` (rules) stay, since Firestore/Auth remain the backend and Storage's
+    removal is explicitly a *future* Cloudflare R2 migration, not this slice. Confirmed via grep that
+    no `package.json` script, CI config, or other file in the repo references Hosting or a `firebase
+    deploy` invocation — `firebase.json`'s `hosting` block is the only local artifact. Removed that key
+    only; `.firebaserc` (project alias `cricket-platform-b03bc`) was deliberately left untouched, since
+    it's still required for Firestore rules deploys, which remain in scope. **This has no effect on
+    the live, already-deployed Hosting site** — Firebase Hosting is a server-side resource independent
+    of this repo's config; removing the local `hosting` key only means `firebase deploy` (bare or
+    `--only hosting`) run from this repo can no longer push a new Hosting deploy. The live site stays
+    up exactly as it is until someone takes a separate, explicit action against it (`firebase hosting:
+    disable`, deleting the Hosting site via Firebase Console, or deleting the whole Firebase project) —
+    none of which this slice did or was asked to do. Flagged explicitly, not silently assumed obvious,
+    per the user's own "do NOT delete the live site blindly" instruction.
+    **Verified**: N/A for `tsc`/build/lint — this is a Firebase CLI config file, not consumed by the
+    Vite build or the app itself; confirmed `npm run build` still succeeds unchanged (it does — Vite
+    doesn't read `firebase.json` at all). Nothing to live-test; this change has no runtime UI surface.
+
+**Phase D summary**: five slices (D1-D5), covering the user's full new instruction set. Every genuine
+gap the audit found was fixed (tournament creation's missing phone gate, the `phoneVerified`
+spoofing hole, `TEAM_MANAGER`'s unintended tournament-creation rights, new-signup scoring rights, a
+real Tournament Dashboard reusing the global one, a UI bug where non-owner managers saw management
+controls, a self-introduced runtime bug caught before shipping). Everything already built by this
+session's earlier Phase B/C work (roles, phone verification infrastructure, premium entitlements,
+Sign Out) was left alone, not rebuilt. `tsc -p tsconfig.app.json --noEmit`, `npm run build`, `oxlint`
+all clean project-wide as of this entry. **Nothing in Phase D has been live-tested** — no
+authenticated browser session was available in this sandbox at any point during Phase D, and the
+user explicitly asked to finish without pausing to wait for one. Every rules change across this
+entire project (Phase B, C1, and now D1) remains undeployed — one `firebase deploy --only
+firestore:rules` clears all of it at once. Firebase Hosting is no longer part of this repo's local
+deploy config, but the live site is untouched, per the user's explicit caution.
+
 (Appended to as further slices are picked up.)

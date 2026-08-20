@@ -600,6 +600,54 @@ code path to click through at all yet.
 
 ---
 
+## Phase D — Direct user instruction: auth relaxation, tournament gating, Tournament Dashboard, onboarding, Hosting removal
+
+A large, direct new instruction from the user, handled with the same audit-first discipline as every
+prior phase. Audited against Phase B/C above first: most of "AUTH + ROLES"/"TOURNAMENT ADMIN"/premium
+entitlements were already built there. Two decisions were confirmed with the user rather than
+guessed: new signups get `SCORER` immediately (not `VIEWER`), and `TEAM_MANAGER` loses tournament-
+creation rights (narrowed to `TOURNAMENT_MANAGER`/`ADMIN`). See `RESTRICTIONS.md` entries #83-#87 for
+full per-slice detail; summarized here:
+
+- **D1 — Tournament creation requires role + verified phone, enforced server-side.** New
+  `canCreateTournament()` in `firestore.rules` (master bypasses; `ADMIN`/`TOURNAMENT_MANAGER` need
+  `phoneVerified == true`; `TEAM_MANAGER` excluded), mirrored client-side in `authStore.ts`. **Found
+  and closed a real, currently-exploitable spoofing hole while building this**: the `/users/{uid}`
+  update rule didn't restrict `phoneVerified` at all — any signed-in user could set it `true` directly
+  via `updateDoc`. New `phoneVerifiedIsHonest()` requires the caller's live Firebase Auth ID token to
+  actually carry a `phone_number` claim (only set by a real `linkWithPhoneNumber` flow) before
+  `phoneVerified` can become `true`. `auth.service.ts` now forces a token refresh right before that
+  write so the new rule doesn't reject a just-completed verification. Also fixed: `TournamentsPage.tsx`
+  had zero role gating on "New tournament" (relied entirely on the write failing); `TournamentPage.tsx`
+  showed management controls to any `TOURNAMENT_MANAGER`/`ADMIN` regardless of ownership (role-only
+  check, no owner check) — both closed.
+- **D2 — New signups get `SCORER`, not `VIEWER`**, both server-side (`firestore.rules`) and in
+  `auth.service.ts`'s `registerUser()`. `SCORER` was never in `canManage()`, so tournament creation
+  stays blocked for a fresh account by construction, no extra check needed.
+- **D3 — Tournament Dashboard.** `DashboardPage.tsx` takes an optional `tournamentId` — one component,
+  data source branches by scope, per the user's explicit "don't duplicate the dashboard" instruction.
+  `StandingsTable` extracted into `components/stats/` (shared, not duplicated, and deliberately not
+  imported from `TournamentPage.tsx` directly — that would have pulled a large, unrelated import graph
+  into the dashboard's own lazy-loaded route chunk). New `DashboardSwitcher.tsx`: a Global/Tournament
+  tab control (all sizes) plus a hand-rolled touch-swipe gesture (no gesture library exists in this
+  codebase); only one `DashboardPage` is ever mounted at a time, since `useAsync` has no cache and
+  mounting both would double every dashboard's Firestore reads.
+- **D4 — First-time tutorial.** `TutorialButton.tsx`, modeled on `WhatsNewButton.tsx`'s exact shape —
+  header icon + `Modal`, `localStorage`-persisted "seen" flag. Seven steps covering the user's exact
+  list, auto-opens once per browser on first dashboard visit, replayable any time.
+- **D5 — Firebase Hosting removed from local deploy config.** Only the `hosting` key in `firebase.json`
+  — `firestore`/`storage` config stay, `.firebaserc` stays (still needed for rules deploys). Confirmed
+  via grep this is the only Hosting reference anywhere in the repo. **No effect on the live, already-
+  deployed site** — that's a separate Firebase-side resource; this only stops *this repo* from being
+  able to push a new Hosting deploy.
+
+`tsc -p tsconfig.app.json --noEmit`, `npm run build`, `oxlint` all clean across every Phase D file.
+**Nothing in Phase D is live-tested** — no authenticated browser session was available in this sandbox
+at any point, and the user explicitly asked to finish without pausing to wait for one. D1's rules
+change joins the existing undeployed pile (Phase B, C1); one `firebase deploy --only firestore:rules`
+clears everything across this whole project. A real phone number and the Phone sign-in provider being
+enabled in the Firebase console are still needed to exercise D1's actual verify-then-create flow.
+
 ## Notes
 - **Phase A is complete** — A1, A2, A3, A4 all implemented, verified live against the real database
   (each with either hand-computed or deliberately-tagged known ground truth, not just "renders

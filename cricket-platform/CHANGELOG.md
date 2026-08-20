@@ -4,6 +4,32 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Added — Tournament Dashboard and Global/Tournament switcher (ROADMAP_V5 Phase D, Slice D3)
+- Anyone managing a tournament now sees a Global/Tournament switcher on their dashboard (tabs, plus a
+  swipe gesture on touch devices) — the tournament view shows the same widgets scoped to just that
+  tournament, plus its standings. Nothing changes for anyone who doesn't manage a tournament.
+
+### Added — First-time tutorial (ROADMAP_V5 Phase D, Slice D4)
+- New accounts now get a short, skippable walkthrough covering the dashboard, creating a match,
+  scoring, tournaments, becoming a Tournament Manager, the Tournament Dashboard, and premium features.
+  Replay it any time from the header's tutorial button.
+
+### Changed — Tournament creation now requires Tournament Manager/Admin + a verified phone
+(ROADMAP_V5 Phase D, Slice D1)
+- Creating a tournament now requires a verified phone number in addition to the right role — enforced
+  server-side, not just hidden in the UI. Team Managers can no longer create tournaments (Tournament
+  Manager/Admin only). Also closes a gap where a phone could be marked "verified" without ever
+  actually completing verification.
+
+### Changed — New accounts can create and score matches immediately (ROADMAP_V5 Phase D, Slice D2)
+- Signing up now grants immediate match-creation/scoring access, rather than requiring a separate
+  promotion step. Tournament creation still requires becoming a Tournament Manager with a verified
+  phone.
+
+### Removed — Firebase Hosting from local deploy config (ROADMAP_V5 Phase D, Slice D5)
+- This repo can no longer push a Hosting deploy (`firebase.json`'s `hosting` block removed). The
+  already-live Hosting site is unaffected — this only changes what this repo's own config can deploy.
+
 ### Changed — Premium plan gating applied to the confirmed feature list (ROADMAP_V5 Slice C3)
 - A signed-in Free-plan user will now see an upsell in place of: tournament statistics, records,
   timeline and qualification tracking, season splits, recent-form charts, player radar, team records
