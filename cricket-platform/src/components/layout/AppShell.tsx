@@ -33,6 +33,7 @@ import { BackgroundControl } from '@/components/background/BackgroundControl'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { NotificationBell } from '@/components/layout/NotificationBell'
 import { WhatsNewButton } from '@/components/layout/WhatsNewButton'
+import { TutorialButton } from '@/components/layout/TutorialButton'
 import { CommandPalette, openCommandPalette } from '@/components/layout/CommandPalette'
 import type { Role } from '@/types'
 
@@ -258,6 +259,7 @@ export function AppShell() {
             </button>
             <BackgroundControl />
             <ThemeToggle />
+            <TutorialButton />
             <WhatsNewButton />
             <NotificationBell />
             <div className="text-right">
