@@ -57,7 +57,7 @@ service cloud.firestore {
     // function just reads the already-trustworthy result.
     function canCreateTournament() {
       return isMasterAdmin()
-        || (hasRole(['ADMIN', 'TOURNAMENT_MANAGER']) && profile().phoneVerified == true);
+        || (hasRole(['ADMIN', 'TOURNAMENT_MANAGER']) && profile().get('phoneVerified', false) == true);
     }
 
     // Master admin always, or the row's owner.
@@ -103,7 +103,13 @@ service cloud.firestore {
     // has no such claim on their token, so this rejects that write. Setting it to `false`
     // (e.g. after editing the phone number) is always allowed; it only ever removes trust.
     function phoneVerifiedIsHonest() {
-      return request.resource.data.phoneVerified != true
+      // .get(key, default) is required here, not dot access: `phoneVerified` is absent
+      // (not merely false) on every profile that predates Slice B4's phone-verification
+      // feature or has never used it — i.e. almost every real account — and Firestore
+      // Rules errors on dot-accessing a genuinely-missing map key, which would otherwise
+      // deny every ordinary profile edit (displayName, bio, ...) for those accounts,
+      // not just ones that try to touch phoneVerified.
+      return request.resource.data.get('phoneVerified', false) != true
         || request.auth.token.phone_number != null;
     }
 
