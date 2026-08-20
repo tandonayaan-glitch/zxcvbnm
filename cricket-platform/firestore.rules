@@ -46,6 +46,20 @@ service cloud.firestore {
       return hasRole(['MASTER_ADMIN', 'ADMIN', 'TEAM_MANAGER', 'TOURNAMENT_MANAGER']);
     }
 
+    // Tournament *creation* needs its own, narrower gate than canManage(): TEAM_MANAGER
+    // is deliberately excluded (it's scoped to canManage() for players/teams/clubs/
+    // seasons, but tournament hosting is TOURNAMENT_MANAGER's own territory), and
+    // ADMIN/TOURNAMENT_MANAGER additionally need a verified phone — self-serve
+    // tournament hosting is a higher-trust action than scoring a match. Trusting the
+    // stored `profile().phoneVerified` field here is safe (not spoofable by a direct
+    // Firestore write) only because `/users/{uid}`'s own update rule enforces
+    // `phoneVerifiedIsHonest()` below — that's the actual enforcement point; this
+    // function just reads the already-trustworthy result.
+    function canCreateTournament() {
+      return isMasterAdmin()
+        || (hasRole(['ADMIN', 'TOURNAMENT_MANAGER']) && profile().phoneVerified == true);
+    }
+
     // Master admin always, or the row's owner.
     function isOwnerOrMaster(ownerId) {
       return isMasterAdmin() || (isSignedIn() && ownerId == request.auth.uid);
@@ -80,18 +94,33 @@ service cloud.firestore {
         || (canScore() && isSignedIn() && m.scorerId == request.auth.uid);
     }
 
+    // `phoneVerified` may only become `true` in a self-update when the caller's own Firebase
+    // Auth ID token carries a `phone_number` claim right now — Firebase only sets that claim
+    // once a real `linkWithPhoneNumber()` + SMS-code flow actually succeeds (see
+    // `auth.service.ts`'s `confirmPhoneVerificationCode`, which forces a fresh token right
+    // before this write so the claim is present in time). A signed-in user calling
+    // `updateDoc` directly with `phoneVerified: true` — with no real verification behind it —
+    // has no such claim on their token, so this rejects that write. Setting it to `false`
+    // (e.g. after editing the phone number) is always allowed; it only ever removes trust.
+    function phoneVerifiedIsHonest() {
+      return request.resource.data.phoneVerified != true
+        || request.auth.token.phone_number != null;
+    }
+
     // ---- Users -------------------------------------------------
     match /users/{uid} {
       allow read: if true; // profiles are needed for stats display
-      // Self-signup may ONLY create a VIEWER, except the one-time master-admin
-      // bootstrap (reserved username). ADMIN/SCORER are granted later by the
-      // master admin via an update. An admin may also create a pending
-      // account FOR someone else (the player-account-lifecycle flow) — always
-      // VIEWER + pending_registration, never a role/status an admin could use
-      // to hand themselves elevated access on another uid.
+      // Self-signup may ONLY create a SCORER (can create/score their own matches
+      // immediately, but not manage tournaments/teams or reach any admin surface),
+      // except the one-time master-admin bootstrap (reserved username). ADMIN/
+      // TOURNAMENT_MANAGER/TEAM_MANAGER are granted later by the master admin via
+      // an update. An admin may also create a pending account FOR someone else
+      // (the player-account-lifecycle flow) — always VIEWER + pending_registration,
+      // never a role/status an admin could use to hand themselves elevated access
+      // on another uid.
       allow create: if isSignedIn() && (
         (request.auth.uid == uid && (
-          request.resource.data.role == 'VIEWER'
+          request.resource.data.role == 'SCORER'
           || (request.resource.data.role == 'MASTER_ADMIN'
               && request.resource.data.username == masterUsername())
         ))
@@ -109,11 +138,13 @@ service cloud.firestore {
       allow update: if isSignedIn() && (
         (request.auth.uid == uid
           && request.resource.data.role == resource.data.role
+          && phoneVerifiedIsHonest()
           && (request.resource.data.status == resource.data.status
               || (resource.data.status == 'pending_registration'
                   && request.resource.data.status == 'active')))
         || (request.auth.uid == uid
             && request.resource.data.status == resource.data.status
+            && phoneVerifiedIsHonest()
             && exists(/databases/$(database)/documents/invitationRoleGrants/$(uid))
             && get(/databases/$(database)/documents/invitationRoleGrants/$(uid)).data.role == request.resource.data.role
             && get(/databases/$(database)/documents/invitationRoleGrants/$(uid)).data.expiresAt > request.time.toMillis())
@@ -197,7 +228,7 @@ service cloud.firestore {
     // ---- Tournaments + standings (owner-scoped) ---------------
     match /tournaments/{id} {
       allow read: if true;
-      allow create: if canManage()
+      allow create: if canCreateTournament()
         && (isMasterAdmin() || request.resource.data.ownerId == request.auth.uid);
       allow update, delete: if isOwnerOrMaster(resource.data.ownerId);
       match /standings/{rowId} {

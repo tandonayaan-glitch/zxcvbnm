@@ -27,7 +27,7 @@ import { listSeasons } from '@/services/seasons.service'
 import { softDelete } from '@/services/trash.service'
 import { snapshotVersion, changedKeys } from '@/services/versionHistory.service'
 import { formatDate } from '@/lib/format'
-import { useAuthStore, ownerScope } from '@/store/authStore'
+import { useAuthStore, ownerScope, canCreateTournament, hasRole } from '@/store/authStore'
 import { TournamentFormModal } from './TournamentFormModal'
 import type { Tournament, TournamentStatus } from '@/types'
 
@@ -48,6 +48,16 @@ export function TournamentsPage() {
   const [editing, setEditing] = useState<Tournament | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [historyTournamentId, setHistoryTournamentId] = useState<string | null>(null)
+
+  const canCreate = canCreateTournament(profile)
+  // Only shown when canCreate is false, to explain the actual blocker rather than
+  // silently hiding the action — the real gate is server-side (firestore.rules'
+  // canCreateTournament()); this is just an honest client-side explanation.
+  const createBlockedReason = canCreate
+    ? null
+    : hasRole(profile, 'ADMIN', 'TOURNAMENT_MANAGER')
+      ? 'Verify your phone number in Account Settings to create tournaments.'
+      : 'Ask the master admin for Tournament Manager access (and verify your phone) to create tournaments.'
 
   const scopedTournaments = (tournaments.data ?? []).filter(
     (t) => !scope || t.ownerId === scope,
@@ -111,6 +121,8 @@ export function TournamentsPage() {
         subtitle="Run leagues and knockouts with fixtures, results and standings."
         actions={
           <Button
+            disabled={!canCreate}
+            title={createBlockedReason ?? undefined}
             onClick={() => {
               setEditing(null)
               setShowForm(true)
@@ -120,6 +132,9 @@ export function TournamentsPage() {
           </Button>
         }
       />
+      {createBlockedReason && (
+        <p className="-mt-4 mb-6 text-sm text-ink-500 dark:text-ink-400">{createBlockedReason}</p>
+      )}
 
       {tournaments.loading ? (
         <PageLoader />
@@ -127,11 +142,13 @@ export function TournamentsPage() {
         <EmptyState
           icon={<Trophy size={40} />}
           title="No tournaments yet"
-          description="Create a tournament, add teams, and schedule fixtures."
+          description={createBlockedReason ?? 'Create a tournament, add teams, and schedule fixtures.'}
           action={
-            <Button onClick={() => setShowForm(true)}>
-              <Plus size={16} /> New tournament
-            </Button>
+            canCreate ? (
+              <Button onClick={() => setShowForm(true)}>
+                <Plus size={16} /> New tournament
+              </Button>
+            ) : undefined
           }
         />
       ) : (

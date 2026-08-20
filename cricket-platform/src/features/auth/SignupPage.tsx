@@ -6,8 +6,10 @@ import { useAuthStore } from '@/store/authStore'
 import { authErrorMessage, validateUsername } from '@/services/auth.service'
 
 /**
- * Ordinary signup. New accounts get the VIEWER role by default; an admin can
- * later promote them to SCORER / manager from User Management.
+ * Ordinary signup. New accounts get the SCORER role by default — they can
+ * create/score their own matches immediately; an admin can later promote them
+ * to a manager role from User Management, or they can request Tournament
+ * Manager access (which also requires a verified phone) to host tournaments.
  */
 export function SignupPage() {
   const navigate = useNavigate()
@@ -35,7 +37,7 @@ export function SignupPage() {
         username,
         password,
         displayName,
-        role: 'VIEWER',
+        role: 'SCORER',
       })
       navigate(homeForRole(p.role), { replace: true })
     } catch (err) {
@@ -48,7 +50,7 @@ export function SignupPage() {
   return (
     <AuthLayout
       title="Create your account"
-      subtitle="Follow your teams and matches. Ask an admin for scoring access."
+      subtitle="Create matches, score games, and follow tournaments right away."
       footer={
         <>
           Already have an account?{' '}

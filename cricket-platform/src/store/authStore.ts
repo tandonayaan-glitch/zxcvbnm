@@ -96,6 +96,18 @@ export const canManageTournaments = (p: UserProfile | null) =>
   hasRole(p, 'MASTER_ADMIN', 'ADMIN', 'TOURNAMENT_MANAGER')
 
 /**
+ * Whether this profile can *create* a new tournament — narrower than
+ * `canManageTournaments`. Mirrors `firestore.rules`' `canCreateTournament()`
+ * exactly: the master admin bypasses everything; ADMIN/TOURNAMENT_MANAGER
+ * additionally need a verified phone (`phoneVerified`, only ever set `true`
+ * server-side once a real Firebase Phone Auth link succeeds — see that
+ * rule's own comment for why it can't be spoofed by editing Firestore).
+ * This is a UX convenience only; the rule above is the real gate.
+ */
+export const canCreateTournament = (p: UserProfile | null) =>
+  isMasterAdmin(p) || (hasRole(p, 'ADMIN', 'TOURNAMENT_MANAGER') && p?.phoneVerified === true)
+
+/**
  * Owner-scoping for "fully isolated" admins: the master admin sees everything;
  * a normal admin only sees rows they own. Returns the uid to filter by, or
  * `null` to mean "no filter" (see all).

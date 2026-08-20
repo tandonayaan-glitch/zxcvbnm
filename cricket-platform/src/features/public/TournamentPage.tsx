@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/primitives'
 import { Tabs } from '@/components/ui/Tabs'
 import { ActivityFeed } from '@/components/activity/ActivityFeed'
+import { StandingsTable } from '@/components/stats/StandingsTable'
 import { EntityGallery } from '@/components/media/EntityGallery'
 import { AnnouncementsPanel } from './AnnouncementsPanel'
 import { DownloadsPanel } from './DownloadsPanel'
@@ -64,10 +65,10 @@ import {
   type TournamentExport,
 } from '@/domain/tournamentExport'
 import { downloadBlob, slugify } from '@/lib/download'
-import { canManageTournaments, useAuthStore } from '@/store/authStore'
+import { canManageTournaments, ownsOrMaster, useAuthStore } from '@/store/authStore'
 import { PremiumGate } from '@/components/guards/PremiumGate'
-import { formatDate, formatRate, ballsToOvers } from '@/lib/format'
-import type { Match, StandingsRow, SponsorTier } from '@/types'
+import { formatDate, ballsToOvers } from '@/lib/format'
+import type { Match, SponsorTier } from '@/types'
 
 const SPONSOR_TIER_ORDER: Record<SponsorTier, number> = { title: 0, gold: 1, silver: 2, partner: 3 }
 
@@ -200,6 +201,12 @@ export function TournamentPage() {
     exportData.mostRuns.length > 0 ||
     exportData.mostWickets.length > 0
   const exportBase = `${slugify(t.name)}-${id}`
+  // canManageTournaments() alone is role-only — it doesn't check *which* tournament.
+  // The server-side write rules were always owner-scoped, but showing management
+  // controls here for a tournament this account doesn't own/manage was misleading
+  // (the write would just fail); this is the same combined check the tournament's
+  // own owner/master edit-delete rule already enforces.
+  const canManageThis = canManageTournaments(profile) && ownsOrMaster(profile, t.ownerId)
 
   async function refresh() {
     setRefreshing(true)
@@ -263,7 +270,7 @@ export function TournamentPage() {
             <ShareButton variant="icon" title={t.name} />
             <QRCodeButton title={t.name} />
             <FollowButton kind="tournaments" id={t.id} />
-            {canManageTournaments(profile) && (
+            {canManageThis && (
               <>
                 <Button variant="outline" size="sm" onClick={refresh} loading={refreshing}>
                   <RefreshCw size={14} /> Refresh
@@ -774,7 +781,7 @@ export function TournamentPage() {
           <EntityGallery
             folder={`tournaments/${id}`}
             title="Tournament gallery"
-            canManage={canManageTournaments(profile)}
+            canManage={canManageThis}
             hideWhenEmpty={false}
           />
         </PremiumGate>
@@ -785,7 +792,7 @@ export function TournamentPage() {
           <AnnouncementsPanel
             tournamentId={id}
             tournamentOwnerId={t.ownerId}
-            canManage={canManageTournaments(profile)}
+            canManage={canManageThis}
             profile={profile}
           />
         </PremiumGate>
@@ -793,65 +800,10 @@ export function TournamentPage() {
 
       {tab === 'downloads' && (
         <PremiumGate feature="data_export">
-          <DownloadsPanel tournamentId={id} canManage={canManageTournaments(profile)} />
+          <DownloadsPanel tournamentId={id} canManage={canManageThis} />
         </PremiumGate>
       )}
     </div>
-  )
-}
-
-function StandingsTable({
-  rows,
-  teamNameById,
-}: {
-  rows: StandingsRow[]
-  teamNameById: Map<string, string>
-}) {
-  return (
-    <Card className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 text-left text-xs uppercase tracking-wide text-ink-500 dark:text-ink-400">
-            <th className="px-3 py-2.5 font-semibold">#</th>
-            <th className="px-3 py-2.5 font-semibold">Team</th>
-            <th className="px-2 py-2.5 text-right font-semibold">P</th>
-            <th className="px-2 py-2.5 text-right font-semibold">W</th>
-            <th className="px-2 py-2.5 text-right font-semibold">L</th>
-            <th className="px-2 py-2.5 text-right font-semibold">T</th>
-            <th className="px-2 py-2.5 text-right font-semibold">Pts</th>
-            <th className="px-3 py-2.5 text-right font-semibold">NRR</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={r.teamId} className="border-b border-ink-50 dark:border-ink-800">
-              <td className="px-3 py-2.5 text-ink-400 dark:text-ink-500">{i + 1}</td>
-              <td className="px-3 py-2.5">
-                <Link
-                  to={`/team/${r.teamId}`}
-                  className="font-medium text-ink-900 dark:text-ink-50 hover:text-brand-700"
-                >
-                  {teamNameById.get(r.teamId) ?? r.teamName}
-                </Link>
-              </td>
-              <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">{r.played}</td>
-              <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">{r.won}</td>
-              <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">{r.lost}</td>
-              <td className="px-2 py-2.5 text-right text-ink-600 dark:text-ink-400">{r.tied}</td>
-              <td className="px-2 py-2.5 text-right font-bold text-ink-900 dark:text-ink-50">{r.points}</td>
-              <td className="px-3 py-2.5 text-right text-ink-600 dark:text-ink-400">{formatRate(r.nrr)}</td>
-            </tr>
-          ))}
-          {rows.length === 0 && (
-            <tr>
-              <td colSpan={8} className="px-4 py-6 text-center text-ink-400 dark:text-ink-500">
-                No teams in this tournament yet.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </Card>
   )
 }
 

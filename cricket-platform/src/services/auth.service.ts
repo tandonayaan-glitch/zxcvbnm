@@ -114,10 +114,12 @@ export async function registerUser(
   }
 
   // Decide the role: master bootstrap only for the reserved username while no
-  // master exists; otherwise always VIEWER regardless of what was requested.
+  // master exists; otherwise always SCORER regardless of what was requested —
+  // a normal signup can immediately create/score their own matches, but never
+  // self-grants ADMIN/TOURNAMENT_MANAGER/MASTER_ADMIN this way.
   const isMasterBootstrap =
     username === MASTER_ADMIN_USERNAME && !(await masterAdminExists())
-  const role: Role = isMasterBootstrap ? 'MASTER_ADMIN' : 'VIEWER'
+  const role: Role = isMasterBootstrap ? 'MASTER_ADMIN' : 'SCORER'
 
   const email = usernameToEmail(username)
   const cred = await createUserWithEmailAndPassword(auth, email, input.password)
@@ -372,7 +374,12 @@ export async function sendPhoneVerificationCode(
   return linkWithPhoneNumber(user, phoneNumber, recaptchaVerifier)
 }
 
-/** Confirms the code sent by `sendPhoneVerificationCode` and marks the profile's phone verified. */
+/** Confirms the code sent by `sendPhoneVerificationCode` and marks the profile's phone verified.
+ *  Forces a fresh ID token *before* the Firestore write: `firestore.rules` only allows
+ *  `phoneVerified: true` when the caller's own token carries a `phone_number` claim (set by
+ *  Firebase Auth once `linkWithPhoneNumber` really succeeds, unforgeable by writing the Firestore
+ *  field directly) — without this refresh, the cached token from before linking wouldn't have that
+ *  claim yet and the write would be rejected. */
 export async function confirmPhoneVerificationCode(
   confirmation: ConfirmationResult,
   code: string,
@@ -380,6 +387,7 @@ export async function confirmPhoneVerificationCode(
   await confirmation.confirm(code)
   const user = auth.currentUser
   if (!user) return
+  await user.getIdToken(true)
   await updateDoc(doc(db, COL.users, user.uid), { phoneVerified: true, updatedAt: Date.now() })
 }
 
