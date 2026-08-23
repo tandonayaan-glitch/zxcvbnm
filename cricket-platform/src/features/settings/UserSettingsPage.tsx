@@ -41,7 +41,7 @@ import {
 import { ImageUploadField } from '@/components/ui/ImageUploadField'
 import { ImageUsageIndicator } from '@/components/media/ImageUsageIndicator'
 import { useToast } from '@/components/ui/toast'
-import { useAuthStore } from '@/store/authStore'
+import { useAuthStore, canManageTournaments } from '@/store/authStore'
 import { auth } from '@/lib/firebase'
 import { usePrefsStore, type TextScale, type ThemeMode } from '@/store/prefsStore'
 import { BackgroundControl } from '@/components/background/BackgroundControl'
@@ -261,14 +261,16 @@ export function UserSettingsPage() {
             <Field label="Email (optional)">
               <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
             </Field>
-            <Field label="Phone (optional)">
-              <Input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+15551234567"
-                type="tel"
-              />
-            </Field>
+            {canManageTournaments(profile) && (
+              <Field label="Phone (optional)">
+                <Input
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+15551234567"
+                  type="tel"
+                />
+              </Field>
+            )}
             <div className="sm:col-span-2">
               <Field label="Photo">
                 <ImageUploadField value={photoURL} onChange={setPhotoURL} folder="users" />
@@ -471,7 +473,10 @@ export function UserSettingsPage() {
         </CardBody>
       </Card>
 
-      {/* Phone verification */}
+      {/* Phone verification — only relevant once an account actually needs it (Tournament
+          Manager applies/holds the role); a plain viewer/scorer account never sees this,
+          matching the requirement that phone numbers are only for that path. */}
+      {canManageTournaments(profile) && (
       <Card className="mb-4">
         <CardHeader
           title={
@@ -532,6 +537,7 @@ export function UserSettingsPage() {
           <div id={RECAPTCHA_CONTAINER_ID} />
         </CardBody>
       </Card>
+      )}
 
       {/* Privacy & sessions */}
       <Card className="mb-4">
