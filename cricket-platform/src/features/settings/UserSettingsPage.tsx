@@ -39,6 +39,7 @@ import {
   EmptyState,
 } from '@/components/ui/primitives'
 import { ImageUploadField } from '@/components/ui/ImageUploadField'
+import { PhoneNumberField } from '@/components/ui/PhoneNumberField'
 import { ImageUsageIndicator } from '@/components/media/ImageUsageIndicator'
 import { useToast } from '@/components/ui/toast'
 import { useAuthStore, canManageTournaments } from '@/store/authStore'
@@ -263,12 +264,7 @@ export function UserSettingsPage() {
             </Field>
             {canManageTournaments(profile) && (
               <Field label="Phone (optional)">
-                <Input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+15551234567"
-                  type="tel"
-                />
+                <PhoneNumberField value={phone} onChange={setPhone} />
               </Field>
             )}
             <div className="sm:col-span-2">

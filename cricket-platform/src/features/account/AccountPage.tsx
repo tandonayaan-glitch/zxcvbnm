@@ -31,6 +31,7 @@ import {
   resetPhoneVerification,
   authErrorMessage,
 } from '@/services/auth.service'
+import { PhoneNumberField } from '@/components/ui/PhoneNumberField'
 import { homeForRole } from '@/features/auth/AuthLayout'
 import { Heart } from 'lucide-react'
 import type { AdminRequest } from '@/types'
@@ -316,12 +317,7 @@ export function AccountPage() {
                       <Smartphone size={16} /> Verify your phone number to apply
                     </div>
                     <Field label="Phone number">
-                      <Input
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="+15551234567"
-                        type="tel"
-                      />
+                      <PhoneNumberField value={phone} onChange={setPhone} />
                     </Field>
                     {profile.phone === phone.trim() && profile.phone ? (
                       !otpConfirmation ? (

@@ -359,31 +359,41 @@ export async function changePassword(
  * RESTRICTIONS.md for why this code path could not be live-tested from this sandbox. */
 
 let recaptchaVerifier: RecaptchaVerifier | null = null
-// Which container the cached verifier above was actually built for. This app now has more
-// than one phone-verification entry point (Account Settings, and the Tournament Manager
-// application on AccountPage), each rendering its own reCAPTCHA container element. A
-// verifier is only safe to reuse against the exact container it was constructed with —
-// reusing one bound to a different (possibly unmounted) element throws "reCAPTCHA has
-// already been rendered in this element", since the underlying widget is still registered
-// against the stale node.
-let recaptchaContainerId: string | null = null
 
-/** Renders (or reuses) an invisible reCAPTCHA challenge in `containerId` and sends a verification
- *  SMS to `phoneNumber` (E.164 format, e.g. "+15551234567") for the currently signed-in user. */
+/** Renders a fresh reCAPTCHA challenge in `containerId` and sends a verification SMS to
+ *  `phoneNumber` (E.164 format, e.g. "+15551234567") for the currently signed-in user.
+ *
+ *  Uses `size: 'normal'` (the standard visible "I'm not a robot" checkbox) rather than
+ *  `'invisible'` — invisible mode still shows a challenge when Google's risk scoring isn't
+ *  confident, but does so as an unpredictable popup overlay that's easy to miss entirely
+ *  (observed in practice: the promise just hangs with no visible UI change until the
+ *  overlay is found and solved). The visible checkbox is deliberate and always in the same
+ *  place, and per Google's own design still escalates to an image challenge only when it
+ *  judges the session risky — this doesn't remove that possibility, it just makes whatever
+ *  challenge appears impossible to miss.
+ *
+ *  Always tears down any previous verifier — both via the SDK's own `.clear()` and by
+ *  emptying the container element directly — before creating a new one, rather than trying
+ *  to reuse a cached instance. Observed in practice: reusing a verifier across repeated
+ *  send-code attempts throws "reCAPTCHA has already been rendered in this element", even
+ *  against the *same* container and even after a prior attempt failed and called
+ *  `resetPhoneVerification()` — the SDK's `.clear()` alone did not reliably leave the
+ *  container in a state `grecaptcha.render()` would accept again. This app also now has more
+ *  than one phone-verification entry point (Account Settings, and the Tournament Manager
+ *  application on AccountPage), each with its own container element, which made a
+ *  cross-attempt cache actively wrong to keep. "Send verification code" is a deliberate,
+ *  infrequent action — the cost of rendering fresh every time is negligible. */
 export async function sendPhoneVerificationCode(
   phoneNumber: string,
   containerId: string,
 ): Promise<ConfirmationResult> {
   const user = auth.currentUser
   if (!user) throw new Error('You must be signed in.')
-  if (recaptchaVerifier && recaptchaContainerId !== containerId) {
-    recaptchaVerifier.clear()
-    recaptchaVerifier = null
-  }
-  if (!recaptchaVerifier) {
-    recaptchaVerifier = new RecaptchaVerifier(auth, containerId, { size: 'invisible' })
-    recaptchaContainerId = containerId
-  }
+  recaptchaVerifier?.clear()
+  recaptchaVerifier = null
+  const container = document.getElementById(containerId)
+  if (container) container.innerHTML = ''
+  recaptchaVerifier = new RecaptchaVerifier(auth, containerId, { size: 'normal' })
   return linkWithPhoneNumber(user, phoneNumber, recaptchaVerifier)
 }
 
@@ -409,7 +419,6 @@ export async function confirmPhoneVerificationCode(
 export function resetPhoneVerification(): void {
   recaptchaVerifier?.clear()
   recaptchaVerifier = null
-  recaptchaContainerId = null
 }
 
 /** Subscribe to auth state; loads the Firestore profile (with retry to absorb
