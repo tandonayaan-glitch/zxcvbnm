@@ -22,17 +22,29 @@ let cached: CachedToken | undefined
  * requests until ~60s before expiry, so most requests don't pay for a fresh token exchange.
  */
 export async function getServiceAccountAccessToken(
-  clientEmail: string,
+  clientEmailRaw: string,
   privateKeyRaw: string,
 ): Promise<string> {
   const now = Date.now()
   if (cached && cached.expiresAt - 60_000 > now) return cached.accessToken
 
-  // `wrangler secret put` stores exactly what you paste; a private key copied out of a
-  // Firebase service-account JSON file typically has literal `\n` escape sequences rather
-  // than real newlines once it's flattened into a single-line secret value — normalize
-  // either form so this works regardless of how the secret was pasted in.
-  const pem = privateKeyRaw.includes('\\n') ? privateKeyRaw.replace(/\\n/g, '\n') : privateKeyRaw
+  // Same reasoning as the private-key normalization below: whatever set this secret may
+  // have introduced trailing whitespace/newline (observed: Google's token endpoint
+  // rejects the assertion with "Invalid grant: account not found" when the issuer string
+  // doesn't match exactly) — trim defensively rather than trust the secret is byte-clean.
+  const clientEmail = clientEmailRaw.trim()
+
+  // `wrangler secret put` stores exactly what it receives — normalize every way that can
+  // go wrong regardless of how the secret was set: literal `\n` escape sequences (a key
+  // flattened into a single-line value before pasting), `\r\n` line endings (observed in
+  // practice: piping the value through PowerShell into `wrangler secret put` on Windows
+  // introduced CRLF where the source JSON had plain `\n`, which `jose`'s strict PKCS#8
+  // parser rejects outright — "pkcs8 must be PKCS#8 formatted string" — even though the
+  // key content itself was correct), and any accidental leading/trailing whitespace.
+  const pem = privateKeyRaw
+    .replace(/\\n/g, '\n')
+    .replace(/\r\n/g, '\n')
+    .trim()
   const key = await importPKCS8(pem, 'RS256')
   const assertion = await new SignJWT({ scope: SCOPE })
     .setProtectedHeader({ alg: 'RS256' })
