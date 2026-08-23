@@ -359,6 +359,14 @@ export async function changePassword(
  * RESTRICTIONS.md for why this code path could not be live-tested from this sandbox. */
 
 let recaptchaVerifier: RecaptchaVerifier | null = null
+// Which container the cached verifier above was actually built for. This app now has more
+// than one phone-verification entry point (Account Settings, and the Tournament Manager
+// application on AccountPage), each rendering its own reCAPTCHA container element. A
+// verifier is only safe to reuse against the exact container it was constructed with —
+// reusing one bound to a different (possibly unmounted) element throws "reCAPTCHA has
+// already been rendered in this element", since the underlying widget is still registered
+// against the stale node.
+let recaptchaContainerId: string | null = null
 
 /** Renders (or reuses) an invisible reCAPTCHA challenge in `containerId` and sends a verification
  *  SMS to `phoneNumber` (E.164 format, e.g. "+15551234567") for the currently signed-in user. */
@@ -368,8 +376,13 @@ export async function sendPhoneVerificationCode(
 ): Promise<ConfirmationResult> {
   const user = auth.currentUser
   if (!user) throw new Error('You must be signed in.')
+  if (recaptchaVerifier && recaptchaContainerId !== containerId) {
+    recaptchaVerifier.clear()
+    recaptchaVerifier = null
+  }
   if (!recaptchaVerifier) {
     recaptchaVerifier = new RecaptchaVerifier(auth, containerId, { size: 'invisible' })
+    recaptchaContainerId = containerId
   }
   return linkWithPhoneNumber(user, phoneNumber, recaptchaVerifier)
 }
@@ -396,6 +409,7 @@ export async function confirmPhoneVerificationCode(
 export function resetPhoneVerification(): void {
   recaptchaVerifier?.clear()
   recaptchaVerifier = null
+  recaptchaContainerId = null
 }
 
 /** Subscribe to auth state; loads the Firestore profile (with retry to absorb
