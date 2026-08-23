@@ -39,6 +39,7 @@ import {
   EmptyState,
 } from '@/components/ui/primitives'
 import { ImageUploadField } from '@/components/ui/ImageUploadField'
+import { ImageUsageIndicator } from '@/components/media/ImageUsageIndicator'
 import { useToast } from '@/components/ui/toast'
 import { useAuthStore } from '@/store/authStore'
 import { auth } from '@/lib/firebase'
@@ -272,6 +273,7 @@ export function UserSettingsPage() {
               <Field label="Photo">
                 <ImageUploadField value={photoURL} onChange={setPhotoURL} folder="users" />
               </Field>
+              <ImageUsageIndicator />
             </div>
             <div className="sm:col-span-2">
               <Field label="Bio">

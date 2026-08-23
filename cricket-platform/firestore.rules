@@ -505,5 +505,28 @@ service cloud.firestore {
             && request.resource.data.provider == 'mock');
       allow delete: if isMasterAdmin();
     }
+
+    // ---- R2 image-storage usage tracking (crickethub-media Worker) ------------
+    // Both collections are written ONLY by the media Worker (worker/), authenticated as a
+    // real Firebase service account whose requests bypass these rules entirely — the same
+    // trust boundary the Admin SDK uses. `allow write: if false` here isn't a formality,
+    // it's the actual enforcement: no client-facing request (SDK or REST, with or without
+    // a user's own ID token) can ever write these fields, which is what makes the 100MB
+    // per-user / 9.9GB global caps genuinely server-enforced rather than just Worker-side
+    // convention that a compromised or buggy client could talk around.
+    match /imageUsage/{uid} {
+      // A user reads their own usage for the "X of 100MB used" display; the master admin
+      // can read any (support/debugging). The `_global` doc (platform-wide total) is
+      // master-admin-only — not sensitive, just not something an ordinary user needs.
+      allow read: if isMasterAdmin()
+        || (isSignedIn() && request.auth.uid == uid);
+      allow write: if false;
+    }
+    match /r2Objects/{objectId} {
+      // Per-uploaded-image ownership/size record, used only by the Worker itself (to
+      // attribute bytes correctly on delete) — nothing in the app's client code ever
+      // needs to read this directly.
+      allow read, write: if false;
+    }
   }
 }

@@ -1,8 +1,24 @@
 import { ref, uploadBytes, getDownloadURL, deleteObject, listAll, getMetadata } from 'firebase/storage'
-import { storage } from '@/lib/firebase'
+import { storage, auth } from '@/lib/firebase'
 import { genId } from '@/lib/collections'
 
-const MAX_FILE_BYTES = 5 * 1024 * 1024 // 5MB
+/*
+ * Images now upload to Cloudflare R2 through the crickethub-media Worker (see
+ * `worker/`) instead of Firebase Storage — see worker/README.md for the full design.
+ * Documents (tournament PDFs) are explicitly NOT part of this migration and still use
+ * Firebase Storage unchanged below; only image functions were touched.
+ *
+ * Existing images uploaded before this migration keep working exactly as before: their
+ * URLs still point at Firebase Storage, which is untouched and not being deleted. Every
+ * image-listing function below reads BOTH the legacy Firebase Storage folder AND the new
+ * R2 folder and merges the results, so a gallery with a mix of old and new photos shows
+ * all of them — not just the ones uploaded after cutover.
+ */
+
+const R2_WORKER_URL = (import.meta.env.VITE_R2_WORKER_URL ?? '').replace(/\/$/, '')
+const R2_PUBLIC_BASE_URL = (import.meta.env.VITE_R2_PUBLIC_URL ?? '').replace(/\/$/, '')
+
+const MAX_FILE_BYTES = 5 * 1024 * 1024 // 5MB — mirrors worker/src/limits.ts; keep both in sync
 const MAX_DIMENSION = 800
 const JPEG_QUALITY = 0.85
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
@@ -11,7 +27,8 @@ export class ImageUploadError extends Error {}
 
 /** Downscale + re-encode client-side before upload, so a phone photo doesn't ship a
  *  multi-megabyte original for what's displayed as a small avatar/logo. GIFs are passed
- *  through unresized to preserve animation. */
+ *  through unresized to preserve animation. Unchanged from the Firebase Storage version —
+ *  this step happens entirely in the browser, before the network request exists at all. */
 async function resizeImage(file: File): Promise<Blob> {
   const bitmap = await createImageBitmap(file)
   const scale = Math.min(1, MAX_DIMENSION / Math.max(bitmap.width, bitmap.height))
@@ -29,8 +46,16 @@ async function resizeImage(file: File): Promise<Blob> {
   return blob ?? file
 }
 
-/** Validate, client-side resize/compress, and upload an image to Firebase Storage
- *  under `folder/`, returning its public download URL. */
+async function firebaseIdToken(): Promise<string> {
+  const user = auth.currentUser
+  if (!user) throw new ImageUploadError('You must be signed in.')
+  return user.getIdToken()
+}
+
+/** Validate, client-side resize/compress, and upload an image to Cloudflare R2 under
+ *  `folder/`, returning its public URL. Size/type limits, per-user (100MB) and platform
+ *  (9.9GB) storage caps are all re-enforced server-side by the Worker regardless of what
+ *  passed here — this is a fast-fail UX layer, never the real gate. */
 export async function uploadImage(file: File, folder: string): Promise<string> {
   if (!ACCEPTED_TYPES.includes(file.type)) {
     throw new ImageUploadError('Please choose a JPEG, PNG, WebP or GIF image.')
@@ -38,27 +63,70 @@ export async function uploadImage(file: File, folder: string): Promise<string> {
   if (file.size > MAX_FILE_BYTES) {
     throw new ImageUploadError('Image is too large (max 5MB).')
   }
-
-  if (file.type === 'image/gif') {
-    const fileRef = ref(storage, `${folder}/${genId('img_')}.gif`)
-    await uploadBytes(fileRef, file, { contentType: 'image/gif' })
-    return getDownloadURL(fileRef)
+  if (!R2_WORKER_URL) {
+    throw new ImageUploadError('Image uploads are not configured yet.')
   }
 
-  const blob = await resizeImage(file)
-  const fileRef = ref(storage, `${folder}/${genId('img_')}.jpg`)
-  await uploadBytes(fileRef, blob, { contentType: 'image/jpeg' })
-  return getDownloadURL(fileRef)
+  const isGif = file.type === 'image/gif'
+  const blob = isGif ? file : await resizeImage(file)
+  const contentType = isGif ? 'image/gif' : 'image/jpeg'
+  const ext = isGif ? 'gif' : 'jpg'
+  const key = `${folder}/${genId('img_')}.${ext}`
+
+  const token = await firebaseIdToken()
+  const res = await fetch(`${R2_WORKER_URL}/upload?key=${encodeURIComponent(key)}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': contentType },
+    body: blob,
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    throw new ImageUploadError((body as { error?: string } | null)?.error ?? 'Upload failed.')
+  }
+  const { url } = (await res.json()) as { url: string }
+  return url
 }
 
-/** Best-effort delete of a previously uploaded image — never throws. The URL might be
- *  an external link (not ours to delete) or already gone. */
+/** Best-effort delete of a previously uploaded image — never throws. Branches on which
+ *  backend actually hosts the file: an R2 URL goes through the Worker's authenticated
+ *  delete (which also releases the usage-counter reservation); a legacy
+ *  `firebasestorage.googleapis.com` URL still deletes via Firebase Storage exactly as
+ *  before (that capability isn't being removed — this migration doesn't touch existing
+ *  Firebase Storage files or the ability to manage them, it only changes where NEW
+ *  uploads go). Anything else (an external link) is left alone either way. */
 export async function deleteUploadedImage(url: string): Promise<void> {
   try {
-    if (!url.includes('firebasestorage')) return
-    await deleteObject(ref(storage, url))
+    if (R2_PUBLIC_BASE_URL && url.startsWith(R2_PUBLIC_BASE_URL)) {
+      const key = url.slice(R2_PUBLIC_BASE_URL.length + 1)
+      const token = await firebaseIdToken()
+      await fetch(`${R2_WORKER_URL}/delete?key=${encodeURIComponent(key)}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      return
+    }
+    if (url.includes('firebasestorage')) {
+      await deleteObject(ref(storage, url))
+    }
   } catch {
-    /* ignore */
+    /* ignore, same convention as before */
+  }
+}
+
+/** The signed-in user's own current image-storage usage, for the "X of 100MB used"
+ *  display. Returns `null` if not signed in or the Worker isn't configured, rather than
+ *  throwing — this is a display, not a gate. */
+export async function getMyImageUsage(): Promise<{ usedBytes: number; limitBytes: number } | null> {
+  if (!R2_WORKER_URL || !auth.currentUser) return null
+  try {
+    const token = await firebaseIdToken()
+    const res = await fetch(`${R2_WORKER_URL}/usage`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) return null
+    return (await res.json()) as { usedBytes: number; limitBytes: number }
+  } catch {
+    return null
   }
 }
 
@@ -83,8 +151,9 @@ export interface StoredDocument {
 }
 
 /** Validate and upload a PDF (rulebook, fixture sheet, etc.) to Firebase Storage under
- *  `folder/`, returning its public download URL. No resize/compress step — unlike images,
- *  a PDF is uploaded as-is. */
+ *  `folder/`, returning its public download URL. Unchanged — documents are explicitly
+ *  not part of the R2 migration; only images moved. No resize/compress step — unlike
+ *  images, a PDF is uploaded as-is. */
 export async function uploadDocument(file: File, folder: string): Promise<string> {
   if (!ACCEPTED_DOC_TYPES.includes(file.type)) {
     throw new DocumentUploadError('Please choose a PDF file.')
@@ -98,7 +167,7 @@ export async function uploadDocument(file: File, folder: string): Promise<string
 }
 
 /** Best-effort delete of a previously uploaded document — never throws, same convention as
- *  `deleteUploadedImage`. */
+ *  `deleteUploadedImage`. Unchanged — documents stay on Firebase Storage. */
 export async function deleteUploadedDocument(url: string): Promise<void> {
   try {
     if (!url.includes('firebasestorage')) return
@@ -119,12 +188,12 @@ async function listAllWithTimeout(folderRef: ReturnType<typeof ref>) {
   return Promise.race([listAll(folderRef), timeout])
 }
 
-/** List every image under a given upload folder (`players`, `teams`, `clubs`, `tournaments`,
- *  `users`), for the media library's housekeeping view. */
-export async function listFolderImages(folder: string): Promise<StoredImage[]> {
+/** Legacy images already sitting in Firebase Storage from before the R2 migration — kept
+ *  working, not deleted, not migrated by this change. */
+async function listLegacyFirebaseImages(folder: string): Promise<StoredImage[]> {
   const folderRef = ref(storage, folder)
   const { items } = await listAllWithTimeout(folderRef)
-  const results = await Promise.all(
+  return Promise.all(
     items.map(async (item) => {
       const [url, meta] = await Promise.all([getDownloadURL(item), getMetadata(item)])
       return {
@@ -135,11 +204,38 @@ export async function listFolderImages(folder: string): Promise<StoredImage[]> {
       }
     }),
   )
-  return results.sort((a, b) => b.createdAt - a.createdAt)
+}
+
+/** Images uploaded to R2 since the migration. Unauthenticated — listing isn't privileged,
+ *  matching this app's public-read posture for every other piece of cricket data. Resolves
+ *  to an empty list (not a throw) if the Worker isn't configured or unreachable, so a
+ *  gallery still renders its legacy Firebase Storage photos even if R2 is having a bad day. */
+async function listR2Images(folder: string): Promise<StoredImage[]> {
+  if (!R2_WORKER_URL) return []
+  try {
+    const res = await fetch(`${R2_WORKER_URL}/list?folder=${encodeURIComponent(folder)}`)
+    if (!res.ok) return []
+    const { items } = (await res.json()) as { items: StoredImage[] }
+    return items
+  } catch {
+    return []
+  }
+}
+
+/** List every image under a given upload folder (`players`, `teams`, `clubs`, `tournaments`,
+ *  `users`, or a per-entity gallery subfolder), merging legacy Firebase Storage results with
+ *  new R2 results so nothing already uploaded appears to vanish. */
+export async function listFolderImages(folder: string): Promise<StoredImage[]> {
+  const [legacy, fresh] = await Promise.all([
+    listLegacyFirebaseImages(folder).catch(() => [] as StoredImage[]),
+    listR2Images(folder),
+  ])
+  return [...legacy, ...fresh].sort((a, b) => b.createdAt - a.createdAt)
 }
 
 /** List every document under a given upload folder (e.g. `tournamentDocuments/{id}`). Strips
- *  the generated `doc_xxxxx-` id prefix back off the filename for display. */
+ *  the generated `doc_xxxxx-` id prefix back off the filename for display. Unchanged —
+ *  documents stay on Firebase Storage. */
 export async function listFolderDocuments(folder: string): Promise<StoredDocument[]> {
   const folderRef = ref(storage, folder)
   const { items } = await listAllWithTimeout(folderRef)

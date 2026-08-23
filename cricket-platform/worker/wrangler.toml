@@ -1,0 +1,29 @@
+name = "crickethub-media-worker"
+main = "src/index.ts"
+compatibility_date = "2025-09-01"
+
+# Native R2 binding — the Worker talks to the bucket directly through Cloudflare's
+# infrastructure. No R2 access-key-id/secret exists anywhere for this reason: the
+# binding IS the credential, scoped to this Worker only.
+[[r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "crickethub-media"
+
+# Plain config, not secret — same values already public in the frontend's own
+# VITE_FIREBASE_* env vars (Firebase's client config is designed to be public;
+# security is enforced by Firestore/Storage rules, not by hiding these).
+[vars]
+FIREBASE_PROJECT_ID = "cricket-platform-b03bc"
+# Public dev URL for the bucket (from `wrangler r2 bucket dev-url enable`).
+# NOTE: r2.dev URLs are rate-limited and explicitly not recommended for production
+# traffic by Cloudflare's own docs — fine for now per the "no custom domain yet"
+# decision, but move to a custom domain (Cloudflare "Custom Domains" for R2) before
+# relying on this for real traffic.
+R2_PUBLIC_BASE_URL = "https://pub-729b7d158eba45748f2446c752526332.r2.dev"
+# Comma-separated. The Worker only ever answers browser requests from these origins.
+ALLOWED_ORIGINS = "https://cricket-platform-b03bc.web.app,https://cricket-platform-b03bc.firebaseapp.com,http://localhost:5173,http://localhost:5174"
+
+# Secrets (set via `wrangler secret put <NAME>` — never committed, never in this file):
+#   FIREBASE_CLIENT_EMAIL  - the `client_email` field from a Firebase service-account JSON key
+#   FIREBASE_PRIVATE_KEY   - the `private_key` field from the same JSON key (keep the \n's literal)
+# See worker/README.md for exactly how to generate and set these.
