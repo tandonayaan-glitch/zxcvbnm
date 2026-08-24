@@ -478,7 +478,13 @@ export function authErrorMessage(err: unknown): string {
     case 'auth/provider-already-linked':
       return 'That phone number is already linked to another account.'
     case 'auth/operation-not-allowed':
-      return 'Phone verification isn’t enabled for this project yet.'
+      // Confirmed by direct testing not to mean "Phone provider disabled" alone — Firebase
+      // returns this exact code even with Phone enabled in the console, when the project is
+      // still on the free Spark plan. Real SMS-based Phone Auth requires the Blaze
+      // (pay-as-you-go) billing plan; the provider toggle being "Enabled" doesn't override
+      // that. Worded as "most likely" rather than asserted, since this code can in principle
+      // have other causes too.
+      return 'Phone verification isn’t available yet — this is most likely because the Firebase project needs to be on the Blaze (pay-as-you-go) billing plan to send real SMS, even with Phone sign-in already enabled. Check Project Settings → Usage and billing.'
     default:
       return err instanceof Error ? err.message : 'Something went wrong.'
   }
