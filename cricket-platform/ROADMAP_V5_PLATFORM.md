@@ -695,9 +695,37 @@ enabled in the Firebase console are still needed to exercise D1's actual verify-
   every rules-touching Phase B slice.
 - **Standing item for the later single production pass** (per instruction, not done now): deploy
   `firestore.rules` (covers every undeployed change across Phase B and C1's `subscriptions` rule),
-  enable Phone sign-in in the Firebase console, test the B4 phone-verification flow with a real
-  number, approve the pending "B1 Verification Test Cup" request, and run a final production/security
-  audit.
+  approve the pending "B1 Verification Test Cup" request, and run a final production/security audit.
 - **Still needed before C4 (or any real payment work) can start**: the actual Free-vs-Premium feature
   registry (the user's to provide — not inferred or guessed at any point in C1-C3) and a billing
   provider choice (Stripe was suggested as a common default earlier, still unconfirmed).
+
+---
+
+## Phase E — Direct user instruction: retire phone/SMS verification (staying on Firebase Spark, no billing)
+
+Decision reversal, not new scope: the user chose to stay on the Firebase Spark plan rather than add
+billing, and real Firebase Phone Auth SMS requires the paid Blaze plan even with the Phone provider
+enabled (confirmed via live testing against this project — B4/D1's `auth/operation-not-allowed`
+error was a billing-plan gap, not a disabled provider). Rather than pay for Blaze, phone verification
+is removed as a requirement everywhere it was added (B4, D1):
+
+- `firestore.rules`' `canCreateTournament()` reverted to role-only (`isMasterAdmin() ||
+  hasRole(['ADMIN', 'TOURNAMENT_MANAGER'])`) — the `phoneVerified` condition and the
+  `phoneVerifiedIsHonest()` helper (and its two references in the `/users/{uid}` update rule) are
+  removed. `authStore.ts`'s client-side `canCreateTournament` mirrors this. Tournament creation is
+  still gated by role, not weakened — the Tournament Manager approval workflow (`AdminRequest`,
+  master-admin review) remains the actual mechanism for who gets that role.
+- `auth.service.ts` lost `sendPhoneVerificationCode()`/`confirmPhoneVerificationCode()`/
+  `resetPhoneVerification()`, the `RecaptchaVerifier` state, and the phone-specific
+  `authErrorMessage()` cases (including the `operation-not-allowed` Blaze-plan message from B4 — now
+  unused, since nothing calls a phone-linking API anymore).
+  `AccountPage.tsx`'s Tournament Manager application card and `UserSettingsPage.tsx`'s Profile/Phone
+  verification card are both reverted to their pre-B4 shape.
+- `UserProfile.phone`/`phoneVerified` (types), `ProfileUpdate.phone`/`phoneVerified`
+  (`users.service.ts`), and the country-code phone input (`PhoneNumberField.tsx`,
+  `lib/countryCodes.ts`, added mid-D1-verification) are deleted — zero remaining consumers.
+- Normal username/password signup/login, the Free/Premium feature list, and `src/domain/scoring.ts`
+  are untouched, per explicit instruction. Verified with `tsc -p tsconfig.app.json --noEmit`,
+  `npm run build`, and `oxlint` (clean against the pre-existing warning baseline). Not deployed —
+  `firestore.rules` joins the existing undeployed pile for the later single production pass.

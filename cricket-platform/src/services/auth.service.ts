@@ -18,16 +18,12 @@ import {
   reauthenticateWithCredential,
   EmailAuthProvider,
   getAuth,
-  RecaptchaVerifier,
-  linkWithPhoneNumber,
   type User as FirebaseUser,
-  type ConfirmationResult,
 } from 'firebase/auth'
 import {
   doc,
   getDoc,
   setDoc,
-  updateDoc,
   runTransaction,
   collection,
   query,
@@ -349,78 +345,6 @@ export async function changePassword(
   await updatePassword(user, newPassword)
 }
 
-/* ------------------- Phone verification -------------------
- * Verifying ownership of a phone number, not signing in with one — the app's own auth stays
- * username/password throughout. `linkWithPhoneNumber` attaches a phone credential to the already
- * signed-in user and requires an interactive reCAPTCHA challenge, so this can only run in a real
- * browser tab with a rendered container, never headlessly or from a script. Requires the "Phone"
- * sign-in provider to be enabled in the Firebase console for this project — this app has no way to
- * enable that itself, and enabling it can incur real per-SMS cost once used with real numbers. See
- * RESTRICTIONS.md for why this code path could not be live-tested from this sandbox. */
-
-let recaptchaVerifier: RecaptchaVerifier | null = null
-
-/** Renders a fresh reCAPTCHA challenge in `containerId` and sends a verification SMS to
- *  `phoneNumber` (E.164 format, e.g. "+15551234567") for the currently signed-in user.
- *
- *  Uses `size: 'normal'` (the standard visible "I'm not a robot" checkbox) rather than
- *  `'invisible'` — invisible mode still shows a challenge when Google's risk scoring isn't
- *  confident, but does so as an unpredictable popup overlay that's easy to miss entirely
- *  (observed in practice: the promise just hangs with no visible UI change until the
- *  overlay is found and solved). The visible checkbox is deliberate and always in the same
- *  place, and per Google's own design still escalates to an image challenge only when it
- *  judges the session risky — this doesn't remove that possibility, it just makes whatever
- *  challenge appears impossible to miss.
- *
- *  Always tears down any previous verifier — both via the SDK's own `.clear()` and by
- *  emptying the container element directly — before creating a new one, rather than trying
- *  to reuse a cached instance. Observed in practice: reusing a verifier across repeated
- *  send-code attempts throws "reCAPTCHA has already been rendered in this element", even
- *  against the *same* container and even after a prior attempt failed and called
- *  `resetPhoneVerification()` — the SDK's `.clear()` alone did not reliably leave the
- *  container in a state `grecaptcha.render()` would accept again. This app also now has more
- *  than one phone-verification entry point (Account Settings, and the Tournament Manager
- *  application on AccountPage), each with its own container element, which made a
- *  cross-attempt cache actively wrong to keep. "Send verification code" is a deliberate,
- *  infrequent action — the cost of rendering fresh every time is negligible. */
-export async function sendPhoneVerificationCode(
-  phoneNumber: string,
-  containerId: string,
-): Promise<ConfirmationResult> {
-  const user = auth.currentUser
-  if (!user) throw new Error('You must be signed in.')
-  recaptchaVerifier?.clear()
-  recaptchaVerifier = null
-  const container = document.getElementById(containerId)
-  if (container) container.innerHTML = ''
-  recaptchaVerifier = new RecaptchaVerifier(auth, containerId, { size: 'normal' })
-  return linkWithPhoneNumber(user, phoneNumber, recaptchaVerifier)
-}
-
-/** Confirms the code sent by `sendPhoneVerificationCode` and marks the profile's phone verified.
- *  Forces a fresh ID token *before* the Firestore write: `firestore.rules` only allows
- *  `phoneVerified: true` when the caller's own token carries a `phone_number` claim (set by
- *  Firebase Auth once `linkWithPhoneNumber` really succeeds, unforgeable by writing the Firestore
- *  field directly) — without this refresh, the cached token from before linking wouldn't have that
- *  claim yet and the write would be rejected. */
-export async function confirmPhoneVerificationCode(
-  confirmation: ConfirmationResult,
-  code: string,
-): Promise<void> {
-  await confirmation.confirm(code)
-  const user = auth.currentUser
-  if (!user) return
-  await user.getIdToken(true)
-  await updateDoc(doc(db, COL.users, user.uid), { phoneVerified: true, updatedAt: Date.now() })
-}
-
-/** Clears the reCAPTCHA widget after a failed/abandoned attempt so the next call to
- *  `sendPhoneVerificationCode` renders a fresh challenge instead of reusing a spent one. */
-export function resetPhoneVerification(): void {
-  recaptchaVerifier?.clear()
-  recaptchaVerifier = null
-}
-
 /** Subscribe to auth state; loads the Firestore profile (with retry to absorb
  *  the brief window right after signup before the profile write commits). */
 export function observeAuth(
@@ -468,23 +392,6 @@ export function authErrorMessage(err: unknown): string {
     case 'auth/invalid-api-key':
     case 'auth/api-key-not-valid.-please-pass-a-valid-api-key.':
       return 'Firebase configuration looks invalid. Check your .env.local values.'
-    case 'auth/invalid-phone-number':
-      return 'Enter a phone number with country code, e.g. +15551234567.'
-    case 'auth/code-expired':
-      return 'That code expired. Send a new one.'
-    case 'auth/invalid-verification-code':
-      return "That code doesn't match. Check it and try again."
-    case 'auth/credential-already-in-use':
-    case 'auth/provider-already-linked':
-      return 'That phone number is already linked to another account.'
-    case 'auth/operation-not-allowed':
-      // Confirmed by direct testing not to mean "Phone provider disabled" alone — Firebase
-      // returns this exact code even with Phone enabled in the console, when the project is
-      // still on the free Spark plan. Real SMS-based Phone Auth requires the Blaze
-      // (pay-as-you-go) billing plan; the provider toggle being "Enabled" doesn't override
-      // that. Worded as "most likely" rather than asserted, since this code can in principle
-      // have other causes too.
-      return 'Phone verification isn’t available yet — this is most likely because the Firebase project needs to be on the Blaze (pay-as-you-go) billing plan to send real SMS, even with Phone sign-in already enabled. Check Project Settings → Usage and billing.'
     default:
       return err instanceof Error ? err.message : 'Something went wrong.'
   }

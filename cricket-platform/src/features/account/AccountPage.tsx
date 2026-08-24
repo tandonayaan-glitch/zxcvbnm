@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ShieldQuestion, BadgeCheck, Clock, Smartphone } from 'lucide-react'
-import type { ConfirmationResult } from 'firebase/auth'
+import { ShieldQuestion, BadgeCheck, Clock } from 'lucide-react'
 import {
   Avatar,
   Badge,
@@ -24,25 +23,14 @@ import { listTournaments } from '@/services/tournaments.service'
 import { listClubs } from '@/services/clubs.service'
 import { listSeasons } from '@/services/seasons.service'
 import { createAdminRequest, getMyRequest } from '@/services/requests.service'
-import { updateUserProfile } from '@/services/users.service'
-import {
-  sendPhoneVerificationCode,
-  confirmPhoneVerificationCode,
-  resetPhoneVerification,
-  authErrorMessage,
-} from '@/services/auth.service'
-import { PhoneNumberField } from '@/components/ui/PhoneNumberField'
 import { homeForRole } from '@/features/auth/AuthLayout'
 import { Heart } from 'lucide-react'
 import type { AdminRequest } from '@/types'
-
-const RECAPTCHA_CONTAINER_ID = 'account-request-recaptcha'
 
 export function AccountPage() {
   const navigate = useNavigate()
   const toast = useToast()
   const profile = useAuthStore((s) => s.profile)
-  const setProfile = useAuthStore((s) => s.setProfile)
   const favs = useFavStore((s) => s.favs)
   const allPlayers = useAsync(listPlayers, [])
   const allTeams = useAsync(listTeams, [])
@@ -56,16 +44,6 @@ export function AccountPage() {
   const [message, setMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  // Tournament Manager applications require a verified phone — collected and verified
-  // right here as part of applying, not as a generic account-settings field every user
-  // sees regardless of whether they ever intend to run a tournament.
-  const [phone, setPhone] = useState(profile?.phone ?? '')
-  const [savingPhone, setSavingPhone] = useState(false)
-  const [otpConfirmation, setOtpConfirmation] = useState<ConfirmationResult | null>(null)
-  const [otpCode, setOtpCode] = useState('')
-  const [sendingCode, setSendingCode] = useState(false)
-  const [confirmingCode, setConfirmingCode] = useState(false)
-
   useEffect(() => {
     if (!profile) return
     getMyRequest(profile.id)
@@ -78,68 +56,8 @@ export function AccountPage() {
     return null
   }
 
-  async function savePhone() {
-    if (!profile) return
-    const trimmed = phone.trim()
-    if (!trimmed) {
-      toast.error('Enter a phone number first.')
-      return
-    }
-    setSavingPhone(true)
-    try {
-      const phoneChanged = trimmed !== (profile.phone ?? '')
-      const patch = { phone: trimmed, ...(phoneChanged ? { phoneVerified: false as const } : {}) }
-      await updateUserProfile(profile.id, patch)
-      setProfile({ ...profile, ...patch })
-      if (phoneChanged) {
-        setOtpConfirmation(null)
-        setOtpCode('')
-      }
-      toast.success('Phone number saved')
-    } catch {
-      toast.error('Could not save phone number')
-    } finally {
-      setSavingPhone(false)
-    }
-  }
-
-  async function sendCode() {
-    if (!profile?.phone) return
-    setSendingCode(true)
-    try {
-      const confirmation = await sendPhoneVerificationCode(profile.phone, RECAPTCHA_CONTAINER_ID)
-      setOtpConfirmation(confirmation)
-      toast.success('Code sent')
-    } catch (e) {
-      resetPhoneVerification()
-      toast.error(authErrorMessage(e))
-    } finally {
-      setSendingCode(false)
-    }
-  }
-
-  async function confirmCode() {
-    if (!otpConfirmation || !otpCode.trim() || !profile) return
-    setConfirmingCode(true)
-    try {
-      await confirmPhoneVerificationCode(otpConfirmation, otpCode.trim())
-      setProfile({ ...profile, phoneVerified: true })
-      setOtpConfirmation(null)
-      setOtpCode('')
-      toast.success('Phone verified')
-    } catch (e) {
-      toast.error(authErrorMessage(e))
-    } finally {
-      setConfirmingCode(false)
-    }
-  }
-
   async function submit() {
     if (!profile) return
-    if (!profile.phoneVerified) {
-      toast.error('Verify your phone number first.')
-      return
-    }
     if (!tournamentName.trim()) {
       toast.error('Please enter the tournament you want to run.')
       return
@@ -281,7 +199,7 @@ export function AccountPage() {
                 <ShieldQuestion size={18} /> Request admin access
               </span>
             }
-            subtitle="Tournament Managers can create and run their own tournaments. Requires a verified phone number."
+            subtitle="Tournament Managers can create and run their own tournaments."
           />
           <CardBody>
             {loading ? (
@@ -311,76 +229,23 @@ export function AccountPage() {
                     Your previous request was declined. You can submit a new one.
                   </div>
                 )}
-                {!profile.phoneVerified ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-ink-800 dark:text-ink-200">
-                      <Smartphone size={16} /> Verify your phone number to apply
-                    </div>
-                    <Field label="Phone number">
-                      <PhoneNumberField value={phone} onChange={setPhone} />
-                    </Field>
-                    {profile.phone === phone.trim() && profile.phone ? (
-                      !otpConfirmation ? (
-                        <Button onClick={sendCode} loading={sendingCode}>
-                          Send verification code
-                        </Button>
-                      ) : (
-                        <div className="flex flex-wrap items-end gap-3">
-                          <Field label="Code from SMS">
-                            <Input
-                              value={otpCode}
-                              onChange={(e) => setOtpCode(e.target.value)}
-                              placeholder="123456"
-                              inputMode="numeric"
-                            />
-                          </Field>
-                          <Button onClick={confirmCode} loading={confirmingCode} disabled={!otpCode.trim()}>
-                            Confirm
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              resetPhoneVerification()
-                              setOtpConfirmation(null)
-                              setOtpCode('')
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      )
-                    ) : (
-                      <Button variant="outline" onClick={savePhone} loading={savingPhone}>
-                        Save phone number
-                      </Button>
-                    )}
-                    {/* Invisible reCAPTCHA host required by Firebase phone auth. */}
-                    <div id={RECAPTCHA_CONTAINER_ID} />
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2 text-sm text-pitch-700 dark:text-pitch-400">
-                      <BadgeCheck size={16} /> Phone verified ({profile.phone})
-                    </div>
-                    <Field label="Tournament you want to run" required>
-                      <Input
-                        value={tournamentName}
-                        onChange={(e) => setTournamentName(e.target.value)}
-                        placeholder="e.g. Sunday Premier League"
-                      />
-                    </Field>
-                    <Field label="Message (optional)">
-                      <Textarea
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        placeholder="Tell the master admin a bit about your tournament…"
-                      />
-                    </Field>
-                    <Button onClick={submit} loading={submitting}>
-                      Submit request
-                    </Button>
-                  </>
-                )}
+                <Field label="Tournament you want to run" required>
+                  <Input
+                    value={tournamentName}
+                    onChange={(e) => setTournamentName(e.target.value)}
+                    placeholder="e.g. Sunday Premier League"
+                  />
+                </Field>
+                <Field label="Message (optional)">
+                  <Textarea
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Tell the master admin a bit about your tournament…"
+                  />
+                </Field>
+                <Button onClick={submit} loading={submitting}>
+                  Submit request
+                </Button>
               </div>
             )}
           </CardBody>

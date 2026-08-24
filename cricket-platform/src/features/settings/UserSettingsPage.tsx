@@ -19,10 +19,7 @@ import {
   Bell,
   FlaskConical,
   History,
-  Smartphone,
-  BadgeCheck,
 } from 'lucide-react'
-import type { ConfirmationResult } from 'firebase/auth'
 import type { NotificationCategory } from '@/types'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
@@ -39,30 +36,20 @@ import {
   EmptyState,
 } from '@/components/ui/primitives'
 import { ImageUploadField } from '@/components/ui/ImageUploadField'
-import { PhoneNumberField } from '@/components/ui/PhoneNumberField'
 import { ImageUsageIndicator } from '@/components/media/ImageUsageIndicator'
 import { useToast } from '@/components/ui/toast'
-import { useAuthStore, canManageTournaments } from '@/store/authStore'
+import { useAuthStore } from '@/store/authStore'
 import { auth } from '@/lib/firebase'
 import { usePrefsStore, type TextScale, type ThemeMode } from '@/store/prefsStore'
 import { BackgroundControl } from '@/components/background/BackgroundControl'
 import { updateUserProfile } from '@/services/users.service'
-import {
-  changePassword,
-  authErrorMessage,
-  logout,
-  sendPhoneVerificationCode,
-  confirmPhoneVerificationCode,
-  resetPhoneVerification,
-} from '@/services/auth.service'
+import { changePassword, authErrorMessage, logout } from '@/services/auth.service'
 import { listMyAuditLogs } from '@/services/audit.service'
 import { formatDate, formatDateTime, briefUA } from '@/lib/format'
 import { downloadBlob, slugify } from '@/lib/download'
 import { cn } from '@/lib/cn'
 import { useAsync } from '@/hooks/useAsync'
 import { useMySubscription } from '@/hooks/useMySubscription'
-
-const RECAPTCHA_CONTAINER_ID = 'phone-verify-recaptcha'
 
 export function UserSettingsPage() {
   const toast = useToast()
@@ -77,18 +64,12 @@ export function UserSettingsPage() {
   const [bio, setBio] = useState(profile?.bio ?? '')
   const [photoURL, setPhotoURL] = useState(profile?.photoURL ?? '')
   const [email, setEmail] = useState(profile?.email ?? '')
-  const [phone, setPhone] = useState(profile?.phone ?? '')
   const [savingProfile, setSavingProfile] = useState(false)
 
   const [curPw, setCurPw] = useState('')
   const [newPw, setNewPw] = useState('')
   const [confirmPw, setConfirmPw] = useState('')
   const [savingPw, setSavingPw] = useState(false)
-
-  const [otpConfirmation, setOtpConfirmation] = useState<ConfirmationResult | null>(null)
-  const [otpCode, setOtpCode] = useState('')
-  const [sendingCode, setSendingCode] = useState(false)
-  const [confirmingCode, setConfirmingCode] = useState(false)
 
   const myActivity = useAsync(
     () => (profile ? listMyAuditLogs(profile.id) : Promise.resolve([])),
@@ -101,59 +82,19 @@ export function UserSettingsPage() {
     if (!profile) return
     setSavingProfile(true)
     try {
-      const trimmedPhone = phone.trim()
-      // Changing the phone number invalidates any prior verification of the old one.
-      const phoneChanged = trimmedPhone !== (profile.phone ?? '')
       const patch = {
         displayName: displayName.trim() || profile.username,
         bio: bio.trim(),
         photoURL: photoURL.trim() || null,
         email: email.trim(),
-        phone: trimmedPhone,
-        ...(phoneChanged ? { phoneVerified: false as const } : {}),
       }
       await updateUserProfile(profile.id, patch)
       setProfile({ ...profile, ...patch })
-      if (phoneChanged) {
-        setOtpConfirmation(null)
-        setOtpCode('')
-      }
       toast.success('Profile updated')
     } catch {
       toast.error('Could not update profile')
     } finally {
       setSavingProfile(false)
-    }
-  }
-
-  async function sendCode() {
-    if (!profile?.phone) return
-    setSendingCode(true)
-    try {
-      const confirmation = await sendPhoneVerificationCode(profile.phone, RECAPTCHA_CONTAINER_ID)
-      setOtpConfirmation(confirmation)
-      toast.success('Code sent')
-    } catch (e) {
-      resetPhoneVerification()
-      toast.error(authErrorMessage(e))
-    } finally {
-      setSendingCode(false)
-    }
-  }
-
-  async function confirmCode() {
-    if (!otpConfirmation || !otpCode.trim() || !profile) return
-    setConfirmingCode(true)
-    try {
-      await confirmPhoneVerificationCode(otpConfirmation, otpCode.trim())
-      setProfile({ ...profile, phoneVerified: true })
-      setOtpConfirmation(null)
-      setOtpCode('')
-      toast.success('Phone verified')
-    } catch (e) {
-      toast.error(authErrorMessage(e))
-    } finally {
-      setConfirmingCode(false)
     }
   }
 
@@ -262,11 +203,6 @@ export function UserSettingsPage() {
             <Field label="Email (optional)">
               <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
             </Field>
-            {canManageTournaments(profile) && (
-              <Field label="Phone (optional)">
-                <PhoneNumberField value={phone} onChange={setPhone} />
-              </Field>
-            )}
             <div className="sm:col-span-2">
               <Field label="Photo">
                 <ImageUploadField value={photoURL} onChange={setPhotoURL} folder="users" />
@@ -469,72 +405,6 @@ export function UserSettingsPage() {
         </CardBody>
       </Card>
 
-      {/* Phone verification — only relevant once an account actually needs it (Tournament
-          Manager applies/holds the role); a plain viewer/scorer account never sees this,
-          matching the requirement that phone numbers are only for that path. */}
-      {canManageTournaments(profile) && (
-      <Card className="mb-4">
-        <CardHeader
-          title={
-            <span className="flex items-center gap-2">
-              <Smartphone size={18} /> Phone verification
-            </span>
-          }
-          subtitle="Prove you own the phone number above. Never shown publicly — only you and admins can see it."
-        />
-        <CardBody className="space-y-4">
-          {profile.phoneVerified ? (
-            <div className="flex items-center gap-3 rounded-lg bg-pitch-50 px-4 py-3 text-pitch-800">
-              <BadgeCheck size={20} />
-              <div className="text-sm font-semibold">{profile.phone} is verified.</div>
-            </div>
-          ) : !profile.phone ? (
-            <p className="text-sm text-ink-500 dark:text-ink-400">
-              Add a phone number above and save your profile, then come back here to verify it.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 rounded-lg bg-amber-50 px-4 py-3 text-amber-800">
-                <Badge tone="amber">Not verified</Badge>
-                <div className="text-sm">{profile.phone}</div>
-              </div>
-              {!otpConfirmation ? (
-                <Button onClick={sendCode} loading={sendingCode}>
-                  Send verification code
-                </Button>
-              ) : (
-                <div className="flex flex-wrap items-end gap-3">
-                  <Field label="Code from SMS">
-                    <Input
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value)}
-                      placeholder="123456"
-                      inputMode="numeric"
-                    />
-                  </Field>
-                  <Button onClick={confirmCode} loading={confirmingCode} disabled={!otpCode.trim()}>
-                    Confirm
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      resetPhoneVerification()
-                      setOtpConfirmation(null)
-                      setOtpCode('')
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-          {/* Invisible reCAPTCHA host required by Firebase phone auth — renders nothing itself. */}
-          <div id={RECAPTCHA_CONTAINER_ID} />
-        </CardBody>
-      </Card>
-      )}
-
       {/* Privacy & sessions */}
       <Card className="mb-4">
         <CardHeader
@@ -548,8 +418,8 @@ export function UserSettingsPage() {
           <div>
             <div className="text-sm font-medium text-ink-800 dark:text-ink-200">What's visible publicly</div>
             <p className="mt-1 text-xs text-ink-500 dark:text-ink-400">
-              Your account (username, bio, email, phone) is never shown on the public site — only
-              your display name appears where you're credited as a scorer. Clear the email or phone
+              Your account (username, bio, email) is never shown on the public site — only
+              your display name appears where you're credited as a scorer. Clear the email
               field above at any time if you'd rather not store one.
             </p>
           </div>

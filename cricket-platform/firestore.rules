@@ -48,16 +48,9 @@ service cloud.firestore {
 
     // Tournament *creation* needs its own, narrower gate than canManage(): TEAM_MANAGER
     // is deliberately excluded (it's scoped to canManage() for players/teams/clubs/
-    // seasons, but tournament hosting is TOURNAMENT_MANAGER's own territory), and
-    // ADMIN/TOURNAMENT_MANAGER additionally need a verified phone — self-serve
-    // tournament hosting is a higher-trust action than scoring a match. Trusting the
-    // stored `profile().phoneVerified` field here is safe (not spoofable by a direct
-    // Firestore write) only because `/users/{uid}`'s own update rule enforces
-    // `phoneVerifiedIsHonest()` below — that's the actual enforcement point; this
-    // function just reads the already-trustworthy result.
+    // seasons, but tournament hosting is TOURNAMENT_MANAGER's own territory).
     function canCreateTournament() {
-      return isMasterAdmin()
-        || (hasRole(['ADMIN', 'TOURNAMENT_MANAGER']) && profile().get('phoneVerified', false) == true);
+      return isMasterAdmin() || hasRole(['ADMIN', 'TOURNAMENT_MANAGER']);
     }
 
     // Master admin always, or the row's owner.
@@ -94,25 +87,6 @@ service cloud.firestore {
         || (canScore() && isSignedIn() && m.scorerId == request.auth.uid);
     }
 
-    // `phoneVerified` may only become `true` in a self-update when the caller's own Firebase
-    // Auth ID token carries a `phone_number` claim right now — Firebase only sets that claim
-    // once a real `linkWithPhoneNumber()` + SMS-code flow actually succeeds (see
-    // `auth.service.ts`'s `confirmPhoneVerificationCode`, which forces a fresh token right
-    // before this write so the claim is present in time). A signed-in user calling
-    // `updateDoc` directly with `phoneVerified: true` — with no real verification behind it —
-    // has no such claim on their token, so this rejects that write. Setting it to `false`
-    // (e.g. after editing the phone number) is always allowed; it only ever removes trust.
-    function phoneVerifiedIsHonest() {
-      // .get(key, default) is required here, not dot access: `phoneVerified` is absent
-      // (not merely false) on every profile that predates Slice B4's phone-verification
-      // feature or has never used it — i.e. almost every real account — and Firestore
-      // Rules errors on dot-accessing a genuinely-missing map key, which would otherwise
-      // deny every ordinary profile edit (displayName, bio, ...) for those accounts,
-      // not just ones that try to touch phoneVerified.
-      return request.resource.data.get('phoneVerified', false) != true
-        || request.auth.token.phone_number != null;
-    }
-
     // ---- Users -------------------------------------------------
     match /users/{uid} {
       allow read: if true; // profiles are needed for stats display
@@ -144,13 +118,11 @@ service cloud.firestore {
       allow update: if isSignedIn() && (
         (request.auth.uid == uid
           && request.resource.data.role == resource.data.role
-          && phoneVerifiedIsHonest()
           && (request.resource.data.status == resource.data.status
               || (resource.data.status == 'pending_registration'
                   && request.resource.data.status == 'active')))
         || (request.auth.uid == uid
             && request.resource.data.status == resource.data.status
-            && phoneVerifiedIsHonest()
             && exists(/databases/$(database)/documents/invitationRoleGrants/$(uid))
             && get(/databases/$(database)/documents/invitationRoleGrants/$(uid)).data.role == request.resource.data.role
             && get(/databases/$(database)/documents/invitationRoleGrants/$(uid)).data.expiresAt > request.time.toMillis())

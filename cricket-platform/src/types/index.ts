@@ -25,11 +25,6 @@ export interface UserProfile {
   bio?: string
   photoURL?: string | null
   email?: string
-  // Same privacy tier as `email`: never shown on the public site, visible only to the owner and
-  // admins. `phoneVerified` is only ever set true by a completed Firebase Phone Auth flow — editing
-  // `phone` afterward must reset it, so it can't be left stale-true against a different number.
-  phone?: string
-  phoneVerified?: boolean
   bannedAt?: number | null
   createdAt: number
   updatedAt: number

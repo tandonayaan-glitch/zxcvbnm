@@ -4,6 +4,16 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Removed — Phone/SMS verification requirement for tournament creation (ROADMAP_V5 Phase D, Slice D1 reversal)
+- Reverses Slice D1: staying on the Firebase Spark plan (no billing), so phone verification —
+  which needs the paid Blaze plan to actually send SMS — is no longer a requirement anywhere.
+  Creating a tournament is back to role-only (Tournament Manager/Admin, or the master admin),
+  enforced server-side in `firestore.rules`. The phone-verification UI (Account Settings, the
+  Tournament Manager application flow), its Firebase Phone Auth service functions, the
+  now-unused `phoneVerified` field, and the country-code phone input are all removed. The
+  Tournament Manager approval workflow itself is unchanged and remains the actual gate on who
+  gets the role.
+
 ### Added — Tournament Dashboard and Global/Tournament switcher (ROADMAP_V5 Phase D, Slice D3)
 - Anyone managing a tournament now sees a Global/Tournament switcher on their dashboard (tabs, plus a
   swipe gesture on touch devices) — the tournament view shows the same widgets scoped to just that
