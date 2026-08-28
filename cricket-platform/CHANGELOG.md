@@ -4,6 +4,61 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Fixed — Launch-audit fix pass
+- **Stale phone-verification copy removed.** Two places still referenced the removed Slice D1
+  phone requirement after it was reversed: the first-time tutorial's "Becoming a Tournament
+  Manager" step, and the Tournaments page's "New tournament" blocked-reason tooltip (whose
+  phone-mentioning branch was unreachable dead code anyway, since `canCreateTournament()` no
+  longer depends on phone for anyone). Both now describe only the real flow: request Tournament
+  Manager access, the master admin reviews it. No phone number is collected or described as
+  SMS-verified anywhere in that flow, and Firebase Phone Auth is not used.
+- **New-account dead end fixed.** A fresh self-signup (always `SCORER`) could log in, but couldn't
+  create a player or a team — `canManage()` excluded `SCORER` — so it had no way to reach the
+  "create and score matches immediately" promise from Slice D2 despite the role permitting it.
+  Added a narrower `canBuildRoster()` gate (`firestore.rules` + its `authStore.ts` mirror) that
+  additionally lets `SCORER` create players/teams **under their own ownership only** — editing or
+  deleting someone else's row, and every other `canManage()`-gated surface (clubs, seasons,
+  announcements), are unchanged. Player/team data was already public-read by design; nothing
+  about who can *read* anyone's roster changed, only who can create their own.
+- **"+ Add team" added to the match setup wizard's Teams step**, so a scorer with no existing
+  team no longer has to leave the flow to build one. Reuses the exact same `TeamFormModal` and
+  `createTeam()` service `TeamsPage` already uses (no second team system); the new team is owned
+  by whoever created it and is auto-selected into the slot that opened the form.
+- **Premium upsell copy fixed.** `<PremiumGate>`'s fallback card was rendering
+  `domain/entitlements.ts`'s internal implementation notes verbatim — real users were seeing
+  things like "components/charts/MatchGraphs.tsx" as the pitch for what they'd get with Premium.
+  Every entry's `description` is now real customer-facing copy; the file/component trace moved to
+  a `//` comment on each entry, which can't render into the UI. The feature list itself (which
+  keys exist, which tier they need, what they gate) is unchanged.
+- **Silent Add Player/Add Team failures fixed.** Beyond the permission fix above, a rejected
+  create now shows a specific, actionable toast (`lib/firebaseError.ts`'s new
+  `permissionAwareMessage()`) instead of relying on Firestore's raw error text; the "Add
+  player"/"Add team" actions themselves are now hidden for any role that genuinely can't use them
+  (`/players` and `/teams` have no route-level role restriction, so a bare `VIEWER` could
+  previously open a fully-live form that would always fail).
+- **Mobile horizontal overflow fixed.** `BackgroundLayer.tsx`'s decorative glow blobs bleed past
+  their own container by design (for a soft edge effect) inside a `fixed` + `overflow-hidden`
+  wrapper meant to clip them — but Chromium doesn't reliably bound document scroll width to that
+  clip for a `fixed` ancestor, so the whole page could be scrolled sideways on a phone-width
+  viewport. Fixed with `overflow-x: hidden` on `html`/`body` (`index.css`) — the standard fix for
+  exactly this failure mode; no content was hidden or resized, and every genuinely wide element
+  (tables, code) already scrolls inside its own container, not the document.
+- **Stale test data identified, not deleted.** The audit's 8 stuck "LIVE" 0/0 test matches and
+  several leftover test/pending accounts are real rows in production Firestore, owned by other
+  admin accounts — cleaning them up needs a signed-in master admin (to soft-delete/archive them
+  through the app, or the master admin's own judgment on a harder cleanup), which is outside what
+  this pass performs unilaterally. See the fix-pass report for the exact list.
+- **This Hosting-deploy changelog entry corrected** (Slice D5, below) to reflect that it was
+  reverted the same day, not still in effect.
+- **Left deliberately unfixed, investigated and reported instead:** a boundary struck off a
+  no-ball isn't counted toward the batter's 4s/6s (`domain/scoring.ts`'s `applyBall()`, the
+  `!extra` guard on the fours/sixes counters). `scoring.ts` is off-limits to modification, and
+  there is no safe fix outside it — `domain/stats.ts`'s career aggregation, and every other
+  consumer, all read the same `BatterCard.fours`/`sixes` counts `scoring.ts` itself computes;
+  recomputing them independently anywhere downstream would make one view of a match disagree with
+  every other view of the same match, which is worse than the current small, consistent
+  undercount. Left exactly as found.
+
 ### Removed — Phone/SMS verification requirement for tournament creation (ROADMAP_V5 Phase D, Slice D1 reversal)
 - Reverses Slice D1: staying on the Firebase Spark plan (no billing), so phone verification —
   which needs the paid Blaze plan to actually send SMS — is no longer a requirement anywhere.
@@ -36,9 +91,12 @@ All notable changes to CricketHub. Newest first.
   promotion step. Tournament creation still requires becoming a Tournament Manager with a verified
   phone.
 
-### Removed — Firebase Hosting from local deploy config (ROADMAP_V5 Phase D, Slice D5)
-- This repo can no longer push a Hosting deploy (`firebase.json`'s `hosting` block removed). The
-  already-live Hosting site is unaffected — this only changes what this repo's own config can deploy.
+### Removed, then restored — Firebase Hosting from local deploy config (ROADMAP_V5 Phase D, Slice D5)
+- Slice D5 removed `firebase.json`'s `hosting` block so this repo could no longer push a Hosting
+  deploy. That was reverted the same day (commit `ddad9cd`, "Restore Firebase Hosting config, per
+  mid-task clarification") — this repo can deploy Hosting again via
+  `firebase deploy --only hosting`, confirmed working. This entry previously still described the
+  removed state after the revert landed; corrected during the launch-audit fix pass below.
 
 ### Changed — Premium plan gating applied to the confirmed feature list (ROADMAP_V5 Slice C3)
 - A signed-in Free-plan user will now see an upsell in place of: tournament statistics, records,
