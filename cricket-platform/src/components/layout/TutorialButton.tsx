@@ -5,7 +5,7 @@ import {
   Swords,
   Radio,
   Trophy,
-  Phone,
+  UserCheck,
   LayoutGrid,
   Star,
 } from 'lucide-react'
@@ -59,9 +59,9 @@ const STEPS: Step[] = [
     body: 'Run leagues and knockouts with fixtures, standings and a public tournament page that anyone can follow — no sign-in needed to watch.',
   },
   {
-    icon: <Phone size={28} />,
+    icon: <UserCheck size={28} />,
     title: 'Becoming a Tournament Manager',
-    body: 'Hosting your own tournament needs a verified phone number and Tournament Manager access. Verify your phone and request access from Account Settings.',
+    body: 'Hosting your own tournament needs Tournament Manager access — request it from Account Settings and the master admin will review it.',
   },
   {
     icon: <LayoutGrid size={28} />,

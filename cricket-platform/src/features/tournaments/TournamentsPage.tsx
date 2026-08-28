@@ -27,7 +27,7 @@ import { listSeasons } from '@/services/seasons.service'
 import { softDelete } from '@/services/trash.service'
 import { snapshotVersion, changedKeys } from '@/services/versionHistory.service'
 import { formatDate } from '@/lib/format'
-import { useAuthStore, ownerScope, canCreateTournament, hasRole } from '@/store/authStore'
+import { useAuthStore, ownerScope, canCreateTournament } from '@/store/authStore'
 import { TournamentFormModal } from './TournamentFormModal'
 import type { Tournament, TournamentStatus } from '@/types'
 
@@ -52,12 +52,11 @@ export function TournamentsPage() {
   const canCreate = canCreateTournament(profile)
   // Only shown when canCreate is false, to explain the actual blocker rather than
   // silently hiding the action — the real gate is server-side (firestore.rules'
-  // canCreateTournament()); this is just an honest client-side explanation.
+  // canCreateTournament()): Tournament Manager/Admin, or the master admin. No phone
+  // step exists anywhere in that gate (removed — see CHANGELOG).
   const createBlockedReason = canCreate
     ? null
-    : hasRole(profile, 'ADMIN', 'TOURNAMENT_MANAGER')
-      ? 'Verify your phone number in Account Settings to create tournaments.'
-      : 'Ask the master admin for Tournament Manager access (and verify your phone) to create tournaments.'
+    : 'Ask the master admin for Tournament Manager access to create tournaments.'
 
   const scopedTournaments = (tournaments.data ?? []).filter(
     (t) => !scope || t.ownerId === scope,
