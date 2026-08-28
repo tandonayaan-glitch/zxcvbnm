@@ -54,6 +54,15 @@
  * ------------------------------------------------------------------ */
 html {
   scroll-behavior: smooth;
+  /* The decorative background layer (BackgroundLayer.tsx) intentionally positions its glow
+   * blobs past its own edges for a soft bleed effect, clipped by that layer's own
+   * `overflow-hidden` — but since that layer is `position: fixed`, Chromium's document-scroll-
+   * width calculation isn't reliably bounded by that clip. This is the actual, correct fix
+   * (not a content hider): it only stops the whole page from horizontally scrolling because of
+   * an off-screen decorative element, exactly the failure mode found in the mobile QA pass.
+   * Nothing real content-wise relies on horizontal document scroll anywhere in this app — any
+   * genuinely wide content (tables, code) already scrolls inside its own container. */
+  overflow-x: hidden;
 }
 
 body {
@@ -63,6 +72,7 @@ body {
   color: var(--color-ink-900);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  overflow-x: hidden;
 }
 
 /* Dark mode, scope: app-shell chrome (page background, sidebar, headers,
