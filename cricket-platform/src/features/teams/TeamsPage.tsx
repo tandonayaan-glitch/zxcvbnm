@@ -25,7 +25,8 @@ import { listPlayers } from '@/services/players.service'
 import { listClubs } from '@/services/clubs.service'
 import { softDelete } from '@/services/trash.service'
 import { snapshotVersion, changedKeys } from '@/services/versionHistory.service'
-import { useAuthStore, ownerScope } from '@/store/authStore'
+import { useAuthStore, ownerScope, canBuildRoster } from '@/store/authStore'
+import { permissionAwareMessage } from '@/lib/firebaseError'
 import { TeamFormModal } from './TeamFormModal'
 import { TeamInviteModal } from './TeamInviteModal'
 import type { Team } from '@/types'
@@ -34,6 +35,7 @@ export function TeamsPage() {
   const toast = useToast()
   const profile = useAuthStore((s) => s.profile)
   const scope = ownerScope(profile)
+  const canAdd = canBuildRoster(profile)
   const teams = useAsync(listTeams, [])
   const players = useAsync(listPlayers, [])
   const clubs = useAsync(listClubs, [])
@@ -85,7 +87,12 @@ export function TeamsPage() {
       setEditing(null)
       teams.refetch()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Save failed')
+      toast.error(
+        permissionAwareMessage(
+          e,
+          "You don't have permission to add teams. Ask an admin for Team Manager access.",
+        ),
+      )
     }
   }
 
@@ -106,14 +113,16 @@ export function TeamsPage() {
         title="Teams"
         subtitle="Create teams, manage squads and assign captains."
         actions={
-          <Button
-            onClick={() => {
-              setEditing(null)
-              setShowForm(true)
-            }}
-          >
-            <Plus size={16} /> Add team
-          </Button>
+          canAdd ? (
+            <Button
+              onClick={() => {
+                setEditing(null)
+                setShowForm(true)
+              }}
+            >
+              <Plus size={16} /> Add team
+            </Button>
+          ) : undefined
         }
       />
 
@@ -123,11 +132,17 @@ export function TeamsPage() {
         <EmptyState
           icon={<Shield size={40} />}
           title="No teams yet"
-          description="Create your first team and add players to its squad."
+          description={
+            canAdd
+              ? 'Create your first team and add players to its squad.'
+              : "You don't have permission to add teams yet — ask an admin for Team Manager access."
+          }
           action={
-            <Button onClick={() => setShowForm(true)}>
-              <Plus size={16} /> Add team
-            </Button>
+            canAdd ? (
+              <Button onClick={() => setShowForm(true)}>
+                <Plus size={16} /> Add team
+              </Button>
+            ) : undefined
           }
         />
       ) : (

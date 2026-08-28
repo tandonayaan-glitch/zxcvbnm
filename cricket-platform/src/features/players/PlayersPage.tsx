@@ -47,7 +47,8 @@ import { snapshotVersion, changedKeys } from '@/services/versionHistory.service'
 import { aggregatePlayerStats, buildLeaderboards } from '@/domain/stats'
 import { LeaderboardCard } from '@/components/stats/LeaderboardCard'
 import { PLAYER_ROLE_LABELS, BOWLING_STYLE_LABELS } from '@/lib/format'
-import { useAuthStore, ownerScope } from '@/store/authStore'
+import { useAuthStore, ownerScope, canBuildRoster } from '@/store/authStore'
+import { permissionAwareMessage } from '@/lib/firebaseError'
 import { PlayerFormModal } from './PlayerFormModal'
 import type { Player } from '@/types'
 
@@ -55,6 +56,7 @@ export function PlayersPage() {
   const toast = useToast()
   const profile = useAuthStore((s) => s.profile)
   const scope = ownerScope(profile)
+  const canAdd = canBuildRoster(profile)
   const players = useAsync(listPlayers, [])
   const matches = useAsync(listAllMatches, [])
 
@@ -175,7 +177,12 @@ export function PlayersPage() {
       setEditing(null)
       players.refetch()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Save failed')
+      toast.error(
+        permissionAwareMessage(
+          e,
+          "You don't have permission to add players. Ask an admin for Team Manager access.",
+        ),
+      )
     }
   }
 
@@ -205,14 +212,16 @@ export function PlayersPage() {
         title="Players"
         subtitle="Manage your player roster, roles and team assignments."
         actions={
-          <Button
-            onClick={() => {
-              setEditing(null)
-              setShowForm(true)
-            }}
-          >
-            <Plus size={16} /> Add player
-          </Button>
+          canAdd ? (
+            <Button
+              onClick={() => {
+                setEditing(null)
+                setShowForm(true)
+              }}
+            >
+              <Plus size={16} /> Add player
+            </Button>
+          ) : undefined
         }
       />
 
@@ -278,11 +287,17 @@ export function PlayersPage() {
         <EmptyState
           icon={<Users size={40} />}
           title="No players yet"
-          description="Add your first player to start building teams and scoring matches."
+          description={
+            canAdd
+              ? 'Add your first player to start building teams and scoring matches.'
+              : "You don't have permission to add players yet — ask an admin for Team Manager access."
+          }
           action={
-            <Button onClick={() => setShowForm(true)}>
-              <Plus size={16} /> Add player
-            </Button>
+            canAdd ? (
+              <Button onClick={() => setShowForm(true)}>
+                <Plus size={16} /> Add player
+              </Button>
+            ) : undefined
           }
         />
       ) : (
