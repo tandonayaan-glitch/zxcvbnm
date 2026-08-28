@@ -876,12 +876,14 @@ export interface Subscription {
 }
 
 /** A gateable feature's registration. The `key` is what call sites pass to `hasEntitlement()`/
- *  `<PremiumGate>`; `tier` is the minimum plan required. This registry is intentionally empty in
- *  this codebase today — no existing feature is locked behind premium yet. Populating it is a
- *  product decision, not a technical one; the gating mechanism itself is ready either way. */
+ *  `<PremiumGate>`; `tier` is the minimum plan required. See `domain/entitlements.ts`'s
+ *  `PREMIUM_FEATURES` for the actual registry. */
 export interface PremiumFeatureDef {
   key: string
   name: string
+  /** Customer-facing copy — rendered verbatim in `<PremiumGate>`'s upsell card. Never put a
+   *  file path, component name, or other implementation detail here; that belongs in a `//`
+   *  comment on the registry entry instead, which can't leak into the UI. */
   description: string
   tier: Exclude<PlanTier, 'free'>
 }
