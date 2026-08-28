@@ -92,6 +92,16 @@ export const canScore = (p: UserProfile | null) =>
 export const canManagePlayers = (p: UserProfile | null) =>
   hasRole(p, 'MASTER_ADMIN', 'ADMIN', 'TEAM_MANAGER')
 
+/**
+ * Whether this profile can create a player/team under their own ownership — mirrors
+ * `firestore.rules`' `canBuildRoster()` exactly. Narrower than granting SCORER full
+ * `canManagePlayers`/`canManage` (clubs/seasons and editing/deleting someone else's
+ * row stay off-limits) but wide enough that a fresh self-signup (always SCORER) can
+ * actually build the roster a new match needs, not just watch.
+ */
+export const canBuildRoster = (p: UserProfile | null) =>
+  hasRole(p, 'MASTER_ADMIN', 'ADMIN', 'TEAM_MANAGER', 'TOURNAMENT_MANAGER', 'SCORER')
+
 export const canManageTournaments = (p: UserProfile | null) =>
   hasRole(p, 'MASTER_ADMIN', 'ADMIN', 'TOURNAMENT_MANAGER')
 

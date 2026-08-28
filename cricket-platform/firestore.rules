@@ -46,6 +46,17 @@ service cloud.firestore {
       return hasRole(['MASTER_ADMIN', 'ADMIN', 'TEAM_MANAGER', 'TOURNAMENT_MANAGER']);
     }
 
+    // Players/teams only: a bare SCORER may build their OWN roster (create only — editing
+    // or deleting an existing row stays owner/master-gated via isOwnerOrMaster(), unrelated
+    // to role). This is what makes "new accounts can create and score matches immediately"
+    // actually true — without it, a fresh self-signup (always SCORER) had no way to create
+    // the players/team a new match needs, since canManage() excludes SCORER by design.
+    // Deliberately NOT folded into canManage() itself: clubs/seasons and every other
+    // canManage()-gated surface stay Team Manager/Admin+ only, unchanged.
+    function canBuildRoster() {
+      return canManage() || hasRole(['SCORER']);
+    }
+
     // Tournament *creation* needs its own, narrower gate than canManage(): TEAM_MANAGER
     // is deliberately excluded (it's scoped to canManage() for players/teams/clubs/
     // seasons, but tournament hosting is TOURNAMENT_MANAGER's own territory).
@@ -149,7 +160,7 @@ service cloud.firestore {
       // comment below for why this narrow, grant-gated exception is safe. The new player's
       // `ownerId` must match the actual team's owner (not an arbitrary value the invitee
       // picks), so accepting an invite can't be used to "own" an unrelated player doc.
-      allow create: if (canManage()
+      allow create: if (canBuildRoster()
           && (isMasterAdmin() || request.resource.data.ownerId == request.auth.uid))
         || (isSignedIn()
             && request.resource.data.linkedUserId == request.auth.uid
@@ -173,7 +184,7 @@ service cloud.firestore {
     }
     match /teams/{id} {
       allow read: if true;
-      allow create: if canManage()
+      allow create: if canBuildRoster()
         && (isMasterAdmin() || request.resource.data.ownerId == request.auth.uid);
       // Normal path: the owner/master edits any field. Second path: a team invitation's own
       // invitee appends exactly the one player id they just joined as to `playerIds` — nothing
