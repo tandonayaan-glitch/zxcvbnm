@@ -24,8 +24,9 @@ import {
 } from '@/components/ui/primitives'
 import { useAsync } from '@/hooks/useAsync'
 import { useToast } from '@/components/ui/toast'
-import { listTeams } from '@/services/teams.service'
+import { listTeams, createTeam, type TeamInput } from '@/services/teams.service'
 import { listPlayers } from '@/services/players.service'
+import { listClubs } from '@/services/clubs.service'
 import { listTournaments } from '@/services/tournaments.service'
 import { listUsers } from '@/services/users.service'
 import {
@@ -34,7 +35,9 @@ import {
   updateMatch,
 } from '@/services/matches.service'
 import { snapshotVersion, changedKeys } from '@/services/versionHistory.service'
-import { useAuthStore, ownerScope } from '@/store/authStore'
+import { useAuthStore, ownerScope, canBuildRoster } from '@/store/authStore'
+import { permissionAwareMessage } from '@/lib/firebaseError'
+import { TeamFormModal } from '@/features/teams/TeamFormModal'
 import { usePremiumFeature } from '@/hooks/useMySubscription'
 import { cn } from '@/lib/cn'
 import { MATCH_FORMAT_LABELS, MATCH_FORMAT_OVERS } from '@/lib/format'
@@ -116,6 +119,7 @@ export function MatchSetupPage() {
 
   const teams = useAsync(listTeams, [])
   const players = useAsync(listPlayers, [])
+  const clubs = useAsync(listClubs, [])
   const tournaments = useAsync(listTournaments, [])
   const users = useAsync(listUsers, [])
 
@@ -124,6 +128,9 @@ export function MatchSetupPage() {
   const [loadingEdit, setLoadingEdit] = useState(!!editId)
   const [loadingDuplicate, setLoadingDuplicate] = useState(!!duplicateId)
   const [editReason, setEditReason] = useState('')
+  // Which team slot ('A'/'B') opened the inline "+ Add team" modal, so the newly
+  // created team can be auto-selected into the right side once it's saved.
+  const [addingTeamSlot, setAddingTeamSlot] = useState<'A' | 'B' | null>(null)
   const [form, setForm] = useState<FormState>({
     title: '',
     tournamentId: '',
@@ -247,6 +254,10 @@ export function MatchSetupPage() {
     () => (players.data ?? []).filter((p) => !scope || p.ownerId === scope),
     [players.data, scope],
   )
+  const scopedClubs = useMemo(
+    () => (clubs.data ?? []).filter((c) => !scope || c.ownerId === scope),
+    [clubs.data, scope],
+  )
   const scopedTournaments = useMemo(
     () => (tournaments.data ?? []).filter((t) => !scope || t.ownerId === scope),
     [tournaments.data, scope],
@@ -328,6 +339,27 @@ export function MatchSetupPage() {
     } else {
       set('teamBId', teamId)
       set('squadB', squad)
+    }
+  }
+
+  // "+ Add team" from inside the wizard — same createTeam() service and Team data
+  // model TeamsPage itself uses, not a second team system. The new team is owned by
+  // whoever's creating the match (matching TeamsPage's own create path), then
+  // auto-selected into whichever slot opened the modal so it's ready to use immediately.
+  async function handleCreateTeam(input: TeamInput) {
+    try {
+      const newId = await createTeam({ ...input, ownerId: profile?.id })
+      await teams.refetch()
+      if (addingTeamSlot) chooseTeam(addingTeamSlot, newId)
+      setAddingTeamSlot(null)
+      toast.success('Team created')
+    } catch (e) {
+      toast.error(
+        permissionAwareMessage(
+          e,
+          "You don't have permission to add teams. Ask an admin for Team Manager access.",
+        ),
+      )
     }
   }
 
@@ -665,6 +697,7 @@ export function MatchSetupPage() {
               value={form.teamAId}
               disabledId={form.teamBId}
               onChange={(id) => chooseTeam('A', id)}
+              onAddNew={canBuildRoster(profile) ? () => setAddingTeamSlot('A') : undefined}
             />
             <TeamPicker
               label="Team B"
@@ -672,10 +705,14 @@ export function MatchSetupPage() {
               value={form.teamBId}
               disabledId={form.teamAId}
               onChange={(id) => chooseTeam('B', id)}
+              onAddNew={canBuildRoster(profile) ? () => setAddingTeamSlot('B') : undefined}
             />
             {scopedTeams.length < 2 && (
               <p className="sm:col-span-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                You need at least two teams. Create teams in the Teams section.
+                You need at least two teams.{' '}
+                {canBuildRoster(profile)
+                  ? 'Use "+ Add team" above, or create one in the Teams section.'
+                  : 'Ask an admin to create one, or for Team Manager access.'}
               </p>
             )}
           </div>
@@ -919,6 +956,16 @@ export function MatchSetupPage() {
           )}
         </div>
       </Card>
+
+      {addingTeamSlot && (
+        <TeamFormModal
+          team={null}
+          players={scopedPlayers}
+          clubs={scopedClubs}
+          onClose={() => setAddingTeamSlot(null)}
+          onSave={handleCreateTeam}
+        />
+      )}
     </div>
   )
 }
@@ -929,12 +976,15 @@ function TeamPicker({
   value,
   disabledId,
   onChange,
+  onAddNew,
 }: {
   label: string
   teams: Team[]
   value: string
   disabledId: string
   onChange: (id: string) => void
+  /** Omit to hide "+ Add team" entirely (e.g. the viewer can't create one). */
+  onAddNew?: () => void
 }) {
   return (
     <Field label={label} required>
@@ -946,6 +996,15 @@ function TeamPicker({
           </option>
         ))}
       </Select>
+      {onAddNew && (
+        <button
+          type="button"
+          onClick={onAddNew}
+          className="mt-1.5 text-xs font-medium text-brand-600 hover:underline dark:text-brand-400"
+        >
+          + Add team
+        </button>
+      )}
     </Field>
   )
 }
