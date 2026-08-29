@@ -4,6 +4,29 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Fixed — Remaining-issues follow-up
+- **Firebase Storage listing no longer spams the console.** Image hosting moved to R2, but
+  gallery/media surfaces still call Firebase Storage's `listAll()` to surface pre-migration
+  photos. On any origin without a Storage CORS rule (local dev, or a post-migration deploy) that
+  call fails — and the SDK's default 2-minute retry window logged a CORS error per attempt, once
+  per folder, on every navigation (the Media Library fires five folders in parallel). Now:
+  `storage.maxOperationRetryTime` is capped at 8s in `lib/firebase.ts` so a broken call fails
+  fast and quiet; `storage.service.ts` runs a single shared "can we list Storage?" probe that
+  every caller awaits (a burst of folder listings makes one request between them, not one each);
+  and a failed probe is remembered in `sessionStorage`, so later navigations and reloads in the
+  same tab don't re-probe. Net: at most ~3 failed requests on the first load of a session
+  (one probe + its retries), then silence — versus dozens per navigation, unbounded. A fresh
+  tab re-probes once, so adding a CORS rule is picked up without a code change. `listFolderImages`
+  / `listFolderDocuments` resolve to `[]` instead of throwing, so galleries and the tournament
+  documents panel render an empty state rather than an error boundary.
+- **The remaining `window.confirm()` calls are now in-app dialogs.** `UsersPage` (Grant/Revoke
+  Premium, Suspend) and `MatchSetupPage`'s step-0 "Cancel this setup?" moved off native
+  `confirm()` — a silent no-op in some embedded webviews / after a "block dialogs" opt-out — to
+  the shared `<ConfirmDialog>` (stays open and shows the real error inline if the action fails).
+  Reinstating a suspended user stays a one-click action (it isn't destructive). Grant/revoke/
+  suspend/re-issue now surface `permissionAwareMessage(...)` instead of a swallowed generic
+  toast.
+
 ### Added / Fixed — Entitlements, credentials, interactive scoring inputs, auto-powerplay pass
 - **Master Admin is premium everywhere, from one place.** `isMasterAdmin(profile)` had no bypass
   in the entitlement layer, so every registered `<PremiumGate>` and `usePremiumFeature()` check

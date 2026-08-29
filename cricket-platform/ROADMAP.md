@@ -999,6 +999,34 @@ changes or a human scopes the task down to something finite.
   Storage CORS failures from the media/image-usage path (R2 Worker URL absent in this dev env),
   not app code.
 
+## Phase 40 — Remaining-issues follow-up
+- ✅ **Firebase Storage listing console spam.** `listAll()` on the (post-migration, no-CORS-rule)
+  Storage bucket failed and the SDK's default 2-minute retry logged a CORS error per attempt,
+  per folder, per navigation — the Media Library alone fires five folders in parallel. Fix:
+  `storage.maxOperationRetryTime = 8000` in `lib/firebase.ts` (fast, quiet failure; still
+  tolerates a transient blip); a single shared `canListFirebaseStorage()` probe in
+  `storage.service.ts` that every folder listing awaits (one request per session, not per
+  folder), with a 6 s *rejecting* timeout so a hang also counts as "unavailable"; the negative
+  result persisted to `sessionStorage` so later navigations/reloads in the tab don't re-probe
+  (a fresh tab re-probes once — a new CORS rule is picked up without a code change).
+  `listFolderImages` / `listFolderDocuments` now resolve `[]` instead of throwing. Verified
+  live: a fresh session that visits `/admin/media` + sweeps seven image surfaces makes **3**
+  Storage requests total (one probe + two retries) with the breaker then tripped, vs. dozens
+  before; Media Library still renders (empty state).
+- ✅ **Remaining `window.confirm()` → `<ConfirmDialog>`.** `UsersPage` Grant/Revoke Premium and
+  Suspend, and `MatchSetupPage`'s step-0 discard-setup prompt, moved to the shared in-app
+  dialog (native `confirm()` is a silent no-op in some embedded webviews). Reinstate stays
+  one-click. Grant/revoke/suspend/re-issue surface `permissionAwareMessage(...)` on failure.
+  Verified live: Grant → dialog → confirm → `subscriptions/{uid}` `provider:manual` + Plan cell
+  "Premium · granted"; Revoke → `status:canceled`; Suspend dialog cancels cleanly;
+  MatchSetup "Cancel" with a dirty form shows "Discard match setup" / "Keep editing".
+- **Not fixed (platform constraints, documented):** deploying `firestore.rules` (ops step, and
+  this pass doesn't deploy — the new writes need no rule change); the orphaned Firebase Auth
+  user left by a re-issue (client SDK can't delete another user's Auth record — the orphan is
+  inert, its profile is `banned`); self-service password reset for an activated user who forgot
+  their password (no email backend — the master-admin "Reset access" flow covers it).
+- `tsc` / `npm run lint` (16 warnings / 0 errors, unchanged) / `npm run build` all clean.
+
 ---
 
 ### Notes

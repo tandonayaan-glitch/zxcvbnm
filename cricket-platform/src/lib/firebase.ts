@@ -93,6 +93,12 @@ if (isFirebaseConfigured) {
     dbInstance = getFirestore(app)
   }
   storageInstance = getStorage(app)
+  // Default is 2 minutes. Image hosting has moved to R2 and a Storage bucket without a
+  // CORS rule for this origin (local dev, or a post-migration deploy) makes every
+  // `listAll`/`getDownloadURL` fail — with the default, the SDK retries that failure for
+  // two minutes, logging a CORS error each attempt. Capping it keeps a genuinely broken
+  // Storage call to a short, quiet failure while still tolerating a transient blip.
+  storageInstance.maxOperationRetryTime = 8000
 } else {
   // Unconfigured: leave as undefined-cast singletons. Access is gated by the
   // setup screen, so these are never used until real config is provided.

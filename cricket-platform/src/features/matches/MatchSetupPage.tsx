@@ -12,6 +12,7 @@ import {
   Users,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import {
   Avatar,
   Badge,
@@ -146,6 +147,7 @@ export function MatchSetupPage() {
   // dropped into the right squad once saved.
   const [addingPlayerSlot, setAddingPlayerSlot] = useState<'A' | 'B' | null>(null)
   const [newLogin, setNewLogin] = useState<LinkedCredentials | null>(null)
+  const [confirmCancel, setConfirmCancel] = useState(false)
   const [form, setForm] = useState<FormState>({
     title: '',
     tournamentId: '',
@@ -178,9 +180,13 @@ export function MatchSetupPage() {
     setForm((f) => ({ ...f, [k]: v }))
   }
 
-  /** Leave the wizard, confirming first if the form has unsaved edits. */
+  /** Leave the wizard, confirming first (via <ConfirmDialog>, not `window.confirm`) if the
+   *  form has unsaved edits. */
   function cancelWizard() {
-    if (dirty && !confirm("Discard this match setup? Your changes won't be saved.")) return
+    if (dirty) {
+      setConfirmCancel(true)
+      return
+    }
     navigate(-1)
   }
 
@@ -1081,6 +1087,16 @@ export function MatchSetupPage() {
       {newLogin && (
         <CredentialsDialog credentials={newLogin} onClose={() => setNewLogin(null)} />
       )}
+
+      <ConfirmDialog
+        open={confirmCancel}
+        title="Discard match setup"
+        message="Discard this match setup? Your changes won't be saved."
+        confirmLabel="Discard"
+        cancelLabel="Keep editing"
+        onConfirm={() => navigate(-1)}
+        onClose={() => setConfirmCancel(false)}
+      />
     </div>
   )
 }

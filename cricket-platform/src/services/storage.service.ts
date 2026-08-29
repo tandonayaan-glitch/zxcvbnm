@@ -188,22 +188,88 @@ async function listAllWithTimeout(folderRef: ReturnType<typeof ref>) {
   return Promise.race([listAll(folderRef), timeout])
 }
 
+/*
+ * Circuit breaker for the legacy Firebase Storage image listing.
+ *
+ * Image hosting has moved to R2; the only reason to still call Firebase Storage's
+ * `listAll()` is to surface photos uploaded *before* that cutover. In any environment
+ * whose Storage bucket has no CORS rule for the app's origin — every local dev setup,
+ * and every deployment that finished the R2 migration and dropped its Storage CORS
+ * config — that call fails at the network layer (`ERR_FAILED` / CORS), which the browser
+ * logs itself once per request. It's caught (galleries still render their R2 images),
+ * but a page that lists several folders at once (the Media Library fires five in
+ * parallel) turns that into a wall of identical console errors.
+ *
+ * Two things keep it to at most one failed request per browser session:
+ *  - a single shared "can we even list Storage?" probe that every caller awaits, so a
+ *    burst of parallel folder listings makes one network call between them, not one each;
+ *  - the negative result is remembered in `sessionStorage`, so subsequent navigations
+ *    and reloads in the same tab don't re-probe. A fresh tab/session probes once more,
+ *    so a newly-added CORS rule is picked up without a code change.
+ */
+const STORAGE_LIST_BREAKER_KEY = 'ch_fb_storage_list_unavailable'
+
+function storageListBreakerTripped(): boolean {
+  try {
+    return sessionStorage.getItem(STORAGE_LIST_BREAKER_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function tripStorageListBreaker() {
+  try {
+    sessionStorage.setItem(STORAGE_LIST_BREAKER_KEY, '1')
+  } catch {
+    /* private mode / storage disabled — the in-memory promise below still de-dupes */
+  }
+}
+
+let storageListProbe: Promise<boolean> | null = null
+
+/** Resolves `true` once if Firebase Storage listing works from this origin, `false`
+ *  (and trips the session breaker) the first time it doesn't. Shared by every caller, so
+ *  a burst of parallel folder listings costs one probe request between them. A CORS/network
+ *  failure and a hang (the SDK retrying a broken call) both count as "unavailable" — the
+ *  timeout here *rejects*, unlike `listAllWithTimeout`'s, which resolves-empty. */
+function canListFirebaseStorage(): Promise<boolean> {
+  if (!storage || storageListBreakerTripped()) return Promise.resolve(false)
+  if (!storageListProbe) {
+    const probeTimeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('storage list probe timed out')), 6000),
+    )
+    storageListProbe = Promise.race([listAll(ref(storage, 'players')), probeTimeout])
+      .then(() => true)
+      .catch(() => {
+        tripStorageListBreaker()
+        return false
+      })
+  }
+  return storageListProbe
+}
+
 /** Legacy images already sitting in Firebase Storage from before the R2 migration — kept
- *  working, not deleted, not migrated by this change. */
+ *  working, not deleted, not migrated by this change. Returns `[]` (never throws) when
+ *  Storage isn't configured or the session breaker has tripped. */
 async function listLegacyFirebaseImages(folder: string): Promise<StoredImage[]> {
-  const folderRef = ref(storage, folder)
-  const { items } = await listAllWithTimeout(folderRef)
-  return Promise.all(
-    items.map(async (item) => {
-      const [url, meta] = await Promise.all([getDownloadURL(item), getMetadata(item)])
-      return {
-        path: item.fullPath,
-        url,
-        size: meta.size,
-        createdAt: new Date(meta.timeCreated).getTime(),
-      }
-    }),
-  )
+  if (!(await canListFirebaseStorage())) return []
+  try {
+    const { items } = await listAllWithTimeout(ref(storage, folder))
+    return await Promise.all(
+      items.map(async (item) => {
+        const [url, meta] = await Promise.all([getDownloadURL(item), getMetadata(item)])
+        return {
+          path: item.fullPath,
+          url,
+          size: meta.size,
+          createdAt: new Date(meta.timeCreated).getTime(),
+        }
+      }),
+    )
+  } catch {
+    tripStorageListBreaker()
+    return []
+  }
 }
 
 /** Images uploaded to R2 since the migration. Unauthenticated — listing isn't privileged,
@@ -234,22 +300,29 @@ export async function listFolderImages(folder: string): Promise<StoredImage[]> {
 }
 
 /** List every document under a given upload folder (e.g. `tournamentDocuments/{id}`). Strips
- *  the generated `doc_xxxxx-` id prefix back off the filename for display. Unchanged —
- *  documents stay on Firebase Storage. */
+ *  the generated `doc_xxxxx-` id prefix back off the filename for display. Documents stay on
+ *  Firebase Storage — but the same origin/CORS reality as image listing applies, so this
+ *  goes through the shared probe and resolves to `[]` (never throws) when Storage listing
+ *  isn't reachable, rather than surfacing an error boundary on the documents panel. */
 export async function listFolderDocuments(folder: string): Promise<StoredDocument[]> {
-  const folderRef = ref(storage, folder)
-  const { items } = await listAllWithTimeout(folderRef)
-  const results = await Promise.all(
-    items.map(async (item) => {
-      const [url, meta] = await Promise.all([getDownloadURL(item), getMetadata(item)])
-      return {
-        path: item.fullPath,
-        url,
-        name: item.name.replace(/^doc_[a-z0-9]+-/, ''),
-        size: meta.size,
-        createdAt: new Date(meta.timeCreated).getTime(),
-      }
-    }),
-  )
-  return results.sort((a, b) => b.createdAt - a.createdAt)
+  if (!(await canListFirebaseStorage())) return []
+  try {
+    const { items } = await listAllWithTimeout(ref(storage, folder))
+    const results = await Promise.all(
+      items.map(async (item) => {
+        const [url, meta] = await Promise.all([getDownloadURL(item), getMetadata(item)])
+        return {
+          path: item.fullPath,
+          url,
+          name: item.name.replace(/^doc_[a-z0-9]+-/, ''),
+          size: meta.size,
+          createdAt: new Date(meta.timeCreated).getTime(),
+        }
+      }),
+    )
+    return results.sort((a, b) => b.createdAt - a.createdAt)
+  } catch {
+    tripStorageListBreaker()
+    return []
+  }
 }

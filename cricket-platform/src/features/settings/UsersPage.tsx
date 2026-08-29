@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { UserCog, Ban, ShieldCheck, Crown, Sparkles, Copy, Check, KeyRound } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
@@ -23,6 +23,8 @@ import { effectiveTier } from '@/domain/entitlements'
 import { logAudit } from '@/services/audit.service'
 import { useAuthStore } from '@/store/authStore'
 import { formatDate } from '@/lib/format'
+import { permissionAwareMessage } from '@/lib/firebaseError'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { CredentialsDialog, type LinkedCredentials } from '@/features/players/CredentialsDialog'
 import type { Role, Subscription, UserProfile } from '@/types'
 
@@ -87,53 +89,67 @@ export function UsersPage() {
     }
   }
 
-  async function toggleBan(uid: string, ban: boolean) {
-    if (ban && !confirm('Suspend this user? They will be signed out and blocked from logging in.'))
-      return
-    setSavingId(uid)
+  /** Destructive/consequential row actions route through one <ConfirmDialog> instead of
+   *  `window.confirm()` (a silent no-op in some embedded webviews / after a "block dialogs"
+   *  opt-out, which reads as a dead button). Reinstating a user isn't destructive and stays
+   *  a one-click action. */
+  type PendingAction =
+    | { kind: 'suspend'; user: UserProfile }
+    | { kind: 'grant'; user: UserProfile }
+    | { kind: 'revoke'; user: UserProfile }
+    | { kind: 'reissue'; user: UserProfile }
+  const [pending, setPending] = useState<PendingAction | null>(null)
+
+  async function reinstate(user: UserProfile) {
+    setSavingId(user.id)
     try {
-      await setUserStatus(uid, ban ? 'banned' : 'active')
-      const target = (users.data ?? []).find((u) => u.id === uid)
-      await logAudit(
-        me,
-        ban ? 'Suspended user' : 'Reinstated user',
-        target?.username ?? uid,
-        { before: target?.status, after: ban ? 'banned' : 'active' },
-      )
-      toast.success(ban ? 'User suspended' : 'User reinstated')
+      await setUserStatus(user.id, 'active')
+      await logAudit(me, 'Reinstated user', user.username ?? user.id, {
+        before: user.status,
+        after: 'active',
+      })
+      toast.success('User reinstated')
       users.refetch()
-    } catch {
-      toast.error('Could not update status')
+    } catch (e) {
+      toast.error(permissionAwareMessage(e, 'Could not update status'))
     } finally {
       setSavingId(null)
     }
   }
 
-  async function togglePremium(user: UserProfile, grant: boolean) {
-    if (grant) {
-      if (
-        !confirm(
-          `Grant ${user.displayName || user.username} full Premium access?\n\n` +
-            'This is an admin comp — no payment is taken. It stays until you revoke it.',
-        )
-      )
-        return
-    } else if (
-      !confirm(
-        `Revoke Premium access for ${user.displayName || user.username}?\n\n` +
-          'They drop back to the Free plan immediately (on their next page load).',
-      )
-    ) {
-      return
-    }
+  /** Runs the confirmed action. Throws on failure so <ConfirmDialog> shows the real reason
+   *  inline and stays open — matching the PlayersPage delete flow. */
+  async function runPending() {
+    if (!pending) return
+    const { kind, user } = pending
     setSavingId(user.id)
     try {
-      if (grant) await grantSubscription(user.id, 'premium', me)
-      else await revokeSubscription(user.id, me)
-      toast.success(grant ? 'Premium granted' : 'Premium revoked')
-      subs.refetch()
-    } catch {
-      toast.error(grant ? 'Could not grant Premium' : 'Could not revoke Premium')
+      if (kind === 'suspend') {
+        await setUserStatus(user.id, 'banned')
+        await logAudit(me, 'Suspended user', user.username ?? user.id, {
+          before: user.status,
+          after: 'banned',
+        })
+        toast.success('User suspended')
+        users.refetch()
+      } else if (kind === 'grant' || kind === 'revoke') {
+        if (kind === 'grant') await grantSubscription(user.id, 'premium', me)
+        else await revokeSubscription(user.id, me)
+        toast.success(kind === 'grant' ? 'Premium granted' : 'Premium revoked')
+        subs.refetch()
+      } else {
+        const fresh = await reissueLinkedAccess(user, me)
+        setReissued({
+          playerName: fresh.displayName,
+          username: fresh.username,
+          password: fresh.password,
+        })
+        toast.success('New access issued')
+        users.refetch()
+        subs.refetch()
+      }
+    } catch (e) {
+      throw new Error(permissionAwareMessage(e, 'You don’t have permission to do that.'))
     } finally {
       setSavingId(null)
     }
@@ -149,37 +165,57 @@ export function UsersPage() {
     )
   }
 
-  async function reissueAccess(user: UserProfile) {
-    const activated = user.status !== 'pending_registration'
-    if (
-      !confirm(
-        `Re-issue login access for ${user.displayName || user.username}?\n\n` +
-          'This creates a NEW username and a NEW temporary password (shown once). ' +
-          `Their current login (@${user.username}) stops working` +
-          (activated ? ' and they are signed out.' : '.') +
-          '\n\nUse this when the one-time password was lost before they signed in.',
-      )
-    )
-      return
-    setSavingId(user.id)
-    try {
-      const fresh = await reissueLinkedAccess(user, me)
-      setReissued({
-        playerName: fresh.displayName,
-        username: fresh.username,
-        password: fresh.password,
-      })
-      toast.success('New access issued')
-      users.refetch()
-      subs.refetch()
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Could not re-issue access')
-    } finally {
-      setSavingId(null)
-    }
-  }
-
   const loading = users.loading || subs.loading
+
+  const confirmCopy: Record<PendingAction['kind'], { title: string; confirmLabel: string; tone: 'danger' | 'primary'; body: (u: UserProfile) => ReactNode }> = {
+    suspend: {
+      title: 'Suspend user',
+      confirmLabel: 'Suspend',
+      tone: 'danger',
+      body: (u) => (
+        <>
+          Suspend <strong>{u.displayName || u.username}</strong>? They’ll be signed out and
+          blocked from logging in until reinstated.
+        </>
+      ),
+    },
+    grant: {
+      title: 'Grant Premium',
+      confirmLabel: 'Grant Premium',
+      tone: 'primary',
+      body: (u) => (
+        <>
+          Grant <strong>{u.displayName || u.username}</strong> full Premium access? This is an
+          admin comp — no payment is taken, and it stays until you revoke it.
+        </>
+      ),
+    },
+    revoke: {
+      title: 'Revoke Premium',
+      confirmLabel: 'Revoke Premium',
+      tone: 'danger',
+      body: (u) => (
+        <>
+          Revoke Premium access for <strong>{u.displayName || u.username}</strong>? They drop
+          back to the Free plan on their next page load.
+        </>
+      ),
+    },
+    reissue: {
+      title: 'Re-issue login access',
+      confirmLabel: 'Re-issue access',
+      tone: 'danger',
+      body: (u) => (
+        <>
+          Re-issue login for <strong>{u.displayName || u.username}</strong>? This mints a{' '}
+          <strong>new</strong> username and a <strong>new</strong> temporary password (shown
+          once). Their current login <code>@{u.username}</code> stops working
+          {u.status !== 'pending_registration' && ' and they are signed out'}. Use this when
+          the one-time password was lost before they signed in.
+        </>
+      ),
+    },
+  }
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -289,7 +325,9 @@ export function UsersPage() {
                                   ? 'This user has a paid subscription — manage it through billing, not here.'
                                   : undefined
                               }
-                              onClick={() => togglePremium(u, !isPremium)}
+                              onClick={() =>
+                                setPending({ kind: isPremium ? 'revoke' : 'grant', user: u })
+                              }
                             >
                               <Sparkles size={14} />
                               {isPremium ? 'Revoke Premium' : 'Grant Premium'}
@@ -299,7 +337,7 @@ export function UsersPage() {
                               variant="ghost"
                               disabled={rowBusy}
                               title="Create a fresh username + temporary password (old login stops working)"
-                              onClick={() => reissueAccess(u)}
+                              onClick={() => setPending({ kind: 'reissue', user: u })}
                             >
                               <KeyRound size={14} />
                               {u.status === 'pending_registration' ? 'Re-issue access' : 'Reset access'}
@@ -308,7 +346,9 @@ export function UsersPage() {
                               size="sm"
                               variant={banned ? 'outline' : 'danger'}
                               disabled={rowBusy}
-                              onClick={() => toggleBan(u.id, !banned)}
+                              onClick={() =>
+                                banned ? reinstate(u) : setPending({ kind: 'suspend', user: u })
+                              }
                             >
                               {banned ? (
                                 <>
@@ -330,6 +370,17 @@ export function UsersPage() {
             </table>
           </div>
         </Card>
+      )}
+      {pending && (
+        <ConfirmDialog
+          open
+          title={confirmCopy[pending.kind].title}
+          message={confirmCopy[pending.kind].body(pending.user)}
+          confirmLabel={confirmCopy[pending.kind].confirmLabel}
+          tone={confirmCopy[pending.kind].tone}
+          onConfirm={runPending}
+          onClose={() => setPending(null)}
+        />
       )}
       {reissued && (
         <CredentialsDialog credentials={reissued} onClose={() => setReissued(null)} />
