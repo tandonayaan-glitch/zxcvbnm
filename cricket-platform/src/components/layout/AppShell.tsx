@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { NavLink, Outlet, useNavigate, useLocation, Link } from 'react-router-dom'
+import { useEffect, useState, type ReactNode } from 'react'
+import { NavLink, Outlet, useLocation, Link } from 'react-router-dom'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { listPendingRequests } from '@/services/requests.service'
 import {
@@ -9,7 +9,6 @@ import {
   Trophy,
   Swords,
   Settings,
-  LogOut,
   Menu,
   X,
   Globe,
@@ -29,6 +28,7 @@ import {
 import { cn } from '@/lib/cn'
 import { useAuthStore, isAdmin, canScore } from '@/store/authStore'
 import { Avatar } from '@/components/ui/primitives'
+import { SignOutButton } from '@/components/ui/SignOutButton'
 import { BackgroundControl } from '@/components/background/BackgroundControl'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { NotificationBell } from '@/components/layout/NotificationBell'
@@ -115,11 +115,9 @@ const NAV: NavItem[] = [
   },
 ]
 
-export function AppShell() {
-  const navigate = useNavigate()
+export function AppShell({ children }: { children?: ReactNode }) {
   const location = useLocation()
   const profile = useAuthStore((s) => s.profile)
-  const logout = useAuthStore((s) => s.logout)
   const [mobileOpen, setMobileOpen] = useState(false)
 
   // Master admin: show how many admin requests are awaiting a decision.
@@ -140,11 +138,6 @@ export function AppShell() {
     if (!n.roles) return true
     return profile && n.roles.includes(profile.role)
   })
-
-  async function onLogout() {
-    await logout()
-    navigate('/login', { replace: true })
-  }
 
   const SidebarInner = (
     <div className="flex h-full flex-col">
@@ -194,13 +187,7 @@ export function AppShell() {
           <Globe size={18} />
           Public site
         </Link>
-        <button
-          onClick={onLogout}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-300 hover:bg-white/5 hover:text-white"
-        >
-          <LogOut size={18} />
-          Sign out
-        </button>
+        <SignOutButton variant="sidebar" />
       </div>
     </div>
   )
@@ -276,7 +263,7 @@ export function AppShell() {
 
         <main id="main" className="flex-1 px-4 py-6 sm:px-6">
           <ErrorBoundary key={location.pathname}>
-            <Outlet />
+            {children ?? <Outlet />}
           </ErrorBoundary>
         </main>
       </div>

@@ -59,8 +59,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: async () => {
-    await logoutSvc()
-    set({ profile: null })
+    // Clear the local session even if the network sign-out call fails — a user
+    // who asked to leave must not be left in an authenticated client state.
+    // (`observeAuth` also nulls `profile` on a successful sign-out; this covers
+    // the throwing path.)
+    try {
+      await logoutSvc()
+    } finally {
+      set({ profile: null })
+    }
   },
 
   setProfile: (p) => set({ profile: p }),

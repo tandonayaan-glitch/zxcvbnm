@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import {
@@ -6,26 +6,20 @@ import {
   Search,
   LogIn,
   LayoutDashboard,
-  LogOut,
   Settings,
   ShieldQuestion,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { homeForRole } from '@/features/auth/AuthLayout'
+import { SignOutButton } from '@/components/ui/SignOutButton'
 import { BackgroundControl } from '@/components/background/BackgroundControl'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
-export function PublicLayout() {
+export function PublicLayout({ children }: { children?: ReactNode }) {
   const navigate = useNavigate()
   const location = useLocation()
   const profile = useAuthStore((s) => s.profile)
-  const logout = useAuthStore((s) => s.logout)
   const [q, setQ] = useState('')
-
-  async function onLogout() {
-    await logout()
-    navigate('/login')
-  }
 
   function onSearch(e: React.FormEvent) {
     e.preventDefault()
@@ -116,14 +110,7 @@ export function PublicLayout() {
                   {profile.role === 'VIEWER' ? 'My account' : 'Dashboard'}
                 </span>
               </Link>
-              <button
-                onClick={onLogout}
-                title="Sign out"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 px-3 py-2 text-sm font-semibold text-ink-700 hover:bg-ink-100 dark:border-ink-700 dark:text-ink-300 dark:hover:bg-ink-800"
-              >
-                <LogOut size={16} />
-                <span className="hidden sm:inline">Sign out</span>
-              </button>
+              <SignOutButton variant="header" />
             </div>
           ) : (
             <Link
@@ -139,7 +126,7 @@ export function PublicLayout() {
 
       <main id="main" className="flex-1">
         <ErrorBoundary key={location.pathname}>
-          <Outlet />
+          {children ?? <Outlet />}
         </ErrorBoundary>
       </main>
 

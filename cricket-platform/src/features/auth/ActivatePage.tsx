@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AuthLayout, homeForRole } from './AuthLayout'
 import { Button, Field, Input } from '@/components/ui/primitives'
+import { SignOutButton } from '@/components/ui/SignOutButton'
 import { useAuthStore } from '@/store/authStore'
 import { activateAccount, authErrorMessage } from '@/services/auth.service'
 
@@ -50,6 +51,13 @@ export function ActivatePage() {
     <AuthLayout
       title="Welcome to CricketHub"
       subtitle="Your account was set up by an admin. Choose your own password to finish activating it."
+      footer={
+        <SignOutButton
+          variant="link"
+          label="Not you? Sign out"
+          className="text-ink-200 hover:text-white"
+        />
+      }
     >
       <div className="mb-4 rounded-lg bg-ink-50 dark:bg-ink-800/60 px-3 py-2.5 text-sm text-ink-600 dark:text-ink-400">
         Your username is{' '}

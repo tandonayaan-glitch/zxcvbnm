@@ -869,6 +869,52 @@ changes or a human scopes the task down to something finite.
   change with no new logic beyond what the version-history round-trip already proved works.
   `tsc`/`npm run build`/lint clean, no new warnings.
 
+## Phase 38 — Navigation / sign-out / diagnostics / media-upload pass
+- ✅ **Unified Sign Out.** New `useSignOut()` hook (`src/hooks/useSignOut.ts`) is the single
+  "end session → clear client state → redirect to `/login` (replace)" path; `authStore.logout()`
+  now clears `profile` in a `finally` so a failed network round-trip can't leave the client
+  authenticated. New `<SignOutButton>` (`sidebar`/`header`/`button`/`link` skins) wraps it and
+  replaced four separate hand-rolled handlers (`AppShell`, `PublicLayout`, `UserSettingsPage`,
+  and — newly added — `ActivatePage`, which had no exit for a stuck `pending_registration`
+  account). Verified live: sidebar (desktop + mobile drawer), public header, and settings all
+  render the shared control.
+- ✅ **Live scoring is never a trap.** `/scoring/:id` (outside the app shell) had zero
+  exit/back control on any lifecycle screen. Wrapped in new `WorkflowShell`
+  (`src/components/layout/WorkflowShell.tsx`) — a persistent sticky "Exit scoring" bar →
+  `/matches`, mobile + desktop. Immediate exit (the engine already persists every ball); the
+  scoring engine, delivery writes and innings/match state are untouched — only the sticky
+  score-header `top` offset moved to clear the new bar. Verified: Exit reachable on the
+  "match not found" screen and returns to `/matches` with the shell restored.
+- ✅ **Stats & analytics stays in the shell.** `/stats` was registered only under the public
+  layout, so a signed-in user hit it chrome-less (no sidebar). New `StatsRoute` picks the
+  layout by session (`AppShell` vs `PublicLayout`), one URL preserved; both layouts gained an
+  optional `children` prop (falls back to `<Outlet />`). Verified: `/stats` while signed in now
+  renders with the full sidebar + Sign Out.
+- ✅ **System diagnostics fixed for real.** `getPlatformDiagnostics()` used
+  `getCountFromServer(collectionGroup(db, 'deliveries'))` — no `match /{path=**}/deliveries`
+  read rule exists (public read is scoped to `matches/{id}` on purpose), so that one aggregate
+  was permission-denied and rejected the whole `Promise.all`, leaving the panel on "Couldn't
+  load diagnostics". Deliveries are now summed per match from each `matches/{id}/deliveries`
+  subcollection count (all covered by the existing `allow read: if true`), fanned out with a
+  concurrency limit; an unreadable match is reported as a **partial** total, never silently
+  zero. **No security rule changed.** Error state now shows the real message + a retry button.
+  Verified live against the wiped database: panel loads, shows `0 / 0 / 0`, no error state.
+- ✅ **Media library Upload.** The page could only delete. Added a header **Upload** button, a
+  drag-and-drop zone, and an empty-state upload button, all wired to the existing
+  `uploadImage()` (client resize/compress → R2 Worker with Firebase ID token) — multi-file,
+  per-file error toasts that don't abort the batch, live `n/total` progress, gallery + storage
+  totals refresh on completion, `accept` = JPEG/PNG/WebP/GIF. Verified: controls render, file
+  input is `multiple` with the right `accept`; the upload call surfaces a clean
+  `ImageUploadError` toast in envs where the R2 Worker URL isn't configured (this dev env) and
+  uploads for real where it is.
+- ✅ **Assorted dead ends.** `ProtectedRoute`'s "No access" screen gained a reliable
+  "Go to dashboard" link (its only control was `history.back()`, a no-op on a direct link).
+  The match setup wizard's step-0 "Cancel" now confirms before discarding a form the user has
+  actually edited.
+- `tsc -p tsconfig.app.json --noEmit`, `npm run lint` (oxlint), and `npm run build` all clean —
+  no new errors or warnings. Full SPA route sweep (9 routes incl. every touched page) hit no
+  error boundary and produced zero new console errors.
+
 ---
 
 ### Notes

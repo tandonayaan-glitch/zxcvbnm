@@ -162,7 +162,7 @@ export function PlatformToolsPage() {
               <Gauge size={18} /> System diagnostics
             </span>
           }
-          subtitle="Firestore document counts (server-side aggregate counts — no document downloads) and connectivity."
+          subtitle="Firestore document counts (server-side aggregate counts; deliveries summed per match) and connectivity."
           action={
             <Button
               variant="outline"
@@ -210,18 +210,39 @@ export function PlatformToolsPage() {
           {diagnostics.loading ? (
             <PageLoader />
           ) : diagnostics.data ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <StatCard label="Players" value={diagnostics.data.counts.players} tone="blue" />
-              <StatCard label="Teams" value={diagnostics.data.counts.teams} tone="green" />
-              <StatCard label="Tournaments" value={diagnostics.data.counts.tournaments} tone="amber" />
-              <StatCard label="Matches" value={diagnostics.data.counts.matches} tone="purple" />
-              <StatCard label="Deliveries" value={diagnostics.data.counts.deliveries} tone="blue" />
-              <StatCard label="Users" value={diagnostics.data.counts.users} tone="green" />
-              <StatCard label="Audit entries" value={diagnostics.data.counts.auditLogs} tone="amber" />
-              <StatCard label="Admin requests" value={diagnostics.data.counts.adminRequests} tone="purple" />
-            </div>
+            <>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <StatCard label="Players" value={diagnostics.data.counts.players} tone="blue" />
+                <StatCard label="Teams" value={diagnostics.data.counts.teams} tone="green" />
+                <StatCard label="Tournaments" value={diagnostics.data.counts.tournaments} tone="amber" />
+                <StatCard label="Matches" value={diagnostics.data.counts.matches} tone="purple" />
+                <StatCard label="Deliveries" value={diagnostics.data.counts.deliveries} tone="blue" />
+                <StatCard label="Users" value={diagnostics.data.counts.users} tone="green" />
+                <StatCard label="Audit entries" value={diagnostics.data.counts.auditLogs} tone="amber" />
+                <StatCard label="Admin requests" value={diagnostics.data.counts.adminRequests} tone="purple" />
+              </div>
+              {diagnostics.data.deliveriesPartial && (
+                <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                  Delivery total is partial — one or more matches' ball logs couldn't be read
+                  this run. Refresh to retry.
+                </p>
+              )}
+            </>
           ) : (
-            <EmptyState title="Could not load diagnostics" />
+            <EmptyState
+              icon={<AlertTriangle size={36} />}
+              title="Couldn't load diagnostics"
+              description={
+                diagnostics.error
+                  ? `The counts query failed: ${diagnostics.error}`
+                  : 'The counts query failed.'
+              }
+              action={
+                <Button variant="outline" onClick={() => diagnostics.refetch()}>
+                  <RefreshCw size={14} /> Try again
+                </Button>
+              }
+            />
           )}
         </CardBody>
       </Card>

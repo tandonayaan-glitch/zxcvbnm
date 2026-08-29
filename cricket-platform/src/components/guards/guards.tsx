@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate, Link } from 'react-router-dom'
 import { useAuthStore, hasRole } from '@/store/authStore'
 import { PageLoader, EmptyState, Button } from '@/components/ui/primitives'
 import { ShieldAlert } from 'lucide-react'
@@ -15,6 +15,7 @@ export function ProtectedRoute({
 }) {
   const { status, profile } = useAuthStore()
   const location = useLocation()
+  const navigate = useNavigate()
 
   if (status === 'initializing') return <PageLoader label="Checking session…" />
 
@@ -36,7 +37,14 @@ export function ProtectedRoute({
           title="No access"
           description="Your account role doesn't have permission to view this page."
           action={
-            <Button onClick={() => window.history.back()}>Go back</Button>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button variant="outline" onClick={() => navigate(-1)}>
+                Go back
+              </Button>
+              <Link to="/dashboard">
+                <Button>Go to dashboard</Button>
+              </Link>
+            </div>
           }
         />
       </div>

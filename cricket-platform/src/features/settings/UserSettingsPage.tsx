@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import {
   User,
   Palette,
@@ -15,7 +14,6 @@ import {
   MonitorSmartphone,
   Eye,
   ShieldCheck,
-  LogOut,
   Bell,
   FlaskConical,
   History,
@@ -37,13 +35,14 @@ import {
 } from '@/components/ui/primitives'
 import { ImageUploadField } from '@/components/ui/ImageUploadField'
 import { ImageUsageIndicator } from '@/components/media/ImageUsageIndicator'
+import { SignOutButton } from '@/components/ui/SignOutButton'
 import { useToast } from '@/components/ui/toast'
 import { useAuthStore } from '@/store/authStore'
 import { auth } from '@/lib/firebase'
 import { usePrefsStore, type TextScale, type ThemeMode } from '@/store/prefsStore'
 import { BackgroundControl } from '@/components/background/BackgroundControl'
 import { updateUserProfile } from '@/services/users.service'
-import { changePassword, authErrorMessage, logout } from '@/services/auth.service'
+import { changePassword, authErrorMessage } from '@/services/auth.service'
 import { listMyAuditLogs } from '@/services/audit.service'
 import { formatDate, formatDateTime, briefUA } from '@/lib/format'
 import { downloadBlob, slugify } from '@/lib/download'
@@ -53,12 +52,10 @@ import { useMySubscription } from '@/hooks/useMySubscription'
 
 export function UserSettingsPage() {
   const toast = useToast()
-  const navigate = useNavigate()
   const profile = useAuthStore((s) => s.profile)
   const setProfile = useAuthStore((s) => s.setProfile)
   const { prefs, set: setPref, reset: resetPrefs } = usePrefsStore()
   const { tier: planTier } = useMySubscription()
-  const [signingOut, setSigningOut] = useState(false)
 
   const [displayName, setDisplayName] = useState(profile?.displayName ?? '')
   const [bio, setBio] = useState(profile?.bio ?? '')
@@ -144,17 +141,6 @@ export function UserSettingsPage() {
 
   const lastSignInTime = auth.currentUser?.metadata.lastSignInTime
   const lastSignInMs = lastSignInTime ? Date.parse(lastSignInTime) : null
-
-  async function signOutThisDevice() {
-    setSigningOut(true)
-    try {
-      await logout()
-      navigate('/login')
-    } catch {
-      toast.error('Could not sign out')
-      setSigningOut(false)
-    }
-  }
 
   const themes: { key: ThemeMode; label: string; icon: React.ReactNode }[] = [
     { key: 'light', label: 'Light', icon: <Sun size={15} /> },
@@ -430,9 +416,7 @@ export function UserSettingsPage() {
                 Signed in {formatDateTime(lastSignInMs)}
               </div>
             </div>
-            <Button variant="outline" onClick={signOutThisDevice} loading={signingOut}>
-              <LogOut size={16} /> Sign out this device
-            </Button>
+            <SignOutButton variant="button" label="Sign out this device" />
           </div>
           <p className="text-xs text-ink-400 dark:text-ink-500">
             Firebase's client SDK doesn't expose a list of your other signed-in devices or a way to

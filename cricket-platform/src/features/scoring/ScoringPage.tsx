@@ -787,7 +787,7 @@ function ScoreHeader({
   const rrr = chasing ? requiredRate(need, ballsLeft, match.ballsPerOver) : 0
 
   return (
-    <Card className="sticky top-2 z-20 mb-3 overflow-hidden shadow-md">
+    <Card className="sticky top-16 z-20 mb-3 overflow-hidden shadow-md">
       <div className="bg-ink-900 px-4 py-3 text-white">
         <div className="flex items-center justify-between">
           <span className="text-sm text-ink-300">{match.title}</span>

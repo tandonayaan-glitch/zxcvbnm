@@ -6,6 +6,7 @@ import { usePrefsStore, applyPrefs } from '@/store/prefsStore'
 import { ProtectedRoute } from '@/components/guards/guards'
 import { AppShell } from '@/components/layout/AppShell'
 import { PublicLayout } from '@/components/layout/PublicLayout'
+import { WorkflowShell } from '@/components/layout/WorkflowShell'
 import { FirebaseNotice } from '@/features/misc/FirebaseNotice'
 import { MaintenanceScreen } from '@/features/misc/MaintenanceScreen'
 import { getSettings } from '@/services/settings.service'
@@ -211,6 +212,27 @@ const EmbedScorecardPage = lazy(() =>
   })),
 )
 
+/**
+ * `/stats` is one URL that serves two audiences: a signed-in staff member
+ * reaching it from the app-shell "Stats" nav item must keep the shell (sidebar +
+ * header), while an anonymous viewer gets the public site chrome. Same page,
+ * layout chosen by session — so staff never "fall out" of the shell into a
+ * chrome-less full-screen view.
+ */
+function StatsRoute() {
+  const { status, profile } = useAuthStore()
+  if (status === 'initializing') return <PageLoader label="Checking session…" />
+  return profile ? (
+    <AppShell>
+      <StatsPage />
+    </AppShell>
+  ) : (
+    <PublicLayout>
+      <StatsPage />
+    </PublicLayout>
+  )
+}
+
 export default function App() {
   const init = useAuthStore((s) => s.init)
   const profile = useAuthStore((s) => s.profile)
@@ -262,17 +284,23 @@ export default function App() {
           }
         />
 
-        {/* Live scoring (full screen, scorer/admin/tournament-manager only) */}
+        {/* Live scoring (full screen, scorer/admin/tournament-manager only).
+            Runs outside the app shell, but WorkflowShell keeps a persistent
+            "Exit scoring" control so the scorer is never trapped — every ball is
+            already persisted as it happens, so leaving is always safe. */}
         <Route
           path="/scoring/:id"
           element={
             <ProtectedRoute roles={['MASTER_ADMIN', 'ADMIN', 'SCORER', 'TOURNAMENT_MANAGER']}>
-              <div className="min-h-screen px-4 py-6">
+              <WorkflowShell title="Live scoring" exitTo="/matches" exitLabel="Exit scoring">
                 <ScoringPage />
-              </div>
+              </WorkflowShell>
             </ProtectedRoute>
           }
         />
+
+        {/* Stats — single URL, layout picked by session (see StatsRoute) */}
+        <Route path="/stats" element={<StatsRoute />} />
 
         {/* App shell (signed-in management) */}
         <Route
@@ -400,7 +428,6 @@ export default function App() {
             }
           />
           <Route path="/browse" element={<PublicBrowsePage />} />
-          <Route path="/stats" element={<StatsPage />} />
           <Route path="/compare" element={<ComparePage />} />
           <Route path="/compare/teams" element={<CompareTeamsPage />} />
           <Route path="/compare/clubs" element={<CompareClubsPage />} />

@@ -125,6 +125,9 @@ export function MatchSetupPage() {
 
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
+  // Whether the user has actually edited a field — the edit/duplicate prefills
+  // below write through `setForm` directly, not `set()`, so they don't trip this.
+  const [dirty, setDirty] = useState(false)
   const [loadingEdit, setLoadingEdit] = useState(!!editId)
   const [loadingDuplicate, setLoadingDuplicate] = useState(!!duplicateId)
   const [editReason, setEditReason] = useState('')
@@ -158,8 +161,16 @@ export function MatchSetupPage() {
     superOverEnabled: false,
   })
 
-  const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
+  const set = <K extends keyof FormState>(k: K, v: FormState[K]) => {
+    setDirty(true)
     setForm((f) => ({ ...f, [k]: v }))
+  }
+
+  /** Leave the wizard, confirming first if the form has unsaved edits. */
+  function cancelWizard() {
+    if (dirty && !confirm("Discard this match setup? Your changes won't be saved.")) return
+    navigate(-1)
+  }
 
   // Load existing match when editing.
   useEffect(() => {
@@ -934,7 +945,7 @@ export function MatchSetupPage() {
         <div className="mt-6 flex items-center justify-between border-t border-ink-100 dark:border-ink-800 pt-4">
           <Button
             variant="ghost"
-            onClick={() => (step === 0 ? navigate(-1) : setStep(step - 1))}
+            onClick={() => (step === 0 ? cancelWizard() : setStep(step - 1))}
           >
             <ChevronLeft size={16} /> {step === 0 ? 'Cancel' : 'Back'}
           </Button>

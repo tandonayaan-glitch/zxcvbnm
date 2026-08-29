@@ -4,6 +4,53 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Fixed — Navigation / sign-out / diagnostics / media-upload pass
+- **One Sign Out mechanism.** A new `useSignOut()` hook (`src/hooks/useSignOut.ts`) is the single
+  path for leaving a session: terminate the Firebase session → clear client auth state → redirect
+  to `/login` with `replace` so Back can't return to a protected screen. `authStore.logout()` now
+  nulls `profile` in a `finally`, so a failed network sign-out still ends the local session
+  instead of stranding the user authenticated. A `<SignOutButton>` component (four skins:
+  `sidebar` / `header` / `button` / `link`) wraps the hook and replaced the four separate
+  hand-rolled sign-out handlers in `AppShell`, `PublicLayout`, `UserSettingsPage`, and (new)
+  `ActivatePage` — the activation screen previously had **no** way out for a
+  `pending_registration` account that couldn't or wouldn't activate.
+- **Live scoring can always be left.** `/scoring/:id` runs outside the app shell and previously
+  had **zero** exit/back control on any of its lifecycle screens (setup, live, innings break,
+  complete, "match not found") — a scorer who opened the wrong match was trapped. It's now wrapped
+  in a new `WorkflowShell` (`src/components/layout/WorkflowShell.tsx`): a persistent sticky
+  "Exit scoring" control (works mobile + desktop) that returns to `/matches`. Exit is immediate —
+  the scoring engine already persists every delivery as it happens, so there's never unsaved
+  state to lose. The scoring engine, delivery persistence, and innings/match state are untouched
+  (only the sticky score-header's `top` offset moved to sit below the new bar).
+- **Stats & analytics stays in the app shell.** `/stats` is reachable both from the signed-in
+  app-shell nav and from the public site. It was only ever registered under the public layout, so
+  a signed-in staff member clicking "Stats" fell out of the shell into a chrome-less full-screen
+  view (no sidebar, no dashboard nav). A `StatsRoute` wrapper now picks the layout by session —
+  `AppShell` for a signed-in user, `PublicLayout` for an anonymous viewer — keeping one `/stats`
+  URL. `AppShell` / `PublicLayout` gained an optional `children` prop (falls back to `<Outlet />`)
+  to make this composition possible.
+- **Platform Tools → System diagnostics loads again.** `getPlatformDiagnostics()` ran a
+  `getCountFromServer(collectionGroup(db, 'deliveries'))`; there is no
+  `match /{path=**}/deliveries/{id}` rule (public read is scoped to `matches/{id}`, deliberately),
+  so that one aggregate was permission-denied and rejected the whole `Promise.all`, leaving the
+  panel stuck on "Couldn't load diagnostics". The deliveries total is now summed from each match's
+  own `matches/{id}/deliveries` subcollection count — every one of which *is* covered by the
+  existing `allow read: if true` — fanned out with a concurrency limit. A match whose count can't
+  be read is reported as a partial total, **never silently counted as zero**. No security rule was
+  changed. The error state now shows the actual failure message and a "Try again" button instead
+  of a bare title.
+- **Media library has an Upload action.** The page could only *delete*; there was no way to add an
+  image. Added a header **Upload** button (and a drag-and-drop zone over the grid, and an "Upload
+  images" button in the empty state) wired to the same `uploadImage()` (client resize/compress →
+  R2 Worker, Firebase ID token) every other image field uses. Multi-file, per-file error toasts
+  that don't abort the batch, live "Uploading n/total" progress, gallery + storage-total refresh
+  on completion, `accept` limited to JPEG/PNG/WebP/GIF. Respects the Worker's server-side
+  size/type/quota enforcement.
+- **Fewer navigation dead ends.** `ProtectedRoute`'s "No access" screen only offered
+  `history.back()` (a no-op on a direct link) — it now also has a "Go to dashboard" link. The
+  match setup wizard's step-0 "Cancel" now confirms before discarding a form the user has actually
+  edited, instead of dropping it silently.
+
 ### Fixed — Launch-audit fix pass
 - **Stale phone-verification copy removed.** Two places still referenced the removed Slice D1
   phone requirement after it was reversed: the first-time tutorial's "Becoming a Tournament
