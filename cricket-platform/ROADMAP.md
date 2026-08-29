@@ -915,6 +915,90 @@ changes or a human scopes the task down to something finite.
   no new errors or warnings. Full SPA route sweep (9 routes incl. every touched page) hit no
   error boundary and produced zero new console errors.
 
+## Phase 39 — Entitlements, credentials, interactive scoring inputs, auto-powerplay
+- ✅ **Master Admin premium bypass — one authority.** The entitlement layer had no
+  `isMasterAdmin` short-circuit, so every registered `<PremiumGate>` / `usePremiumFeature()`
+  could lock the master admin out (concretely, match setup filtered the "Auto" powerplay option
+  away from the master). `domain/entitlements.ts` gained `masterAdminSubscription(uid)` — a
+  synthetic active-premium `Subscription` with `provider: 'comp'`, **never written to
+  Firestore** — returned by `useMySubscription()` for a master; `<PremiumGate>` also
+  short-circuits on `viewerIsMaster`. One rule, no per-feature exceptions, covers any feature
+  later added to `PREMIUM_FEATURES`. Non-master paths unchanged. Verified live: the master now
+  sees the "Auto" powerplay button in match setup; a registered gate renders its children.
+- ✅ **Master Admin manual Premium grant / revoke.** `grantSubscription` / `revokeSubscription`
+  / `listSubscriptions` already existed (audit-logged, rules-gated to master). Users & Roles
+  page now has a **Plan** column with an honest source label (`Premium · role` /
+  `Premium · granted` / `Premium · subscription` / `Free`) and a Grant / Revoke button —
+  disabled for a user on a real paid subscription. Comp grants write `provider: 'manual'`.
+  Verified live: grant → `subscriptions/{uid}` `{tier:premium,status:active,provider:manual}` →
+  UI + refresh; revoke → `status:canceled` → UI Free; audit entries written; `/users` route is
+  `MASTER_ADMIN`-guarded and the writes are enforced server-side by existing rules.
+- ✅ **Username retrieval + lost-temp-password re-issue.** Users & Roles shows each `@username`
+  with a copy button. New `reissueLinkedAccess()` (`services/auth.service.ts`): for an account
+  whose one-time temp password was lost before activation (or a locked-out active account), it
+  mints a fresh linked account (new `user######` + temp password shown once), carries the old
+  role across, re-points any linked player's `linkedUserId`, and bans the old profile (raw merge
+  write — no "suspended" notification for a dead account) so the stale credentials can't be used
+  and there's one live account per person. Surfaced as **Re-issue access** / **Reset access**
+  per non-master row + the existing `CredentialsDialog`. The client SDK genuinely cannot reset
+  another user's Firebase password (no Admin SDK / backend) — this is the safe path; no password
+  is stored, logged, or exposed. Verified live end-to-end against Firestore: old user →
+  `status:banned`+`bannedAt`; new user → `VIEWER`/`pending_registration`/displayName carried;
+  linked player `linkedUserId` re-pointed; `usernameLookup` created; audit entry
+  "Re-issued login access @old → @new".
+- ✅ **Interactive wagon wheel (`components/scoring/WagonWheelInput.tsx`).** Replaced the
+  `ShotDetailPrompt` shot-placement button grid with an SVG wheel: drag outward from the batter
+  (unified Pointer Events — mouse + touch, `touch-none`), live trajectory ray + highlighted
+  sector following the pointer, snap + marker on release, tap-a-sector to select, leg/off
+  mirrored for a left-hand batter (`battingStyle`). Saves a real `ShotZone` 1–8 via
+  `recordBallMeta`; reconstructs sector + marker (short reveal animation) on reopen. Public
+  `components/charts/WagonWheel.tsx` untouched (same `BallMeta` shape — `hasWagonWheelData` /
+  `wagonWheelData` verified still correct against a tagged ball). Verified live on desktop and
+  at 375 px with touch pointer events: drag → live "Square leg" → release → `ballMeta` `zone:2`.
+- ✅ **Interactive pitch line/length (`components/scoring/PitchLengthInput.tsx`).** Top-down
+  pitch (stumps, creases, batter marker), 5 line columns × 6 length rows; drag/tap to light the
+  zone + update labels live, animated pitch mark on release, leg/off columns mirrored for a
+  left-hander. Saves real `BowlingLine` + `BowlingLength` onto the same `ballMeta` doc;
+  reconstructs on reopen. Verified live: drag → "Good length" / "Outside off" → merged onto the
+  delivery's `ballMeta`.
+- ✅ **Re-tag any ball in the current over.** The "This over" tokens on the scoring screen are
+  now buttons that reopen the shot-detail prompt for that delivery, prefilled from its saved
+  `ballMeta` (`openEditMeta`). Previously there was no correction path.
+- ✅ **Auto powerplay live state.** Config already persisted on the match doc; nothing surfaced
+  it while scoring. New pure `resolvePowerplayOvers(match)` + `powerplayState(match, innings)`
+  in `domain/matchRules.ts` (0-based over convention, matching `insights.ts`) drive a
+  `<PowerplayBanner>` under the score header — "Powerplay · over X of N (auto/manual)" + balls
+  countdown + progress bar while active, "restrictions lifted" when complete, hidden when
+  powerplays are off. Auto-advances as overs complete; reopening reconstructs from `legalBalls`.
+  `domain/scoring.ts` untouched. Verified live at 375 px: banner shows "over 2 of 6 (auto)" and
+  advanced over-to-over with no scorer action.
+- ✅ **Inline player creation in match setup.** Playing XI step gained **+ Add player** per team
+  (for `canBuildRoster`). Reuses `PlayerFormModal` + `createPlayer`, writes `ownerId`, links
+  both ways (`player.teamIds` + `team.playerIds` via `updateTeam`), auto-selects into the XI,
+  honours "create a linked login". Refetches from Firestore — no frontend-only player. Verified
+  live: "Alpha Newbie" created inline → appears on `/players` after fresh navigation, team shows
+  7 players (was 6).
+- ✅ **Archived players in squad selection.** Match setup no longer auto-fills `active === false`
+  players from a team roster, sorts them last in the candidate list, badges them "Archived";
+  `chooseTeam` pre-fill excludes them.
+- ✅ **In-app confirm for destructive player actions.** `PlayersPage` delete moved off
+  `window.confirm()` (a silent no-op in some webviews) to a reusable
+  `components/ui/ConfirmDialog.tsx` that stays open and shows the real error on failure;
+  archive/restore + delete now surface `permissionAwareMessage(...)` instead of a swallowed
+  catch. `softDelete('player', …)` / `setPlayerActive` paths were already correct — unchanged.
+  Verified live: delete → `ConfirmDialog` → `deletedAt`/`deletedBy` set, row gone, persists.
+- **Persistence** re-verified after refresh against Firestore for: inline player create,
+  premium grant/revoke, credential re-issue, shot `zone`, line/length, powerplay config.
+  **Responsive** checked at 375 px: no page-level horizontal overflow on 6 key routes; data
+  tables scroll inside their `overflow-x-auto` wrapper; `ShotDetailPrompt` (wheel + pitch) fits
+  with no clipping; wagon-wheel drag works with touch pointer events; `PlayerFormModal` fills
+  the viewport with 0 clipped controls; mobile nav drawer + Sign out reachable.
+- `tsc -p tsconfig.app.json --noEmit`, `npm run lint` (oxlint — 16 warnings / 0 errors, all
+  pre-existing, no regressions), and `npm run build` all clean. Full signed-in route sweep + the
+  public match page hit no error boundary; the only console errors are the pre-existing Firebase
+  Storage CORS failures from the media/image-usage path (R2 Worker URL absent in this dev env),
+  not app code.
+
 ---
 
 ### Notes

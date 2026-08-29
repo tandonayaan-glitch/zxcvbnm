@@ -4,6 +4,73 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Added / Fixed — Entitlements, credentials, interactive scoring inputs, auto-powerplay pass
+- **Master Admin is premium everywhere, from one place.** `isMasterAdmin(profile)` had no bypass
+  in the entitlement layer, so every registered `<PremiumGate>` and `usePremiumFeature()` check
+  could lock the master admin out of a paid surface (concretely: the "Auto" powerplay option was
+  filtered out of match setup for the master). A single synthetic subscription —
+  `masterAdminSubscription(uid)` in `domain/entitlements.ts` (`provider: 'comp'`, never written to
+  Firestore) — is now returned by `useMySubscription()` for a master, and `<PremiumGate>`
+  short-circuits on `viewerIsMaster`. No per-feature exceptions; any feature added to
+  `PREMIUM_FEATURES` later is covered automatically. Non-master entitlement logic is unchanged.
+- **Master Admin can comp / revoke Premium per user.** `grantSubscription` / `revokeSubscription`
+  / `listSubscriptions` already existed and are audit-logged and rules-gated to the master; the
+  Users & Roles page now surfaces them: a **Plan** column with an honest source label
+  (`Premium · role` / `Premium · granted` / `Premium · subscription` / `Free`) and a
+  **Grant / Revoke Premium** button (disabled for a user on a real paid subscription — that's
+  billing's job, not a comp). Comp grants are written with `provider: 'manual'` to distinguish
+  them from mock-checkout subscriptions. Entitlement change takes effect on the user's next page
+  load, no re-login.
+- **Login username is retrievable; lost temp passwords can be re-issued.** The Users & Roles page
+  shows each `@username` with a copy button. For an account whose one-time temporary password was
+  lost before activation (or an activated account that is locked out), a new
+  **Re-issue access** / **Reset access** action calls `reissueLinkedAccess()`
+  (`services/auth.service.ts`): it mints a fresh linked account (new `user######` + new temp
+  password, shown once), carries the old role across, re-points any linked player's
+  `linkedUserId`, and suspends the old profile so the stale credentials are dead and there's only
+  ever one live account per person. The client SDK genuinely cannot reset another user's Firebase
+  password (no Admin SDK / backend) — re-issue is the safe path, and no password is ever stored,
+  logged, or exposed through Firestore.
+- **Shot placement is a real interactive wagon wheel.** `ShotDetailPrompt` replaced its
+  button grid with `components/scoring/WagonWheelInput.tsx`: an SVG wheel you drag outward from
+  the batter (unified Pointer Events — mouse and touch, `touch-none` so it doesn't steal a
+  scroll), the trajectory ray and highlighted sector follow the pointer live, release snaps to
+  that sector and drops a marker, tapping a sector selects it directly. Leg/off are mirrored for
+  a left-hand batter (`battingStyle`). It saves a real `ShotZone` (1–8) via `recordBallMeta`, and
+  reconstructs — same sector, same marker, short reveal animation — when reopened. The public
+  `WagonWheel` chart is unchanged (same `BallMeta` shape).
+- **Line & length is a real interactive pitch map.** `components/scoring/PitchLengthInput.tsx`:
+  a top-down pitch (stumps, creases, batter marker) with 5 line columns × 6 length rows; drag or
+  tap to light up the zone and update the line/length labels live, release to drop an animated
+  pitch mark. Leg/off columns mirror for a left-hander. Saves real `BowlingLine` + `BowlingLength`
+  onto the same `ballMeta` doc; reconstructs on reopen instead of resetting.
+- **Any ball in the current over can be re-tagged.** The "This over" tokens on the scoring screen
+  are now buttons that reopen the shot-detail prompt for that delivery, prefilled from its saved
+  `ballMeta` (`openEditMeta`) — previously there was no way to correct a mis-tagged ball.
+- **Auto powerplay shows live state during scoring.** Powerplay config already persisted on the
+  match doc but nothing surfaced it while scoring. New pure helpers in `domain/matchRules.ts` —
+  `resolvePowerplayOvers(match)` and `powerplayState(match, innings)` (0-based over convention,
+  matching `insights.ts`) — drive a `<PowerplayBanner>` under the score header: "Powerplay ·
+  over X of N (auto/manual)" with a balls-remaining countdown and progress bar while active,
+  "restrictions lifted" once complete, hidden entirely when powerplays are off. Boundaries
+  advance automatically as overs complete; reopening the match reconstructs the state from
+  `legalBalls`. The scoring engine (`domain/scoring.ts`) is untouched.
+- **Players can be created inline during match setup.** The Playing XI step of the match setup
+  wizard gained a **+ Add player** control per team (for a user who `canBuildRoster`). It reuses
+  `PlayerFormModal` + `createPlayer`, writes the player with `ownerId`, links it both ways
+  (`player.teamIds` and `team.playerIds` via `updateTeam`), auto-selects it into the XI, and
+  honours "create a linked login" (temp credentials via `CredentialsDialog`). No frontend-only
+  players — it refetches from Firestore and the player persists across reload.
+- **Archived players are handled in squad selection.** Match setup no longer auto-fills archived
+  (`active === false`) players from a team roster, sorts them last in the candidate list, and
+  badges them "Archived"; `chooseTeam` pre-fill excludes them.
+- **Destructive player actions use an in-app confirm.** `PlayersPage` delete moved off
+  `window.confirm()` (a silent no-op in some webviews / after "prevent additional dialogs") to a
+  reusable `components/ui/ConfirmDialog.tsx` that keeps the dialog open and shows the real error
+  message on failure; archive/restore and delete now surface `permissionAwareMessage(...)` instead
+  of a swallowed generic catch. The underlying `softDelete('player', …)` / `setPlayerActive`
+  paths were already correct and are unchanged.
+
 ### Fixed — Navigation / sign-out / diagnostics / media-upload pass
 - **One Sign Out mechanism.** A new `useSignOut()` hook (`src/hooks/useSignOut.ts`) is the single
   path for leaving a session: terminate the Firebase session → clear client auth state → redirect
