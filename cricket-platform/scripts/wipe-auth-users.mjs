@@ -105,7 +105,10 @@ function masterUid() {
     `?key=${API_KEY}&pageSize=1000&mask.fieldPaths=role&mask.fieldPaths=username`
   const j = curlJson({ url })
   const masters = (j.documents ?? []).filter((d) => d.fields?.role?.stringValue === 'MASTER_ADMIN')
-  if (masters.length !== 1) throw new Error(`expected 1 MASTER_ADMIN in Firestore, found ${masters.length}`)
+  // No master doc (e.g. after a full reset, re-bootstrapping from scratch): keep
+  // nothing — every Auth account gets deleted.
+  if (masters.length === 0) return { uid: null, username: '(none — deleting ALL accounts)' }
+  if (masters.length > 1) throw new Error(`expected 0 or 1 MASTER_ADMIN in Firestore, found ${masters.length}`)
   return { uid: masters[0].name.split('/').pop(), username: masters[0].fields?.username?.stringValue }
 }
 
@@ -117,7 +120,9 @@ function listAuthUsers(token) {
       (pageToken ? `&nextPageToken=${encodeURIComponent(pageToken)}` : '')
     const j = curlJson({ url, headers: { Authorization: `Bearer ${token}` } })
     if (j.error) throw new Error(`batchGet failed: ${JSON.stringify(j.error)}`)
-    users.push(...(j.userInfo ?? []))
+    // accounts:batchGet returns the array as `users` (the Admin SDK's field);
+    // older/other Identity Toolkit responses use `userInfo` — accept either.
+    users.push(...(j.users ?? j.userInfo ?? []))
     pageToken = j.nextPageToken ?? ''
   } while (pageToken)
   return users
