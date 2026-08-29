@@ -11,6 +11,7 @@ import {
   Ban,
   RotateCcw,
   Award,
+  Zap,
 } from 'lucide-react'
 import { Button, Card, PageLoader, Spinner } from '@/components/ui/primitives'
 import { Modal } from '@/components/ui/Modal'
@@ -37,19 +38,20 @@ import {
   subscribeDeliveries,
 } from '@/services/scoring.service'
 import { recomputeAllStats, recomputeTournamentStandings } from '@/services/stats.service'
-import { recordBallMeta } from '@/services/ballMeta.service'
+import { recordBallMeta, listBallMeta } from '@/services/ballMeta.service'
 import { ShotDetailPrompt } from './ShotDetailPrompt'
 import { ScorecardView } from '@/features/scorecard/ScorecardView'
 import { ballsToOvers, runRate, requiredRate, formatRate } from '@/lib/format'
 import { useAuthStore } from '@/store/authStore'
 import { useBgStore } from '@/store/bgStore'
+import { powerplayState, type PowerplayState } from '@/domain/matchRules'
 import { cn } from '@/lib/cn'
 import {
   PlayerPickModal,
   WicketModal,
   type WicketResult,
 } from './ScoringModals'
-import type { BallInput, Delivery, ExtraType, Match, Player } from '@/types'
+import type { BallInput, BallMeta, Delivery, ExtraType, Match, Player } from '@/types'
 
 export function ScoringPage() {
   const { id = '' } = useParams()
@@ -69,6 +71,9 @@ export function ScoringPage() {
     deliveryId: string
     showZone: boolean
     reviewed: boolean
+    strikerId: string
+    /** True when reopened to correct an already-scored ball, vs. shown right after scoring. */
+    editing?: boolean
   } | null>(null)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [potmOpen, setPotmOpen] = useState(false)
@@ -79,6 +84,16 @@ export function ScoringPage() {
   // (e.g. a tablet with a keyboard case) keeps working exactly the same either way.
   const [touchPrimary] = useState(
     () => typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches === true,
+  )
+
+  // Shot-detail tags (zone / line / length / note), for reconstructing a ball's saved detail
+  // when its prompt is reopened. Refetched as deliveries arrive and after each save.
+  const [ballMeta, setBallMeta] = useState<BallMeta[]>([])
+  const refreshBallMeta = useMemo(
+    () => () => {
+      if (id) void listBallMeta(id).then(setBallMeta)
+    },
+    [id],
   )
 
   useEffect(() => {
@@ -93,6 +108,10 @@ export function ScoringPage() {
     }
   }, [id])
 
+  useEffect(() => {
+    refreshBallMeta()
+  }, [refreshBallMeta, deliveries.length])
+
   const setTone = useBgStore((s) => s.setTone)
   useEffect(() => {
     setTone('live')
@@ -102,6 +121,10 @@ export function ScoringPage() {
   const playerById = useMemo(
     () => new Map((players.data ?? []).map((p) => [p.id, p])),
     [players.data],
+  )
+  const ballMetaById = useMemo(
+    () => new Map(ballMeta.map((m) => [m.id, m])),
+    [ballMeta],
   )
   const name = (pid?: string | null) =>
     (pid && playerById.get(pid)?.displayName) || '—'
@@ -151,7 +174,12 @@ export function ScoringPage() {
         scorerId: profile?.id,
       })
       setActiveExtra(null)
-      setPendingMeta({ deliveryId: delivery.id, showZone: extra !== 'wide', reviewed: false })
+      setPendingMeta({
+        deliveryId: delivery.id,
+        showZone: extra !== 'wide',
+        reviewed: false,
+        strikerId: delivery.strikerId,
+      })
     })
   }
 
@@ -172,7 +200,12 @@ export function ScoringPage() {
         sequence: nextSeq,
         scorerId: profile?.id,
       })
-      setPendingMeta({ deliveryId: delivery.id, showZone: r.type !== 'run_out', reviewed: false })
+      setPendingMeta({
+        deliveryId: delivery.id,
+        showZone: r.type !== 'run_out',
+        reviewed: false,
+        strikerId: delivery.strikerId,
+      })
     })
   }
 
@@ -182,9 +215,21 @@ export function ScoringPage() {
       // Merge-write, so tapping zone then line then length accumulates on
       // the same doc rather than overwriting each other.
       await recordBallMeta(match!.id, pendingMeta.deliveryId, patch)
+      refreshBallMeta()
     } catch {
       // best-effort — never interrupt scoring for an optional enrichment
     }
+  }
+
+  /** Reopen the shot-detail prompt for an already-scored ball in this over, to correct it. */
+  function openEditMeta(d: Delivery) {
+    setPendingMeta({
+      deliveryId: d.id,
+      showZone: d.extraType !== 'wide' && d.wicket?.type !== 'run_out',
+      reviewed: ballMeta.find((m) => m.id === d.id)?.reviewed ?? false,
+      strikerId: d.strikerId,
+      editing: true,
+    })
   }
 
   async function flagForReview() {
@@ -404,6 +449,8 @@ export function ScoringPage() {
     <div className="mx-auto max-w-2xl pb-24">
       <ScoreHeader match={match} name={name} battingTeamShort={battingTeamShort} />
 
+      <PowerplayBanner state={powerplayState(match, inn)} ballsPerOver={match.ballsPerOver} />
+
       {/* batters + bowler */}
       <Card className="mb-3 p-4">
         <div className="grid grid-cols-2 gap-4">
@@ -444,11 +491,23 @@ export function ScoringPage() {
           </div>
         </div>
 
-        {/* recent balls */}
+        {/* recent balls — tap one to add/correct its shot detail */}
         <div className="mt-3 flex items-center gap-1.5 overflow-x-auto border-t border-ink-100 dark:border-ink-800 pt-3">
           <span className="mr-1 text-xs text-ink-400 dark:text-ink-500">This over</span>
           {ballsThisOver(curDeliveries, inn, match.ballsPerOver).map((d, i) => (
-            <BallToken key={i} d={d} />
+            <button
+              key={d.id || i}
+              type="button"
+              onClick={() => openEditMeta(d)}
+              title="Add / edit shot detail"
+              className={cn(
+                'rounded-full ring-offset-1 transition hover:ring-2 hover:ring-brand-400',
+                pendingMeta?.deliveryId === d.id && 'ring-2 ring-brand-500',
+                ballMetaById.get(d.id)?.zone != null && 'ring-1 ring-pitch-400',
+              )}
+            >
+              <BallToken d={d} />
+            </button>
           ))}
         </div>
 
@@ -456,9 +515,11 @@ export function ScoringPage() {
           <ShotDetailPrompt
             showZone={pendingMeta.showZone}
             reviewed={pendingMeta.reviewed}
+            editing={pendingMeta.editing}
+            value={ballMetaById.get(pendingMeta.deliveryId)}
+            battingStyle={playerById.get(pendingMeta.strikerId)?.battingStyle}
             onPickZone={(z) => saveShotMeta({ zone: z })}
-            onPickLine={(l) => saveShotMeta({ line: l })}
-            onPickLength={(l) => saveShotMeta({ length: l })}
+            onPickPitch={(v) => saveShotMeta({ line: v.line, length: v.length })}
             onFlagReview={flagForReview}
             onSaveNote={(note) => saveShotMeta({ note })}
             onDismiss={() => setPendingMeta(null)}
@@ -768,6 +829,61 @@ function ShortcutsHelpModal({ open, onClose }: { open: boolean; onClose: () => v
 
 function playerOption(p: Player | undefined, id: string) {
   return { id, name: p?.displayName ?? 'Player', photoURL: p?.photoURL }
+}
+
+/**
+ * Live powerplay indicator. Purely derived from the ball count (see `powerplayState`) — the
+ * scorer never turns it on or off. Hidden entirely when the match has no powerplay configured
+ * (`powerplayOvers` 0), so a format without powerplays is unaffected.
+ */
+function PowerplayBanner({
+  state,
+  ballsPerOver,
+}: {
+  state: PowerplayState
+  ballsPerOver: number
+}) {
+  if (!state.enabled) return null
+
+  if (state.phase === 'complete') {
+    return (
+      <div className="mb-3 flex items-center gap-2 rounded-lg border border-ink-200 bg-ink-50 px-3 py-1.5 text-xs font-medium text-ink-500 dark:border-ink-800 dark:bg-ink-800/50 dark:text-ink-400">
+        <Zap size={13} />
+        Powerplay complete · {state.totalOvers} over{state.totalOvers === 1 ? '' : 's'} ·
+        fielding restrictions lifted
+      </div>
+    )
+  }
+
+  const currentOver = state.oversBowled + 1
+  const ballInOver = state.ballsBowledInPowerplay % ballsPerOver
+  const pct = state.ballsInPowerplay
+    ? Math.round((state.ballsBowledInPowerplay / state.ballsInPowerplay) * 100)
+    : 0
+
+  return (
+    <div className="mb-3 overflow-hidden rounded-lg border border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40">
+      <div className="flex items-center justify-between px-3 py-1.5 text-xs font-semibold text-amber-800 dark:text-amber-300">
+        <span className="flex items-center gap-1.5">
+          <Zap size={13} className="fill-amber-500 text-amber-500" />
+          Powerplay · over {currentOver} of {state.totalOvers}
+          <span className="font-normal text-amber-600 dark:text-amber-400">
+            ({state.mode})
+          </span>
+        </span>
+        <span className="font-normal text-amber-600 dark:text-amber-400">
+          {state.oversRemaining} over{state.oversRemaining === 1 ? '' : 's'} +{' '}
+          {ballsPerOver - ballInOver} ball{ballsPerOver - ballInOver === 1 ? '' : 's'} left
+        </span>
+      </div>
+      <div className="h-1 w-full bg-amber-200 dark:bg-amber-900">
+        <div
+          className="h-full bg-amber-500 transition-[width] duration-300"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  )
 }
 
 function ScoreHeader({
@@ -1134,7 +1250,10 @@ function PreMatch({
             {' · '}
             <b>Team size:</b> {match.teamSize ?? Math.max(match.squadA.length, match.squadB.length)}
             {' · '}
-            <b>Powerplay:</b> {match.powerplayOvers ?? '—'} overs
+            <b>Powerplay:</b>{' '}
+            {match.powerplayOvers && match.powerplayOvers > 0
+              ? `${match.powerplayOvers} over${match.powerplayOvers === 1 ? '' : 's'} (${match.powerplayMode ?? 'manual'})`
+              : 'none'}
           </div>
           {(match.lastManStanding || match.retiredHurtEnabled === false || match.superOverEnabled) && (
             <div className="mt-2 flex flex-wrap gap-1.5">

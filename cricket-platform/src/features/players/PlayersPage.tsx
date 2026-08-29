@@ -8,9 +8,6 @@ import {
   ArchiveRestore,
   Trash2,
   Users,
-  KeyRound,
-  Copy,
-  Check,
   History,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -24,7 +21,7 @@ import {
   PageLoader,
   Select,
 } from '@/components/ui/primitives'
-import { Modal } from '@/components/ui/Modal'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { SavedFiltersBar } from '@/components/ui/SavedFiltersBar'
 import { VersionHistoryModal } from '@/components/ui/VersionHistoryModal'
 import { useAsync } from '@/hooks/useAsync'
@@ -50,6 +47,7 @@ import { PLAYER_ROLE_LABELS, BOWLING_STYLE_LABELS } from '@/lib/format'
 import { useAuthStore, ownerScope, canBuildRoster } from '@/store/authStore'
 import { permissionAwareMessage } from '@/lib/firebaseError'
 import { PlayerFormModal } from './PlayerFormModal'
+import { CredentialsDialog } from './CredentialsDialog'
 import type { Player } from '@/types'
 
 export function PlayersPage() {
@@ -83,6 +81,7 @@ export function PlayersPage() {
     password: string
   } | null>(null)
   const [historyPlayerId, setHistoryPlayerId] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<Player | null>(null)
 
   const teamName = useMemo(() => {
     const map = new Map((teams.data ?? []).map((t) => [t.id, t.shortName]))
@@ -189,21 +188,24 @@ export function PlayersPage() {
   async function toggleActive(p: Player) {
     try {
       await setPlayerActive(p.id, !p.active)
+      toast.success(p.active ? `${p.fullName} archived` : `${p.fullName} restored`)
       players.refetch()
-    } catch {
-      toast.error('Could not update player status')
+    } catch (e) {
+      toast.error(
+        permissionAwareMessage(
+          e,
+          "You don't have permission to change this player. Only its owner or a master admin can.",
+        ),
+      )
     }
   }
 
-  async function handleDelete(p: Player) {
-    if (!confirm(`Move ${p.fullName} to Trash? You can restore it from Trash later.`)) return
-    try {
-      await softDelete('player', p.id, profile)
-      toast.success('Player moved to Trash')
-      players.refetch()
-    } catch {
-      toast.error('Could not move player to Trash')
-    }
+  /** Runs from the confirm dialog; rethrows so the dialog surfaces the real reason inline
+   *  instead of the button appearing to do nothing. */
+  async function doDelete(p: Player) {
+    await softDelete('player', p.id, profile)
+    toast.success('Player moved to Trash')
+    players.refetch()
   }
 
   return (
@@ -371,7 +373,11 @@ export function PlayersPage() {
                           <History size={16} />
                         </button>
                         <button
-                          title={p.active ? 'Archive' : 'Restore'}
+                          title={
+                            p.active
+                              ? 'Archive (hide from squad selection)'
+                              : 'Restore (make selectable again)'
+                          }
                           aria-label={`${p.active ? 'Archive' : 'Restore'} ${p.fullName}`}
                           onClick={() => toggleActive(p)}
                           className="rounded-md p-1.5 text-ink-500 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800 hover:text-ink-800 dark:hover:text-ink-200"
@@ -385,7 +391,7 @@ export function PlayersPage() {
                         <button
                           title="Delete"
                           aria-label={`Delete ${p.fullName}`}
-                          onClick={() => handleDelete(p)}
+                          onClick={() => setConfirmDelete(p)}
                           className="rounded-md p-1.5 text-red-500 hover:bg-red-50"
                         >
                           <Trash2 size={16} />
@@ -434,100 +440,25 @@ export function PlayersPage() {
           onRestored={() => players.refetch()}
         />
       )}
-    </div>
-  )
-}
 
-function CredentialsDialog({
-  credentials,
-  onClose,
-}: {
-  credentials: { playerName: string; username: string; password: string }
-  onClose: () => void
-}) {
-  const [acked, setAcked] = useState(false)
-  const [copied, setCopied] = useState<'username' | 'password' | null>(null)
-
-  function copy(kind: 'username' | 'password', value: string) {
-    navigator.clipboard.writeText(value).then(() => {
-      setCopied(kind)
-      setTimeout(() => setCopied(null), 1500)
-    })
-  }
-
-  return (
-    <Modal
-      open
-      onClose={onClose}
-      title={
-        <span className="flex items-center gap-2">
-          <KeyRound size={18} /> Login created for {credentials.playerName}
-        </span>
-      }
-      footer={
-        <Button onClick={onClose} disabled={!acked} block>
-          Done
-        </Button>
-      }
-    >
-      <p className="text-sm text-ink-600 dark:text-ink-400">
-        Share these with {credentials.playerName} — the password is shown only this once and
-        can't be retrieved later. They'll be asked to choose their own username and password
-        on first login.
-      </p>
-      <div className="mt-4 space-y-3">
-        <CredentialRow
-          label="Username"
-          value={credentials.username}
-          copied={copied === 'username'}
-          onCopy={() => copy('username', credentials.username)}
-        />
-        <CredentialRow
-          label="Temporary password"
-          value={credentials.password}
-          copied={copied === 'password'}
-          onCopy={() => copy('password', credentials.password)}
-        />
-      </div>
-      <label className="mt-4 flex cursor-pointer items-start gap-2 text-sm text-ink-800 dark:text-ink-200">
-        <input
-          type="checkbox"
-          checked={acked}
-          onChange={(e) => setAcked(e.target.checked)}
-          className="mt-0.5 h-4 w-4"
-        />
-        I've saved these credentials to share with the player.
-      </label>
-    </Modal>
-  )
-}
-
-function CredentialRow({
-  label,
-  value,
-  copied,
-  onCopy,
-}: {
-  label: string
-  value: string
-  copied: boolean
-  onCopy: () => void
-}) {
-  return (
-    <div>
-      <div className="mb-1 text-xs font-medium text-ink-500 dark:text-ink-400">{label}</div>
-      <div className="flex items-center gap-2">
-        <code className="flex-1 rounded-lg border border-ink-200 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 px-3 py-2 font-mono text-sm text-ink-900 dark:text-ink-50">
-          {value}
-        </code>
-        <button
-          onClick={onCopy}
-          aria-label={`Copy ${label.toLowerCase()}`}
-          className="rounded-lg border border-ink-300 dark:border-ink-700 p-2 text-ink-600 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800"
-        >
-          {copied ? <Check size={16} className="text-pitch-600" /> : <Copy size={16} />}
-        </button>
-      </div>
+      {/* keep ConfirmDialog last so it stacks above other modals */}
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Move player to Trash"
+        message={
+          confirmDelete ? (
+            <>
+              Move <strong>{confirmDelete.fullName}</strong> to Trash? They'll stop appearing in
+              rosters and squad pickers. You can restore them from Trash later.
+            </>
+          ) : null
+        }
+        confirmLabel="Move to Trash"
+        onConfirm={async () => {
+          if (confirmDelete) await doDelete(confirmDelete)
+        }}
+        onClose={() => setConfirmDelete(null)}
+      />
     </div>
   )
 }

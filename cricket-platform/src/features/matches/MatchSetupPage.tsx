@@ -24,8 +24,14 @@ import {
 } from '@/components/ui/primitives'
 import { useAsync } from '@/hooks/useAsync'
 import { useToast } from '@/components/ui/toast'
-import { listTeams, createTeam, type TeamInput } from '@/services/teams.service'
-import { listPlayers } from '@/services/players.service'
+import { listTeams, createTeam, updateTeam, type TeamInput } from '@/services/teams.service'
+import {
+  listPlayers,
+  createPlayer,
+  updatePlayer,
+  type PlayerInput,
+} from '@/services/players.service'
+import { createLinkedAccount } from '@/services/auth.service'
 import { listClubs } from '@/services/clubs.service'
 import { listTournaments } from '@/services/tournaments.service'
 import { listUsers } from '@/services/users.service'
@@ -38,6 +44,8 @@ import { snapshotVersion, changedKeys } from '@/services/versionHistory.service'
 import { useAuthStore, ownerScope, canBuildRoster } from '@/store/authStore'
 import { permissionAwareMessage } from '@/lib/firebaseError'
 import { TeamFormModal } from '@/features/teams/TeamFormModal'
+import { PlayerFormModal } from '@/features/players/PlayerFormModal'
+import { CredentialsDialog, type LinkedCredentials } from '@/features/players/CredentialsDialog'
 import { usePremiumFeature } from '@/hooks/useMySubscription'
 import { cn } from '@/lib/cn'
 import { MATCH_FORMAT_LABELS, MATCH_FORMAT_OVERS } from '@/lib/format'
@@ -134,6 +142,10 @@ export function MatchSetupPage() {
   // Which team slot ('A'/'B') opened the inline "+ Add team" modal, so the newly
   // created team can be auto-selected into the right side once it's saved.
   const [addingTeamSlot, setAddingTeamSlot] = useState<'A' | 'B' | null>(null)
+  // Which team slot opened the inline "+ Add player" modal, so the new player can be
+  // dropped into the right squad once saved.
+  const [addingPlayerSlot, setAddingPlayerSlot] = useState<'A' | 'B' | null>(null)
+  const [newLogin, setNewLogin] = useState<LinkedCredentials | null>(null)
   const [form, setForm] = useState<FormState>({
     title: '',
     tournamentId: '',
@@ -340,10 +352,14 @@ export function MatchSetupPage() {
     }
   }
 
-  // Pre-fill squads from team rosters when a team is picked.
+  // Pre-fill squads from team rosters when a team is picked. Archived ("suspended") players stay
+  // on the roster but are NOT auto-selected into the XI — you can still tick them back in by hand
+  // if they've returned.
   function chooseTeam(slot: 'A' | 'B', teamId: string) {
     const t = teamById.get(teamId)
-    const squad = t ? [...t.playerIds] : []
+    const squad = t
+      ? t.playerIds.filter((pid) => playerById.get(pid)?.active !== false)
+      : []
     if (slot === 'A') {
       set('teamAId', teamId)
       set('squadA', squad)
@@ -376,13 +392,74 @@ export function MatchSetupPage() {
 
   function candidatePlayers(team: Team | undefined): Player[] {
     const all = scopedPlayers
-    if (!team) return all
-    // team squad first, then everyone else (so you can add guests)
-    const inTeam = new Set(team.playerIds)
-    return [
-      ...all.filter((p) => inTeam.has(p.id)),
-      ...all.filter((p) => !inTeam.has(p.id)),
-    ]
+    // Order: team roster before guests, and active before archived within each group — so a
+    // "suspended" player never sits at the top of the list, but is still reachable if needed.
+    const inTeam = team ? new Set(team.playerIds) : new Set<string>()
+    const rank = (p: Player) =>
+      (inTeam.has(p.id) ? 0 : 2) + (p.active === false ? 1 : 0)
+    return [...all].sort((a, b) => rank(a) - rank(b))
+  }
+
+  /**
+   * "+ Add player" from inside the wizard — the same `createPlayer()` service and Player data
+   * model the Players page uses, not a parallel roster. The new player is owned by whoever's
+   * creating the match, added to the slot's team on both sides (player.teamIds and
+   * team.playerIds), selected into that XI immediately, and persisted — it's a real player that
+   * shows up everywhere the team's roster does, and survives a refresh.
+   */
+  async function handleCreatePlayer(
+    input: PlayerInput,
+    _id?: string,
+    createLogin?: boolean,
+  ) {
+    const slot = addingPlayerSlot
+    const teamId = slot === 'A' ? form.teamAId : slot === 'B' ? form.teamBId : ''
+    try {
+      const teamIds = teamId
+        ? [...new Set([teamId, ...input.teamIds])]
+        : input.teamIds
+      const newId = await createPlayer({ ...input, teamIds, ownerId: profile?.id })
+
+      // Keep the association bidirectional so the team page / squad pre-fill see them too.
+      const team = teamId ? teamById.get(teamId) : undefined
+      if (team && !team.playerIds.includes(newId)) {
+        await updateTeam(teamId, { playerIds: [...team.playerIds, newId] })
+      }
+      await Promise.all([players.refetch(), teams.refetch()])
+
+      if (slot) {
+        const key = slot === 'A' ? 'squadA' : 'squadB'
+        set(key, [...new Set([...form[key], newId])])
+      }
+
+      if (createLogin) {
+        try {
+          const creds = await createLinkedAccount(input.displayName || input.fullName)
+          await updatePlayer(newId, { linkedUserId: creds.uid })
+          setNewLogin({
+            playerName: input.displayName || input.fullName,
+            username: creds.username,
+            password: creds.password,
+          })
+        } catch (e) {
+          toast.error(
+            `Player created, but the linked account failed: ${
+              e instanceof Error ? e.message : 'unknown error'
+            }`,
+          )
+        }
+      }
+
+      setAddingPlayerSlot(null)
+      toast.success('Player added')
+    } catch (e) {
+      toast.error(
+        permissionAwareMessage(
+          e,
+          "You don't have permission to add players. Ask an admin for Team Manager access.",
+        ),
+      )
+    }
   }
 
   function toggleSquad(slot: 'A' | 'B', pid: string) {
@@ -737,12 +814,22 @@ export function MatchSetupPage() {
               candidates={candidatePlayers(teamA)}
               selected={form.squadA}
               onToggle={(pid) => toggleSquad('A', pid)}
+              onAddPlayer={
+                teamA && canBuildRoster(profile)
+                  ? () => setAddingPlayerSlot('A')
+                  : undefined
+              }
             />
             <SquadPicker
               title={teamB?.name ?? 'Team B'}
               candidates={candidatePlayers(teamB)}
               selected={form.squadB}
               onToggle={(pid) => toggleSquad('B', pid)}
+              onAddPlayer={
+                teamB && canBuildRoster(profile)
+                  ? () => setAddingPlayerSlot('B')
+                  : undefined
+              }
             />
           </div>
         )}
@@ -977,6 +1064,23 @@ export function MatchSetupPage() {
           onSave={handleCreateTeam}
         />
       )}
+
+      {addingPlayerSlot && (
+        <PlayerFormModal
+          player={null}
+          teams={
+            (addingPlayerSlot === 'A' ? teamA : teamB)
+              ? [(addingPlayerSlot === 'A' ? teamA : teamB) as Team]
+              : []
+          }
+          onClose={() => setAddingPlayerSlot(null)}
+          onSave={handleCreatePlayer}
+        />
+      )}
+
+      {newLogin && (
+        <CredentialsDialog credentials={newLogin} onClose={() => setNewLogin(null)} />
+      )}
     </div>
   )
 }
@@ -1025,11 +1129,14 @@ function SquadPicker({
   candidates,
   selected,
   onToggle,
+  onAddPlayer,
 }: {
   title: string
   candidates: Player[]
   selected: string[]
   onToggle: (pid: string) => void
+  /** Omit to hide "+ Add player" (no team picked yet, or the user can't create players). */
+  onAddPlayer?: () => void
 }) {
   return (
     <div>
@@ -1041,22 +1148,48 @@ function SquadPicker({
         {candidates.length === 0 && (
           <p className="px-2 py-3 text-sm text-ink-500 dark:text-ink-400">No players available.</p>
         )}
-        {candidates.map((p) => (
-          <label
-            key={p.id}
-            className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-ink-50 dark:hover:bg-ink-800"
-          >
-            <input
-              type="checkbox"
-              checked={selected.includes(p.id)}
-              onChange={() => onToggle(p.id)}
-              className="h-4 w-4"
-            />
-            <Avatar name={p.fullName} src={p.photoURL} size={26} />
-            <span className="text-sm text-ink-800 dark:text-ink-200">{p.fullName}</span>
-          </label>
-        ))}
+        {candidates.map((p) => {
+          const archived = p.active === false
+          return (
+            <label
+              key={p.id}
+              className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-ink-50 dark:hover:bg-ink-800"
+            >
+              <input
+                type="checkbox"
+                checked={selected.includes(p.id)}
+                onChange={() => onToggle(p.id)}
+                className="h-4 w-4"
+              />
+              <Avatar name={p.fullName} src={p.photoURL} size={26} />
+              <span
+                className={cn(
+                  'text-sm',
+                  archived
+                    ? 'text-ink-400 dark:text-ink-500'
+                    : 'text-ink-800 dark:text-ink-200',
+                )}
+              >
+                {p.fullName}
+              </span>
+              {archived && (
+                <span className="ml-auto rounded-full bg-ink-100 px-1.5 py-0.5 text-[10px] font-medium text-ink-500 dark:bg-ink-800 dark:text-ink-400">
+                  Archived
+                </span>
+              )}
+            </label>
+          )
+        })}
       </div>
+      {onAddPlayer && (
+        <button
+          type="button"
+          onClick={onAddPlayer}
+          className="mt-1.5 text-xs font-medium text-brand-600 hover:underline dark:text-brand-400"
+        >
+          + Add player
+        </button>
+      )}
     </div>
   )
 }

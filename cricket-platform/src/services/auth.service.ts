@@ -240,6 +240,95 @@ export async function createLinkedAccount(
 }
 
 /**
+ * Re-issue login access when the one-time temporary password was lost before
+ * the person activated their account (or an activated account is locked out).
+ *
+ * The Firebase client SDK cannot reset another user's password — that needs
+ * the Admin SDK, which this project has no backend for. So "re-issue" mints a
+ * brand-new linked account (fresh `user######` + fresh temp password),
+ * carries over the old account's role, re-points the linked player at the new
+ * uid so the person keeps their playing identity, and suspends the old
+ * account so the stale credentials can never be used and there's only ever
+ * one live account per person. The old Firebase Auth user is left orphaned
+ * (no client-side delete) but is inert: its profile is `banned`, which
+ * `login()` and `observeAuth()` both reject.
+ *
+ * Master-admin only — enforced by the MASTER_ADMIN-guarded `/users` route and
+ * by Firestore rules on the writes below. The fresh credentials are returned
+ * to be shown exactly once, same as `createLinkedAccount`.
+ */
+export async function reissueLinkedAccess(
+  old: UserProfile,
+  actor: UserProfile | null,
+): Promise<{ username: string; password: string; uid: string; displayName: string }> {
+  if (old.role === 'MASTER_ADMIN') {
+    throw new Error('The master admin account cannot be re-issued this way.')
+  }
+
+  const fresh = await createLinkedAccount(old.displayName || old.username)
+  const now = Date.now()
+
+  // createLinkedAccount always starts a new account at VIEWER — carry the old
+  // account's role across so a re-issued scorer stays a scorer.
+  if (old.role && old.role !== 'VIEWER') {
+    try {
+      await setDoc(
+        doc(db, COL.users, fresh.uid),
+        { role: old.role, updatedAt: now },
+        { merge: true },
+      )
+    } catch {
+      /* non-fatal — the master can re-set the role from the same page */
+    }
+  }
+
+  // Re-point any player linked to the old account so stats/identity follow.
+  try {
+    const linked = await getDocs(
+      query(
+        collection(db, COL.players),
+        where('linkedUserId', '==', old.id),
+        limit(5),
+      ),
+    )
+    await Promise.all(
+      linked.docs.map((d) =>
+        setDoc(
+          doc(db, COL.players, d.id),
+          { linkedUserId: fresh.uid, updatedAt: now },
+          { merge: true },
+        ),
+      ),
+    )
+  } catch {
+    /* non-fatal */
+  }
+
+  // Kill the old account: the lost temp password must not remain usable, and
+  // two live accounts for one person would be worse than one orphaned auth
+  // user. A raw merge (not setUserStatus) so no "suspended" notification is
+  // queued for an account nobody can sign into.
+  try {
+    await setDoc(
+      doc(db, COL.users, old.id),
+      { status: 'banned', bannedAt: now, updatedAt: now },
+      { merge: true },
+    )
+  } catch {
+    /* non-fatal */
+  }
+
+  void logAudit(
+    actor,
+    'Re-issued login access',
+    `@${old.username} → @${fresh.username}`,
+    { before: old.username, after: fresh.username },
+  )
+
+  return { ...fresh, displayName: old.displayName || old.username }
+}
+
+/**
  * First-login activation: a `pending_registration` account picks a real
  * password and display name, and becomes `active`. Runs as the signed-in
  * user themselves (they're already authenticated with the temp credentials).

@@ -154,6 +154,28 @@ export function getPremiumFeature(key: string): PremiumFeatureDef | undefined {
   return PREMIUM_FEATURES.find((f) => f.key === key)
 }
 
+/**
+ * The synthetic subscription that stands in for the master admin everywhere entitlements are
+ * evaluated. The master admin has full access to the platform by definition (`hasRole()` returns
+ * true for every role), and that must extend to paid features without anyone hand-editing a
+ * `subscriptions/{uid}` doc — so the entitlement hooks substitute this object for the master admin
+ * before any tier check runs. It is never written to Firestore; `provider: 'comp'` marks it as
+ * "access by role, not by billing" so admin surfaces can label it honestly rather than implying a
+ * payment was made. This is the ONE place the master-admin-is-premium rule lives.
+ */
+export function masterAdminSubscription(uid: string): Subscription {
+  return {
+    uid,
+    tier: 'premium',
+    status: 'active',
+    provider: 'comp',
+    currentPeriodEnd: null,
+    cancelAtPeriodEnd: false,
+    createdAt: 0,
+    updatedAt: 0,
+  }
+}
+
 /** The plan a subscription actually grants right now. A canceled/past-due/missing subscription
  *  always resolves to 'free', regardless of what `tier` says — `tier` records what was purchased,
  *  `status` records whether that purchase is currently in force. */

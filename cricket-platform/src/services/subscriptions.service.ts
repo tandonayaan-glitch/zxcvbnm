@@ -30,8 +30,10 @@ export async function upsertSubscription(sub: Subscription): Promise<void> {
   await setDoc(doc(subsCol(), sub.uid), pruneUndefined(sub))
 }
 
-/** Master-admin manual grant (comping access) — bypasses billing entirely, same shape a real
- *  provider's webhook would eventually write, but attributed to an admin action instead. */
+/** Master-admin manual grant (comping access) — bypasses billing entirely. Written with
+ *  `provider: 'manual'` so admin surfaces can tell "an admin granted this" apart from a real
+ *  (mock) checkout, and never claim a payment was made. `firestore.rules` already lets the
+ *  master admin write any `subscriptions/{uid}` doc; the self-write path stays 'mock'-only. */
 export async function grantSubscription(
   uid: string,
   tier: PlanTier,
@@ -43,15 +45,15 @@ export async function grantSubscription(
     uid,
     tier,
     status: 'active',
-    provider: 'mock',
+    provider: 'manual',
     currentPeriodEnd: null,
     cancelAtPeriodEnd: false,
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
   }
   await upsertSubscription(sub)
-  await logAudit(actor, 'subscription.grant', `${uid} → ${tier}`, {
-    before: existing?.tier ?? 'free',
+  await logAudit(actor, 'subscription.grant', `${uid} → ${tier} (manual grant)`, {
+    before: existing?.status === 'active' ? existing.tier : 'free',
     after: tier,
   })
 }

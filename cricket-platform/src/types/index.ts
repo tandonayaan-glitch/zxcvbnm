@@ -857,9 +857,15 @@ export type SubscriptionStatus =
   | 'canceled' // canceled but the doc is kept for history; effectiveTier() still reads 'free'
   | 'past_due' // a real provider would set this on a failed renewal charge; unused by the mock
 
-/** Which billing backend wrote this doc. Only 'mock' exists today — real providers (Stripe,
- *  Razorpay, etc.) are a later, separate decision; see billing.types.ts's own doc comment. */
-export type BillingProviderId = 'mock'
+/** Which billing backend wrote this doc.
+ *  - 'mock'   — MockBillingProvider's simulated checkout (the only "purchase" path today).
+ *  - 'manual' — a master-admin comp grant written straight to Firestore (Users & Roles → plan),
+ *               bypassing billing entirely. Persisted; distinguished so admin UI can show the
+ *               access came from an admin action, not a payment.
+ *  - 'comp'   — the master admin's own role-derived premium. Synthetic, NEVER written to
+ *               Firestore (see `masterAdminSubscription()`); only ever appears in memory.
+ *  Real providers (Stripe, Razorpay, …) are a later, separate decision; see billing.types.ts. */
+export type BillingProviderId = 'mock' | 'manual' | 'comp'
 
 /** Doc id == uid, one per user, in the `subscriptions` collection (mirrors `userPrefs`). */
 export interface Subscription {

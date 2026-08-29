@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Lock } from 'lucide-react'
 import { usePremiumFeature, useSubscriptionFor } from '@/hooks/useMySubscription'
 import { getPremiumFeature, hasEntitlement } from '@/domain/entitlements'
+import { useAuthStore, isMasterAdmin } from '@/store/authStore'
 import { Card, CardBody } from '@/components/ui/primitives'
 
 /**
@@ -30,6 +31,11 @@ export function PremiumGate({
 }) {
   const selfEntitled = usePremiumFeature(feature)
   const owner = useSubscriptionFor(ownerId)
+  // The master admin is never gated — mirrors `useMySubscription`'s central bypass for the
+  // `ownerId` branch, which checks the content owner's plan rather than the viewer's.
+  const viewerIsMaster = isMasterAdmin(useAuthStore((s) => s.profile))
+
+  if (viewerIsMaster) return <>{children}</>
 
   if (ownerId) {
     if (owner.loading) return null
