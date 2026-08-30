@@ -46,7 +46,7 @@ export function SetupPage() {
       await signup({ username: MASTER_ADMIN_USERNAME, password, displayName })
       navigate('/dashboard', { replace: true })
     } catch (err) {
-      setError(authErrorMessage(err))
+      setError(authErrorMessage(err, 'setup'))
     } finally {
       setLoading(false)
     }

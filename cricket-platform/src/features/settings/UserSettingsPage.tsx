@@ -105,7 +105,7 @@ export function UserSettingsPage() {
       setConfirmPw('')
       toast.success('Password changed')
     } catch (e) {
-      toast.error(authErrorMessage(e))
+      toast.error(authErrorMessage(e, 'reset'))
     } finally {
       setSavingPw(false)
     }

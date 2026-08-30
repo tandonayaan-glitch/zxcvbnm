@@ -41,7 +41,7 @@ export function SignupPage() {
       })
       navigate(homeForRole(p.role), { replace: true })
     } catch (err) {
-      setError(authErrorMessage(err))
+      setError(authErrorMessage(err, 'signup'))
     } finally {
       setLoading(false)
     }

@@ -40,12 +40,16 @@ export function LoginPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    if (!username.trim() || !password) {
+      setError('Please enter your username and password.')
+      return
+    }
     setLoading(true)
     try {
       const p = await login(username, password)
       navigate(destinationForProfile(p), { replace: true })
     } catch (err) {
-      setError(authErrorMessage(err))
+      setError(authErrorMessage(err, 'login'))
     } finally {
       setLoading(false)
     }

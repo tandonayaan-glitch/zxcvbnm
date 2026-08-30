@@ -41,7 +41,7 @@ export function ActivatePage() {
       setProfile(updated)
       navigate(homeForRole(updated.role), { replace: true })
     } catch (err) {
-      setError(authErrorMessage(err))
+      setError(authErrorMessage(err, 'activate'))
     } finally {
       setLoading(false)
     }

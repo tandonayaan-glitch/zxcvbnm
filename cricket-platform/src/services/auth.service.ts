@@ -459,29 +459,99 @@ export function observeAuth(
   })
 }
 
-/** Friendly messages for common Firebase auth error codes. */
-export function authErrorMessage(err: unknown): string {
+/** Which screen the error happened on — lets the message point somewhere useful
+ *  ("create an account" after a failed login, "sign in instead" after a name clash). */
+export type AuthErrorContext = 'login' | 'signup' | 'activate' | 'setup' | 'reset'
+
+/**
+ * Turns *any* auth failure into a short, plain-language, actionable sentence. It never
+ * returns a raw `Firebase: Error (auth/…)` string — an unrecognised code or a bare
+ * Firebase message falls through to a friendly generic line for the given context.
+ * Messages this module throws itself (e.g. "That username is already taken.") are
+ * already user-facing and pass straight through.
+ */
+export function authErrorMessage(
+  err: unknown,
+  context: AuthErrorContext = 'login',
+): string {
   const code =
     typeof err === 'object' && err && 'code' in err
-      ? String((err as { code: unknown }).code)
+      ? String((err as { code: unknown }).code).toLowerCase()
       : ''
+
   switch (code) {
+    // Wrong password / no such account. Modern Firebase collapses both into
+    // `invalid-credential` to resist account enumeration.
     case 'auth/invalid-credential':
+    case 'auth/invalid-login-credentials':
     case 'auth/wrong-password':
     case 'auth/user-not-found':
-      return 'Incorrect username or password.'
+      if (context === 'login')
+        return "That username and password don't match an account. Check your details — or if you don't have an account yet, create one below."
+      if (context === 'reset') return 'Your current password is incorrect.'
+      return 'Those sign-in details are incorrect.'
+
+    // Username didn't form a valid login (empty, spaces, an "@", etc.).
+    case 'auth/invalid-email':
+    case 'auth/missing-email':
+      return context === 'login'
+        ? "We couldn't find an account for that username. Check the spelling, or create a new account below."
+        : 'Please enter a valid username — 3–20 letters, numbers or underscores.'
+
+    case 'auth/missing-password':
+      return 'Please enter your password.'
+
+    case 'auth/user-disabled':
+      return 'This account has been suspended. Please contact your administrator.'
+
     case 'auth/email-already-in-use':
-      return 'That username is already taken.'
+      return context === 'signup'
+        ? 'That username is already taken. Try signing in instead, or pick a different one.'
+        : 'That username is already taken.'
+
     case 'auth/weak-password':
-      return 'Password must be at least 6 characters.'
+      return 'Please choose a password with at least 6 characters.'
+
     case 'auth/too-many-requests':
-      return 'Too many attempts. Please wait a moment and try again.'
+      return 'Too many attempts. Please wait a few minutes and try again.'
     case 'auth/network-request-failed':
-      return 'Network error. Check your connection and try again.'
+      return 'Network problem — check your connection and try again.'
+    case 'auth/timeout':
+      return 'That took too long. Please try again.'
+    case 'auth/requires-recent-login':
+      return 'For your security, please sign in again before making this change.'
+
+    // Config / server problems — a normal user can't fix these, so don't dump
+    // internals on them.
+    case 'auth/operation-not-allowed':
+      return 'Sign-in is not enabled right now. Please contact your administrator.'
     case 'auth/invalid-api-key':
     case 'auth/api-key-not-valid.-please-pass-a-valid-api-key.':
-      return 'Firebase configuration looks invalid. Check your .env.local values.'
+    case 'auth/invalid-app-credential':
+    case 'auth/configuration-not-found':
+      return 'The app is not configured correctly. Please contact your administrator.'
+    case 'auth/internal-error':
+      return 'Something went wrong on our side. Please try again in a moment.'
+  }
+
+  // A message we threw ourselves is already friendly — keep it, unless it's a raw
+  // Firebase string.
+  if (err instanceof Error && err.message) {
+    const m = err.message.trim()
+    if (m && !/^firebase:/i.test(m) && !/^auth\/[a-z-]+/i.test(m)) return m
+  }
+
+  // Unknown code / bare "Firebase: Error (...)" text: stay generic and useful.
+  switch (context) {
+    case 'signup':
+      return "We couldn't create your account. Please check your details and try again."
+    case 'login':
+      return "We couldn't sign you in. Check your details, or create a new account below."
+    case 'activate':
+      return "We couldn't activate your account. Please try again."
+    case 'setup':
+      return "We couldn't complete setup. Please try again."
     default:
-      return err instanceof Error ? err.message : 'Something went wrong.'
+      return 'Something went wrong. Please try again.'
   }
 }

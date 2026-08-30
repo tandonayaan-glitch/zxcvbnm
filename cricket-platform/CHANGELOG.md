@@ -4,6 +4,19 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Fixed — Friendly auth errors
+- **No more raw `Firebase: Error (auth/…)` on the sign-in screens.** `authErrorMessage()` was
+  falling through to the SDK's own message for any code it didn't explicitly list (e.g.
+  `auth/invalid-email`, which a username with a space or an "@" produces). It now covers every
+  Firebase Auth code with a plain-language, actionable sentence and — crucially — an unrecognised
+  code or a bare Firebase string can no longer leak through: the fallback is a friendly generic
+  line chosen by context. A new `context` argument (`'login' | 'signup' | 'activate' | 'setup' |
+  'reset'`) tailors the nudge — a failed login says "…create a new account below" (the link is
+  already on the page), a name clash on signup says "Try signing in instead", a wrong current
+  password on the settings screen says "Your current password is incorrect." `LoginPage` also
+  guards an empty username/password before the round-trip. Threaded through `LoginPage`,
+  `SignupPage`, `ActivatePage`, `SetupPage`, and `UserSettingsPage`.
+
 ### Fixed — Remaining-issues follow-up
 - **Firebase Storage listing no longer spams the console.** Image hosting moved to R2, but
   gallery/media surfaces still call Firebase Storage's `listAll()` to surface pre-migration
