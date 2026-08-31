@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import type { BattingStyle, ShotZone } from '@/types'
+import { usePrefsStore } from '@/store/prefsStore'
 import { cn } from '@/lib/cn'
 
 /**
  * Interactive wagon wheel for tagging where a shot went. Drag outward from the batter (mouse or
- * touch) — the trajectory ray follows the pointer live and the sector under it lights up. Release
- * to lock it in: the ray snaps to that sector and a marker is dropped. Tapping a sector selects
- * it directly (a zero-length drag). Passing `value` reconstructs a previously saved shot —
- * same sector, same marker — and reveals it with a short animation.
+ * touch) — including an upward "down the ground" swipe — and the trajectory ray follows the
+ * pointer live while the sector under it lights up. Release to lock it in: the ray draws itself
+ * out from the batter and the marker travels along it to land in that sector (a real placement
+ * motion, not a static reveal). Tapping a sector selects it directly (a zero-length drag).
+ * Passing `value` reconstructs a previously saved shot — same sector, same marker — replaying
+ * the same placement animation so a reopened ball visibly shows where it went.
  *
  * `ShotZone` is 1–8 clockwise from straight-down-the-ground, with 4/5 straddling the straight
  * boundary and 8/1 straddling straight-behind (see `src/types`). Leg/off are mirrored for a
@@ -84,7 +87,11 @@ export function WagonWheelInput({
   onChange: (zone: ShotZone) => void
 }) {
   const leftHanded = battingStyle === 'left_hand'
+  const reducedMotion = usePrefsStore((s) => s.prefs.reducedMotion)
   const svgRef = useRef<SVGSVGElement>(null)
+  // Ref mirror of `dragging` so a fast flick (pointerdown → pointerup before React re-renders)
+  // still commits — the state is only for rendering the live ray.
+  const draggingRef = useRef(false)
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null)
   const [dragging, setDragging] = useState(false)
   const [committed, setCommitted] = useState<ShotZone | undefined>(value)
@@ -108,15 +115,17 @@ export function WagonWheelInput({
     } catch {
       /* setPointerCapture can reject an already-released/synthetic pointer id */
     }
+    draggingRef.current = true
     setDragging(true)
     setDrag(toSvg(e))
   }
   function onPointerMove(e: React.PointerEvent) {
-    if (!dragging) return
+    if (!draggingRef.current) return
     setDrag(toSvg(e))
   }
   function onPointerUp(e: React.PointerEvent) {
-    if (!dragging) return
+    if (!draggingRef.current) return
+    draggingRef.current = false
     setDragging(false)
     const p = toSvg(e)
     const dist = Math.hypot(p.x - C, p.y - C)
@@ -218,26 +227,61 @@ export function WagonWheelInput({
           </g>
         )}
 
-        {/* committed ray + marker (animated reveal / snap) */}
-        {!dragging && committed != null && marker && (
-          <g key={revealKey} className="ww-reveal" style={{ transformOrigin: `${C}px ${C}px` }}>
-            <line
-              x1={C}
-              y1={C}
-              x2={marker.x}
-              y2={marker.y}
-              className="stroke-brand-600 transition-all duration-300 dark:stroke-brand-400"
-              strokeWidth={3}
-              strokeLinecap="round"
-            />
-            <circle
-              cx={marker.x}
-              cy={marker.y}
-              r={6}
-              className="fill-brand-600 transition-all duration-300 dark:fill-brand-400"
-            />
-          </g>
-        )}
+        {/* committed ray + marker — the marker travels from the batter out along the ray to
+            its landing sector. Replays whenever `revealKey` changes (a fresh commit, or a
+            saved value being reconstructed). SMIL is used rather than a CSS keyframe because
+            it animates the geometry itself and re-fires cleanly on the keyed remount; when the
+            user prefers reduced motion it's dropped entirely and the marker is drawn in place. */}
+        {!dragging && committed != null && marker && (() => {
+          const rayLen = Math.hypot(marker.x - C, marker.y - C)
+          return (
+            <g key={revealKey}>
+              <line
+                x1={C}
+                y1={C}
+                x2={marker.x}
+                y2={marker.y}
+                className="stroke-brand-600 dark:stroke-brand-400"
+                strokeWidth={3}
+                strokeLinecap="round"
+                strokeDasharray={rayLen}
+                strokeDashoffset={reducedMotion ? 0 : rayLen}
+              >
+                {!reducedMotion && (
+                  <animate
+                    attributeName="stroke-dashoffset"
+                    from={rayLen}
+                    to="0"
+                    dur="0.34s"
+                    begin="0s"
+                    fill="freeze"
+                    calcMode="spline"
+                    keyTimes="0;1"
+                    keySplines="0.4 0 0.2 1"
+                  />
+                )}
+              </line>
+              <circle
+                cx={marker.x}
+                cy={marker.y}
+                r={6}
+                className="fill-brand-600 dark:fill-brand-400"
+              >
+                {!reducedMotion && (
+                  <>
+                    {/* keySplines must stay within [0,1] on both axes — SMIL rejects the
+                        overshoot control points CSS cubic-bezier() would allow. This is a
+                        strong ease-out (decelerate into place). */}
+                    <animate attributeName="cx" from={C} to={marker.x} dur="0.42s" begin="0s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines="0.16 1 0.3 1" />
+                    <animate attributeName="cy" from={C} to={marker.y} dur="0.42s" begin="0s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines="0.16 1 0.3 1" />
+                    {/* a quick pop on the radius: grow past 6 then settle back */}
+                    <animate attributeName="r" values="3;7;6" dur="0.42s" begin="0s" fill="freeze" calcMode="spline" keyTimes="0;0.65;1" keySplines="0.2 0.8 0.3 1;0.4 0 0.6 1" />
+                  </>
+                )}
+              </circle>
+            </g>
+          )
+        })()}
 
         {/* current zone label */}
         {labelPos && highlightZone && (
@@ -251,13 +295,6 @@ export function WagonWheelInput({
           </text>
         )}
 
-        <style>{`
-          .ww-reveal { animation: wwReveal 260ms ease-out; }
-          @keyframes wwReveal {
-            from { opacity: 0; transform: scale(0.6); }
-            to   { opacity: 1; transform: scale(1); }
-          }
-        `}</style>
       </svg>
 
       <div className="mt-1 text-center text-[11px] text-ink-500 dark:text-ink-400">

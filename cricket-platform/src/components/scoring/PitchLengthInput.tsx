@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { BOWLING_LENGTHS, BOWLING_LINES } from '@/domain/pitchMap'
 import type { BattingStyle, BowlingLength, BowlingLine } from '@/types'
+import { usePrefsStore } from '@/store/prefsStore'
 import { cn } from '@/lib/cn'
 
 /**
  * Interactive pitch map for tagging a delivery's line and length. Drag or tap on a recognisable
  * cricket pitch (top-down, batter's stumps at the bottom) — the zone under the pointer lights up
- * and the line/length labels update live. Release to drop a pitch mark there; it animates into
- * place and is saved. Passing `line`/`length` reconstructs a saved delivery: the same zones stay
- * lit and the mark reappears with a short animation.
+ * and the line/length labels update live. Every line column and length row is labelled on the
+ * pitch itself. Release to drop a pitch mark there; the ball drops in from the bowler's end and
+ * settles, then it's saved. Passing `line`/`length` reconstructs a saved delivery: the same
+ * zones stay lit and the mark reappears with the same drop animation.
  *
  * Columns are the 5 `BowlingLine` values, rows the 6 `BowlingLength` values, matching
  * `domain/pitchMap.ts`. Leg/off columns are mirrored for a left-hand batter so "leg side" is
@@ -16,11 +18,12 @@ import { cn } from '@/lib/cn'
  */
 
 const W = 260
-const H = 244
+// The pitch itself is PITCH_Y..PITCH_Y+PITCH_H; the extra height below it is the line-label band.
+const H = 262
 const PITCH_X = 66
 const PITCH_W = W - PITCH_X * 2
 const PITCH_Y = 16
-const PITCH_H = H - PITCH_Y - 20
+const PITCH_H = 208
 
 const LINE_LABELS: Record<BowlingLine, string> = {
   wide_leg: 'Wide down leg',
@@ -29,11 +32,28 @@ const LINE_LABELS: Record<BowlingLine, string> = {
   outside_off: 'Outside off',
   wide_off: 'Wide outside off',
 }
+/** Shorter forms for the always-on column labels drawn under the pitch (space is tight). */
+const LINE_SHORT: Record<BowlingLine, string> = {
+  wide_leg: 'Wide leg',
+  leg: 'Leg',
+  stump: 'Stumps',
+  outside_off: 'Off',
+  wide_off: 'Wide off',
+}
 const LENGTH_LABELS: Record<BowlingLength, string> = {
   full_toss: 'Full toss',
   yorker: 'Yorker',
   full: 'Full',
   good: 'Good length',
+  short: 'Short',
+  bouncer: 'Bouncer',
+}
+/** Shorter forms for the always-on row labels drawn beside the pitch. */
+const LENGTH_SHORT: Record<BowlingLength, string> = {
+  full_toss: 'Full toss',
+  yorker: 'Yorker',
+  full: 'Full',
+  good: 'Good',
   short: 'Short',
   bouncer: 'Bouncer',
 }
@@ -63,7 +83,11 @@ export function PitchLengthInput({
 }) {
   const leftHanded = battingStyle === 'left_hand'
   const cols = leftHanded ? [...BOWLING_LINES].reverse() : BOWLING_LINES
+  const reducedMotion = usePrefsStore((s) => s.prefs.reducedMotion)
   const svgRef = useRef<SVGSVGElement>(null)
+  // Ref mirror of `dragging` so a fast tap (pointerdown → pointerup before React re-renders)
+  // still commits — the state is only for rendering the live pointer dot.
+  const draggingRef = useRef(false)
 
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null)
   const [dragging, setDragging] = useState(false)
@@ -96,15 +120,17 @@ export function PitchLengthInput({
     } catch {
       /* setPointerCapture can reject an already-released/synthetic pointer id */
     }
+    draggingRef.current = true
     setDragging(true)
     setDrag(toSvg(e))
   }
   function onPointerMove(e: React.PointerEvent) {
-    if (!dragging) return
+    if (!draggingRef.current) return
     setDrag(toSvg(e))
   }
   function onPointerUp(e: React.PointerEvent) {
-    if (!dragging) return
+    if (!draggingRef.current) return
+    draggingRef.current = false
     setDragging(false)
     const p = toSvg(e)
     if (p.x >= PITCH_X - 12 && p.x <= PITCH_X + PITCH_W + 12 && p.y >= PITCH_Y && p.y <= PITCH_Y + PITCH_H + 12) {
@@ -216,21 +242,69 @@ export function PitchLengthInput({
           <circle cx={drag.x} cy={drag.y} r={6} className="fill-brand-500/80" />
         )}
 
-        {/* committed pitch mark */}
+        {/* committed pitch mark — drops in from the bowler's end and settles. Replays whenever
+            `revealKey` changes (a fresh tap, or a saved value being reconstructed). Dropped
+            entirely when the user prefers reduced motion. */}
         {!dragging && markX != null && markY != null && (
-          <g key={revealKey} className="pm-reveal">
+          <g key={revealKey} opacity={reducedMotion ? 1 : 0}>
+            {!reducedMotion && (
+              <>
+                <animate attributeName="opacity" from="0" to="1" dur="0.18s" begin="0s" fill="freeze" />
+                {/* drop from the bowler's end and settle — a touch past the mark, then back.
+                    keySplines values must all be within [0,1] (SMIL rejects overshoot control
+                    points), so the settle is done with a 3-stop values list, not one spline. */}
+                <animateTransform
+                  attributeName="transform"
+                  type="translate"
+                  values="0 -22;0 3;0 0"
+                  dur="0.34s"
+                  begin="0s"
+                  fill="freeze"
+                  calcMode="spline"
+                  keyTimes="0;0.7;1"
+                  keySplines="0.3 0.7 0.4 1;0.4 0 0.6 1"
+                />
+              </>
+            )}
             <ellipse cx={markX} cy={markY} rx={9} ry={6} className="fill-brand-600/90 dark:fill-brand-400/90" />
             <ellipse cx={markX} cy={markY} rx={9} ry={6} className="fill-none stroke-white/70" strokeWidth={1} />
           </g>
         )}
 
-        {/* end labels */}
+        {/* end label — bowler runs in from the top */}
         <text x={W / 2} y={PITCH_Y - 5} textAnchor="middle" className="fill-ink-400 text-[9px] dark:fill-ink-500">
           Bowler
         </text>
-        <text x={W / 2} y={H - 6} textAnchor="middle" className="fill-ink-400 text-[9px] dark:fill-ink-500">
-          Batter
+
+        {/* length (row) labels — one per band, down the left edge */}
+        {ROWS.map((len, i) => (
+          <text
+            key={`ll-${len}`}
+            x={PITCH_X - 24}
+            y={rowY(i) + 3}
+            textAnchor="end"
+            className="fill-ink-500 text-[8px] font-medium dark:fill-ink-400"
+          >
+            {LENGTH_SHORT[len]}
+          </text>
+        ))}
+
+        {/* line (column) labels — one per band, in the strip below the pitch */}
+        {cols.map((ln, i) => (
+          <text
+            key={`cl-${ln}`}
+            x={colX(i)}
+            y={PITCH_Y + PITCH_H + 14}
+            textAnchor="middle"
+            className="fill-ink-500 text-[8px] font-medium dark:fill-ink-400"
+          >
+            {LINE_SHORT[ln]}
+          </text>
+        ))}
+        <text x={W / 2} y={H - 3} textAnchor="middle" className="fill-ink-400 text-[8px] dark:fill-ink-500">
+          Batter's end
         </text>
+
         {/* leg / off side hints */}
         <text x={PITCH_X - 10} y={PITCH_Y + PITCH_H / 2} textAnchor="middle" transform={`rotate(-90 ${PITCH_X - 10} ${PITCH_Y + PITCH_H / 2})`} className="fill-ink-400 text-[9px] dark:fill-ink-500">
           {leftHanded ? 'Off side' : 'Leg side'}
@@ -238,11 +312,6 @@ export function PitchLengthInput({
         <text x={PITCH_X + PITCH_W + 10} y={PITCH_Y + PITCH_H / 2} textAnchor="middle" transform={`rotate(90 ${PITCH_X + PITCH_W + 10} ${PITCH_Y + PITCH_H / 2})`} className="fill-ink-400 text-[9px] dark:fill-ink-500">
           {leftHanded ? 'Leg side' : 'Off side'}
         </text>
-
-        <style>{`
-          .pm-reveal { animation: pmReveal 240ms ease-out; transform-box: fill-box; transform-origin: center; }
-          @keyframes pmReveal { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: scale(1); } }
-        `}</style>
       </svg>
 
       <div className="mt-1 flex items-center justify-center gap-2 text-[11px] text-ink-500 dark:text-ink-400">

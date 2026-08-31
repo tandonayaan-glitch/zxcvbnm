@@ -17,6 +17,10 @@ export interface Prefs {
   notifyMuted: NotificationCategory[]
   /** Opted into beta/experimental features — gates `betaOnly` feature flags. */
   betaFeatures: boolean
+  /** The user ticked "Don't show again" in the welcome tutorial — it no longer auto-opens for
+   *  them on any device (still replayable from the header Help button). Per-user because it
+   *  syncs through `userPrefs/{uid}` like every other pref here. */
+  tutorialDismissed: boolean
 }
 
 const STORAGE_KEY = 'crickethub.prefs'
@@ -30,6 +34,7 @@ const DEFAULT_PREFS: Prefs = {
   colorBlind: false,
   notifyMuted: [],
   betaFeatures: false,
+  tutorialDismissed: false,
 }
 
 const SCALE_PX: Record<TextScale, string> = {

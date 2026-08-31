@@ -2,6 +2,7 @@ import { useRef, useState, type DragEvent } from 'react'
 import { Image as ImageIcon, Trash2, HardDrive, Upload } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Badge, Button, Card, EmptyState, PageLoader } from '@/components/ui/primitives'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useAsync } from '@/hooks/useAsync'
 import { useToast } from '@/components/ui/toast'
 import {
@@ -54,6 +55,7 @@ export function MediaLibraryPage() {
   const toast = useToast()
   const [folder, setFolder] = useState<Folder>('players')
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [confirmImg, setConfirmImg] = useState<StoredImage | null>(null)
   const [uploading, setUploading] = useState<{ done: number; total: number } | null>(null)
   const [dragOver, setDragOver] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -108,16 +110,15 @@ export function MediaLibraryPage() {
     void ingest(e.dataTransfer.files)
   }
 
+  /** Runs from <ConfirmDialog>; rethrows so the dialog shows the real reason inline and stays
+   *  open rather than the button appearing to do nothing. */
   async function doDelete(img: StoredImage) {
-    if (!confirm('Delete this image permanently? This cannot be undone.')) return
     setDeleting(img.path)
     try {
       await deleteUploadedImage(img.url)
       toast.success('Image deleted')
       data.refetch()
       totals.refetch()
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Delete failed')
     } finally {
       setDeleting(null)
     }
@@ -243,7 +244,7 @@ export function MediaLibraryPage() {
                         block
                         loading={deleting === img.path}
                         disabled={!!deleting}
-                        onClick={() => doDelete(img)}
+                        onClick={() => setConfirmImg(img)}
                       >
                         <Trash2 size={13} /> Delete
                       </Button>
@@ -255,6 +256,17 @@ export function MediaLibraryPage() {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmImg}
+        title="Delete image"
+        message="Delete this image permanently? This cannot be undone, and anything still using it will lose its picture."
+        confirmLabel="Delete permanently"
+        onConfirm={async () => {
+          if (confirmImg) await doDelete(confirmImg)
+        }}
+        onClose={() => setConfirmImg(null)}
+      />
     </div>
   )
 }

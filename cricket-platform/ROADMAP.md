@@ -1027,6 +1027,50 @@ changes or a human scopes the task down to something finite.
   their password (no email backend — the master-admin "Reset access" flow covers it).
 - `tsc` / `npm run lint` (16 warnings / 0 errors, unchanged) / `npm run build` all clean.
 
+## Phase 41 — Interactive scoring inputs, dark background, tutorial opt-out (hardening pass)
+Follow-up on Phase 39. All changes are pure UI / a new pref — the scoring engine and Firestore
+rules are untouched.
+- ✅ **Wagon wheel — vertical "down the ground" gesture + real placement motion.**
+  `WagonWheelInput` now treats an upward flick as a first-class gesture (commits Long-on /
+  Long-off) and, on release, draws the trajectory ray out from the batter and *travels* the
+  marker along it to the landing sector (re-keyed SMIL, replays on commit and on reconstruction;
+  dropped under reduced-motion). Verified live (mounted against the app's own React): upward
+  swipe → zone 5, tap → zone, `value` reconstruction repositions + replays without re-firing
+  `onChange`.
+- ✅ **Fast-flick commit.** Both `WagonWheelInput` and `PitchLengthInput` gated pointer
+  move/up on `dragging` *state* (stale until the next render) — a quick tap-release, or two
+  gestures in one tick, did nothing. Now a `useRef` mirror set synchronously in `pointerdown`.
+- ✅ **Invalid SMIL `keySplines` fixed.** The Phase-39/41 marker animations used bézier control
+  points with y > 1 (CSS-style overshoot), which SMIL rejects — `<animate> attribute keySplines:
+  Invalid value` logged on every marker render. Swapped for in-range ease-out splines; the
+  "settle" is a 3-stop `values` list. Verified: console clean across commit + reconstruction of
+  both inputs.
+- ✅ **Pitch map labelled in place.** `PitchLengthInput` now draws every line-column and
+  length-row label on the pitch, plus "Bowler" / "Batter's end" ends; pitch height increased to
+  fit. No legend lookup needed.
+- ✅ **Dark mode content area.** Root cause of the washed grey behind signed-in pages:
+  `BackgroundLayer` kept the light preset gradient + a `mix-blend-mode: multiply` overlay in
+  dark mode, resolving to a flat mid-grey off the `ink-900/950` chrome. Now builds the dark base
+  from the ink token scale (`#020617 → #0f172a → #020617`); an already-dark custom pick
+  (luminance < 0.22) is kept as chosen; light mode unchanged. Verified live: fresh light, fresh
+  dark, and the header toggle both ways all produce the right base; `body` bg matches the layer.
+  Also filled `dark:` gaps on the match-setup stepper, scoring callout pills, PlatformTools
+  danger zone, ScoringModals.
+- ✅ **Tutorial "Don't show this again".** New per-user `tutorialDismissed` pref (syncs via
+  `userPrefs/{uid}`); `TutorialButton` footer checkbox; auto-open still fires for users who
+  haven't dismissed it; still replayable from the Help button. Compile-verified; runtime path
+  is auth-gated.
+- ✅ **`confirm()` → `<ConfirmDialog>`** for `ScoringPage` (reopen / end-innings / abandon) and
+  `MediaLibraryPage` (image delete).
+- ✅ **Duplicate-player heads-up** in `PlayerFormModal` (non-blocking amber note on a same-name
+  active player), wired from `PlayersPage` and `MatchSetupPage`.
+- **Not verified at runtime (auth-gated, no test credentials this pass):** the signed-in
+  scoring screen itself, tutorial persistence round-trip, `PlatformTools` diagnostics, Media
+  Library upload. Covered by code review + `tsc`/`lint`/`build`. See the audit's "Remaining
+  blockers".
+- `tsc` (0 errors) / `npm run lint` (same 16 pre-existing warnings, none in the touched files) /
+  `npm run build` all green.
+
 ---
 
 ### Notes

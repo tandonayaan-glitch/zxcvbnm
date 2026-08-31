@@ -417,6 +417,7 @@ export function PlayersPage() {
         <PlayerFormModal
           player={editing}
           teams={teams.data ?? []}
+          existingPlayers={players.data ?? []}
           onClose={() => {
             setShowForm(false)
             setEditing(null)

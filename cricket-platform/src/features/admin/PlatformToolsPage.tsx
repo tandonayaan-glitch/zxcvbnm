@@ -327,11 +327,11 @@ export function PlatformToolsPage() {
         </CardBody>
       </Card>
 
-      <Card className="mb-4 border-red-300">
+      <Card className="mb-4 border-red-300 dark:border-red-900/60">
         <CardHeader
-          className="bg-red-50"
+          className="bg-red-50 dark:bg-red-950/30"
           title={
-            <span className="flex items-center gap-2 text-red-700">
+            <span className="flex items-center gap-2 text-red-700 dark:text-red-400">
               <ShieldAlert size={18} /> Danger zone
             </span>
           }
@@ -575,10 +575,10 @@ function ClearLeaderboardsDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="clear-leaderboards-title"
-        className="animate-fade-in w-full max-w-lg rounded-2xl border border-red-200 bg-white dark:bg-ink-900 p-6 shadow-2xl"
+        className="animate-fade-in w-full max-w-lg rounded-2xl border border-red-200 dark:border-red-900/60 bg-white dark:bg-ink-900 p-6 shadow-2xl"
       >
-        <div className="mb-3 flex items-center gap-3 text-red-700">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+        <div className="mb-3 flex items-center gap-3 text-red-700 dark:text-red-400">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40">
             <AlertTriangle size={22} />
           </span>
           <h2 id="clear-leaderboards-title" className="text-lg font-bold">
@@ -591,7 +591,7 @@ function ClearLeaderboardsDialog({
           tournament standings table. It cannot be undone directly — you will need
           to <b>Recompute</b> to rebuild them from match history.
         </p>
-        <ul className="mt-3 list-inside list-disc rounded-lg bg-red-50 p-3 text-sm text-red-700">
+        <ul className="mt-3 list-inside list-disc rounded-lg bg-red-50 dark:bg-red-950/30 p-3 text-sm text-red-700 dark:text-red-300">
           <li>Global player leaderboards</li>
           <li>Team stats &amp; form</li>
           <li>Tournament points tables</li>
@@ -614,7 +614,7 @@ function ClearLeaderboardsDialog({
           <input
             value={phrase}
             onChange={(e) => setPhrase(e.target.value)}
-            className="w-full rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-2 font-mono text-sm focus:border-red-500 focus:outline-none"
+            className="w-full rounded-lg border border-ink-300 bg-white text-ink-900 dark:border-ink-700 dark:bg-ink-800 dark:text-ink-100 px-3 py-2 font-mono text-sm focus:border-red-500 focus:outline-none"
             placeholder={CONFIRM_PHRASE}
           />
         </div>
@@ -626,7 +626,7 @@ function ClearLeaderboardsDialog({
           <input
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            className="w-full rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+            className="w-full rounded-lg border border-ink-300 bg-white text-ink-900 dark:border-ink-700 dark:bg-ink-800 dark:text-ink-100 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
             placeholder="e.g. end of season reset"
           />
         </div>

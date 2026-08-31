@@ -4,6 +4,50 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Fixed — Interactive scoring inputs, dark background, tutorial opt-out (hardening pass)
+- **Wagon wheel: the "down the ground" swipe and a real placement motion.** `WagonWheelInput`
+  now documents and handles the straight-up (vertical) drag as a first-class gesture — an upward
+  flick from the batter commits Long-on / Long-off, matching how a scorer thinks about a straight
+  drive. Release no longer just fades a static marker in: the trajectory ray draws itself out
+  from the batter and the marker *travels* along it to the landing sector (SMIL on the geometry,
+  re-keyed so it replays on every fresh commit and on reconstruction). Reduced-motion drops the
+  animation and places the marker directly.
+- **Both inputs commit on a fast flick.** `WagonWheelInput` / `PitchLengthInput` gated their
+  pointer-move/up handlers on a piece of React state (`dragging`) that isn't updated until the
+  next render — a quick tap-and-release dispatched before that render (or two gestures in the
+  same tick) silently did nothing. The gate is now a `useRef` mirror set synchronously in
+  `pointerdown`, so a tap and a flick both register. No change to a normal slow drag.
+- **Invalid SMIL `keySplines` removed.** The new marker/drop animations used cubic-bézier
+  control points with a y outside `[0,1]` (a CSS-style overshoot ease). SVG SMIL rejects those,
+  logging `<animate> attribute keySplines: Invalid value` on every marker render. Replaced with
+  in-range ease-out splines; the little "settle" is now done with a 3-stop `values` list instead.
+  Console is clean on every ball again.
+- **Pitch map is labelled in place.** `PitchLengthInput` draws every line column and length row
+  label on the pitch itself (short forms — "Wide leg / Leg / Stumps / Off / Wide off", "Full toss
+  … Bouncer") plus "Bowler" / "Batter's end" end markers, so a delivery can be tagged without
+  reading a legend elsewhere. The pitch is taller to fit them.
+- **Dark mode: the content area matches the chrome.** Root cause of the washed-out grey behind
+  every signed-in page: `BackgroundLayer` kept the light preset gradient in dark mode and laid a
+  `mix-blend-mode: multiply` overlay over it, which resolves to a flat mid-grey unrelated to the
+  `ink-900` / `ink-950` sidebar and header. It now builds the dark base straight from the ink
+  token scale (`#020617 → #0f172a → #020617`) so the viewport reads as the same surface as the
+  app shell; an already-dark custom background pick (luminance < 0.22) is left exactly as chosen.
+  Light mode is byte-for-byte unchanged. Also filled dark-variant gaps on the match-setup stepper,
+  scoring callout pills, `PlatformToolsPage` danger zone, and `ScoringModals`.
+- **"Don't show this again" for the welcome tutorial.** New per-user `tutorialDismissed` pref
+  (syncs through `userPrefs/{uid}` like every other pref). `TutorialButton` gained a checkbox in
+  its footer; ticking it and closing means the tutorial never auto-opens again on any device,
+  and a line under the launcher reminds you it's still replayable from the Help button. The
+  tutorial content and the first-run auto-open (for users who haven't dismissed it) are intact.
+- **Two more native `confirm()` calls converted.** `ScoringPage`'s reopen-match / end-innings /
+  abandon-match prompts and `MediaLibraryPage`'s image delete now use the shared
+  `<ConfirmDialog>` (works in embedded webviews and after a "block dialogs" opt-out; stays open
+  with an inline error if the action throws).
+- **Duplicate-player heads-up.** `PlayerFormModal` shows a non-blocking amber note when an active
+  player with the same normalised name already exists on the roster being edited (two real people
+  can share a name, so it informs rather than prevents). Wired from `PlayersPage` and
+  `MatchSetupPage`'s inline add.
+
 ### Fixed — Friendly auth errors
 - **No more raw `Firebase: Error (auth/…)` on the sign-in screens.** `authErrorMessage()` was
   falling through to the SDK's own message for any code it didn't explicitly list (e.g.

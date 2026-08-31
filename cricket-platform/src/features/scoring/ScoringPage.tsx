@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { Button, Card, PageLoader, Spinner } from '@/components/ui/primitives'
 import { Modal } from '@/components/ui/Modal'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { SyncQueuePanel } from '@/components/ui/SyncQueuePanel'
 import { useToast } from '@/components/ui/toast'
 import { useAsync } from '@/hooks/useAsync'
@@ -76,6 +77,10 @@ export function ScoringPage() {
     editing?: boolean
   } | null>(null)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  // Destructive scoring actions route through <ConfirmDialog> rather than window.confirm()
+  // (a silent no-op in some embedded webviews / after a "block dialogs" opt-out, which reads
+  // as a dead button — and this is a full-screen workflow the user must not get stuck in).
+  const [confirmAction, setConfirmAction] = useState<'endInnings' | 'abandon' | 'reopen' | null>(null)
   const [potmOpen, setPotmOpen] = useState(false)
   const [scorecardOpen, setScorecardOpen] = useState(false)
   // Touch-primary devices (phones/tablets) have no physical keyboard, so the shortcuts this
@@ -238,6 +243,16 @@ export function ScoringPage() {
     await saveShotMeta({ reviewed: true })
   }
 
+  /** Runs the pending destructive action from <ConfirmDialog>. Throws on failure so the dialog
+   *  surfaces the reason inline and stays open, matching the rest of the app's confirm flows. */
+  async function runConfirmAction() {
+    const m = match!
+    if (confirmAction === 'endInnings') await endInnings(m)
+    else if (confirmAction === 'abandon') await abandonMatch(m)
+    else if (confirmAction === 'reopen') await reopenMatch(m)
+    setConfirmAction(null)
+  }
+
   async function publish() {
     setPublishing(true)
     try {
@@ -343,16 +358,22 @@ export function ScoringPage() {
           <div className="mt-3">
             <Button
               variant="outline"
-              onClick={() => {
-                if (confirm('Reopen this match and resume scoring live?'))
-                  guard(() => reopenMatch(match))
-              }}
+              onClick={() => setConfirmAction('reopen')}
               loading={busy}
             >
               <RotateCcw size={16} /> Reopen match
             </Button>
           </div>
         )}
+        <ConfirmDialog
+          open={confirmAction === 'reopen'}
+          title="Reopen match"
+          message="Reopen this match and resume scoring live?"
+          confirmLabel="Reopen"
+          tone="primary"
+          onConfirm={runConfirmAction}
+          onClose={() => setConfirmAction(null)}
+        />
         {potmOpen && (
           <PlayerPickModal
             title="Player of the match"
@@ -572,9 +593,7 @@ export function ScoringPage() {
           </p>
           <Button
             className="mt-3"
-            onClick={() => {
-              if (confirm('End the current innings now?')) guard(() => endInnings(match))
-            }}
+            onClick={() => setConfirmAction('endInnings')}
             loading={busy}
           >
             End innings
@@ -594,9 +613,7 @@ export function ScoringPage() {
             onClearExtra={() => setActiveExtra(null)}
             onWicket={() => setWicketOpen(true)}
             onUndo={() => guard(() => undoLastBall(match))}
-            onEndInnings={() => {
-              if (confirm('End the current innings now?')) guard(() => endInnings(match))
-            }}
+            onEndInnings={() => setConfirmAction('endInnings')}
           />
           <ScorePad
             activeExtra={activeExtra}
@@ -646,19 +663,13 @@ export function ScoringPage() {
             <ClipboardList size={15} /> Scorecard
           </button>
           <button
-            onClick={() => {
-              if (confirm('End the current innings now?'))
-                guard(() => endInnings(match))
-            }}
+            onClick={() => setConfirmAction('endInnings')}
             className="rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
           >
             End innings
           </button>
           <button
-            onClick={() => {
-              if (confirm('Abandon this match? This ends it with no result and cannot be undone from here (it can be reopened afterward).'))
-                guard(() => abandonMatch(match))
-            }}
+            onClick={() => setConfirmAction('abandon')}
             className="flex items-center gap-1.5 rounded-lg border border-red-300 dark:border-red-800 px-3 py-1.5 text-sm font-medium text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
           >
             <Ban size={14} /> Abandon match
@@ -684,6 +695,19 @@ export function ScoringPage() {
       )}
 
       <ShortcutsHelpModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+
+      <ConfirmDialog
+        open={confirmAction === 'endInnings' || confirmAction === 'abandon'}
+        title={confirmAction === 'abandon' ? 'Abandon match' : 'End innings'}
+        message={
+          confirmAction === 'abandon'
+            ? 'Abandon this match? It ends with no result. You can reopen it afterward.'
+            : 'End the current innings now? Any remaining overs are forfeited.'
+        }
+        confirmLabel={confirmAction === 'abandon' ? 'Abandon match' : 'End innings'}
+        onConfirm={runConfirmAction}
+        onClose={() => setConfirmAction(null)}
+      />
 
       <Modal
         open={scorecardOpen}
@@ -1059,7 +1083,7 @@ function ScorePad({
         )}
       </div>
       {activeExtra && (
-        <div className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <div className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
           <b className="capitalize">{activeExtra.replace('_', ' ')}</b> selected —
           tap a number for runs ran (tap 0 for just the extra).
         </div>
@@ -1201,7 +1225,7 @@ function PreMatch({
                         className={cn(
                           'rounded-lg border-2 p-2 text-left text-sm',
                           tossWinner === slot
-                            ? 'border-brand-500 bg-brand-50'
+                            ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/40'
                             : 'border-ink-200 dark:border-ink-800 hover:border-ink-300',
                         )}
                       >
@@ -1223,7 +1247,7 @@ function PreMatch({
                       className={cn(
                         'rounded-lg border-2 p-2 text-sm font-semibold capitalize',
                         tossDecision === d
-                          ? 'border-brand-500 bg-brand-50 text-brand-700'
+                          ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300'
                           : 'border-ink-200 dark:border-ink-800 text-ink-700 dark:text-ink-300 hover:border-ink-300',
                       )}
                     >
@@ -1258,7 +1282,7 @@ function PreMatch({
           {(match.lastManStanding || match.retiredHurtEnabled === false || match.superOverEnabled) && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {match.lastManStanding && (
-                <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
+                <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 dark:bg-brand-950/40 dark:text-brand-300">
                   Last man standing
                 </span>
               )}
@@ -1268,7 +1292,7 @@ function PreMatch({
                 </span>
               )}
               {match.superOverEnabled && (
-                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">
+                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
                   Super Over
                 </span>
               )}

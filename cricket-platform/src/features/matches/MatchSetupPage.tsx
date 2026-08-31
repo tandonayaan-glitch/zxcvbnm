@@ -657,7 +657,7 @@ export function MatchSetupPage() {
                   i < step
                     ? 'bg-brand-600 text-white'
                     : i === step
-                      ? 'bg-brand-100 text-brand-700 ring-2 ring-brand-500'
+                      ? 'bg-brand-100 text-brand-700 ring-2 ring-brand-500 dark:bg-brand-950/50 dark:text-brand-300'
                       : 'bg-ink-100 dark:bg-ink-800 text-ink-400 dark:text-ink-500',
                 )}
               >
@@ -671,7 +671,7 @@ export function MatchSetupPage() {
               <div
                 className={cn(
                   'mx-2 h-0.5 flex-1',
-                  i < step ? 'bg-brand-500' : 'bg-ink-200',
+                  i < step ? 'bg-brand-500' : 'bg-ink-200 dark:bg-ink-700',
                 )}
               />
             )}
@@ -802,7 +802,7 @@ export function MatchSetupPage() {
               onAddNew={canBuildRoster(profile) ? () => setAddingTeamSlot('B') : undefined}
             />
             {scopedTeams.length < 2 && (
-              <p className="sm:col-span-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              <p className="sm:col-span-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
                 You need at least two teams.{' '}
                 {canBuildRoster(profile)
                   ? 'Use "+ Add team" above, or create one in the Teams section.'
@@ -857,7 +857,7 @@ export function MatchSetupPage() {
                       className={cn(
                         'rounded-xl border-2 p-4 text-left',
                         form.tossWinner === slot
-                          ? 'border-brand-500 bg-brand-50'
+                          ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/40'
                           : 'border-ink-200 dark:border-ink-800 hover:border-ink-300',
                       )}
                     >
@@ -880,7 +880,7 @@ export function MatchSetupPage() {
                     className={cn(
                       'rounded-xl border-2 p-4 font-semibold capitalize',
                       form.tossDecision === d
-                        ? 'border-brand-500 bg-brand-50 text-brand-700'
+                        ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300'
                         : 'border-ink-200 dark:border-ink-800 text-ink-700 dark:text-ink-300 hover:border-ink-300',
                     )}
                   >
@@ -934,7 +934,7 @@ export function MatchSetupPage() {
             </div>
 
             {form.maxWickets >= form.teamSize && (
-              <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
                 Wickets ({form.maxWickets}) is at or above team size ({form.teamSize}) — unusual,
                 but not invalid. Double-check this is intentional.
               </p>
@@ -954,7 +954,7 @@ export function MatchSetupPage() {
                       className={cn(
                         'rounded-xl border-2 p-3 text-left font-semibold capitalize',
                         form.powerplayMode === mode
-                          ? 'border-brand-500 bg-brand-50 text-brand-700'
+                          ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300'
                           : 'border-ink-200 dark:border-ink-800 text-ink-700 dark:text-ink-300 hover:border-ink-300',
                       )}
                     >
@@ -1079,6 +1079,7 @@ export function MatchSetupPage() {
               ? [(addingPlayerSlot === 'A' ? teamA : teamB) as Team]
               : []
           }
+          existingPlayers={scopedPlayers}
           onClose={() => setAddingPlayerSlot(null)}
           onSave={handleCreatePlayer}
         />

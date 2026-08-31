@@ -11,8 +11,16 @@ import {
 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/primitives'
+import { usePrefsStore } from '@/store/prefsStore'
 import { cn } from '@/lib/cn'
 
+/**
+ * Soft, per-browser "already saw the welcome once" flag. This only stops the
+ * tutorial re-opening on every navigation within a browser that hasn't synced a
+ * signed-in account yet. The durable, per-user "never auto-show again" choice
+ * lives in `prefs.tutorialDismissed` (synced through `userPrefs/{uid}`), set by
+ * the modal's "Don't show this again" control.
+ */
 const SEEN_KEY = 'crickethub.tutorial.seen'
 
 function hasSeenTutorial(): boolean {
@@ -75,28 +83,45 @@ const STEPS: Step[] = [
   },
 ]
 
-/** Header button that opens a first-time-user walkthrough (auto-opens once per
- *  browser for anyone who hasn't seen it), and can be reopened any time after —
- *  same self-contained button+Modal shape as `WhatsNewButton`, one flag in
- *  localStorage rather than a Firestore field, matching this codebase's existing
- *  local-only pattern for personal, low-stakes UI state (`favStore`,
- *  `dashboardLayoutStore`, `WhatsNewButton`'s own "seen version" flag). */
+/**
+ * Header button that opens a first-time-user walkthrough and can be replayed any
+ * time after. It auto-opens once for a user who hasn't seen it and hasn't ticked
+ * "Don't show this again" — that choice is stored per user in `prefs`
+ * (`tutorialDismissed`), synced across devices via `userPrefs/{uid}`, so once set
+ * it stays set everywhere. Replaying from this button never changes that choice.
+ */
 export function TutorialButton() {
+  const dismissed = usePrefsStore((s) => s.prefs.tutorialDismissed)
+  const setPref = usePrefsStore((s) => s.set)
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState(0)
+  const [dontShow, setDontShow] = useState(false)
 
+  // Auto-open only for someone who hasn't durably dismissed it (per-user, synced
+  // via `userPrefs/{uid}`) and hasn't already seen it in this browser. The short
+  // delay lets a signed-in account's prefs finish syncing first, so a "don't
+  // show again" set on another device suppresses the auto-open here too.
   useEffect(() => {
-    if (!hasSeenTutorial()) setOpen(true)
-  }, [])
+    if (dismissed || hasSeenTutorial()) return
+    const t = setTimeout(() => {
+      if (!usePrefsStore.getState().prefs.tutorialDismissed && !hasSeenTutorial()) {
+        setOpen(true)
+      }
+    }, 900)
+    return () => clearTimeout(t)
+  }, [dismissed])
 
   function close() {
     markTutorialSeen()
+    if (dontShow && !dismissed) setPref('tutorialDismissed', true)
     setOpen(false)
     setStep(0)
+    setDontShow(false)
   }
 
   function replay() {
     setStep(0)
+    setDontShow(false)
     setOpen(true)
   }
 
@@ -120,11 +145,20 @@ export function TutorialButton() {
         title="Welcome to CricketHub"
         size="sm"
         footer={
-          <div className="flex w-full items-center justify-between">
-            <Button variant="ghost" size="sm" onClick={close}>
-              Skip
-            </Button>
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <label className="flex cursor-pointer select-none items-center gap-1.5 text-xs text-ink-500 dark:text-ink-400">
+              <input
+                type="checkbox"
+                checked={dontShow}
+                onChange={(e) => setDontShow(e.target.checked)}
+                className="h-3.5 w-3.5"
+              />
+              Don’t show this again
+            </label>
             <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={close}>
+                {dontShow ? 'Close' : 'Skip'}
+              </Button>
               {step > 0 && (
                 <Button variant="outline" size="sm" onClick={() => setStep((s) => s - 1)}>
                   Back
@@ -159,6 +193,12 @@ export function TutorialButton() {
               />
             ))}
           </div>
+          {dismissed && (
+            <p className="mt-1 text-[11px] text-ink-400 dark:text-ink-500">
+              This won’t open on its own — reopen it any time from the{' '}
+              <HelpCircle size={11} className="inline" aria-hidden /> help button.
+            </p>
+          )}
         </div>
       </Modal>
     </>

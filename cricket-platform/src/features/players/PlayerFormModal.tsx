@@ -12,14 +12,24 @@ import type {
 } from '@/types'
 import type { PlayerInput } from '@/services/players.service'
 
+/** Forgiving name normalisation for the duplicate check — lower-case, strip punctuation,
+ *  collapse whitespace. Matches `domain/duplicateDetection.ts`'s own `norm`. */
+function normName(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim()
+}
+
 export function PlayerFormModal({
   player,
   teams,
+  existingPlayers = [],
   onClose,
   onSave,
 }: {
   player: Player | null
   teams: Team[]
+  /** Roster the new/edited player is joining, so an exact same-name active player can be
+   *  flagged before a likely-accidental duplicate is created. */
+  existingPlayers?: Player[]
   onClose: () => void
   onSave: (
     input: PlayerInput,
@@ -51,6 +61,17 @@ export function PlayerFormModal({
       prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
     )
   }
+
+  // Non-blocking heads-up: an *active* player with the same normalised full name already
+  // exists (two real people can share a name, so this informs rather than prevents).
+  const dupName = (() => {
+    const n = normName(fullName)
+    if (!n) return null
+    const hit = existingPlayers.find(
+      (p) => p.id !== player?.id && p.active !== false && normName(p.fullName) === n,
+    )
+    return hit ? hit.fullName : null
+  })()
 
   async function submit() {
     if (!fullName.trim()) return setError('Full name is required.')
@@ -94,6 +115,12 @@ export function PlayerFormModal({
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Full name" required>
           <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          {dupName && (
+            <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+              An active player named “{dupName}” already exists. Create anyway only if this is a
+              different person.
+            </p>
+          )}
         </Field>
         <Field label="Display name" hint="Shown on scorecards">
           <Input
