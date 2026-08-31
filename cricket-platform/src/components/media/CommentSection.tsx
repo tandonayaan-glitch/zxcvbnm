@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { MessageCircle, Trash2 } from 'lucide-react'
 import { Avatar, Button, Card, CardBody, CardHeader, Textarea } from '@/components/ui/primitives'
 import { useToast } from '@/components/ui/toast'
+import { confirmDialog } from '@/components/ui/confirm'
 import { useAsync } from '@/hooks/useAsync'
 import { useAuthStore, isAdmin } from '@/store/authStore'
 import { listComments, postComment, deleteComment } from '@/services/comments.service'
@@ -32,7 +33,7 @@ export function CommentSection({ matchId }: { matchId: string }) {
   }
 
   async function remove(id: string) {
-    if (!confirm('Delete this comment?')) return
+    if (!(await confirmDialog({ title: 'Delete comment', message: 'Delete this comment? This cannot be undone.', confirmLabel: 'Delete' }))) return
     try {
       await deleteComment(id)
       comments.refetch()

@@ -16,6 +16,7 @@ import {
 import { Modal } from '@/components/ui/Modal'
 import { useAsync } from '@/hooks/useAsync'
 import { useToast } from '@/components/ui/toast'
+import { confirmDialog } from '@/components/ui/confirm'
 import { useAuthStore } from '@/store/authStore'
 import { listUsers } from '@/services/users.service'
 import {
@@ -84,7 +85,15 @@ export function InvitationsPage() {
   }
 
   async function doCancel(inv: Invitation) {
-    if (!confirm(`Cancel the invitation for @${inv.invitedUsername}?`)) return
+    if (
+      !(await confirmDialog({
+        title: 'Cancel invitation',
+        message: `Cancel the invitation for @${inv.invitedUsername}? They'll no longer be able to use it to join.`,
+        confirmLabel: 'Cancel invitation',
+        cancelLabel: 'Keep it',
+      }))
+    )
+      return
     try {
       await cancelInvitation(inv, profile)
       toast.success('Invitation cancelled')

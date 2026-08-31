@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { AuthLayout, destinationForProfile } from './AuthLayout'
 import { Button, Field, Input } from '@/components/ui/primitives'
 import { useAuthStore } from '@/store/authStore'
-import { authErrorMessage, adminExists } from '@/services/auth.service'
+import { authErrorMessage, masterAdminStatus } from '@/services/auth.service'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -17,12 +17,14 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [needsSetup, setNeedsSetup] = useState(false)
+  // Only 'missing' (a definitive empty query) offers first-admin setup. An
+  // offline / backend error is 'unknown' and must not be shown as "no admin".
+  const [adminState, setAdminState] = useState<
+    'exists' | 'missing' | 'unknown'
+  >('exists')
 
   useEffect(() => {
-    adminExists()
-      .then((exists) => setNeedsSetup(!exists))
-      .catch(() => {})
+    masterAdminStatus().then(setAdminState)
   }, [])
 
   // Already logged in -> bounce to the right home.
@@ -72,7 +74,7 @@ export function LoginPage() {
         </>
       }
     >
-      {needsSetup && (
+      {adminState === 'missing' && (
         <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
           No admin account exists yet.{' '}
           <Link to="/setup" className="font-semibold underline">

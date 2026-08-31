@@ -78,6 +78,20 @@ export function PublicHomePage() {
     .filter((m) => m.status === 'setup' && !m.archived)
     .slice(0, 6)
 
+  // Real platform numbers for the hero — no invented data; a stat is only shown
+  // once its source has loaded and is non-zero.
+  const totalMatches = (allMatches.data ?? []).filter((m) => !m.archived).length
+  const totalTournaments = (tournaments.data ?? []).length
+  const totalPlayers = playerStats.size
+  const heroStats = [
+    totalMatches > 0 && { label: totalMatches === 1 ? 'match' : 'matches', value: totalMatches },
+    totalPlayers > 0 && { label: totalPlayers === 1 ? 'player' : 'players', value: totalPlayers },
+    totalTournaments > 0 && {
+      label: totalTournaments === 1 ? 'tournament' : 'tournaments',
+      value: totalTournaments,
+    },
+  ].filter(Boolean) as { label: string; value: number }[]
+
   function onSearch(e: React.FormEvent) {
     e.preventDefault()
     if (q.trim()) navigate(`/search?q=${encodeURIComponent(q.trim())}`)
@@ -86,29 +100,55 @@ export function PublicHomePage() {
   return (
     <div>
       {/* Hero */}
-      <section className="bg-gradient-to-br from-ink-900 via-ink-800 to-brand-900 px-4 py-12 text-white">
-        <div className="mx-auto max-w-4xl text-center">
-          <h1 className="text-3xl font-extrabold sm:text-4xl">
+      <section className="relative overflow-hidden bg-gradient-to-br from-ink-900 via-ink-800 to-brand-900 px-4 py-14 text-white sm:py-16">
+        {/* subtle cricket-ball seam motif, purely decorative */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full border-[3px] border-white/10"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-24 -left-10 h-72 w-72 rounded-full border-[3px] border-white/[0.07]"
+        />
+        <div className="relative mx-auto max-w-4xl text-center">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80 ring-1 ring-white/15">
+            <Radio size={12} className="text-red-400" /> Live cricket scoring
+          </span>
+          <h1 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-5xl">
             Follow live cricket, ball by ball
           </h1>
-          <p className="mx-auto mt-3 max-w-xl text-ink-200">
-            Live scores, full scorecards, player & team stats, and tournament
+          <p className="mx-auto mt-3 max-w-xl text-ink-200 sm:text-lg">
+            Live scores, full scorecards, player &amp; team stats, and tournament
             standings — all in one place.
           </p>
-          <form onSubmit={onSearch} className="mx-auto mt-6 max-w-md">
+          <form onSubmit={onSearch} className="mx-auto mt-7 max-w-md">
             <div className="relative">
               <Search
                 size={18}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400 dark:text-ink-500"
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400"
               />
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search players, teams, tournaments…"
-                className="w-full rounded-xl border-0 bg-white dark:bg-ink-900 py-3 pl-11 pr-4 text-ink-900 dark:text-ink-50 shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-400"
+                className="w-full rounded-xl border-0 bg-white py-3 pl-11 pr-4 text-ink-900 shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-400"
               />
             </div>
           </form>
+          {heroStats.length > 0 && (
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+              {heroStats.map((s) => (
+                <div key={s.label} className="text-center">
+                  <div className="text-2xl font-extrabold sm:text-3xl">
+                    {s.value.toLocaleString()}
+                  </div>
+                  <div className="text-xs uppercase tracking-wide text-ink-300">
+                    {s.label}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -119,8 +159,16 @@ export function PublicHomePage() {
             <Radio size={18} className="text-red-500" /> Live matches
           </h2>
           {live.length === 0 ? (
-            <Card className="p-6 text-center text-ink-500 dark:text-ink-400">
-              No live matches right now. Check back soon!
+            <Card className="flex flex-col items-center gap-2 p-8 text-center">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-ink-100 text-ink-400 dark:bg-ink-800 dark:text-ink-500">
+                <Radio size={20} />
+              </span>
+              <p className="font-medium text-ink-700 dark:text-ink-300">
+                No live matches right now
+              </p>
+              <p className="text-sm text-ink-500 dark:text-ink-400">
+                Live scores appear here the moment a match starts.
+              </p>
             </Card>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

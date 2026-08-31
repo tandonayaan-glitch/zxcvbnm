@@ -13,6 +13,7 @@ import {
 import { VersionHistoryModal } from '@/components/ui/VersionHistoryModal'
 import { useAsync } from '@/hooks/useAsync'
 import { useToast } from '@/components/ui/toast'
+import { confirmDialog } from '@/components/ui/confirm'
 import {
   listClubs,
   createClub,
@@ -79,7 +80,14 @@ export function ClubsSeasonsPage() {
   }
 
   async function handleDeleteClub(c: Club) {
-    if (!confirm(`Move ${c.name} to Trash? Teams/tournaments/seasons linked to it keep their club reference. You can restore it from Trash later.`)) return
+    if (
+      !(await confirmDialog({
+        title: 'Move club to Trash',
+        message: `Move ${c.name} to Trash? Teams/tournaments/seasons linked to it keep their club reference. You can restore it from Trash later.`,
+        confirmLabel: 'Move to Trash',
+      }))
+    )
+      return
     try {
       await softDelete('club', c.id, profile)
       toast.success('Club moved to Trash')
@@ -107,7 +115,14 @@ export function ClubsSeasonsPage() {
   }
 
   async function handleDeleteSeason(s: Season) {
-    if (!confirm(`Move ${s.name} to Trash? Tournaments linked to it keep their season reference. You can restore it from Trash later.`)) return
+    if (
+      !(await confirmDialog({
+        title: 'Move season to Trash',
+        message: `Move ${s.name} to Trash? Tournaments linked to it keep their season reference. You can restore it from Trash later.`,
+        confirmLabel: 'Move to Trash',
+      }))
+    )
+      return
     try {
       await softDelete('season', s.id, profile)
       toast.success('Season moved to Trash')

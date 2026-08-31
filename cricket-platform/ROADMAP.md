@@ -1071,6 +1071,35 @@ rules are untouched.
 - `tsc` (0 errors) / `npm run lint` (same 16 pre-existing warnings, none in the touched files) /
   `npm run build` all green.
 
+## Phase 42 — Offline-safe admin check, canonical Switch, confirm() sweep, landing polish
+Pure UI + one service helper. Scoring engine and Firestore rules untouched.
+- ✅ **Offline ≠ "no admin".** `masterAdminStatus()` returns `'exists' | 'missing' | 'unknown'`
+  (`services/auth.service.ts`). `SetupPage` shows a "Can't reach the server / Try again" screen on
+  `'unknown'` and never the bootstrap form; re-checks status before creating the master.
+  `LoginPage` shows the first-admin nudge only on a definitive `'missing'`. `masterAdminExists()`
+  kept as a fail-closed boolean (`'unknown'` → `true`) so `registerUser` won't bootstrap a second
+  master on a flaky read. Runtime-checked on `/login` (public); the offline branch is
+  code-verified.
+- ✅ **Canonical `<Switch>`** in `components/ui/primitives` — rounded track, always-visible white
+  circular thumb (shadow + ring), 20px travel, `role="switch"` + `aria-checked`, compact
+  `focus-visible` ring, disabled state, brand-600 / ink-300 / ink-700 in light+dark. Verified
+  live (mounted against the app's own React): 3 states render, `aria-checked` flips on click,
+  `onChange` fires, thumb offset 2px→22px between OFF/ON. Replaced the 4 hand-rolled toggles
+  (`UserSettingsPage`, `SettingsPage`, `FeatureFlagsPage`, `MatchSetupPage`).
+- ✅ **`window.confirm()` sweep.** New `confirmDialog(opts): Promise<boolean>` + `<ConfirmHost/>`
+  (`components/ui/confirm.tsx`), mounted once in `App`. Converted 11 sites: `MatchesPage`,
+  `TeamsPage`, `TournamentsPage`, `ClubsSeasonsPage` ×2, `InvitationsPage`, `CommentSection`,
+  `EntityGallery`, `DownloadsPanel`, `AnnouncementsPanel`, `VersionHistoryModal`. Combined with
+  Phases 39–41, no `window.confirm()` remains in a user path.
+- ✅ **Landing hero** — eyebrow pill, larger headline, decorative seam rings, a row of real
+  platform counts (only shown when loaded and non-zero — no invented data), friendlier
+  "no live matches" empty state. Verified live in light + dark, no horizontal overflow.
+- **Not verified at runtime (auth-gated):** the Switch inside Settings / FeatureFlags /
+  MatchSetup, and the converted confirm dialogs on the admin/list pages. Code + `tsc`/`lint`/
+  `build` verified; the component itself is runtime-verified in isolation.
+- `tsc` (0 errors) / `npm run lint` (0 errors; 1 new dev-only `only-export-components` warning on
+  `confirm.tsx`, same accepted pattern as `toast.tsx`) / `npm run build` all green.
+
 ---
 
 ### Notes

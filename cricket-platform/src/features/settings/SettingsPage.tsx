@@ -11,6 +11,7 @@ import {
   Input,
   PageLoader,
   Select,
+  Switch,
   Textarea,
 } from '@/components/ui/primitives'
 import { useToast } from '@/components/ui/toast'
@@ -119,23 +120,15 @@ export function SettingsPage() {
           subtitle="While enabled, everyone except the master admin sees a maintenance screen instead of the app."
         />
         <CardBody className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <span className="text-sm font-medium text-ink-800 dark:text-ink-200">
               Enable maintenance mode
             </span>
-            <button
-              onClick={() => setMaintenance('enabled', !settings.maintenance.enabled)}
-              aria-pressed={settings.maintenance.enabled}
-              className={`relative h-6 w-11 rounded-full transition-colors ${
-                settings.maintenance.enabled ? 'bg-red-600' : 'bg-ink-300 dark:bg-ink-700'
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
-                  settings.maintenance.enabled ? 'translate-x-5' : 'translate-x-0.5'
-                }`}
-              />
-            </button>
+            <Switch
+              checked={settings.maintenance.enabled}
+              onChange={(v) => setMaintenance('enabled', v)}
+              label="Enable maintenance mode"
+            />
           </div>
           <Field label="Message shown to visitors">
             <Textarea

@@ -4,6 +4,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button, PageLoader } from '@/components/ui/primitives'
 import { useAsync } from '@/hooks/useAsync'
 import { useToast } from '@/components/ui/toast'
+import { confirmDialog } from '@/components/ui/confirm'
 import { useAuthStore } from '@/store/authStore'
 import { listVersions, restoreVersion } from '@/services/versionHistory.service'
 import { formatDateTime } from '@/lib/format'
@@ -34,7 +35,14 @@ export function VersionHistoryModal({
   const [restoringId, setRestoringId] = useState<string | null>(null)
 
   async function doRestore(v: EntityVersion) {
-    if (!confirm(`Restore this version from ${formatDateTime(v.createdAt)}? The current values will be saved as a new history entry first, so this can be undone.`)) {
+    if (
+      !(await confirmDialog({
+        title: 'Restore this version',
+        message: `Restore this version from ${formatDateTime(v.createdAt)}? The current values will be saved as a new history entry first, so this can be undone.`,
+        confirmLabel: 'Restore',
+        tone: 'primary',
+      }))
+    ) {
       return
     }
     setRestoringId(v.id)

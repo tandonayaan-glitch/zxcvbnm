@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Megaphone, Pin, PinOff, Plus, Trash2 } from 'lucide-react'
 import { Button, Card, CardBody, Input, Textarea } from '@/components/ui/primitives'
 import { useToast } from '@/components/ui/toast'
+import { confirmDialog } from '@/components/ui/confirm'
 import { useAsync } from '@/hooks/useAsync'
 import {
   listAnnouncements,
@@ -57,7 +58,7 @@ export function AnnouncementsPanel({
   }
 
   async function onDelete(id: string) {
-    if (!confirm('Delete this announcement?')) return
+    if (!(await confirmDialog({ title: 'Delete announcement', message: 'Delete this announcement? This cannot be undone.', confirmLabel: 'Delete' }))) return
     try {
       await deleteAnnouncement(id)
       announcements.refetch()

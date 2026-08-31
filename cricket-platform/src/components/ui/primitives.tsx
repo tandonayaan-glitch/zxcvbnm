@@ -216,6 +216,58 @@ export function Field({
   )
 }
 
+/* ------------------------------ Switch ------------------------------ */
+/**
+ * The one canonical on/off switch for the whole app. A rounded track with a
+ * clearly visible circular white thumb that slides between the two ends — the
+ * thumb stays white (and shadowed) in BOTH states so it reads as a switch, not
+ * a solid pill, in light and dark mode. Real `role="switch"` semantics,
+ * keyboard-operable, with a compact focus ring (no full-element outline).
+ */
+export function Switch({
+  checked,
+  onChange,
+  disabled,
+  label,
+  id,
+  className,
+}: {
+  checked: boolean
+  onChange: (next: boolean) => void
+  disabled?: boolean
+  /** Accessible name when the switch isn't already wrapped in a <label>. */
+  label?: string
+  id?: string
+  className?: string
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      id={id}
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={cn(
+        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full outline-none transition-colors duration-200',
+        'focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-ink-900',
+        checked ? 'bg-brand-600' : 'bg-ink-300 dark:bg-ink-700',
+        disabled && 'cursor-not-allowed opacity-50',
+        className,
+      )}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          'pointer-events-none absolute left-0.5 h-5 w-5 rounded-full bg-white shadow-sm ring-1 ring-black/5 transition-transform duration-200 ease-out',
+          checked ? 'translate-x-5' : 'translate-x-0',
+        )}
+      />
+    </button>
+  )
+}
+
 /* ------------------------------ Badge ------------------------------ */
 type BadgeTone = 'gray' | 'green' | 'blue' | 'red' | 'amber' | 'purple'
 const toneCls: Record<BadgeTone, string> = {

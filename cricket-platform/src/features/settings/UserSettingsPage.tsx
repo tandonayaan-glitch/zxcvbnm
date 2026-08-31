@@ -32,6 +32,7 @@ import {
   Textarea,
   PageLoader,
   EmptyState,
+  Switch,
 } from '@/components/ui/primitives'
 import { ImageUploadField } from '@/components/ui/ImageUploadField'
 import { ImageUsageIndicator } from '@/components/media/ImageUsageIndicator'
@@ -516,28 +517,14 @@ function ToggleRow({
   onChange: (v: boolean) => void
 }) {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between gap-4">
       <div>
         <div className="flex items-center gap-2 text-sm font-medium text-ink-800 dark:text-ink-200">
           {icon} {label}
         </div>
         <div className="text-xs text-ink-500 dark:text-ink-400">{hint}</div>
       </div>
-      <button
-        onClick={() => onChange(!value)}
-        className={cn(
-          'relative h-6 w-11 rounded-full transition-colors',
-          value ? 'bg-brand-600' : 'bg-ink-300',
-        )}
-        aria-pressed={value}
-      >
-        <span
-          className={cn(
-            'absolute top-0.5 h-5 w-5 rounded-full bg-white dark:bg-ink-900 transition-transform',
-            value ? 'translate-x-5' : 'translate-x-0.5',
-          )}
-        />
-      </button>
+      <Switch checked={value} onChange={onChange} label={label} />
     </div>
   )
 }

@@ -9,6 +9,7 @@ import {
   Field,
   Input,
   PageLoader,
+  Switch,
   Textarea,
 } from '@/components/ui/primitives'
 import { Modal } from '@/components/ui/Modal'
@@ -163,21 +164,13 @@ export function FeatureFlagsPage() {
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
-                  <button
-                    onClick={() => toggleEnabled(f)}
-                    title={f.enabled ? 'Emergency disable' : 'Enable'}
-                    aria-label={`${f.enabled ? 'Disable' : 'Enable'} ${f.key}`}
-                    className={`relative h-6 w-11 rounded-full transition-colors ${
-                      f.enabled ? 'bg-brand-600' : 'bg-ink-300 dark:bg-ink-700'
-                    }`}
-                    aria-pressed={f.enabled}
-                  >
-                    <span
-                      className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
-                        f.enabled ? 'translate-x-5' : 'translate-x-0.5'
-                      }`}
+                  <span title={f.enabled ? 'Emergency disable' : 'Enable'}>
+                    <Switch
+                      checked={f.enabled}
+                      onChange={() => toggleEnabled(f)}
+                      label={`${f.enabled ? 'Disable' : 'Enable'} ${f.key}`}
                     />
-                  </button>
+                  </span>
                   <button
                     onClick={() => {
                       setEditing(f)

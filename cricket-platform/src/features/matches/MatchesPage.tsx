@@ -15,6 +15,7 @@ import { useAsync } from '@/hooks/useAsync'
 import { usePaginated } from '@/hooks/usePaginated'
 import { Pagination } from '@/components/ui/Pagination'
 import { useToast } from '@/components/ui/toast'
+import { confirmDialog } from '@/components/ui/confirm'
 import { listAllMatches, updateMatch } from '@/services/matches.service'
 import { softDelete } from '@/services/trash.service'
 import { importMatch } from '@/services/matchImport.service'
@@ -54,7 +55,14 @@ export function MatchesPage() {
     usePaginated(filtered, 15)
 
   async function handleDelete(m: Match) {
-    if (!confirm(`Move "${m.title}" to Trash? You can restore it from Trash later.`)) return
+    if (
+      !(await confirmDialog({
+        title: 'Move match to Trash',
+        message: `Move “${m.title}” to Trash? You can restore it from Trash later.`,
+        confirmLabel: 'Move to Trash',
+      }))
+    )
+      return
     try {
       await softDelete('match', m.id, profile)
       toast.success('Match moved to Trash')

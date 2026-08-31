@@ -1,6 +1,7 @@
 import { useRef, useState, type ChangeEvent } from 'react'
 import { FileText, Trash2, Upload, Loader2, Download } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
+import { confirmDialog } from '@/components/ui/confirm'
 import { useAsync } from '@/hooks/useAsync'
 import {
   listFolderDocuments,
@@ -47,7 +48,7 @@ export function DownloadsPanel({
   }
 
   async function handleDelete(doc: StoredDocument) {
-    if (!confirm(`Remove "${doc.name}"?`)) return
+    if (!(await confirmDialog({ title: 'Remove document', message: `Remove “${doc.name}”? People will no longer be able to download it.`, confirmLabel: 'Remove' }))) return
     setDeletingPath(doc.path)
     try {
       await deleteUploadedDocument(doc.url)

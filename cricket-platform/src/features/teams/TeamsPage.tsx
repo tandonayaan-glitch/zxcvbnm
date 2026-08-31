@@ -14,6 +14,7 @@ import { useAsync } from '@/hooks/useAsync'
 import { usePaginated } from '@/hooks/usePaginated'
 import { Pagination } from '@/components/ui/Pagination'
 import { useToast } from '@/components/ui/toast'
+import { confirmDialog } from '@/components/ui/confirm'
 import {
   listTeams,
   createTeam,
@@ -97,7 +98,14 @@ export function TeamsPage() {
   }
 
   async function handleDelete(t: Team) {
-    if (!confirm(`Move ${t.name} to Trash? You can restore it from Trash later.`)) return
+    if (
+      !(await confirmDialog({
+        title: 'Move team to Trash',
+        message: `Move ${t.name} to Trash? You can restore it from Trash later.`,
+        confirmLabel: 'Move to Trash',
+      }))
+    )
+      return
     try {
       await softDelete('team', t.id, profile)
       toast.success('Team moved to Trash')

@@ -51,15 +51,41 @@ export function validateUsername(username: string): string | null {
   return null
 }
 
-/** Does the master admin exist yet? Drives the first-time setup screen. */
+/**
+ * Whether the master admin exists yet — drives the first-time setup screen.
+ *
+ *  - `'exists'`  — queried Firestore successfully, a MASTER_ADMIN is present
+ *  - `'missing'` — queried Firestore successfully, none present (offer /setup)
+ *  - `'unknown'` — could NOT determine (offline / permission / backend error)
+ *
+ * The `'unknown'` case is the important one: a transient Firestore/network
+ * failure must never be read as "no admin exists" and drop a user into
+ * first-admin bootstrap. Callers treat `'unknown'` as "do not offer setup".
+ */
+export type MasterAdminStatus = 'exists' | 'missing' | 'unknown'
+
+export async function masterAdminStatus(): Promise<MasterAdminStatus> {
+  try {
+    const q = query(
+      collection(db, COL.users),
+      where('role', '==', 'MASTER_ADMIN'),
+      limit(1),
+    )
+    const snap = await getDocs(q)
+    return snap.empty ? 'missing' : 'exists'
+  } catch {
+    // offline / unavailable / permission-denied / any backend error
+    return 'unknown'
+  }
+}
+
+/**
+ * Back-compat boolean. Fails *closed*: only `'missing'` (a definitive empty
+ * result) is `false` — `'unknown'` returns `true` so an offline error never
+ * bootstraps a second master admin or shows the "no admin" setup path.
+ */
 export async function masterAdminExists(): Promise<boolean> {
-  const q = query(
-    collection(db, COL.users),
-    where('role', '==', 'MASTER_ADMIN'),
-    limit(1),
-  )
-  const snap = await getDocs(q)
-  return !snap.empty
+  return (await masterAdminStatus()) !== 'missing'
 }
 
 /** Back-compat alias used by older callers (setup / login banner). */

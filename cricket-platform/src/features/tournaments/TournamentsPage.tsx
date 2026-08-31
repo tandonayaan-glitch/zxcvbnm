@@ -14,6 +14,7 @@ import { useAsync } from '@/hooks/useAsync'
 import { usePaginated } from '@/hooks/usePaginated'
 import { Pagination } from '@/components/ui/Pagination'
 import { useToast } from '@/components/ui/toast'
+import { confirmDialog } from '@/components/ui/confirm'
 import {
   listTournaments,
   createTournament,
@@ -103,7 +104,14 @@ export function TournamentsPage() {
   }
 
   async function handleDelete(t: Tournament) {
-    if (!confirm(`Move ${t.name} to Trash? You can restore it from Trash later.`)) return
+    if (
+      !(await confirmDialog({
+        title: 'Move tournament to Trash',
+        message: `Move ${t.name} to Trash? You can restore it from Trash later.`,
+        confirmLabel: 'Move to Trash',
+      }))
+    )
+      return
     try {
       await softDelete('tournament', t.id, profile)
       toast.success('Tournament moved to Trash')

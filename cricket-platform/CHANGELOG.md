@@ -4,6 +4,38 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Fixed / Added — Offline-safe admin check, one Switch, full confirm() sweep, landing polish
+- **A Firestore/network error can no longer masquerade as "no admin exists."** `masterAdminExists()`
+  ran a `getDocs()` and any throw (offline, `unavailable`, permission) bubbled up as "not found",
+  so `SetupPage` dropped the visitor into first-admin bootstrap and `LoginPage` showed
+  "No admin account exists yet." New `masterAdminStatus(): 'exists' | 'missing' | 'unknown'`
+  distinguishes a *definitive* empty result from *couldn't determine*. `SetupPage` now shows a
+  "Can't reach the server / Try again" screen on `'unknown'` (never the bootstrap form) and
+  re-checks before it will create the master; `LoginPage` only shows the setup nudge on a real
+  `'missing'`. `masterAdminExists()` is kept as a back-compat boolean that fails **closed**
+  (`'unknown'` → `true`), so `registerUser` also won't bootstrap a second master on a flaky read.
+- **One canonical `<Switch>`.** Added `Switch` to `components/ui/primitives` — a rounded track
+  with a **clearly visible white circular thumb** (shadow + hairline ring) that slides 20px
+  between ends and stays white in both states, so it never collapses into a solid blue pill.
+  Real `role="switch"` + `aria-checked`, keyboard-operable, compact `focus-visible` ring (no
+  full-element outline), proper disabled state, correct brand-600 / ink-300 / ink-700 contrast in
+  light and dark. Replaced the four hand-rolled toggle markups (`UserSettingsPage`,
+  `SettingsPage` maintenance mode, `FeatureFlagsPage`, `MatchSetupPage` rules) with it.
+- **Native `window.confirm()` is gone from user-facing destructive actions.** New
+  `confirmDialog(opts): Promise<boolean>` (+ a single `<ConfirmHost/>` mounted in `App`) is an
+  imperative, promise-based drop-in that keeps each call site's existing
+  `if (!(await confirmDialog(...))) return` shape but renders the app's centered modal (backdrop,
+  title, explanation, Cancel + labelled destructive action, keyboard/focus handling, dark/light).
+  Converted: `MatchesPage`, `TeamsPage`, `TournamentsPage`, `ClubsSeasonsPage` (club + season),
+  `InvitationsPage`, `CommentSection`, `EntityGallery`, `DownloadsPanel`, `AnnouncementsPanel`,
+  `VersionHistoryModal`. With last pass's `ScoringPage` / `MediaLibraryPage` / `UsersPage` /
+  `MatchSetupPage` conversions, no `window.confirm()` remains in a user path (the one left is
+  `PlatformToolsPage`'s type-to-confirm dialog, which is already a custom modal).
+- **Public landing hero.** Stronger hero — an eyebrow pill, larger headline, decorative
+  cricket-ball seam rings, and a row of **real** platform counts (matches / players / tournaments,
+  each shown only once its source has loaded and is non-zero — no invented data). Friendlier
+  "no live matches" empty state (icon + two lines). Light mode unchanged elsewhere.
+
 ### Fixed — Interactive scoring inputs, dark background, tutorial opt-out (hardening pass)
 - **Wagon wheel: the "down the ground" swipe and a real placement motion.** `WagonWheelInput`
   now documents and handles the straight-up (vertical) drag as a first-class gesture — an upward

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'r
 import { ImageIcon, Trash2, Upload, Loader2, X } from 'lucide-react'
 import { Card, CardHeader, CardBody } from '@/components/ui/primitives'
 import { useToast } from '@/components/ui/toast'
+import { confirmDialog } from '@/components/ui/confirm'
 import { useAsync } from '@/hooks/useAsync'
 import {
   listFolderImages,
@@ -69,7 +70,7 @@ export function EntityGallery({
   }
 
   async function handleDelete(img: StoredImage) {
-    if (!confirm('Remove this photo from the gallery?')) return
+    if (!(await confirmDialog({ title: 'Remove photo', message: 'Remove this photo from the gallery?', confirmLabel: 'Remove' }))) return
     setDeletingPath(img.path)
     try {
       await deleteUploadedImage(img.url)
