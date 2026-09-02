@@ -420,10 +420,10 @@ export function UserSettingsPage() {
             <SignOutButton variant="button" label="Sign out this device" />
           </div>
           <p className="text-xs text-ink-400 dark:text-ink-500">
-            Firebase's client SDK doesn't expose a list of your other signed-in devices or a way to
-            revoke them remotely — that needs a server-side Admin SDK, which this project doesn't
-            run. Changing your password (above) invalidates password-based sign-in everywhere except
-            devices that are already mid-session.
+            This is the only device we can show or sign out from here — CricketHub can't list or
+            remotely sign out your other devices. To lock everyone else out, change your password
+            above: after that, the old password won't sign anyone in, and devices already signed in
+            drop off once their session expires.
           </p>
         </CardBody>
       </Card>

@@ -47,6 +47,7 @@ import { useAuthStore } from '@/store/authStore'
 import { useBgStore } from '@/store/bgStore'
 import { powerplayState, type PowerplayState } from '@/domain/matchRules'
 import { cn } from '@/lib/cn'
+import { firebaseErrorMessage } from '@/lib/firebaseError'
 import {
   PlayerPickModal,
   WicketModal,
@@ -163,7 +164,7 @@ export function ScoringPage() {
     try {
       await fn()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Action failed')
+      toast.error(firebaseErrorMessage(e, 'That action failed. Please try again.'))
     } finally {
       setBusy(false)
     }

@@ -6,6 +6,90 @@ All application code lives in `cricket-platform/`. The ball-by-ball scoring engi
 
 ---
 
+## Session 6 — Overnight deploy + readiness pass (live Firebase) + requested polish
+
+Deployed the accumulated fixes to the live Firebase site and did a set of small, explicitly
+requested improvements. The master-admin browser session had expired and account creation /
+password sign-in is disallowed by policy, so **runtime verification this pass covers the
+deployed site's public surfaces only** — signed-in surfaces are code/rules-verified (see
+`next.md` §1).
+
+### Code changes (7 files)
+
+1. **Firebase errors → plain English.** `src/lib/firebaseError.ts` gains `firebaseErrorMessage(err, fallback?)`:
+   maps the common **Firestore** codes (`permission-denied`, `unavailable`, `not-found`,
+   `failed-precondition`, `resource-exhausted`, `unauthenticated`, `deadline-exceeded`,
+   `aborted`, `invalid-argument`, `internal`, …) and **Storage** codes (`storage/unauthorized`,
+   `storage/quota-exceeded`, `storage/retry-limit-exceeded`, `storage/object-not-found`, …) to
+   sentences, and never returns raw `FirebaseError` / gRPC / "Missing or insufficient
+   permissions." / "INTERNAL ASSERTION" text (a `looksRaw()` guard drops those to the
+   fallback). `permissionAwareMessage()` kept as a thin wrapper that now delegates here — so
+   every existing call site (`PlayersPage`, `TeamsPage`, `MatchSetupPage`, `UsersPage`)
+   inherits the better fallbacks. `useAsync` load failures and `ScoringPage`'s `guard()` toast
+   now route through it too. Auth errors already had their own rich mapping
+   (`auth.service.ts` `authErrorMessage`, commit `aa9e4c8`) — untouched.
+2. **Settings "other devices" copy → plain English.** `UserSettingsPage.tsx` — replaced the
+   paragraph that name-dropped "Firebase's client SDK" / "server-side Admin SDK" with a
+   user-facing sentence (same meaning: this is the only device shown here; change your
+   password to lock others out; existing sessions expire on their own). It was never styled
+   as an error, but it read like an internal note.
+3. **Tab strip scroll fix.** `src/components/ui/Tabs.tsx` — `flex` → `flex flex-wrap`. The
+   shared tab selector (Stats, `/browse` Matches/Tournaments/Teams, scorecard innings,
+   Matches, Player, Tournament, Requests, Clubs) relied on `overflow-x-auto`, which a laptop
+   mouse-wheel can't scroll and a tablet gives no affordance for — reported as "the 3-line
+   tab selector doesn't scroll on laptop or iPad". Now overflowing tabs **wrap to a second
+   row** instead of hiding; nothing is ever unreachable. On laptop/iPad every strip still
+   fits on one row (no visual change there); only very narrow phones see a 2-row Stats strip.
+   `overflow-x-auto` kept as a last resort for a single over-wide tab.
+4. **Richer live-match cards.** Both the public home rail (`PublicHomePage.tsx`
+   `LiveMatchCard`) and the signed-in dashboard widget (`DashboardPage.tsx` `live`) now show,
+   beyond the old "one batting team + score":
+   - **format + overs** (`T20 · 20 ov`),
+   - the **full matchup** (`Team A vs Team B`) even before a ball is bowled or when only one
+     innings has started (previously you couldn't tell who the batting side was playing),
+   - **current run rate** per innings (`ALP 87/3 (9.4 · RR 8.97)`),
+   - an **"Innings break · target N"** pill at the break,
+   - a **run-chase line** in a live 2nd innings — `BRV need 46 off 30 · RRR 9.20` — via a
+     small pure `chaseSituation()` / `liveChase()` helper (reads only denormalised
+     match/innings state; returns null when it doesn't apply).
+   No service/domain/scoring changes; display-only.
+
+`domain/scoring.ts`, the `Delivery`/`BallInput` contracts, offline infrastructure, and
+`firestore.rules` were **not** touched.
+
+### Wagon Wheel / Pitch Map "disappearing" — investigated, not a bug
+The input resetting per ball is by design; the tagged shot persists in
+`ballMeta/{deliveryId}`, shows as a marker on the over strip, is re-editable by clicking the
+ball, and renders on the scorecard. No change. Detail in `next.md` §5.
+
+### Checks
+`npx tsc -p tsconfig.app.json --noEmit` → 0. `npm run lint` → 0 errors (pre-existing
+warnings only; none in the 7 changed files). `npm run build` → green.
+
+### Deployment
+- `firebase deploy --only hosting` to project **`cricket-platform-b03bc`** (Firebase CLI was
+  already authenticated; no credentials handled by me).
+- **Verified the deployed bundle**, not just the command exit: fetched the live site's
+  hashed JS and confirmed it contains this pass's new strings (`need ` + `RRR`, the plain
+  Settings copy) and the prior commits' markers, and that `firebase hosting` reports the new
+  release. Details + release id in the final report / commit message.
+- `firestore.rules`, indexes, and `storage.rules` were **deliberately not deployed** — see
+  `next.md` §3.
+
+### Runtime-verified on the DEPLOYED site (public only)
+Home live-match cards render the richer layout; `/browse` + `/stats` tab strips wrap
+correctly and stay single-row at desktop width; no page horizontal scroll at 375 or 1280;
+clean console/network on the public routes swept.
+
+### Files changed
+- `src/lib/firebaseError.ts`, `src/hooks/useAsync.ts`,
+  `src/features/scoring/ScoringPage.tsx`, `src/features/settings/UserSettingsPage.tsx`,
+  `src/components/ui/Tabs.tsx`, `src/features/public/PublicHomePage.tsx`,
+  `src/features/dashboard/DashboardPage.tsx`.
+- `next.md` (rewritten as the open-problems handoff), `things done.md` (this section).
+
+---
+
 ## Session 5 — Authenticated runtime audit (master-admin session) + 320px signed-in header fix
 
 The owner supplied a signed-in **master-admin** session on the dev server, which unblocked the

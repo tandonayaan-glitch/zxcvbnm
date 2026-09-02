@@ -4,6 +4,26 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Changed — plain-English Firebase errors, richer live cards, wrapping tab strips (deployed)
+- **Firebase errors now read as English.** New `firebaseErrorMessage()` in `lib/firebaseError.ts`
+  maps the common Firestore + Storage error codes to sentences and never surfaces raw
+  `FirebaseError` / gRPC / "Missing or insufficient permissions." / "INTERNAL ASSERTION" text.
+  `permissionAwareMessage()` delegates to it, so `PlayersPage` / `TeamsPage` / `MatchSetupPage` /
+  `UsersPage` all inherit the better fallbacks; `useAsync` load failures and the scoring screen's
+  action toast route through it too. (Auth errors already had their own mapping.)
+- **Settings → "Privacy & sessions" copy** rewritten from the "Firebase client SDK / server-side
+  Admin SDK" wording to a user-facing sentence (same meaning).
+- **Live-match cards show more.** Public home rail and the dashboard "Live matches" widget now show
+  format + overs, the full `Team A vs Team B` matchup (even pre-first-ball / single-innings),
+  current run rate per innings, an "Innings break · target N" pill, and a live 2nd-innings chase
+  line (`BRV need 46 off 30 · RRR 9.20`). Display-only — no service/domain/scoring change.
+- **Tab strips wrap instead of hiding.** `ui/Tabs` is `flex-wrap` now: overflowing tabs move to a
+  second row rather than sitting behind a horizontal scroll a laptop wheel can't move. Single row
+  still on laptop/iPad.
+- **Deployed** to `cricket-platform-b03bc` (`firebase deploy --only hosting`) — the first Hosting
+  deploy of this changelog's accumulated `[Unreleased]` fixes. Firestore/Storage rules not part of
+  this deploy.
+
 ### Fixed — "New batter" list could include the opposing team + 320px header clip
 - **"New batter" no longer offers opposition players.** The live-scoring "New batter" picker is
   correctly filtered (`squadFor(match, inn.battingTeamId)` minus dismissed minus at-crease) and

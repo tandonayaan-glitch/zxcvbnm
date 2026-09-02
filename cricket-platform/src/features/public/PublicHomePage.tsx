@@ -18,7 +18,13 @@ import {
 import { listTournaments } from '@/services/tournaments.service'
 import { usePlatformStats } from '@/hooks/usePlatformStats'
 import { buildImpactBoard } from '@/domain/stats'
-import { ballsToOvers, formatDate } from '@/lib/format'
+import {
+  ballsToOvers,
+  formatDate,
+  runRate,
+  requiredRate,
+  formatRate,
+} from '@/lib/format'
 import type { Match, Player } from '@/types'
 
 export function PublicHomePage() {
@@ -350,38 +356,70 @@ function LeaderMiniCard({
 }
 
 function LiveMatchCard({ match: m }: { match: Match }) {
+  const chase = chaseSituation(m)
   return (
     <Link to={`/match/${m.id}`}>
       <Card className="overflow-hidden hover:border-red-300">
         <div className="flex items-center justify-between border-b border-ink-100 dark:border-ink-800 px-4 py-2">
           <LiveBadge />
-          <span className="text-xs text-ink-400 dark:text-ink-500">{m.format}</span>
+          <span className="text-xs text-ink-400 dark:text-ink-500">
+            {m.format} · {m.oversPerInnings} ov
+          </span>
         </div>
         <CardBody className="space-y-2">
+          <div className="truncate text-sm font-semibold text-ink-800 dark:text-ink-200">
+            {m.teamA.name} <span className="text-ink-400 dark:text-ink-500">vs</span>{' '}
+            {m.teamB.name}
+          </div>
           {m.innings.map((inn, i) => {
             const short =
               inn.battingTeamId === m.teamA.id
                 ? m.teamA.shortName
                 : m.teamB.shortName
+            const rr = formatRate(runRate(inn.totalRuns, inn.legalBalls, m.ballsPerOver))
             return (
-              <div key={i} className="flex items-center justify-between">
+              <div key={i} className="flex items-baseline justify-between gap-2">
                 <span className="font-semibold text-ink-900 dark:text-ink-50">{short}</span>
                 <span className="font-bold text-ink-900 dark:text-ink-50">
                   {inn.totalRuns}/{inn.wickets}{' '}
                   <span className="text-sm font-normal text-ink-500 dark:text-ink-400">
-                    ({ballsToOvers(inn.legalBalls, m.ballsPerOver)})
+                    ({ballsToOvers(inn.legalBalls, m.ballsPerOver)} · RR {rr})
                   </span>
                 </span>
               </div>
             )
           })}
           {m.innings.length === 0 && (
-            <div className="text-sm text-ink-500 dark:text-ink-400">
-              {m.teamA.name} vs {m.teamB.name}
+            <div className="text-sm text-ink-500 dark:text-ink-400">Yet to get underway</div>
+          )}
+          {m.status === 'innings_break' && m.innings.length === 1 && (
+            <div className="rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
+              Innings break · target {m.innings[0].totalRuns + 1}
+            </div>
+          )}
+          {chase && (
+            <div className="rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-800 dark:bg-red-500/10 dark:text-red-300">
+              {chase}
             </div>
           )}
         </CardBody>
       </Card>
     </Link>
   )
+}
+
+/** "BRV need 46 off 30 · RRR 9.20" for a live second-innings run chase, or null
+ *  when it doesn't apply (first innings, break, target already passed, no balls
+ *  left). Pure — reads only denormalised match/innings state. */
+function chaseSituation(m: Match): string | null {
+  if (m.status !== 'live' || m.innings.length < 2) return null
+  const inn = m.innings[m.innings.length - 1]
+  if (inn.target == null) return null
+  const need = inn.target - inn.totalRuns
+  const ballsLeft = m.oversPerInnings * m.ballsPerOver - inn.legalBalls
+  if (need <= 0 || ballsLeft <= 0) return null
+  const short =
+    inn.battingTeamId === m.teamA.id ? m.teamA.shortName : m.teamB.shortName
+  const rrr = formatRate(requiredRate(need, ballsLeft, m.ballsPerOver))
+  return `${short} need ${need} off ${ballsLeft} · RRR ${rrr}`
 }

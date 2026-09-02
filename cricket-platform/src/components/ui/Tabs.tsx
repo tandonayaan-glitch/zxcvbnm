@@ -19,7 +19,11 @@ export function Tabs({
   return (
     <div
       className={cn(
-        'flex gap-1 overflow-x-auto border-b border-ink-200 dark:border-ink-800',
+        // Wrap onto a second row instead of hiding overflowing tabs behind a
+        // horizontal scroll that a laptop mouse wheel can't reach and a tablet
+        // gives no visible affordance for. `overflow-x-auto` stays as a last
+        // resort for the rare case a single tab is wider than the container.
+        'flex flex-wrap gap-1 overflow-x-auto border-b border-ink-200 dark:border-ink-800',
         className,
       )}
     >

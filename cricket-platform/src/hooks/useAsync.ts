@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { firebaseErrorMessage } from '@/lib/firebaseError'
 
 interface AsyncState<T> {
   data: T | undefined
@@ -35,7 +36,7 @@ export function useAsync<T>(
       })
       .catch((e) => {
         if (active && mounted.current)
-          setError(e instanceof Error ? e.message : 'Failed to load')
+          setError(firebaseErrorMessage(e, 'Failed to load. Please try again.'))
       })
       .finally(() => {
         if (active && mounted.current) setLoading(false)

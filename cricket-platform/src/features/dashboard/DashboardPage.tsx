@@ -39,14 +39,20 @@ import { listTournaments, getTournament } from '@/services/tournaments.service'
 import { aggregatePlayerStats, topRunScorers, topWicketTakers, computeStandings } from '@/domain/stats'
 import { StandingsTable } from '@/components/stats/StandingsTable'
 import { useAuthStore, canScore, ownerScope } from '@/store/authStore'
-import { ballsToOvers, formatDate } from '@/lib/format'
+import {
+  ballsToOvers,
+  formatDate,
+  runRate,
+  requiredRate,
+  formatRate,
+} from '@/lib/format'
 import {
   useDashboardLayoutStore,
   type DashboardColumn,
   type DashboardWidget,
 } from '@/store/dashboardLayoutStore'
 import { cn } from '@/lib/cn'
-import type { Tournament } from '@/types'
+import type { Match, Tournament } from '@/types'
 
 const WIDGET_LABELS: Record<DashboardWidget, string> = {
   live: 'Live matches',
@@ -172,26 +178,41 @@ export function DashboardPage({ tournamentId }: { tournamentId?: string } = {}) 
                 to={canScore(profile) ? `/scoring/${m.id}` : `/match/${m.id}`}
                 className="flex items-center justify-between rounded-lg border border-ink-200 dark:border-ink-800 p-3 hover:border-brand-300 hover:bg-brand-50/40"
               >
-                <div>
-                  <div className="mb-1">
+                <div className="min-w-0">
+                  <div className="mb-1 flex items-center gap-2">
                     <LiveBadge />
+                    <span className="text-xs text-ink-400 dark:text-ink-500">
+                      {m.format} · {m.oversPerInnings} ov
+                    </span>
                   </div>
-                  <div className="font-semibold text-ink-900 dark:text-ink-50">
+                  <div className="truncate font-semibold text-ink-900 dark:text-ink-50">
                     {m.teamA.name} vs {m.teamB.name}
                   </div>
                   <div className="text-sm text-ink-600 dark:text-ink-400">
                     {m.innings.map((inn, i) => (
-                      <span key={i} className="mr-3">
+                      <span key={i} className="mr-3 whitespace-nowrap">
                         {inn.battingTeamId === m.teamA.id
                           ? m.teamA.shortName
                           : m.teamB.shortName}{' '}
                         {inn.totalRuns}/{inn.wickets} (
-                        {ballsToOvers(inn.legalBalls, m.ballsPerOver)})
+                        {ballsToOvers(inn.legalBalls, m.ballsPerOver)} · RR{' '}
+                        {formatRate(runRate(inn.totalRuns, inn.legalBalls, m.ballsPerOver))})
                       </span>
                     ))}
+                    {m.innings.length === 0 && <span>Yet to get underway</span>}
                   </div>
+                  {m.status === 'innings_break' && m.innings.length === 1 && (
+                    <div className="mt-1 text-xs font-medium text-amber-700 dark:text-amber-400">
+                      Innings break · target {m.innings[0].totalRuns + 1}
+                    </div>
+                  )}
+                  {liveChase(m) && (
+                    <div className="mt-1 text-xs font-medium text-red-700 dark:text-red-400">
+                      {liveChase(m)}
+                    </div>
+                  )}
                 </div>
-                <ChevronRight size={18} className="text-ink-400 dark:text-ink-500" />
+                <ChevronRight size={18} className="shrink-0 text-ink-400 dark:text-ink-500" />
               </Link>
             ))
           )}
@@ -477,4 +498,20 @@ export function DashboardPage({ tournamentId }: { tournamentId?: string } = {}) 
       </div>
     </div>
   )
+}
+
+/** "BRV need 46 off 30 · RRR 9.20" for a live second-innings run chase, or null
+ *  when it doesn't apply. Pure — reads only denormalised match/innings state. */
+function liveChase(m: Match): string | null {
+  if (m.status !== 'live' || m.innings.length < 2) return null
+  const inn = m.innings[m.innings.length - 1]
+  if (inn.target == null) return null
+  const need = inn.target - inn.totalRuns
+  const ballsLeft = m.oversPerInnings * m.ballsPerOver - inn.legalBalls
+  if (need <= 0 || ballsLeft <= 0) return null
+  const short =
+    inn.battingTeamId === m.teamA.id ? m.teamA.shortName : m.teamB.shortName
+  return `${short} need ${need} off ${ballsLeft} · RRR ${formatRate(
+    requiredRate(need, ballsLeft, m.ballsPerOver),
+  )}`
 }
