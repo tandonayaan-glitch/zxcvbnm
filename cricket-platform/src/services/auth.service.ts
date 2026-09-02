@@ -23,6 +23,7 @@ import {
 import {
   doc,
   getDoc,
+  getDocFromCache,
   setDoc,
   runTransaction,
   collection,
@@ -30,6 +31,9 @@ import {
   where,
   limit,
   getDocs,
+  getDocsFromServer,
+  getDocsFromCache,
+  type FirestoreError,
 } from 'firebase/firestore'
 import { auth, db, app, usernameToEmail } from '@/lib/firebase'
 import { COL, pruneUndefined } from '@/lib/collections'
@@ -54,27 +58,43 @@ export function validateUsername(username: string): string | null {
 /**
  * Whether the master admin exists yet — drives the first-time setup screen.
  *
- *  - `'exists'`  — queried Firestore successfully, a MASTER_ADMIN is present
- *  - `'missing'` — queried Firestore successfully, none present (offer /setup)
- *  - `'unknown'` — could NOT determine (offline / permission / backend error)
+ *  - `'exists'`  — a MASTER_ADMIN is definitely present
+ *  - `'missing'` — the SERVER was reached and reports none (offer /setup)
+ *  - `'unknown'` — could NOT get an authoritative answer (offline / permission /
+ *                  backend error). Callers treat this as "do not offer setup".
  *
- * The `'unknown'` case is the important one: a transient Firestore/network
- * failure must never be read as "no admin exists" and drop a user into
- * first-admin bootstrap. Callers treat `'unknown'` as "do not offer setup".
+ * Why `getDocsFromServer` and not plain `getDocs`: with the persistent local
+ * cache enabled (see `lib/firebase.ts`), an OFFLINE `getDocs()` does **not**
+ * throw — it quietly resolves an *empty* result from an unpopulated cache
+ * (`{ empty: true, fromCache: true }`). That empty result is indistinguishable
+ * from "no admin exists", which is exactly the false "No admin account exists
+ * yet" this function must never produce. `getDocsFromServer()` forces a real
+ * round-trip and *rejects* with `unavailable` when the client can't reach the
+ * backend, so offline and empty are finally distinct. A *positive* cache hit is
+ * still trustworthy offline (if we've ever seen a master admin, one exists), so
+ * that path can still answer `'exists'` without the network.
  */
 export type MasterAdminStatus = 'exists' | 'missing' | 'unknown'
 
 export async function masterAdminStatus(): Promise<MasterAdminStatus> {
+  const q = query(
+    collection(db, COL.users),
+    where('role', '==', 'MASTER_ADMIN'),
+    limit(1),
+  )
   try {
-    const q = query(
-      collection(db, COL.users),
-      where('role', '==', 'MASTER_ADMIN'),
-      limit(1),
-    )
-    const snap = await getDocs(q)
+    const snap = await getDocsFromServer(q)
     return snap.empty ? 'missing' : 'exists'
   } catch {
-    // offline / unavailable / permission-denied / any backend error
+    // Couldn't reach the backend (offline / unavailable / permission / error).
+    // A cached hit still proves existence; anything else is 'unknown', NEVER
+    // 'missing'.
+    try {
+      const cached = await getDocsFromCache(q)
+      if (!cached.empty) return 'exists'
+    } catch {
+      /* nothing usable in the cache */
+    }
     return 'unknown'
   }
 }
@@ -91,16 +111,45 @@ export async function masterAdminExists(): Promise<boolean> {
 /** Back-compat alias used by older callers (setup / login banner). */
 export const adminExists = masterAdminExists
 
+/** A Firestore failure that means "the client couldn't reach the backend" —
+ *  as opposed to a definitive "not found" / "permission denied". */
+export function isOfflineError(err: unknown): boolean {
+  const code = (err as Partial<FirestoreError> | undefined)?.code
+  if (code === 'unavailable' || code === 'deadline-exceeded') return true
+  const msg = err instanceof Error ? err.message.toLowerCase() : ''
+  return msg.includes('client is offline') || msg.includes('failed to get document because the client is offline')
+}
+
+/** `true`/`false` from Firestore; a raw throw becomes an offline-aware error so
+ *  callers don't treat "offline" as "username is free". */
 export async function isUsernameTaken(username: string): Promise<boolean> {
   const u = normalizeUsername(username)
   const snap = await getDoc(doc(db, COL.usernameLookup, u))
   return snap.exists()
 }
 
+/**
+ * Load a user profile. `null` means the doc genuinely does not exist. An
+ * offline/unavailable read falls back to the local cache; only if the cache
+ * has nothing either does it throw (so a caller can tell "offline, unknown"
+ * apart from "no such profile" and must not, e.g., self-heal a fake profile).
+ */
 export async function loadProfile(uid: string): Promise<UserProfile | null> {
-  const snap = await getDoc(doc(db, COL.users, uid))
-  if (!snap.exists()) return null
-  return snap.data() as UserProfile
+  const ref = doc(db, COL.users, uid)
+  try {
+    const snap = await getDoc(ref)
+    return snap.exists() ? (snap.data() as UserProfile) : null
+  } catch (err) {
+    if (isOfflineError(err)) {
+      try {
+        const cached = await getDocFromCache(ref)
+        if (cached.exists()) return cached.data() as UserProfile
+      } catch {
+        /* nothing cached */
+      }
+    }
+    throw err
+  }
 }
 
 interface RegisterInput {
@@ -470,10 +519,24 @@ export function observeAuth(
       cb(null, null)
       return
     }
-    let profile = await loadProfile(fbUser.uid)
+    let profile: UserProfile | null = null
+    // Retry to absorb (a) the brief window right after signup before the profile
+    // write commits and (b) a transient offline read. `loadProfile` already
+    // falls back to the local cache, so a warm session survives going offline;
+    // only a cold cache + offline lands in the catch.
     for (let i = 0; i < 4 && !profile; i++) {
-      await new Promise((r) => setTimeout(r, 250))
-      profile = await loadProfile(fbUser.uid)
+      if (i > 0) await new Promise((r) => setTimeout(r, 250))
+      try {
+        profile = await loadProfile(fbUser.uid)
+      } catch (err) {
+        if (!isOfflineError(err) || i === 3) {
+          // Give up loading the profile rather than leaving the app stuck
+          // "initializing" or dumping a raw Firestore error. The Firebase
+          // session is intact; a reconnect + reload resolves it.
+          cb(null, fbUser)
+          return
+        }
+      }
     }
     // Banned accounts are force signed-out and treated as logged-out.
     if (profile && profile.status === 'banned') {

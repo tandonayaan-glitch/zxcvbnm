@@ -1100,6 +1100,25 @@ Pure UI + one service helper. Scoring engine and Firestore rules untouched.
 - `tsc` (0 errors) / `npm run lint` (0 errors; 1 new dev-only `only-export-components` warning on
   `confirm.tsx`, same accepted pattern as `toast.tsx`) / `npm run build` all green.
 
+## Phase 43 — Offline "no admin" real root cause + offline profile load + header responsive
+- ✅ **`masterAdminStatus()` was still wrong offline.** Phase-42 assumed `getDocs()` throws when
+  offline; with `persistentLocalCache` it resolves `{ empty: true, fromCache: true }` instead —
+  reproduced at runtime with a cold-cache + `disableNetwork` client. Now uses `getDocsFromServer()`
+  (rejects `unavailable` offline) with a positive-only cache fallback (`getDocsFromCache` → can
+  answer `'exists'`, never `'missing'`). Runtime-verified: online+admin `exists`; **offline+cold
+  `unknown` (was `missing`)**; offline+warm `exists`; reconnect `exists`; server-empty `missing`.
+  Real UI: offline `/setup` → redirects to `/login` (cache says exists), `/login` shows no
+  "no admin" banner.
+- ✅ **`loadProfile()` / `observeAuth()` offline-aware.** Cache fallback via `getDocFromCache`;
+  throws only when nothing is cached; `observeAuth` retries then leaves the app *ready* instead of
+  stuck/erroring. New `isOfflineError()`.
+- ✅ **Public header responsive.** 375px "Sign in" wrap/clip and 768px controls-off-screen fixed —
+  single `ml-auto` right cluster, `lg:`-only header search + Background picker, `shrink-0` brand +
+  sign-in. Verified 375 / 768 / 1280: no overflow, all controls visible.
+- **Still auth-blocked (no test credentials):** every signed-in surface. Public routes, the
+  offline/admin logic, and header responsive are runtime-verified. `tsc` 0 / `lint` 0 errors /
+  `build` green. **Not deployed** (per instruction).
+
 ---
 
 ### Notes

@@ -4,6 +4,29 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Fixed — Offline "No admin account exists yet" (real root cause) + offline profile load
+- **The offline → "No admin account exists yet" bug, properly fixed this time.** The previous pass
+  assumed an offline `getDocs()` *throws*. With the persistent local cache (`lib/firebase.ts`) it
+  does **not** — an offline query quietly resolves `{ empty: true, fromCache: true }`, which the
+  code read as "no master admin" and showed the first-admin setup path. Reproduced at runtime:
+  a cold-cache + offline client returns an empty snapshot, not an error. `masterAdminStatus()` now
+  calls **`getDocsFromServer()`** (forces a round-trip; *rejects* with `unavailable` when the
+  client can't reach the backend) and, on failure, falls back to a **cache read that can only
+  answer `'exists'`** (a positive hit is trustworthy offline) — never `'missing'`. Verified at
+  runtime across six scenarios: online+admin → `exists`; offline+cold → `unknown` (was `missing`);
+  offline+warm → `exists`; reconnect → `exists`; server-confirmed empty → `missing`.
+- **`loadProfile()` is offline-aware.** An `unavailable` / "client is offline" read now falls back
+  to `getDocFromCache`; it only throws when the cache has nothing either, so a caller can tell
+  "offline, unknown" from "no such profile" (and won't, e.g., self-heal a placeholder profile
+  over a real one that's merely uncached). `observeAuth()` retries an offline profile read and, if
+  it still can't load, leaves the app *ready* (session intact) rather than stuck initializing or
+  dumping a raw Firestore error. New `isOfflineError()` helper.
+- **Public header responsive fix.** At ~375px the "Sign in" button wrapped/clipped; at ~768px the
+  theme toggle and "Sign in" were pushed entirely off-screen (hidden by `overflow-x`). The right
+  cluster is now a single `ml-auto` group; the header search and Background picker are `lg:`-only;
+  "Sign in" is `shrink-0 whitespace-nowrap`. Verified 375 / 768 / 1280 — no overflow, all controls
+  in view.
+
 ### Fixed / Added — Offline-safe admin check, one Switch, full confirm() sweep, landing polish
 - **A Firestore/network error can no longer masquerade as "no admin exists."** `masterAdminExists()`
   ran a `getDocs()` and any throw (offline, `unavailable`, permission) bubbled up as "not found",

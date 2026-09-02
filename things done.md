@@ -6,6 +6,80 @@ All application code lives in `cricket-platform/`. The ball-by-ball scoring engi
 
 ---
 
+## Session 3 — Offline "no admin" REAL root cause, offline profile load, header responsive
+
+### 1. The offline → "No admin account exists yet" bug — reproduced and root-caused at runtime
+Session 2's fix assumed an offline Firestore `getDocs()` **throws**. It does not. With the
+persistent local cache (`persistentLocalCache` in `lib/firebase.ts`), an offline query **resolves
+successfully with an empty snapshot** (`{ empty: true, fromCache: true, size: 0 }`).
+
+**Runtime reproduction** (`disableNetwork` + a cold in-memory Firestore client, no page auth):
+```
+coldOffline getDocs()            -> { empty: true, fromCache: true, size: 0 }   // resolves, no throw
+coldOffline getDocsFromServer()  -> throws  code: "unavailable"                 // the real signal
+OLD masterAdminStatus() logic    -> "missing"  => renders "No admin account exists yet"
+NEW masterAdminStatus() logic    -> "unknown"  => renders the offline / retry state
+```
+
+**Fix (`src/services/auth.service.ts`):** `masterAdminStatus()` now calls **`getDocsFromServer()`**
+— it forces a real round-trip and *rejects* with `unavailable` when the backend is unreachable, so
+offline and "genuinely empty" are finally distinct. On failure it falls back to a **cache read
+that can only ever answer `'exists'`** (a positive hit is trustworthy even offline); anything else
+is `'unknown'`, **never `'missing'`**.
+
+**Runtime verification of the fix (6 scenarios):**
+| Scenario | Result | Expected |
+|---|---|---|
+| Online + admin exists | `exists` (464 ms) | `exists` |
+| **Offline + cold cache (the bug)** | **`unknown`** | `unknown` (was `missing`) |
+| Offline + warm cache w/ admin | `exists` | `exists` |
+| Cold + offline | `unknown` | `unknown` |
+| After `enableNetwork` (recovery) | `exists` | `exists` |
+| Server reached, no match | `missing` | `missing` |
+
+Real UI, app Firestore forced offline: navigating to `/setup` **redirected to `/login`** (cache
+says an admin exists) and `/login` showed **no** "No admin account exists yet" banner. Console
+clean — no raw "client is offline" string leaked.
+
+### 2. `loadProfile()` / `observeAuth()` made offline-aware
+`loadProfile()` (`getDoc` of `users/{uid}`) threw `unavailable` ("Failed to get document because
+the client is offline") on a cold cache. Now: on an offline error it falls back to
+`getDocFromCache`; it throws only when the cache has nothing either — so a caller can tell
+"offline, unknown" from "no such profile" and won't self-heal a placeholder over a real profile.
+`observeAuth()` retries an offline read, then leaves the app **ready** (Firebase session intact)
+instead of stuck "initializing" or surfacing a raw error. New exported `isOfflineError(err)` helper
+(matches `code: 'unavailable' | 'deadline-exceeded'` and the offline message text).
+
+### 3. Public header responsive fix (`src/components/layout/PublicLayout.tsx`)
+- **375 px:** "Sign in" wrapped to two lines and clipped. Now `shrink-0 whitespace-nowrap`;
+  right-side controls are one `ml-auto` group; Background picker is `sm:`→`lg:`-only.
+- **768 px:** the theme toggle and "Sign in" were pushed entirely off-screen (hidden by the
+  page's `overflow-x`). Header search + Background picker are now `lg:`-only, so the tablet header
+  is logo + nav + theme + Sign in — all visible.
+- Verified at 375 / 768 / 1280: `scrollWidth === clientWidth` (no overflow), "Sign in" fully in
+  the viewport and single-line at every width; full desktop header (nav + search + Background +
+  theme + Sign in) intact at 1280.
+
+### Checks (session 3)
+- `npx tsc -p tsconfig.app.json --noEmit` → **0 errors**
+- `npm run lint` → **0 errors**; 17 warnings, all pre-existing or Session 2's accepted
+  `confirm.tsx` one (the `auth.service.ts` `no-useless-catch` at L307 is a pre-existing
+  intentionally-documented rethrow, only its line number moved)
+- `npm run build` → **green**
+- Runtime: 6-scenario offline/admin matrix (above); all public routes (`/ /browse /stats /login
+  /signup /recover /setup /search`) — no console errors, no horizontal overflow at 375/768/1280;
+  real-UI offline check of `/login` + `/setup`.
+- **Not deployed** (explicit instruction this session).
+
+### Not verified at runtime (session 3)
+The `SetupPage` "Can't reach the server" screen and `LoginPage` "no admin" banner in the *cold +
+offline* real UI — staging a cold cache while the running app holds the IndexedDB open isn't
+clean. The underlying `masterAdminStatus() → 'unknown'` is runtime-proven; the `'unknown' →
+unreachable screen` mapping in `SetupPage`/`LoginPage` is small and typecheck-verified.
+Everything behind auth (see standing blocker below).
+
+---
+
 ## Session 2 — Offline-safe admin check, canonical Switch, `confirm()` sweep, landing polish
 
 ### 1. Offline / auth bug: "client is offline" was read as "No admin account exists yet"
