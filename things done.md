@@ -6,6 +6,136 @@ All application code lives in `cricket-platform/`. The ball-by-ball scoring engi
 
 ---
 
+## Session 5 — Authenticated runtime audit (master-admin session) + 320px signed-in header fix
+
+The owner supplied a signed-in **master-admin** session on the dev server, which unblocked the
+authenticated end-to-end flows that Session 4 could only verify by code trace. Everything below was
+driven for real in that session. **Account creation and password sign-in remain disallowed by
+policy**, so the two matrices that *require* fresh/second accounts — FRESH NORMAL USER
+(signup → role → first login) and USER A vs USER B cross-account security — are still **not
+runtime-tested**; they are covered by code + route-guard + `firestore.rules` review only, and that
+is stated plainly in the final report.
+
+### 1. New bug found + fixed — 320px signed-in header (`AppShell`) overflow
+The 320px pass on the authenticated shell found the header's right-hand control cluster measuring
+**~409px in a 320px viewport** — `scrollWidth 409 > clientWidth 320` — so the avatar and the
+name/role text block were clipped off the right edge (page had no h-scroll; the header just cut
+its own content).
+- `src/components/layout/AppShell.tsx`: cluster gap `gap-3` → `gap-2 sm:gap-3`; `BackgroundControl`,
+  `TutorialButton` and the `text-right` name/role block each wrapped in `hidden sm:inline-flex` /
+  changed to `hidden … sm:block` so they only render once there's room (Tailwind `sm` = 640px).
+  The Search button + `⌘K` hint were already `sm:flex`. Explanatory comment added.
+- Runtime-verified with the master-admin session at **320 / 375 / 390 / 430 / 768 / 820 / 1024**:
+  `header.scrollWidth === header.clientWidth` at every width, no page horizontal scroll, avatar
+  fully in view (right edge 304 at 320px). The hidden controls + name block reappear from 640px up
+  (confirmed present at 768 / 1024). No change to any desktop layout.
+- `tsc` 0 / `lint` 0 errors / `build` green.
+
+### 2. Authenticated flows exercised for real
+- **Full match, ball-by-ball** (`f7JeTq08eITZL6Gm16pM`, "ZZ Audit — New Batter regression",
+  Audit Alpha v Audit Bravo, T10, 6-a-side, 5 wickets, auto-PP 2 ov):
+  - Innings 1: Alpha **12/5 all out** (`closeReason:'all_out'`). Deliveries covered 1s, a 4, dots,
+    a wide, and wickets of kind bowled / lbw / caught / run_out.
+  - Innings break → target banner "Target: 13". Full scorecard rendered: batting + bowling cards,
+    fall-of-wickets, ball-by-ball commentary, insights, wagon-wheel and line/length grid reflecting
+    the tagged ball metadata.
+  - Innings 2: Bravo **14/1**, `closeReason:'target'`, `result:"Audit Bravo won by 4 wickets"`.
+  - Refresh → "Match complete" persists.
+- **"New batter" regression** — at 4 down in each innings the modal listed **only the batting
+  side's** remaining players (Alpha in inns 1: `hasBravo:false`; Bravo in inns 2: `hasAlpha:false`).
+  Openers panel and the over-2 bowler modal were team-scoped the same way. Re-checked the setup
+  wizard at 820px: labelled "AUDIT ALPHA ROSTER" / "AUDIT BRAVO ROSTER", zero cross-contamination.
+- **Wagon wheel / pitch map (mobile touch)** — at a **430px** viewport, synthetic
+  `PointerEvent`s with `pointerType:'touch'` dragged on both SVGs: the wheel set the shot zone
+  ("Mid-wicket" → `zone`), the pitch map set `line` + `length`. **Save wrote
+  `matches/{id}/ballMeta/i0-0000N`** where the doc id equals the delivery id, and **Ball 1's meta
+  doc (`i0-00000`) was not modified** when Ball 3's was written (`createdAt` and values unchanged).
+  Panel switched Add → Edit; next ball started with a fresh wheel. Test delivery + its meta doc
+  cleaned up afterwards.
+- **Auto powerplay** — `computeAutoPowerplayOvers` table matches the spec; live banner
+  "Powerplay · over 1 of N (auto)" at T10 / T3; phase transitions active → complete via the engine.
+- **Player management** — create → archive (persists across reload, "Archived" badge) → restore
+  → move to Trash via the **in-app** `[role="dialog"]` ("Move to Trash"), not `window.confirm`.
+- **Tutorial** — "Don't show this again" + Skip → `prefsStore.tutorialDismissed === true`
+  (+ `localStorage` `crickethub.prefs` / `crickethub.tutorial.seen`); reload does not reappear.
+- **Dark mode (signed-in)** — toggle flips 8 pages (dashboard, matches, players, teams, stats,
+  scoring, settings, admin); `body` bg `rgb(2,6,23)`, 0 pure-white nodes, no h-scroll. Reset to
+  light after testing.
+- **Audit-log privacy (master side)** — `listMyAuditLogs(masterUid)` → all rows self-authored;
+  `listAuditLogs()` unscoped → multiple actors. Non-master `permission-denied` is **rules-verified
+  only** (no non-master session available to drive).
+
+### 3. Authenticated responsive — 320 / 375 / 390 / 430 / 768 / 820 / 1024
+Interaction, not just screenshots:
+- Nav drawer opens at 256px with all 19 master-admin links, fully on-screen.
+- Add-Player modal: full-width, fits viewport, does not overflow Y; all fields reachable; Cancel
+  closes it.
+- Match-setup wizard: step 1 (details) → step 2 (teams: picked Audit Alpha / Audit Bravo) → step 3
+  (Playing XI) renders the roster/guest-grouped `SquadPicker` with no cross-team leak. Left without
+  saving.
+- Scoring score-pad: run buttons **115×64** (3×2 grid) at 430px, all in view, no overlap; Wicket
+  + Undo in view. **Scored one ball via the UI at 430px** (7/0 → 8/0, strike rotated) then
+  **Undid it** (back to 7/0) — both worked.
+- Fixed sidebar (240px) appears at ≥1024; hamburger hidden; main content not clipped.
+
+### 4. Media Library
+Page loads clean: "0 images · 0 B", five folders (Player photos / Team logos / Club logos /
+Tournament banners / User avatars), Upload button, drag-and-drop zone. **Real upload is NOT
+testable in this environment:** `VITE_R2_WORKER_URL` is **unset** in `.env.local`, so
+`uploadImage()` (which posts images to the Cloudflare R2 Worker, not Firebase Storage) short-
+circuits *before any network call* with `ImageUploadError('Image uploads are not configured yet.')`.
+Verified the failure path: dropping a synthetic PNG surfaced a friendly per-file toast
+*"zz-audit-probe.png: Image uploads are not configured yet."* — no crash, no console error, no
+error boundary.
+
+### 5. Console / network sweep (authenticated)
+18 signed-in routes + a scoring session, with `console.error` / `window.error` /
+`unhandledrejection` / `fetch` all hooked:
+- **0 app-level console errors, 0 failed app `fetch`s, 0 route crashes.**
+- The **only** devtools errors are **Firebase Storage `listAll` CORS failures**
+  (`firebasestorage.googleapis.com/v0/b/…/o?prefix=players/` — preflight blocked). This is
+  **dev-only** (the `localhost:5173` origin isn't in the bucket's CORS allowlist) and is **already
+  mitigated** by the circuit breaker in `src/services/storage.service.ts`: a single shared probe,
+  its negative result cached in `sessionStorage` (`ch_fb_storage_list_unavailable` — **verified
+  set to `"1"`**), so it's ~1 probe per browser session, not one per folder. The 3–4 identical
+  lines are the Firebase SDK's own internal retry of that one probe, below app control. It's
+  caught — the Media Library and every avatar gallery still render (from R2). **Not changed**: the
+  only way to fully silence it is to drop the probe, which the code deliberately keeps so a
+  newly-added CORS rule is picked up without a code change. Not present in a properly-CORS-
+  configured deployment.
+- The `/admin/tools` **"Client errors"** diagnostics panel lists **4 historical errors, all dated
+  2026-08-29** (`ballMetaById is not defined`, `onLogout is not defined`, `LogOut is not defined`,
+  `useNavigate is not defined`) — `ReferenceError`s from a broken WIP build that day. All resolved
+  by later commits (`ballMetaById` is now a `useMemo` in `ScoringPage.tsx:130`; `onLogout` is gone
+  from the source); **none since**. Not live bugs.
+
+### 6. Regression re-check
+- `4ee5aca` ("New batter" fix + 320px public header) — still holds: wizard roster/guest grouping
+  and team-scoped "New batter" verified again in the live scoring UI this session.
+- `441b4c7` (offline-safe admin check) — verified earlier this session on an isolated cold-offline
+  client: `getDocs` resolves empty, `getDocsFromServer` throws `unavailable`, live
+  `masterAdminStatus()` → `'exists'`.
+- New `AppShell` change is `hidden … sm:*` only — identical render to before at ≥640px, confirmed
+  at 768 / 1024.
+
+### 7. Deployment status
+`LOCAL FIXED`: `441b4c7`, `4ee5aca`, and this session's `AppShell` commit.
+`PUSHED`: `master` (this session's push).
+`DEPLOYED`: **nothing** — deploy was not authorized. The live site
+`https://cricket-platform-b03bc.web.app/` does **not** contain these fixes.
+`RUNTIME VERIFIED`: everything in §2–§6 above, on the local dev server.
+
+### Files changed this session
+- `cricket-platform/src/components/layout/AppShell.tsx` — 320px signed-in header: cluster gap +
+  `hidden sm:*` on `BackgroundControl` / `TutorialButton` / name-role block.
+- `cricket-platform/CHANGELOG.md`, `cricket-platform/ROADMAP.md` (Phase 44 + authenticated-audit
+  subsection), this file.
+- No test data left behind beyond the owner's own "Audit …" / "ZZ Audit …" fixtures; the one
+  probe delivery scored during responsive testing was undone, and the one orphan `ballMeta` doc
+  from the touch test was deleted.
+
+---
+
 ## Session 4 — CricketHub Master Audit: three reported bugs (two already correct, one real)
 
 Audited the three specifically-named bug reports. **Account creation and password sign-in are

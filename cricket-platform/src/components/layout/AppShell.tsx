@@ -231,7 +231,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
           <div className="flex-1" />
-          <div className="flex items-center gap-3">
+          {/* gap tightens and the secondary controls drop away below `sm` so the
+              bar still fits a 320px phone without clipping the avatar. */}
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={openCommandPalette}
               aria-label="Search (Ctrl+K)"
@@ -244,12 +246,16 @@ export function AppShell({ children }: { children?: ReactNode }) {
                 {isMac ? '⌘K' : 'Ctrl K'}
               </kbd>
             </button>
-            <BackgroundControl />
+            <span className="hidden sm:inline-flex">
+              <BackgroundControl />
+            </span>
             <ThemeToggle />
-            <TutorialButton />
+            <span className="hidden sm:inline-flex">
+              <TutorialButton />
+            </span>
             <WhatsNewButton />
             <NotificationBell />
-            <div className="text-right">
+            <div className="hidden text-right sm:block">
               <div className="text-sm font-semibold text-ink-900 dark:text-ink-50">
                 {profile?.displayName}
               </div>

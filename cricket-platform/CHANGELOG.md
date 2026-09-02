@@ -25,6 +25,14 @@ All notable changes to CricketHub. Newest first.
   (fits from 360px up, which the earlier pass covered). Header padding is now `px-3 sm:px-4` and
   the "Sign in" leading icon drops below 360px, so the label itself is never cut. Verified at
   320 / 375 / 768 / 1024 / 1920 — no page-level horizontal scroll on any public route.
+- **320px signed-in header (`AppShell`).** The same 320px pass on the *authenticated* shell found
+  the header's right cluster overflowing to ~409px — the avatar and the name/role block were
+  clipped off the right edge. The cluster gap is now `gap-2 sm:gap-3`, and the three widest
+  secondary controls (`BackgroundControl`, `TutorialButton`, the name/role text block) are
+  `hidden … sm:*` so they only appear once there's room (≥640px). Runtime-verified with the
+  master-admin session at 320 / 375 / 390 / 430 / 768 / 820 / 1024: header `scrollWidth ==
+  clientWidth` at every width, no page horizontal scroll, avatar fully in view; the hidden
+  controls reappear from 640px up. The Search button and `⌘K` hint were already `sm:flex`.
 
 ### Fixed — Offline "No admin account exists yet" (real root cause) + offline profile load
 - **The offline → "No admin account exists yet" bug, properly fixed this time.** The previous pass
