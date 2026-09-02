@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { BOWLING_LENGTHS, BOWLING_LINES } from '@/domain/pitchMap'
 import type { BattingStyle, BowlingLength, BowlingLine } from '@/types'
 import { usePrefsStore } from '@/store/prefsStore'
@@ -93,11 +93,31 @@ export function PitchLengthInput({
   const [dragging, setDragging] = useState(false)
   const [sel, setSel] = useState<{ line?: BowlingLine; length?: BowlingLength }>({ line, length })
   const [revealKey, setRevealKey] = useState(0)
+  const revealRef = useRef<SVGGElement>(null)
 
   useEffect(() => {
     setSel({ line, length })
     setRevealKey((k) => k + 1)
   }, [line, length])
+
+  // Kick the SMIL drop-in imperatively on every (re)commit. A declarative
+  // `begin="0s"` is relative to the SVG document timeline, so once this map has
+  // been on screen a few seconds (every ball after the first) that time is in
+  // the past and the mark renders frozen at rest — it appears instead of
+  // dropping in. `beginElement()` from a layout effect (pre-paint, no flash)
+  // restarts the drop every time.
+  useLayoutEffect(() => {
+    if (reducedMotion) return
+    const g = revealRef.current
+    if (!g) return
+    g.querySelectorAll('animate, animateTransform').forEach((el) => {
+      try {
+        ;(el as unknown as SVGAnimationElement).beginElement()
+      } catch {
+        /* not all engines expose beginElement; the declarative begin still runs */
+      }
+    })
+  }, [revealKey, reducedMotion])
 
   function toSvg(e: React.PointerEvent) {
     const rect = svgRef.current!.getBoundingClientRect()
@@ -246,7 +266,7 @@ export function PitchLengthInput({
             `revealKey` changes (a fresh tap, or a saved value being reconstructed). Dropped
             entirely when the user prefers reduced motion. */}
         {!dragging && markX != null && markY != null && (
-          <g key={revealKey} opacity={reducedMotion ? 1 : 0}>
+          <g key={revealKey} ref={revealRef} opacity={reducedMotion ? 1 : 0}>
             {!reducedMotion && (
               <>
                 <animate attributeName="opacity" from="0" to="1" dur="0.18s" begin="0s" fill="freeze" />

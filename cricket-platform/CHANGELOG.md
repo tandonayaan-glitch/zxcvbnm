@@ -4,6 +4,30 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Fixed — shot-placement animation didn't replay after the first ball (deployed)
+- **The wagon-wheel ray and pitch-map mark now animate on every ball, not just the first.**
+  `WagonWheelInput` / `PitchLengthInput` drive the placement motion with SMIL
+  (`<animate>` / `<animateTransform>`) using `begin="0s"` — which is relative to the SVG
+  document timeline, not "now". After the SVG has been on screen a few seconds (i.e. every
+  delivery after the first) `0s` is in the past, so SMIL renders the frozen end state and the
+  mark just appears. Fix: a `useLayoutEffect` keyed on the reveal key calls
+  `SVGAnimationElement.beginElement()` on the reveal group's animations, restarting them from
+  now on every commit (fresh tag or reopened saved ball); pre-paint, so no flash.
+  `try/catch` per node so an engine without `beginElement()` still renders the mark at rest —
+  purely additive, no regression. `reducedMotion` still skips it. UI-only; `scoring.ts` and
+  the `Delivery` / `BallInput` contracts untouched.
+- **Deployed** to `cricket-platform-b03bc` (`firebase deploy --only hosting`).
+
+### Security — Firestore rules deployed to production
+- `firebase deploy --only firestore:rules,firestore:indexes` released the checked-in
+  `firestore.rules` to the live project — public read of cricket data, role-gated writes,
+  owner-scoped edit/delete (`isOwnerOrMaster`) now enforced server-side rather than relying
+  on open/test mode. `firestore.indexes.json` (empty) deployed for parity.
+  `storage.rules` was **not** deployable — Firebase Storage is not provisioned on this
+  project (images use Cloudflare R2), so there is no bucket to secure.
+- Verified after release: public reads and authenticated master writes both still succeed;
+  16 signed-in routes render clean with no `permission-denied`.
+
 ### Changed — plain-English Firebase errors, richer live cards, wrapping tab strips (deployed)
 - **Firebase errors now read as English.** New `firebaseErrorMessage()` in `lib/firebaseError.ts`
   maps the common Firestore + Storage error codes to sentences and never surfaces raw

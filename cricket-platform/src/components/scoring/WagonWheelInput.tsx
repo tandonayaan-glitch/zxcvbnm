@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { BattingStyle, ShotZone } from '@/types'
 import { usePrefsStore } from '@/store/prefsStore'
 import { cn } from '@/lib/cn'
@@ -97,11 +97,32 @@ export function WagonWheelInput({
   const [committed, setCommitted] = useState<ShotZone | undefined>(value)
   // Re-key the reveal animation whenever the reconstructed value changes.
   const [revealKey, setRevealKey] = useState(0)
+  const revealRef = useRef<SVGGElement>(null)
 
   useEffect(() => {
     setCommitted(value)
     setRevealKey((k) => k + 1)
   }, [value])
+
+  // Kick the SMIL animations imperatively on every (re)commit. A declarative
+  // `begin="0s"` resolves against the SVG document timeline, so once this wheel
+  // has been on screen for a few seconds (i.e. every ball after the first) that
+  // time is already in the past and the animation renders frozen at its end
+  // state — the ray just appears instead of drawing itself out. `beginElement()`
+  // from a layout effect (before paint, so no flash of the end state) restarts
+  // them from now, every time.
+  useLayoutEffect(() => {
+    if (reducedMotion) return
+    const g = revealRef.current
+    if (!g) return
+    g.querySelectorAll('animate, animateTransform').forEach((el) => {
+      try {
+        ;(el as unknown as SVGAnimationElement).beginElement()
+      } catch {
+        /* not all engines expose beginElement; the declarative begin still runs */
+      }
+    })
+  }, [revealKey, reducedMotion])
 
   function toSvg(e: React.PointerEvent): { x: number; y: number } {
     const rect = svgRef.current!.getBoundingClientRect()
@@ -235,7 +256,7 @@ export function WagonWheelInput({
         {!dragging && committed != null && marker && (() => {
           const rayLen = Math.hypot(marker.x - C, marker.y - C)
           return (
-            <g key={revealKey}>
+            <g key={revealKey} ref={revealRef}>
               <line
                 x1={C}
                 y1={C}

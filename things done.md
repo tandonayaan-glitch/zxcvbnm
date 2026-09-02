@@ -2,7 +2,101 @@
 
 Running log of the work completed across this improvement pass. Newest section first.
 All application code lives in `cricket-platform/`. The ball-by-ball scoring engine
-(`src/domain/scoring.ts`) and `firestore.rules` were **not** modified.
+(`src/domain/scoring.ts`) was **not** modified. `firestore.rules` was not modified either —
+Session 7 *deployed* the existing checked-in rules to the live project.
+
+---
+
+## Session 7 — Rules deploy + shot-placement animation fix + authenticated re-verify
+
+Follow-up to Session 6. The owner signed back in on the deployed origin
+(`https://cricket-platform-b03bc.web.app`, master admin), authorised deploying the security
+rules, and reported that the wagon-wheel / pitch-map shot-placement *motion* wasn't playing
+in the scoring UI. All of the below is against the current build `index-J_rrFN5c.js`.
+
+### 1. Fixed — shot-placement animation didn't replay (real bug; corrects Session 6's note)
+
+`WagonWheelInput` (ray drawing out from the batter) and `PitchLengthInput` (mark dropping in
+from the bowler's end) animate via SMIL with a declarative `begin="0s"`. `begin="0s"` is
+relative to the **SVG document timeline**, not "now" — so it plays on the first ball of a
+session (SVG fresh) but on every ball after that the SVG has been alive for seconds, `0s` is
+in the past, and SMIL jumps straight to the frozen end state (`fill="freeze"`). The mark
+appears instead of animating in. Confirmed at runtime on prod: a fresh
+`<animate begin="0s" fill="freeze">` inserted into the live scoring SVG shows its end value
+with no interpolation.
+
+- **`src/components/scoring/WagonWheelInput.tsx`** and
+  **`src/components/scoring/PitchLengthInput.tsx`**: added a `useLayoutEffect` keyed on the
+  existing `revealKey` that calls `SVGAnimationElement.beginElement()` on every `animate` /
+  `animateTransform` in the reveal `<g>` (which now carries a `revealRef`). This restarts the
+  motion *from now* on every commit — a fresh tag or a reopened saved ball. Layout effect =
+  pre-paint, so no flash of the end state. `try/catch` per node: if an engine lacks
+  `beginElement()` the declarative `begin` still runs and the mark renders correctly at rest
+  (today's behaviour), so the change is **purely additive, no regression risk**.
+  `reducedMotion` still short-circuits the whole effect.
+- Not a `scoring.ts` / `Delivery` / `BallInput` change — these are the two scoring **input**
+  components (UI only).
+
+**Verification honesty:** the fix compiles (`tsc` 0, `lint` 0, `build` green) and is in the
+deployed bundle (`ScoringPage-*.js` contains `beginElement` + the `animate, animateTransform`
+selector). It could **not** be visually confirmed at runtime — the automation browser used
+for this pass does not tick SMIL / CSS / Web-Animations clocks frame-by-frame (a clean
+control-probe animation also fails to progress there) and screenshots are too slow to catch
+a ~340 ms motion. `beginElement()` is the standard, widely-used way to re-fire SMIL, so this
+is an environment limitation, not a known failure — but it needs an eyeball in a normal
+desktop browser (score 2+ balls, tag a shot on the 2nd, watch the ray draw / mark drop).
+
+### 2. Deployed the Firestore security rules
+
+`firebase deploy --only hosting,firestore:rules,firestore:indexes` → project
+`cricket-platform-b03bc` (CLI already authenticated; no credentials handled by me).
+
+- **`firestore.rules`** compiled + released to `cloud.firestore` — the live DB no longer
+  depends on open/test mode; public read of cricket data + role-gated writes are enforced
+  server-side.
+- **`firestore.indexes.json`** deployed — empty file, so a no-op, now in sync.
+- **`storage.rules` could NOT be deployed** — `firebase deploy` refuses: *"Firebase Storage
+  has not been set up on project 'cricket-platform-b03bc'"*. Storage was never provisioned
+  here (images moved to Cloudflare R2 in `01c749a`), so `storage.rules` is dead config and
+  there is no bucket to secure. Not a gap. See `next.md` §3.
+- First deploy attempt (with `storage` in the target list) failed on exactly that missing
+  bucket; diagnosed and retried without `storage` → success.
+
+### 3. Authenticated runtime re-verification on the deployed site (partial matrix)
+
+With the live master session, against `index-J_rrFN5c.js` + the newly-deployed rules:
+
+- **Master writes work post-rules-deploy** — scored a live ball on `i1ENZ1dTpW3gwpGIayNX`
+  (ALP 7/0 → 11/0), Undo restored ALP 7/0 (0.2). No `permission-denied`; the Delivery +
+  denormalised-innings batch committed.
+- **Public reads work post-rules-deploy** — `/`, `/browse` (matches/teams), `/stats`: content
+  present, no permission errors, 0 console errors.
+- **16 authenticated routes** swept (`/dashboard`, `/settings`, `/admin/tools`, `/matches`,
+  `/players`, `/teams`, `/tournaments`, `/clubs`, `/admin/trash`, `/requests`, `/users`,
+  `/admin/merge-players`, `/admin/feature-flags`, `/admin/invitations`, `/admin/media`,
+  `/admin/settings`) — each renders its heading, no "page not found", no `permission-denied`,
+  no raw `FirebaseError` text, **0 non-cosmetic console errors**.
+- **320px signed-in header** — fits exactly, no overflow, no page h-scroll.
+- **Dark mode toggle** — `html.dark` applies, body bg → dark slate, reverts cleanly.
+- Shot-detail panel opens on a boundary; wagon wheel + pitch map mount and accept a drag
+  (committed zone changed on drag).
+
+Still not re-run on prod (covered by the Session-5 localhost matrix): New Batter filtering
+mid-match, auto-powerplay transitions, archive/restore/trash round-trip, tutorial opt-out
+end-to-end, innings transitions, signed-in refresh-persistence. Normal-admin owner-scoping
+needs a second non-master account (policy forbids me creating one) — the server boundary is
+`firestore.rules` `isOwnerOrMaster`, now deployed.
+
+### Known cosmetic (unchanged)
+Firebase Storage `listAll` CORS lines **do** appear on the deployed scoring page (player
+avatar probe) — red `CORS policy` / `ERR_HTTP2_PROTOCOL_ERROR` lines. Caught, circuit-broken
+to ~1/session, galleries still render from R2. `next.md` §7.
+
+### Files changed
+- `src/components/scoring/WagonWheelInput.tsx`,
+  `src/components/scoring/PitchLengthInput.tsx`.
+- `next.md` (§1/§3/§5/§7 updated), `things done.md` (this section),
+  `cricket-platform/CHANGELOG.md`.
 
 ---
 
