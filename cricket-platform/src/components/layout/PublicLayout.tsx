@@ -36,7 +36,7 @@ export function PublicLayout({ children }: { children?: ReactNode }) {
         Skip to content
       </a>
       <header className="sticky top-0 z-30 border-b border-ink-200 bg-white dark:border-ink-800 dark:bg-ink-900">
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4 sm:gap-4">
+        <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-3 sm:gap-4 sm:px-4">
           <Link to="/" className="flex shrink-0 items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-pitch-500 text-white">
               <Trophy size={20} />
@@ -120,7 +120,9 @@ export function PublicLayout({ children }: { children?: ReactNode }) {
               to="/login"
               className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-700"
             >
-              <LogIn size={16} />
+              {/* Icon drops on the narrowest phones (≤360px) so the "Sign in"
+                  label itself never gets clipped by the header edge. */}
+              <LogIn size={16} className="hidden min-[360px]:block" />
               Sign in
             </Link>
           )}

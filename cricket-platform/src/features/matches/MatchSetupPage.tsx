@@ -471,8 +471,22 @@ export function MatchSetupPage() {
 
   function toggleSquad(slot: 'A' | 'B', pid: string) {
     const key = slot === 'A' ? 'squadA' : 'squadB'
+    const otherKey = slot === 'A' ? 'squadB' : 'squadA'
     const cur = form[key]
-    set(key, cur.includes(pid) ? cur.filter((x) => x !== pid) : [...cur, pid])
+    if (cur.includes(pid)) {
+      set(key, cur.filter((x) => x !== pid))
+      return
+    }
+    set(key, [...cur, pid])
+    // Nobody turns out for both sides in the same match — pulling a player into
+    // this XI drops them from the other one, so the two squads can never overlap
+    // (which is what previously let opposition names show up in "New batter").
+    if (form[otherKey].includes(pid)) {
+      set(
+        otherKey,
+        form[otherKey].filter((x) => x !== pid),
+      )
+    }
   }
 
   // step validation — keep this and advanceBlockedReason() adjacent and in sync: every
@@ -819,6 +833,8 @@ export function MatchSetupPage() {
             <SquadPicker
               title={teamA?.name ?? 'Team A'}
               candidates={candidatePlayers(teamA)}
+              rosterIds={teamA?.playerIds ?? []}
+              takenByOtherSide={form.squadB}
               selected={form.squadA}
               onToggle={(pid) => toggleSquad('A', pid)}
               onAddPlayer={
@@ -830,6 +846,8 @@ export function MatchSetupPage() {
             <SquadPicker
               title={teamB?.name ?? 'Team B'}
               candidates={candidatePlayers(teamB)}
+              rosterIds={teamB?.playerIds ?? []}
+              takenByOtherSide={form.squadA}
               selected={form.squadB}
               onToggle={(pid) => toggleSquad('B', pid)}
               onAddPlayer={
@@ -1145,17 +1163,74 @@ function TeamPicker({
 function SquadPicker({
   title,
   candidates,
+  rosterIds,
+  takenByOtherSide,
   selected,
   onToggle,
   onAddPlayer,
 }: {
   title: string
   candidates: Player[]
+  /** This team's own roster — everyone else in `candidates` is shown as a guest. */
+  rosterIds: string[]
+  /** Players already picked into the opposing XI — hidden here so the same person
+   *  can't be selected for both sides (which is what surfaced opposition players
+   *  in the live "New batter" list). */
+  takenByOtherSide: string[]
   selected: string[]
   onToggle: (pid: string) => void
   /** Omit to hide "+ Add player" (no team picked yet, or the user can't create players). */
   onAddPlayer?: () => void
 }) {
+  const rosterSet = new Set(rosterIds)
+  const takenSet = new Set(takenByOtherSide)
+  // Anyone claimed by the other side drops out of the list — unless they're already
+  // ticked here, in which case keep them visible so the pick can be undone.
+  const visible = candidates.filter(
+    (p) => !takenSet.has(p.id) || selected.includes(p.id),
+  )
+  const roster = visible.filter((p) => rosterSet.has(p.id))
+  const guests = visible.filter((p) => !rosterSet.has(p.id))
+
+  const row = (p: Player) => {
+    const archived = p.active === false
+    return (
+      <label
+        key={p.id}
+        className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-ink-50 dark:hover:bg-ink-800"
+      >
+        <input
+          type="checkbox"
+          checked={selected.includes(p.id)}
+          onChange={() => onToggle(p.id)}
+          className="h-4 w-4"
+        />
+        <Avatar name={p.fullName} src={p.photoURL} size={26} />
+        <span
+          className={cn(
+            'text-sm',
+            archived
+              ? 'text-ink-400 dark:text-ink-500'
+              : 'text-ink-800 dark:text-ink-200',
+          )}
+        >
+          {p.fullName}
+        </span>
+        {archived && (
+          <span className="ml-auto rounded-full bg-ink-100 px-1.5 py-0.5 text-[10px] font-medium text-ink-500 dark:bg-ink-800 dark:text-ink-400">
+            Archived
+          </span>
+        )}
+      </label>
+    )
+  }
+
+  const heading = (text: string) => (
+    <p className="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-ink-400 dark:text-ink-500">
+      {text}
+    </p>
+  )
+
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
@@ -1163,41 +1238,21 @@ function SquadPicker({
         <span className="text-sm text-ink-500 dark:text-ink-400">{selected.length} selected</span>
       </div>
       <div className="max-h-72 space-y-1 overflow-y-auto rounded-lg border border-ink-200 dark:border-ink-800 p-2">
-        {candidates.length === 0 && (
+        {roster.length === 0 && guests.length === 0 && (
           <p className="px-2 py-3 text-sm text-ink-500 dark:text-ink-400">No players available.</p>
         )}
-        {candidates.map((p) => {
-          const archived = p.active === false
-          return (
-            <label
-              key={p.id}
-              className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-ink-50 dark:hover:bg-ink-800"
-            >
-              <input
-                type="checkbox"
-                checked={selected.includes(p.id)}
-                onChange={() => onToggle(p.id)}
-                className="h-4 w-4"
-              />
-              <Avatar name={p.fullName} src={p.photoURL} size={26} />
-              <span
-                className={cn(
-                  'text-sm',
-                  archived
-                    ? 'text-ink-400 dark:text-ink-500'
-                    : 'text-ink-800 dark:text-ink-200',
-                )}
-              >
-                {p.fullName}
-              </span>
-              {archived && (
-                <span className="ml-auto rounded-full bg-ink-100 px-1.5 py-0.5 text-[10px] font-medium text-ink-500 dark:bg-ink-800 dark:text-ink-400">
-                  Archived
-                </span>
-              )}
-            </label>
-          )
-        })}
+        {roster.length > 0 && (
+          <>
+            {heading(`${title} roster`)}
+            {roster.map(row)}
+          </>
+        )}
+        {guests.length > 0 && (
+          <>
+            {heading('Other players (guest)')}
+            {guests.map(row)}
+          </>
+        )}
       </div>
       {onAddPlayer && (
         <button

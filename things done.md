@@ -6,6 +6,120 @@ All application code lives in `cricket-platform/`. The ball-by-ball scoring engi
 
 ---
 
+## Session 4 — CricketHub Master Audit: three reported bugs (two already correct, one real)
+
+Audited the three specifically-named bug reports. **Account creation and password sign-in are
+disallowed by policy**, so authenticated end-to-end flows (real match creation, a full scoring
+session, admin panels, User-A-vs-User-B comparisons) were verified by code trace + route-guard +
+Firestore-rules review + pure-logic runtime tests against the app's real modules — not by driving
+a signed-in session. This is called out honestly per feature below.
+
+### 1. Reported bug #3 — "new signup users must be able to use core features" — ALREADY CORRECT
+Traced the whole path; no code change.
+- `SignupPage.tsx` calls `signup({ …, role: 'SCORER' })`, but `registerUser()` **ignores the
+  requested role** and derives it: `MASTER_ADMIN` *only* for the reserved bootstrap username while
+  no master exists, **otherwise always `SCORER`**. A signup POST with `role:'ADMIN'` still yields
+  `SCORER`.
+- `firestore.rules` independently pins self-signup to `request.resource.data.role == 'SCORER'`
+  (or the master bootstrap). Defense in depth.
+- `SCORER` can immediately: create players + teams (`canBuildRoster` includes `SCORER`, mirrored
+  in rules' `canBuildRoster()`), create matches (`/matches/new` route allows `SCORER`), and score
+  (`/scoring/:id` allows `SCORER`). Client role helpers in `authStore.ts` are commented as, and
+  are, exact mirrors of the rules functions.
+- `SCORER` **cannot** create tournaments — deliberate (`canCreateTournament` = master / `ADMIN` /
+  `TOURNAMENT_MANAGER`, with a "Request Tournament Manager access" flow). Not a regression.
+- New users are never auto-`ADMIN`, never `MASTER_ADMIN`, never `VIEWER`. `homeForRole('SCORER')`
+  → `/dashboard`; `DashboardSwitcher` renders the plain dashboard for them.
+
+### 2. Reported bug #6 — "normal user's Audit Log must show only their own events" — ALREADY CORRECT, backend-enforced
+Traced Settings UI → hook → service → Firestore query → rules. No code change.
+- `firestore.rules`:
+  ```
+  match /auditLogs/{id} {
+    allow read: if isMasterAdmin()
+                || (isSignedIn() && resource.data.actorId == request.auth.uid);
+  }
+  ```
+  This is a **per-document** rule, so an *unscoped* `list` query by a non-master fails
+  **`permission-denied` on the server** — it is not merely hidden in the UI.
+- `UserSettingsPage.tsx` (reachable by every signed-in user) → `listMyAuditLogs(profile.id)` →
+  `where('actorId', '==', uid)` — precisely what the rule permits; returns only the caller's rows.
+- `listAuditLogs(200)` (unscoped, newest-first) is called **only** by `PlatformToolsPage.tsx`,
+  whose route is `ProtectedRoute roles={['MASTER_ADMIN']}`. `/users`, `/requests`,
+  `/admin/analytics`, `/admin/settings` are all `MASTER_ADMIN`-guarded too.
+- Doubly safe: the UI always passes the caller's own uid, and the rule enforces self regardless
+  of what uid is passed.
+
+### 3. Reported bug #8 — "New batter modal shows players from BOTH teams" — REAL, FIXED
+**The scoring screen's own filtering is correct and always has been.** `ScoringPage.tsx`:
+```
+battingSquad   = squadFor(match, inn.battingTeamId)      // match.squadA or match.squadB, by team id
+incomingOptions = battingSquad
+  .filter(pid => !battedOutIds.has(pid) && !atCrease.has(pid))
+```
+`squadFor` returns exactly one team's stored squad; dismissed batters (`battingCard` where `out`)
+and the two at the crease are removed; retired-hurt (not `out`) correctly stays eligible to
+return. `PlayerPickModal` renders that list verbatim. `OpenersPanel` and the `WicketModal`
+fielder/batter lists are all squad-scoped the same way.
+
+**The contamination is upstream, in the match setup wizard (`MatchSetupPage.tsx`):**
+- `SquadPicker` rendered **every in-scope player** as one flat, unlabelled checklist — the team's
+  own roster was merely *sorted* to the top, with no heading or divider. Ticking a few extra names
+  (easy, and invisible as "these are the opponents") put opposition players into `squadA`.
+- `toggleSquad` never prevented the **same player being ticked into both `squadA` and `squadB`**.
+
+So a real match could persist `squadA` containing Bravo players, and the "New batter" list then
+faithfully showed them.
+
+**Fixes (all in `src/features/matches/MatchSetupPage.tsx`, nothing else):**
+1. `toggleSquad(slot, pid)` — adding a player to one side now removes them from the other. The two
+   squads can never overlap.
+2. `SquadPicker` — candidates are split into a labelled **"{team} roster"** group and an
+   **"Other players (guest)"** group. Guests are still available (a real feature) but selecting
+   one is now a deliberate, visible act.
+3. `SquadPicker` — anyone already selected for the *opposing* XI is hidden from this side's list,
+   *unless* they're already ticked here (so a legacy overlapping match can still be cleaned up on
+   edit).
+
+No change to `src/domain/scoring.ts`, the `Delivery` / `BallInput` contracts, offline
+infrastructure, or `firestore.rules`.
+
+**Runtime verification** (browser, against the app's real `scoring.service.ts` module on the dev
+server):
+```
+squadFor(match, 'ALPHA')  with squadA = [a1,a2,a3,a4, b1]   -> [a1,a2,a3,a4,b1]
+incomingOptions (a1,a2 at crease; a3 out)                    -> [a4, b1]   // b1 LEAKS  (bug reproduced)
+── with the squads the fix produces (squadA = [a1..a4]) ──
+incomingOptions                                              -> [a4]      // batting team only
+  dismissed a3 excluded: true   at-crease a1/a2 excluded: true
+toggleSquad('A','x9')  when x9 ∈ squadB                      -> squadA gains x9, squadB loses x9
+toggleSquad('A','x9')  again (untick)                        -> squadA loses x9, squadB unchanged (no bounce-back)
+SquadPicker partition: b1,b2 (in other XI) hidden; g7 -> "Other players (guest)"; a1..a3 -> roster
+legacy overlap (a3 in both, selected here)                   -> a3 stays visible so it can be un-picked
+```
+
+### 4. 320px public header — "Sign in" clipped
+`resize_window` sweep of the public site found the "Sign in" button's right edge at **x≈333 in a
+320px viewport** (~13px past the edge; it already fit from 360px up, which Session 3 covered).
+- `PublicLayout.tsx`: header container padding `px-4` → `px-3 sm:px-4`; the "Sign in" link's
+  leading `<LogIn>` icon is now `hidden min-[360px]:block` so the label itself is never cut.
+- Re-measured: "Sign in" right edge x≈308 at 320px. No page-level horizontal scroll at
+  320 / 375 / 768 / 1024 / 1920 on `/`, `/browse` (all tabs), `/stats`, `/search`, `/compare`,
+  `/privacy`, `/terms`, `/match/:id`, 404. Dark-mode toggle round-trips (light `#f1f5f9` ↔
+  dark `#020617`).
+
+### 5. Checks
+`npx tsc -p tsconfig.app.json --noEmit` → 0 errors. `npm run lint` → 0 errors (pre-existing
+warnings only; none in the two changed files). `npm run build` → green. **Not deployed.**
+
+### Files changed this session
+- `cricket-platform/src/features/matches/MatchSetupPage.tsx` — `toggleSquad` mutual exclusion;
+  `SquadPicker` roster/guest grouping + hide-opposing-XI.
+- `cricket-platform/src/components/layout/PublicLayout.tsx` — 320px header padding + icon.
+- `cricket-platform/CHANGELOG.md`, `cricket-platform/ROADMAP.md` (Phase 44), this file.
+
+---
+
 ## Session 3 — Offline "no admin" REAL root cause, offline profile load, header responsive
 
 ### 1. The offline → "No admin account exists yet" bug — reproduced and root-caused at runtime

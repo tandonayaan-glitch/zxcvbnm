@@ -4,6 +4,28 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Fixed — "New batter" list could include the opposing team + 320px header clip
+- **"New batter" no longer offers opposition players.** The live-scoring "New batter" picker is
+  correctly filtered (`squadFor(match, inn.battingTeamId)` minus dismissed minus at-crease) and
+  always has been — but it faithfully shows whatever is in the match's stored `squadA` / `squadB`,
+  and the **match setup wizard let those squads be built wrong**. `SquadPicker` rendered every
+  in-scope player as one flat, unlabelled list (team roster merely sorted to the top), and
+  `toggleSquad` never stopped the *same* player being ticked into *both* XIs. So a real match
+  could persist `squadA` containing Bravo players, which then surfaced in Alpha's "New batter"
+  list. Fixes, all in `MatchSetupPage`: (1) `toggleSquad` now removes a player from the other
+  side when you add them to this one — the two squads can never overlap; (2) `SquadPicker` splits
+  candidates into a labelled **"{team} roster"** group and an **"Other players (guest)"** group,
+  so picking a non-roster player is a deliberate, visible act; (3) anyone already selected for the
+  opposing XI is hidden from this side's list (unless already ticked here, so legacy overlaps can
+  still be cleaned up). No change to `scoring.ts`, the `Delivery`/`BallInput` contracts, or
+  Firestore rules. Runtime-verified: with a contaminated `squadA`, `incomingOptions` leaked the
+  Bravo player (`b1_leaked: true`); with the squads the fix produces, only the batting team's
+  players remain, dismissed and at-crease excluded.
+- **320px public header.** The "Sign in" button was clipped ~13px past the right edge at 320px
+  (fits from 360px up, which the earlier pass covered). Header padding is now `px-3 sm:px-4` and
+  the "Sign in" leading icon drops below 360px, so the label itself is never cut. Verified at
+  320 / 375 / 768 / 1024 / 1920 — no page-level horizontal scroll on any public route.
+
 ### Fixed — Offline "No admin account exists yet" (real root cause) + offline profile load
 - **The offline → "No admin account exists yet" bug, properly fixed this time.** The previous pass
   assumed an offline `getDocs()` *throws*. With the persistent local cache (`lib/firebase.ts`) it
