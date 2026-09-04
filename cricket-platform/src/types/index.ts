@@ -69,6 +69,11 @@ export interface Player {
   teamIds: string[]
   photoURL?: string | null
   active: boolean
+  /** Free-text city/region — optional, user-entered, blank by default. Powers location-based
+   *  discovery/rankings filters; never inferred or guessed when absent (an absent value simply
+   *  excludes the player from a location filter, rather than being defaulted to anything). */
+  location?: string
+  skillLevel?: 'beginner' | 'intermediate' | 'advanced'
   /** Linked user account (auto-created login), if one was set up for this player. */
   linkedUserId?: string | null
   ownerId?: string // managing admin (uid); master admin sees all
@@ -1118,6 +1123,39 @@ export interface PostLike {
   postId: string
   userId: string
   createdAt: number
+}
+
+/* ==================================================================
+ * Identity/Reputation engine — ratings for players, scorers, umpires.
+ * ================================================================== */
+
+export type RatingTargetType = 'player' | 'scorer' | 'umpire'
+
+/** One user's 1-5 rating of another (a player's on-field ability, or a scorer/umpire's
+ *  officiating). Doc id == `${targetType}_${targetId}_${raterId}` so a duplicate/self rating is
+ *  structurally prevented (a user can only ever have one doc per target — re-rating overwrites
+ *  their own prior rating rather than adding a second one; a self-rating's doc id would need
+ *  raterId == targetId's own linked account, blocked by firestore.rules instead since the doc id
+ *  scheme alone can't know a player's linkedUserId). */
+export interface Rating {
+  id: string
+  targetType: RatingTargetType
+  targetId: string
+  raterId: string
+  stars: 1 | 2 | 3 | 4 | 5
+  comment?: string
+  createdAt: number
+  updatedAt: number
+}
+
+/** Aggregated, cached view of a target's ratings — recomputed client-side from the `Rating`
+ *  collection (never stored as a separate collection) so it can never drift from the real votes;
+ *  see `domain/reputation.ts`. */
+export interface ReputationSummary {
+  targetType: RatingTargetType
+  targetId: string
+  count: number
+  average: number
 }
 
 export type ReportTargetType = 'post' | 'comment' | 'user' | 'looking_for'

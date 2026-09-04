@@ -24,6 +24,8 @@ import {
   Flag,
   Mail,
   Image,
+  ShieldAlert,
+  Compass,
 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { useAuthStore, isAdmin, canScore } from '@/store/authStore'
@@ -53,6 +55,7 @@ const NAV: NavItem[] = [
   { to: '/teams', label: 'Teams', icon: <Shield size={18} /> },
   { to: '/tournaments', label: 'Tournaments', icon: <Trophy size={18} /> },
   { to: '/clubs', label: 'Clubs & Seasons', icon: <Building2 size={18} /> },
+  { to: '/discover', label: 'Discover', icon: <Compass size={18} /> },
   {
     to: '/admin/trash',
     label: 'Trash',
@@ -100,6 +103,12 @@ const NAV: NavItem[] = [
     to: '/admin/media',
     label: 'Media Library',
     icon: <Image size={18} />,
+    roles: ['MASTER_ADMIN'],
+  },
+  {
+    to: '/admin/moderation',
+    label: 'Moderation',
+    icon: <ShieldAlert size={18} />,
     roles: ['MASTER_ADMIN'],
   },
   {

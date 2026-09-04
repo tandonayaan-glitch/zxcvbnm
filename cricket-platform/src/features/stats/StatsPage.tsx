@@ -28,6 +28,7 @@ import {
   buildImpactBoard,
 } from '@/domain/stats'
 import { computeTournamentRecords } from '@/domain/records'
+import { computeTossInsights } from '@/domain/tossInsights'
 import { buildConsistencyBoard } from '@/domain/consistency'
 import { ballsToOvers } from '@/lib/format'
 
@@ -211,6 +212,8 @@ export function StatsPage() {
     () => computeTournamentRecords(finalMatches),
     [finalMatches],
   )
+
+  const tossInsights = useMemo(() => computeTossInsights(finalMatches), [finalMatches])
 
   const impactBoard = useMemo(
     () => buildImpactBoard(scoped.playerStats, 5),
@@ -555,10 +558,13 @@ export function StatsPage() {
               </Card>
             )
           ) : tab === 'records' ? (
-            <RecordsGrid
-              records={records}
-              nameOf={(pid) => playerMap.get(pid)?.displayName ?? '—'}
-            />
+            <>
+              <TossInsightsCard insights={tossInsights} />
+              <RecordsGrid
+                records={records}
+                nameOf={(pid) => playerMap.get(pid)?.displayName ?? '—'}
+              />
+            </>
           ) : visible.length === 0 ? (
             <EmptyState title="No data in this category yet" />
           ) : (
@@ -577,6 +583,45 @@ export function StatsPage() {
         </>
       )}
     </div>
+  )
+}
+
+function TossInsightsCard({ insights }: { insights: ReturnType<typeof computeTossInsights> }) {
+  if (insights.totalDecided === 0) return null
+  return (
+    <Card className="mb-4 p-4">
+      <h3 className="mb-2 text-sm font-semibold text-ink-800 dark:text-ink-200">
+        Toss insights
+      </h3>
+      <p className="mb-3 text-xs text-ink-500 dark:text-ink-400">
+        From {insights.totalDecided} decided matches in this view. Correlation, not causation —
+        winning the toss doesn't cause a win, it's just what happened.
+      </p>
+      <div className="grid grid-cols-3 gap-3 text-center">
+        <div>
+          <div className="text-xl font-bold text-ink-900 dark:text-ink-50">
+            {insights.tossWinnerWonPct}%
+          </div>
+          <div className="text-xs text-ink-500 dark:text-ink-400">Toss winner also won</div>
+        </div>
+        <div>
+          <div className="text-xl font-bold text-ink-900 dark:text-ink-50">
+            {insights.batFirstWinPct}%
+          </div>
+          <div className="text-xs text-ink-500 dark:text-ink-400">
+            Win rate batting first ({insights.batFirstCount})
+          </div>
+        </div>
+        <div>
+          <div className="text-xl font-bold text-ink-900 dark:text-ink-50">
+            {insights.bowlFirstWinPct}%
+          </div>
+          <div className="text-xs text-ink-500 dark:text-ink-400">
+            Win rate bowling first ({insights.bowlFirstCount})
+          </div>
+        </div>
+      </div>
+    </Card>
   )
 }
 

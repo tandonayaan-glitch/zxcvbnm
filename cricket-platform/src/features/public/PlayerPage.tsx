@@ -2,6 +2,8 @@ import { useParams, Link } from 'react-router-dom'
 import { User, Flag, Star, Award, Target, TrendingUp, Download, FileJson, Printer } from 'lucide-react'
 import { Avatar, Badge, Card, PageLoader, EmptyState } from '@/components/ui/primitives'
 import { FollowButton } from '@/components/ui/FollowButton'
+import { FollowToggle } from '@/components/ui/FollowToggle'
+import { RatingWidget } from '@/components/reputation/RatingWidget'
 import { ShareButton } from '@/components/ui/ShareButton'
 import { QRCodeButton } from '@/components/ui/QRCodeButton'
 import { ActivityFeed } from '@/components/activity/ActivityFeed'
@@ -271,7 +273,9 @@ export function PlayerPage() {
               <ShareButton variant="icon" title={p.fullName} />
               <QRCodeButton title={p.fullName} />
               <FollowButton kind="players" id={p.id} />
+              <FollowToggle targetType="player" targetId={p.id} />
             </div>
+            <RatingWidget targetType="player" targetId={p.id} linkedUserId={p.linkedUserId} />
             <Link
               to={`/compare?a=${p.id}`}
               className="text-sm font-medium text-brand-700 hover:underline"

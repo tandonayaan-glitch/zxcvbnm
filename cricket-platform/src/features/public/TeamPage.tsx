@@ -21,6 +21,7 @@ import {
   StatCard,
 } from '@/components/ui/primitives'
 import { FollowButton } from '@/components/ui/FollowButton'
+import { FollowToggle } from '@/components/ui/FollowToggle'
 import { ShareButton } from '@/components/ui/ShareButton'
 import { QRCodeButton } from '@/components/ui/QRCodeButton'
 import { ActivityFeed } from '@/components/activity/ActivityFeed'
@@ -181,6 +182,7 @@ export function TeamPage() {
             <ShareButton variant="icon" title={t.name} />
             <QRCodeButton title={t.name} />
             <FollowButton kind="teams" id={t.id} />
+            <FollowToggle targetType="team" targetId={t.id} />
           </div>
         </div>
       </Card>

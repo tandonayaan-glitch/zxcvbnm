@@ -56,6 +56,8 @@ export const COL = {
   communityPosts: 'communityPosts',
   postLikes: 'postLikes',
   contentReports: 'contentReports',
+  // Identity/Reputation engine.
+  ratings: 'ratings',
 } as const
 
 export const SETTINGS_DOC = 'app'

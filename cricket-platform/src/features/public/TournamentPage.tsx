@@ -14,6 +14,7 @@ import {
   Award as AwardIcon,
   Download,
   FileJson,
+  FileText,
   Printer,
   CalendarPlus,
   Copy,
@@ -37,6 +38,7 @@ import { matchesToICS } from '@/domain/calendarExport'
 import { ShareButton } from '@/components/ui/ShareButton'
 import { QRCodeButton } from '@/components/ui/QRCodeButton'
 import { FollowButton } from '@/components/ui/FollowButton'
+import { FollowToggle } from '@/components/ui/FollowToggle'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocumentMeta } from '@/hooks/useDocumentMeta'
 import { useToast } from '@/components/ui/toast'
@@ -270,6 +272,7 @@ export function TournamentPage() {
             <ShareButton variant="icon" title={t.name} />
             <QRCodeButton title={t.name} />
             <FollowButton kind="tournaments" id={t.id} />
+            <FollowToggle targetType="tournament" targetId={t.id} />
             {canManageThis && (
               <>
                 <Button variant="outline" size="sm" onClick={refresh} loading={refreshing}>
@@ -357,6 +360,12 @@ export function TournamentPage() {
           >
             <Printer size={15} /> Print / Save as PDF
           </button>
+          <Link
+            to={`/tournament/${id}/report`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
+          >
+            <FileText size={15} /> Full report
+          </Link>
         </div>
       )}
 

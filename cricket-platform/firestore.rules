@@ -570,9 +570,16 @@ service cloud.firestore {
       allow update: if isSignedIn() && (
         resource.data.createdBy == request.auth.uid
         || isMasterAdmin()
-        // Anyone signed in may cast a poll vote — restricted to touching only the vote fields,
-        // never content/author/likeCount/etc.
-        || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pollOptions', 'pollVoterIds', 'updatedAt'])
+        // Anyone signed in may cast a poll vote or like/unlike — restricted to touching only
+        // those fields, never content/author/etc. `likeCount` moves by exactly 1 per write
+        // (the client does read-then-increment, but the rule re-derives the same guarantee
+        // server-side rather than trusting the client's arithmetic).
+        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pollOptions', 'pollVoterIds', 'updatedAt'])
+            )
+        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likeCount'])
+            && request.resource.data.likeCount is int
+            && (request.resource.data.likeCount == resource.data.likeCount + 1
+                || request.resource.data.likeCount == resource.data.likeCount - 1))
       );
       allow delete: if isSignedIn() && (resource.data.createdBy == request.auth.uid || isMasterAdmin());
     }
@@ -588,6 +595,26 @@ service cloud.firestore {
       allow read: if isMasterAdmin() || (isSignedIn() && resource.data.reporterId == request.auth.uid);
       allow create: if isSignedIn() && request.resource.data.reporterId == request.auth.uid;
       allow update, delete: if isMasterAdmin();
+    }
+
+    // ---- Ratings (identity/reputation engine) ---------------------
+    // Doc id == `${targetType}_${targetId}_${raterId}`, enforced below — one rating per rater
+    // per target, structurally (re-rating overwrites the same doc rather than adding a second).
+    // Self-rating is blocked two ways: for a scorer/umpire, targetId IS the target's own uid, so
+    // it's a direct comparison; for a player, targetId is the Player doc id, so this checks the
+    // rater isn't that player's own linked account.
+    match /ratings/{id} {
+      allow read: if true;
+      allow create, update: if isSignedIn()
+        && request.resource.data.raterId == request.auth.uid
+        && request.resource.data.stars is int
+        && request.resource.data.stars >= 1 && request.resource.data.stars <= 5
+        && id == (request.resource.data.targetType + '_' + request.resource.data.targetId + '_' + request.auth.uid)
+        && (request.resource.data.targetType == 'player'
+              ? !(exists(/databases/$(database)/documents/players/$(request.resource.data.targetId))
+                  && get(/databases/$(database)/documents/players/$(request.resource.data.targetId)).data.linkedUserId == request.auth.uid)
+              : request.resource.data.targetId != request.auth.uid);
+      allow delete: if isSignedIn() && (resource.data.raterId == request.auth.uid || isMasterAdmin());
     }
 
     // ---- Subscriptions (ROADMAP_V5 Phase C — architecture only, no real billing yet) --------

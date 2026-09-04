@@ -46,7 +46,7 @@ export function PublicLayout({ children }: { children?: ReactNode }) {
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-1 text-sm font-medium text-ink-600 dark:text-ink-300 md:flex">
+          <nav className="hidden flex-wrap items-center gap-1 text-sm font-medium text-ink-600 dark:text-ink-300 md:flex">
             <Link to="/" className="rounded-md px-3 py-2 hover:bg-ink-100 dark:hover:bg-ink-800">
               Home
             </Link>
@@ -58,6 +58,18 @@ export function PublicLayout({ children }: { children?: ReactNode }) {
             </Link>
             <Link to="/browse?tab=teams" className="rounded-md px-3 py-2 hover:bg-ink-100 dark:hover:bg-ink-800">
               Teams
+            </Link>
+            <Link to="/discover" className="rounded-md px-3 py-2 hover:bg-ink-100 dark:hover:bg-ink-800">
+              Discover
+            </Link>
+            <Link to="/looking-for" className="rounded-md px-3 py-2 hover:bg-ink-100 dark:hover:bg-ink-800">
+              Looking For
+            </Link>
+            <Link to="/feed" className="rounded-md px-3 py-2 hover:bg-ink-100 dark:hover:bg-ink-800">
+              Community
+            </Link>
+            <Link to="/rankings" className="rounded-md px-3 py-2 hover:bg-ink-100 dark:hover:bg-ink-800">
+              Rankings
             </Link>
             <Link to="/stats" className="rounded-md px-3 py-2 hover:bg-ink-100 dark:hover:bg-ink-800">
               Stats
