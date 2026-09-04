@@ -17,6 +17,8 @@ import {
   deleteDoc,
   onSnapshot,
   getDoc,
+  query,
+  where,
   type Unsubscribe,
 } from 'firebase/firestore'
 import { db, auth } from '@/lib/firebase'
@@ -351,16 +353,46 @@ export function subscribeMatchVideos(
   matchId: string,
   cb: (videos: MatchVideo[]) => void,
 ): Unsubscribe {
-  // Client-side filter (not a query) — a match has at most a handful of videos, and this
-  // avoids needing a composite index for matchId + deletedAt.
-  return onSnapshot(videosCol(), (snap) => {
+  // The `matchVideos` read rule is visibility-conditional (a private video is creator/master-only),
+  // so an *unconstrained* collection listen asks Firestore to prove every possible document in the
+  // whole collection satisfies that rule — it can't, and denies the entire query for every viewer,
+  // public videos included. Split into a query the rule can verify from its own constraints (public
+  // videos for this match) plus, when signed in, the caller's own videos for this match — merged
+  // client-side. Both are two-field pure-equality queries, so neither needs a composite index.
+  const uid = auth.currentUser?.uid
+  let publicVideos: MatchVideo[] = []
+  let ownVideos: MatchVideo[] = []
+  const emit = () => {
+    const merged = new Map<string, MatchVideo>()
+    for (const v of publicVideos) merged.set(v.id, v)
+    for (const v of ownVideos) merged.set(v.id, v)
     cb(
-      snap.docs
-        .map((d) => d.data() as MatchVideo)
-        .filter((v) => v.matchId === matchId && !v.deletedAt)
+      [...merged.values()]
+        .filter((v) => !v.deletedAt)
         .sort((a, b) => b.createdAt - a.createdAt),
     )
-  })
+  }
+  const unsubs: Unsubscribe[] = [
+    onSnapshot(
+      query(videosCol(), where('matchId', '==', matchId), where('visibility', '==', 'public')),
+      (snap) => {
+        publicVideos = snap.docs.map((d) => d.data() as MatchVideo)
+        emit()
+      },
+    ),
+  ]
+  if (uid) {
+    unsubs.push(
+      onSnapshot(
+        query(videosCol(), where('matchId', '==', matchId), where('createdBy', '==', uid)),
+        (snap) => {
+          ownVideos = snap.docs.map((d) => d.data() as MatchVideo)
+          emit()
+        },
+      ),
+    )
+  }
+  return () => unsubs.forEach((u) => u())
 }
 
 /* -------------------------------- Clips -------------------------------- */
