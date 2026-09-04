@@ -255,6 +255,68 @@ service cloud.firestore {
       }
     }
 
+    // ---- Live broadcast (media/broadcast engine) ---------------
+    // Doc id == matchId. Signaling subcollections are intentionally open to anonymous writers
+    // for the viewer side — the platform's Live Share explicitly promises spectators don't need
+    // an account, and a signaling doc only ever carries WebRTC SDP/ICE payloads (never cricket
+    // data), cleaned up when the viewer leaves.
+    match /broadcasts/{matchId} {
+      allow read: if true;
+      allow create: if isOwnerMasterOrDelegatedScorer(matchId)
+        && request.resource.data.broadcasterUid == request.auth.uid;
+      allow update: if isOwnerMasterOrDelegatedScorer(matchId);
+      allow delete: if isOwnerOrMaster(get(/databases/$(database)/documents/matches/$(matchId)).data.ownerId);
+
+      match /viewers/{connId} {
+        allow read: if true;
+        // A viewer creates their own offer; `answer`/`connectedAt` must start unset — only the
+        // broadcaster can fill those in (the `update` rule below), so a viewer can never forge
+        // a connection as already-answered.
+        allow create: if request.resource.data.answer == null
+          && request.resource.data.connectedAt == null
+          && request.resource.data.offer != null
+          && request.resource.data.keys().hasOnly(['id', 'viewerUid', 'offer', 'answer', 'createdAt', 'connectedAt']);
+        allow update: if isOwnerMasterOrDelegatedScorer(matchId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['answer', 'connectedAt']);
+        // Transient signaling only — either side may clear a connection doc (viewer leaving,
+        // or the broadcaster pruning a dropped peer).
+        allow delete: if true;
+
+        match /broadcasterCandidates/{cid} {
+          allow read: if true;
+          allow create: if isOwnerMasterOrDelegatedScorer(matchId);
+          allow update, delete: if false;
+        }
+        match /viewerCandidates/{cid} {
+          allow read: if true;
+          allow create: if true;
+          allow update, delete: if false;
+        }
+      }
+    }
+
+    // ---- Match videos + clips (media/broadcast engine) ---------
+    match /matchVideos/{id} {
+      // 'private' videos are only visible to their uploader or the master admin; 'public'/
+      // 'unlisted' read like the rest of this app's cricket data.
+      allow read: if resource.data.visibility != 'private'
+        || (isSignedIn() && (resource.data.createdBy == request.auth.uid || isMasterAdmin()));
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && isOwnerMasterOrDelegatedScorer(request.resource.data.matchId);
+      allow update, delete: if isSignedIn()
+        && (resource.data.createdBy == request.auth.uid
+            || isOwnerMasterOrDelegatedScorer(resource.data.matchId)
+            || isMasterAdmin());
+    }
+    match /clips/{id} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.createdBy == request.auth.uid;
+      // Clips are a saved time-range bookmark, not an editable record — immutable once created.
+      allow update: if false;
+      allow delete: if isSignedIn() && (resource.data.createdBy == request.auth.uid || isMasterAdmin());
+    }
+
     // ---- Cached stats -----------------------------------------
     match /playerStats/{id} {
       allow read: if true;
@@ -472,6 +534,115 @@ service cloud.firestore {
       allow update, delete: if isOwnerOrMaster(resource.data.ownerId);
     }
 
+    // ---- Looking For (discovery engine) -------------------------
+    match /lookingForPosts/{id} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.title is string && request.resource.data.title.size() > 0
+        && request.resource.data.description is string && request.resource.data.description.size() <= 2000;
+      allow update, delete: if isSignedIn()
+        && (resource.data.createdBy == request.auth.uid || isMasterAdmin());
+    }
+    match /lookingForResponses/{id} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.responderId == request.auth.uid;
+      // The responder can withdraw; the referenced post's own creator (or master) can
+      // accept/decline.
+      allow update: if isSignedIn() && (
+        isMasterAdmin()
+        || get(/databases/$(database)/documents/lookingForPosts/$(resource.data.postId)).data.createdBy == request.auth.uid
+      );
+      allow delete: if isSignedIn() && (resource.data.responderId == request.auth.uid || isMasterAdmin());
+    }
+
+    // ---- Following (identity/reputation engine) ------------------
+    match /follows/{id} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.followerId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.followerId == request.auth.uid;
+      allow update: if false;
+    }
+
+    // ---- Community feed -------------------------------------------
+    match /communityPosts/{id} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.authorId == request.auth.uid
+        // Same size cap as `comments` — defense in depth against a client writing an
+        // arbitrarily large text blob.
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 2000;
+      allow update: if isSignedIn() && (
+        resource.data.createdBy == request.auth.uid
+        || isMasterAdmin()
+        // Anyone signed in may cast a poll vote or like/unlike — restricted to touching only
+        // those fields, never content/author/etc, AND required to add exactly one new voter
+        // (themselves, not already present) rather than trusting the client to only ever bump
+        // one option's count by one — a signed-in user could otherwise rewrite `pollOptions` to
+        // arbitrary values in the same write as long as they stayed within the allowed keys.
+        // This doesn't verify vote *totals* stay internally consistent with `pollVoterIds`
+        // (that would need summing across options, which rules can't do), but it does close the
+        // "vote twice" / "vote without appearing as a voter" holes, which are the real abuse
+        // path for a low-stakes community poll. `likeCount` moves by exactly 1 per write (the
+        // client does read-then-increment, but the rule re-derives the same guarantee
+        // server-side rather than trusting the client's arithmetic).
+        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pollOptions', 'pollVoterIds', 'updatedAt'])
+            // Existence-checked before reading, in that order — a plain text post has no
+            // `pollVoterIds` field at all, and reading a genuinely-missing map key before
+            // confirming it exists would error out this whole branch instead of just being
+            // false, which (being one operand of an `||`) would fail the entire `allow update`
+            // evaluation rather than safely falling through.
+            && 'pollVoterIds' in resource.data
+            && !(request.auth.uid in resource.data.pollVoterIds)
+            && request.auth.uid in request.resource.data.pollVoterIds
+            && request.resource.data.pollVoterIds.size() == resource.data.pollVoterIds.size() + 1)
+        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likeCount'])
+            && request.resource.data.likeCount is int
+            && (request.resource.data.likeCount == resource.data.likeCount + 1
+                || request.resource.data.likeCount == resource.data.likeCount - 1))
+      );
+      allow delete: if isSignedIn() && (resource.data.createdBy == request.auth.uid || isMasterAdmin());
+    }
+    match /postLikes/{id} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow update: if false;
+    }
+
+    // ---- Moderation -------------------------------------------------
+    match /contentReports/{id} {
+      allow read: if isMasterAdmin() || (isSignedIn() && resource.data.reporterId == request.auth.uid);
+      allow create: if isSignedIn()
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() > 0 && request.resource.data.reason.size() <= 1000;
+      allow update, delete: if isMasterAdmin();
+    }
+
+    // ---- Ratings (identity/reputation engine) ---------------------
+    // Doc id == `${targetType}_${targetId}_${raterId}`, enforced below — one rating per rater
+    // per target, structurally (re-rating overwrites the same doc rather than adding a second).
+    // Self-rating is blocked two ways: for a scorer/umpire, targetId IS the target's own uid, so
+    // it's a direct comparison; for a player, targetId is the Player doc id, so this checks the
+    // rater isn't that player's own linked account.
+    match /ratings/{id} {
+      allow read: if true;
+      allow create, update: if isSignedIn()
+        && request.resource.data.raterId == request.auth.uid
+        && request.resource.data.stars is int
+        && request.resource.data.stars >= 1 && request.resource.data.stars <= 5
+        && id == (request.resource.data.targetType + '_' + request.resource.data.targetId + '_' + request.auth.uid)
+        && (request.resource.data.targetType == 'player'
+              ? !(exists(/databases/$(database)/documents/players/$(request.resource.data.targetId))
+                  && get(/databases/$(database)/documents/players/$(request.resource.data.targetId)).data.linkedUserId == request.auth.uid)
+              : request.resource.data.targetId != request.auth.uid);
+      allow delete: if isSignedIn() && (resource.data.raterId == request.auth.uid || isMasterAdmin());
+    }
+
     // ---- Subscriptions (ROADMAP_V5 Phase C — architecture only, no real billing yet) --------
     match /subscriptions/{uid} {
       // A user reads their own plan; the master admin reads any (support, manual grants).
@@ -509,6 +680,16 @@ service cloud.firestore {
       // Per-uploaded-image ownership/size record, used only by the Worker itself (to
       // attribute bytes correctly on delete) — nothing in the app's client code ever
       // needs to read this directly.
+      allow read, write: if false;
+    }
+    // Same shape as imageUsage/r2Objects above, but for the separate video-storage pool
+    // (match recordings/uploads) — kept as its own collection so video never eats into the
+    // small 100MB image allowance.
+    match /videoUsage/{uid} {
+      allow read: if isMasterAdmin() || (isSignedIn() && request.auth.uid == uid);
+      allow write: if false;
+    }
+    match /r2VideoObjects/{objectId} {
       allow read, write: if false;
     }
   }

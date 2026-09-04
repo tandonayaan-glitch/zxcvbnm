@@ -2,6 +2,118 @@
 
 All notable changes to CricketHub. Newest first.
 
+## [Unreleased] — Discovery, Looking For, Community, Following, Reputation, Rankings
+
+Second slice of the platform-build brief (`ROADMAP_V6_PLATFORM.md`), following priorities 10–16
+(discovery, Looking For, social, rankings, scorer/umpire ecosystem, ratings/reputation). Verified
+with `tsc` + `vite build` + `oxlint`; no `scoring.ts`/`Delivery`/`BallInput` change.
+
+- **Discovery** (`domain/discovery.ts` + `DiscoverPage`): unified search+filter over players,
+  teams, clubs, tournaments — one engine, not five. `Player` gained two new optional, user-entered
+  fields (`location`, `skillLevel`) that power the filters; absent means excluded from a filter,
+  never guessed or defaulted.
+- **Looking For** (`services/lookingFor.service.ts` + `LookingForPage`): one unified post/response
+  model across player/team/opponent/umpire/scorer requests, with real expiry and accept/decline —
+  not five separate systems.
+- **Following** (`services/follow.service.ts` + `FollowToggle`): real Firestore-backed follow with
+  a live follower count, distinct from the pre-existing local-only favorites bookmark
+  (`FollowButton`/`favStore`, untouched). Wired into Player/Team/Club/Tournament pages.
+- **Community feed** (`services/community.service.ts` + `CommunityFeedPage`): text/poll posts,
+  likes (server-verified ±1 per write), one-vote-per-user polls (server-verified, not just
+  client-trusted), reporting.
+- **Moderation** (`services/moderation.service.ts` + admin `ModerationPage`): a real review queue
+  over submitted reports.
+- **Reputation** (`Rating`/`ReputationSummary` + `domain/reputation.ts` +
+  `services/ratings.service.ts` + `RatingWidget`): self-rating and duplicate-rating blocked by
+  `firestore.rules` itself (doc-id scheme + a `linkedUserId` cross-check for players), not just
+  the UI hiding the control. On `PlayerPage`, and on `UserProfilePage` for scorer-capable accounts
+  alongside a real "matches scored" count derived from `Match.scorerId`/`createdBy`.
+- **Rankings** (`domain/rankings.ts` + `RankingsPage`): reuses the existing, already-verified
+  `buildLeaderboards()` engine with format/location filters, plus a real scorer leaderboard from
+  actual match-scoring counts.
+- **Toss insights** (`domain/tossInsights.ts`): real win-rate-by-toss-decision data, explicitly
+  labeled correlation not causation, on the Stats page's Records tab.
+- **Tournament report** (`TournamentReportPage`): a clean print-to-PDF page — this project has no
+  server-side PDF pipeline, so the browser's own print-to-PDF is the honest way to produce a real
+  file, not a fabricated export button.
+- **Broadcast-style score overlay** (`components/broadcast/ScoreOverlay.tsx`): a real lower-third
+  graphic on the live video, reading the same live `Match`/`InningsState` the scoring engine
+  writes. A browser-side overlay, not composited into the video stream itself (that would need a
+  media provider this project doesn't have).
+- **Notifications**: new `community` category; best-effort `notify()` wired to new-follower
+  (player accounts), new Looking For response, and post-liked events.
+- **Security**: a self-review pass caught and fixed a real gap in the community poll-vote rule
+  (was "touches only these fields," now "adds exactly one new, previously-absent voter," guarded
+  against an evaluation error on non-poll posts) and added the text-length caps `comments` already
+  had to `communityPosts`/`lookingForPosts`/`contentReports`, which lacked them. **Not verified
+  against a live Firebase emulator** — no Firebase CLI is available in this environment; every
+  rule was hand-traced against its actual calling code instead.
+- **Phase analysis** (`domain/phaseAnalysis.ts` + `PhaseAnalysisCard`, added same slice): real
+  powerplay/middle/death breakdown per innings on `MatchPage`, deliberately match-scoped (not
+  platform-wide — that would mean reading every completed match's full delivery subcollection
+  with no pagination/aggregation infra to do it safely).
+- **Match-sharing community posts**: `PostComposer` gained a "Share a match" mode
+  (`CommunityPost.kind === 'match'`), linking back to the real match page.
+- **Not built this slice**: Stories, venue discovery, pace-vs-spin analysis, achievement/
+  announcement/quiz community post kinds, Live Share token management, a clip-editor scrub UI, a
+  unified organizer dashboard. See `ROADMAP_V6_PLATFORM.md` for the full audit.
+
+## [Unreleased] — Media/Broadcast engine (live streaming, recording, replay, ball-to-video)
+
+First slice of the platform-build brief (`ROADMAP_V6_PLATFORM.md`): real, working live streaming
+and recording — not a simulation. Verified with `tsc` (app + worker) + `vite build` + `oxlint`; no
+`src/domain/scoring.ts` or `Delivery`/`BallInput` change.
+
+**Architecture — why WebRTC + client-side recording, not a managed provider.** This project has no
+Cloudflare Stream / Mux / WHIP-WHEP SFU account, so there is no media server. Instead: the
+broadcaster's browser (the scorer's own device) streams camera + mic directly to each connected
+spectator's browser over WebRTC, using Firestore purely as the signaling channel (SDP offer/answer
++ ICE candidates exchanged through `broadcasts/{matchId}` and its `viewers` subcollection). This is
+genuinely live peer-to-peer video, not a fake — but it's a mesh, not a broadcast: the scorer's
+device opens one outgoing connection per viewer (fine for tens of spectators, not built to scale to
+thousands), and the stream only exists while the broadcaster's tab stays open — there is no
+server-side relay to fall back to. The recording is captured client-side too (`MediaRecorder` on
+the broadcaster's own outgoing stream, independent of the WebRTC peer connections — it keeps
+recording through viewers coming and going, since it never touches them at all) and uploaded to R2
+once the broadcast stops. It is honestly NOT independent of the broadcaster's own device — a crash
+before `stop()` loses the in-progress recording, since there's no server-side capture without a paid
+provider. Every state shown to the user (`BroadcastStatus`/`RecordingStatus`) reflects what actually
+happened — "LIVE" only appears once a peer connection is truly connected, "Replay ready" only once
+the upload has actually completed.
+
+- **New types** (`types/index.ts`): `Broadcast`, `BroadcastViewerConn`, `MatchVideo`, `Clip`, plus
+  an optional `videoTimestampSec` on the existing sibling doc `BallMeta` (never on `Delivery`
+  itself) for ball-to-video.
+- **`domain/broadcast.ts`** (pure): state-machine helpers/labels, `recordingElapsedSec()` — the one
+  function allowed to produce a ball-to-video timestamp, and only from a real, currently-recording
+  broadcast's `startedAt`, never guessed.
+- **`services/broadcast.service.ts`**: WebRTC signaling for both broadcaster and viewer sides
+  (`startBroadcast`/`joinBroadcastAsViewer`), `MediaRecorder` capture (`startRecording`), and
+  `MatchVideo`/`Clip` CRUD.
+- **Worker (`worker/`)**: `/upload` now also accepts `video/webm`/`video/mp4` under
+  `matches/{id}/videos/...`, gated by a **separate** quota pool (`videoUsage`/`r2VideoObjects`
+  collections, 500MB/user, 20GB platform-wide — doesn't cannibalize the existing 100MB image
+  allowance) and a 90MB per-file cap (Cloudflare Workers' request-body ceiling on this plan — a
+  documented, real limitation: a long/high-bitrate live match recording won't fit through this
+  pipeline without a real media provider doing chunked ingest).
+- **`firestore.rules`**: `broadcasts` (+ `viewers`/`broadcasterCandidates`/`viewerCandidates`
+  signaling subcollections, deliberately open to anonymous viewer writes — Live Share promises
+  spectators don't need an account, and these docs only ever carry WebRTC payloads), `matchVideos`,
+  `clips`, `videoUsage`, `r2VideoObjects`.
+- **UI**: `LiveBroadcastPanel` (scorer control — camera/mic/switch-camera, go live, stop, wired into
+  `ScoringPage` behind a "Go live"/"Live" footer button), `LiveVideoPlayer` (spectator WebRTC
+  playback, real connection-state UI, never shows LIVE unless actually connected), `ReplayPlayer`
+  (plays a finalized `MatchVideo`), `MatchMediaSection` (wired into the public `MatchPage`: live
+  video when broadcasting, replay/uploaded-video tabs otherwise, clip list + creation, and a
+  "ball-to-video: key moments" list built from real `videoTimestampSec` tags, never fabricated).
+  Every scored ball is auto-tagged with its real elapsed-seconds-into-the-recording offset while a
+  broadcast is actively recording (`ScoringPage.tagVideoTimestamp`) — no manual timestamp entry.
+- **Not built in this slice** (see FINAL REPORT in the session write-up for the full 79-item
+  platform-brief audit): AI highlights/commentary/coaching (no AI API configured in this
+  environment), a managed streaming/SFU fallback for audiences beyond a mesh's practical size,
+  discovery/Looking For/community/rankings/reputation systems, tournament PDF reports, native
+  iOS/watchOS integrations, real billing.
+
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
 ### Changed — phone & tablet UX pass (not yet deployed)

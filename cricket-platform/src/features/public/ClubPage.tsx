@@ -12,6 +12,7 @@ import { PremiumGate } from '@/components/guards/PremiumGate'
 import { ShareButton } from '@/components/ui/ShareButton'
 import { QRCodeButton } from '@/components/ui/QRCodeButton'
 import { FollowButton } from '@/components/ui/FollowButton'
+import { FollowToggle } from '@/components/ui/FollowToggle'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocumentMeta } from '@/hooks/useDocumentMeta'
 import { getClub } from '@/services/clubs.service'
@@ -75,6 +76,7 @@ export function ClubPage() {
             <ShareButton variant="icon" title={c.name} />
             <QRCodeButton title={c.name} />
             <FollowButton kind="clubs" id={c.id} />
+            <FollowToggle targetType="club" targetId={c.id} />
           </div>
         </div>
         {c.description && (

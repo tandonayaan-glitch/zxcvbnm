@@ -2,8 +2,8 @@ import type { Env } from '../types'
 import { HttpError } from '../types'
 import { verifyFirebaseIdToken, bearerToken } from '../authToken'
 import { getCallerRole, canWriteFolder } from '../roles'
-import { LIMITS, isAcceptedImageType, isKnownFolderKey } from '../limits'
-import { reserveUsage, releaseUsage, LimitExceededError } from '../usage'
+import { LIMITS, isAcceptedImageType, isKnownFolderKey, isAcceptedVideoType, isVideoFolderKey } from '../limits'
+import { reserveUsage, releaseUsage, LimitExceededError, type UsageScope } from '../usage'
 import { keyToObjectId } from '../keys'
 
 function folderOf(key: string): string {
@@ -24,14 +24,22 @@ export async function handleUpload(request: Request, env: Env): Promise<Response
   }
 
   const contentType = request.headers.get('Content-Type') ?? ''
-  if (!isAcceptedImageType(contentType)) {
+  const isVideo = isVideoFolderKey(key)
+  const scope: UsageScope = isVideo ? 'video' : 'image'
+
+  if (isVideo) {
+    if (!isAcceptedVideoType(contentType)) {
+      throw new HttpError(415, 'Please provide a WebM or MP4 video.')
+    }
+  } else if (!isAcceptedImageType(contentType)) {
     throw new HttpError(415, 'Please choose a JPEG, PNG, WebP or GIF image.')
   }
 
   const body = await request.arrayBuffer()
   if (body.byteLength === 0) throw new HttpError(400, 'Empty upload.')
-  if (body.byteLength > LIMITS.MAX_IMAGE_BYTES) {
-    throw new HttpError(413, 'Image is too large (max 5MB).')
+  const maxBytes = isVideo ? LIMITS.MAX_VIDEO_BYTES : LIMITS.MAX_IMAGE_BYTES
+  if (body.byteLength > maxBytes) {
+    throw new HttpError(413, isVideo ? 'Video is too large (max 90MB).' : 'Image is too large (max 5MB).')
   }
 
   const objectId = keyToObjectId(key)
@@ -42,7 +50,7 @@ export async function handleUpload(request: Request, env: Env): Promise<Response
   // back. This ordering is deliberate: it's the only way to guarantee the usage counters
   // can never understate real R2 usage, even if the R2 write below fails.
   try {
-    await reserveUsage(env, uid, objectId, key, folder, body.byteLength)
+    await reserveUsage(env, scope, uid, objectId, key, folder, body.byteLength)
   } catch (err) {
     if (err instanceof LimitExceededError) {
       throw new HttpError(err.scope === 'user' ? 403 : 507, err.message)
@@ -58,7 +66,7 @@ export async function handleUpload(request: Request, env: Env): Promise<Response
     // conservatively too high (safe direction, never lets anyone exceed the real cap) —
     // see usage.ts's own doc comment for the full reasoning.
     try {
-      await releaseUsage(env, uid, objectId, body.byteLength)
+      await releaseUsage(env, scope, uid, objectId, body.byteLength)
     } catch {
       /* logged by the outer catch below; nothing more to do from here */
     }

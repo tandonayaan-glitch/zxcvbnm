@@ -48,6 +48,8 @@ export function PlayerFormModal({
   const [bowlingStyle, setBowlingStyle] = useState<BowlingStyle>(
     player?.bowlingStyle ?? 'none',
   )
+  const [location, setLocation] = useState(player?.location ?? '')
+  const [skillLevel, setSkillLevel] = useState<Player['skillLevel'] | ''>(player?.skillLevel ?? '')
   const [photoURL, setPhotoURL] = useState(player?.photoURL ?? '')
   const [teamIds, setTeamIds] = useState<string[]>(player?.teamIds ?? [])
   const [active, setActive] = useState(player?.active ?? true)
@@ -84,6 +86,8 @@ export function PlayerFormModal({
       role,
       battingStyle,
       bowlingStyle,
+      location: location.trim() || undefined,
+      skillLevel: skillLevel || undefined,
       photoURL: photoURL.trim() || null,
       teamIds,
       active,
@@ -164,6 +168,20 @@ export function PlayerFormModal({
                 {v}
               </option>
             ))}
+          </Select>
+        </Field>
+        <Field label="Location (optional)" hint="Powers location-based discovery/rankings">
+          <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Mumbai" />
+        </Field>
+        <Field label="Skill level (optional)">
+          <Select
+            value={skillLevel}
+            onChange={(e) => setSkillLevel(e.target.value as Player['skillLevel'] | '')}
+          >
+            <option value="">Not set</option>
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
           </Select>
         </Field>
         <Field label="Photo (optional)">

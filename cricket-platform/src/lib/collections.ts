@@ -41,6 +41,23 @@ export const COL = {
   // Doc id == uid, one per user (mirrors userPrefs). `provider` is always 'mock' today — this
   // project has no real billing integration yet, see billing.types.ts.
   subscriptions: 'subscriptions',
+  // Media/broadcast engine (live streaming, recording, replay, clips) — see types/index.ts's
+  // "Media/Broadcast engine" section for the full architecture writeup.
+  broadcasts: 'broadcasts', // doc id == matchId
+  broadcastViewers: 'viewers', // subcollection under broadcasts/{matchId}
+  broadcasterCandidates: 'broadcasterCandidates', // subcollection under .../viewers/{connId}
+  viewerCandidates: 'viewerCandidates', // subcollection under .../viewers/{connId}
+  matchVideos: 'matchVideos',
+  clips: 'clips',
+  // Discovery + Looking For + Community engine.
+  lookingForPosts: 'lookingForPosts',
+  lookingForResponses: 'lookingForResponses',
+  follows: 'follows',
+  communityPosts: 'communityPosts',
+  postLikes: 'postLikes',
+  contentReports: 'contentReports',
+  // Identity/Reputation engine.
+  ratings: 'ratings',
 } as const
 
 export const SETTINGS_DOC = 'app'

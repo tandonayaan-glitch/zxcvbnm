@@ -33,6 +33,7 @@ import { setPlayerOfTheMatch, subscribeDeliveries } from '@/services/scoring.ser
 import { ScorecardView } from '@/features/scorecard/ScorecardView'
 import { MatchGraphs } from '@/components/charts/MatchGraphs'
 import { MatchInsights } from '@/components/charts/MatchInsights'
+import { PhaseAnalysisCard } from '@/components/charts/PhaseAnalysisCard'
 import { WagonWheel } from '@/components/charts/WagonWheel'
 import { PitchMap } from '@/components/charts/PitchMap'
 import { listBallMeta } from '@/services/ballMeta.service'
@@ -42,6 +43,7 @@ import { ScorecardConfigModal } from '@/features/scorecard/ScorecardConfigModal'
 import { matchToCSV, matchToJSON, exportSlug } from '@/domain/matchExport'
 import { downloadBlob } from '@/lib/download'
 import { MatchGallery } from '@/components/media/MatchGallery'
+import { MatchMediaSection } from '@/components/broadcast/MatchMediaSection'
 import { CommentSection } from '@/components/media/CommentSection'
 import { MatchReactions } from '@/components/media/MatchReactions'
 import { ShareButton } from '@/components/ui/ShareButton'
@@ -449,6 +451,21 @@ export function MatchPage() {
         </div>
       )}
 
+      {/* Phase breakdown (powerplay/middle/death), one card per innings that has balls bowled */}
+      {deliveries.length > 0 && (
+        <div className="mb-4 grid gap-4 sm:grid-cols-2">
+          {match.innings.map((inn, idx) => (
+            <PhaseAnalysisCard
+              key={idx}
+              match={match}
+              deliveries={deliveries}
+              inningsIndex={idx}
+              teamName={inn.battingTeamId === match.teamA.id ? match.teamA.name : match.teamB.name}
+            />
+          ))}
+        </div>
+      )}
+
       {/* Wagon wheel / bowling map — only when the scorer chose to tag shots
           during scoring; this data isn't captured automatically. */}
       {(ballMeta.data?.length ?? 0) > 0 && (
@@ -497,6 +514,18 @@ export function MatchPage() {
           </button>
         </div>
       )}
+
+      <div id="match-media" className="mb-4 scroll-mt-4">
+        <MatchMediaSection
+          matchId={match.id}
+          matchStatus={match.status}
+          canManage={admin}
+          deliveries={deliveries}
+          ballMeta={ballMeta.data ?? []}
+          match={match}
+          playerName={name}
+        />
+      </div>
 
       {/* Scorecard */}
       <div id="match-scorecard" className="scroll-mt-4">

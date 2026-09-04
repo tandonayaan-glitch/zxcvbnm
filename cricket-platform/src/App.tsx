@@ -204,6 +204,26 @@ const UserProfilePage = lazy(() =>
     default: m.UserProfilePage,
   })),
 )
+const DiscoverPage = lazy(() =>
+  import('@/features/public/DiscoverPage').then((m) => ({ default: m.DiscoverPage })),
+)
+const LookingForPage = lazy(() =>
+  import('@/features/public/LookingForPage').then((m) => ({ default: m.LookingForPage })),
+)
+const CommunityFeedPage = lazy(() =>
+  import('@/features/public/CommunityFeedPage').then((m) => ({ default: m.CommunityFeedPage })),
+)
+const RankingsPage = lazy(() =>
+  import('@/features/public/RankingsPage').then((m) => ({ default: m.RankingsPage })),
+)
+const ModerationPage = lazy(() =>
+  import('@/features/admin/ModerationPage').then((m) => ({ default: m.ModerationPage })),
+)
+const TournamentReportPage = lazy(() =>
+  import('@/features/public/TournamentReportPage').then((m) => ({
+    default: m.TournamentReportPage,
+  })),
+)
 const EmbedMatchPage = lazy(() =>
   import('@/features/embed/EmbedMatchPage').then((m) => ({ default: m.EmbedMatchPage })),
 )
@@ -406,6 +426,14 @@ export default function App() {
             }
           />
           <Route
+            path="/admin/moderation"
+            element={
+              <ProtectedRoute roles={['MASTER_ADMIN']}>
+                <ModerationPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/settings"
             element={
               <ProtectedRoute>
@@ -435,6 +463,11 @@ export default function App() {
             }
           />
           <Route path="/browse" element={<PublicBrowsePage />} />
+          <Route path="/discover" element={<DiscoverPage />} />
+          <Route path="/looking-for" element={<LookingForPage />} />
+          <Route path="/feed" element={<CommunityFeedPage />} />
+          <Route path="/rankings" element={<RankingsPage />} />
+          <Route path="/tournament/:id/report" element={<TournamentReportPage />} />
           <Route path="/compare" element={<ComparePage />} />
           <Route path="/compare/teams" element={<CompareTeamsPage />} />
           <Route path="/compare/clubs" element={<CompareClubsPage />} />
