@@ -4,6 +4,61 @@ All notable changes to CricketHub. Newest first.
 
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
+### Changed — phone & tablet UX pass (not yet deployed)
+Driven by a mobile screen recording. Layout/typography fixes only — no service, domain,
+`scoring.ts`, auth, or Firestore-rules change. Verified with `tsc` + `oxlint` + `vite build`
+and runtime-tested on the public pages at 320 / 390 / 768 px, light and dark. Signed-in
+pages are **code-verified only** — the master session expired and this environment cannot
+sign in (see FOLLOWUP-REPORT / mobile-audit report).
+
+- **iOS Safari viewport.** `index.html` viewport gets `viewport-fit=cover` (+ `theme-color`) so
+  `env(safe-area-inset-*)` is non-zero on notched devices. `#root` and all three shells
+  (`AppShell` / `PublicLayout` / `WorkflowShell`) move from `min-h-screen` / `100vh` to
+  `min-h-dvh` / `100dvh` so content tracks the *visible* viewport as the URL bar shows/hides.
+  New `.pt-safe` helper + inline `pb-[max(1.5rem,env(safe-area-inset-bottom))]` keep sticky
+  headers, the nav drawer, `<main>`, `Modal` sheets and the scoring footer clear of the notch
+  and home indicator. Header height `h-14` → `min-h-14` so the safe-area padding *adds* to the
+  bar instead of clipping its contents.
+- **Mobile nav drawer** (`AppShell`) is now a true overlay: `fixed` (page underneath keeps its
+  width — never squeezed), backdrop closes on tap, body-scroll-locked while open, closes on
+  route change and on `Esc`, width clamped to `min(18rem, 100vw-3rem)`, `<nav>` scrolls
+  independently (`overflow-y-auto overscroll-contain`), nav rows and the hamburger are ≥44 px.
+- **Text squishing.** `StatCard` gets `min-w-0` + `[overflow-wrap:anywhere]` + a small
+  responsive step-down so 2-up KPI tiles wrap the label instead of forcing the card wider than
+  its column (the "Tournaments" squish). `PageHeader` title `min-w-0` + `text-xl sm:text-2xl` +
+  wrap. Dashboard "Live matches" innings lines stack vertically instead of one nowrap run.
+- **Activity cards** (`ActivityFeed`): denser→cleaner — 8 px icon chip, `text-sm` message with
+  its own line, `text-xs` timestamp beneath, divide-y rows with breathing room, filter chips
+  ≥32 px and `flex-wrap` (no horizontal-scroll strip).
+- **Session loading.** `PageLoader` centres in `min-h-[40vh]` and is dark-aware instead of a
+  bare top-anchored spinner. Dashboard swaps its full-screen spinner for a dashboard-shaped
+  skeleton (header bar + 4 tiles + 2 columns). Auth init reviewed — single guarded listener,
+  no duplicate `onSnapshot`, `status` only gates the cold start.
+- **Settings** (`UserSettingsPage`): text-size selector `grid-cols-2 sm:grid-cols-4` (was a
+  cramped 4-up), all appearance segmented controls ≥44 px with dark-mode active states,
+  `ToggleRow` label column `min-w-0` so long hints wrap instead of shoving the switch off-edge,
+  "Recent activity" shows a compact skeleton (was a huge centred spinner), session row stacks
+  on mobile.
+- **Analytics / Stats** (`StatsPage`): filter bar stacks (`grid-cols-2 sm:flex`) with full-width
+  44 px selects; KPI grid tighter gutter on mobile; "How impact/consistency is scored" cards and
+  `LeaderboardCard` dividers get dark-mode treatment. Anonymous `/stats` now gets a page gutter
+  (`StatsRoute` wrapped it flush to the screen edge).
+- **Match setup** (`MatchSetupPage`): mobile "Step N of 6: <label>" line (stepper labels are
+  `sm:` only), squad checkbox rows ≥44 px with `overscroll-contain` lists, "+ Add team/player"
+  bumped from a tiny `text-xs` link to a tappable control, local `ToggleRow` `min-w-0` fix.
+- **Scoring** (`ScoringPage`): keyboard `<kbd>` hint badges on the score pad hide when touch is
+  the primary input; extra-type buttons use `text-[13px]` + wrap-safe so "Leg bye" always fits
+  at 320 px; footer actions ≥40 px; sticky score summary offset tracks the safe-area header
+  height. Score pad run/wicket/undo buttons were already thumb-sized (`h-16` / `h-12`).
+- **Dark mode / touch targets.** `ThemeToggle` keeps its 32 px pill but gains an invisible
+  `::after` hit area (~48 px) and a legible knob/contrast in dark. Dashboard's 5 coloured widget
+  headers, `LeaderboardCard`, and several `bg-ink-50` panels got `dark:` variants.
+- **Investigated, not a bug:** a normal Scorer **cannot** read platform-wide audit logs — the
+  `auditLogs` collection is gated three ways (route guard `MASTER_ADMIN`, `firestore.rules`
+  `isMasterAdmin() || actorId == uid`, and `listMyAuditLogs()`'s `where('actorId','==',uid)`).
+  The public "activity" feed the video shows is intentionally world-readable cricket events
+  (`match_created`, `century`, …), not audit records; the seed data is just *named* "Audit …".
+
 ### Fixed — shot-placement animation didn't replay after the first ball (deployed)
 - **The wagon-wheel ray and pitch-map mark now animate on every ball, not just the first.**
   `WagonWheelInput` / `PitchLengthInput` drive the placement motion with SMIL

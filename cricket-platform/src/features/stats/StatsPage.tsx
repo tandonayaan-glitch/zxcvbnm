@@ -292,9 +292,9 @@ export function StatsPage() {
             clubOptions.length > 0 ||
             seasonOptions.length > 0 ||
             yearOptions.length > 0) && (
-            <div className="mb-4 flex flex-wrap items-center gap-3">
+            <div className="mb-4 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-end">
               {scopeOptions.length > 0 && (
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
                   <label
                     htmlFor="stats-scope"
                     className="text-sm font-medium text-ink-600 dark:text-ink-400"
@@ -305,7 +305,7 @@ export function StatsPage() {
                     id="stats-scope"
                     value={scope}
                     onChange={(e) => changeScope(e.target.value)}
-                    className="rounded-lg border border-ink-300 dark:border-ink-700 bg-white dark:bg-ink-900 px-3 py-2 text-sm font-medium text-ink-800 dark:text-ink-200 focus:border-brand-500 focus:outline-none"
+                    className="h-11 w-full min-w-0 rounded-lg border border-ink-300 bg-white px-3 text-sm font-medium text-ink-800 focus:border-brand-500 focus:outline-none dark:border-ink-700 dark:bg-ink-900 dark:text-ink-200 sm:h-9 sm:w-auto"
                   >
                     <option value="all">All competitions</option>
                     {scopeOptions.map((o) => (
@@ -317,7 +317,7 @@ export function StatsPage() {
                 </div>
               )}
               {venueOptions.length > 0 && (
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
                   <label
                     htmlFor="stats-venue"
                     className="text-sm font-medium text-ink-600 dark:text-ink-400"
@@ -328,7 +328,7 @@ export function StatsPage() {
                     id="stats-venue"
                     value={venue}
                     onChange={(e) => setVenue(e.target.value)}
-                    className="rounded-lg border border-ink-300 dark:border-ink-700 bg-white dark:bg-ink-900 px-3 py-2 text-sm font-medium text-ink-800 dark:text-ink-200 focus:border-brand-500 focus:outline-none"
+                    className="h-11 w-full min-w-0 rounded-lg border border-ink-300 bg-white px-3 text-sm font-medium text-ink-800 focus:border-brand-500 focus:outline-none dark:border-ink-700 dark:bg-ink-900 dark:text-ink-200 sm:h-9 sm:w-auto"
                   >
                     <option value="all">All venues</option>
                     {venueOptions.map((v) => (
@@ -340,7 +340,7 @@ export function StatsPage() {
                 </div>
               )}
               {teamOptions.length > 0 && (
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
                   <label
                     htmlFor="stats-team"
                     className="text-sm font-medium text-ink-600 dark:text-ink-400"
@@ -351,7 +351,7 @@ export function StatsPage() {
                     id="stats-team"
                     value={team}
                     onChange={(e) => setTeam(e.target.value)}
-                    className="rounded-lg border border-ink-300 dark:border-ink-700 bg-white dark:bg-ink-900 px-3 py-2 text-sm font-medium text-ink-800 dark:text-ink-200 focus:border-brand-500 focus:outline-none"
+                    className="h-11 w-full min-w-0 rounded-lg border border-ink-300 bg-white px-3 text-sm font-medium text-ink-800 focus:border-brand-500 focus:outline-none dark:border-ink-700 dark:bg-ink-900 dark:text-ink-200 sm:h-9 sm:w-auto"
                   >
                     <option value="all">All teams</option>
                     {teamOptions.map((t) => (
@@ -363,7 +363,7 @@ export function StatsPage() {
                 </div>
               )}
               {clubOptions.length > 0 && (
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
                   <label
                     htmlFor="stats-club"
                     className="text-sm font-medium text-ink-600 dark:text-ink-400"
@@ -374,7 +374,7 @@ export function StatsPage() {
                     id="stats-club"
                     value={club}
                     onChange={(e) => setClub(e.target.value)}
-                    className="rounded-lg border border-ink-300 dark:border-ink-700 bg-white dark:bg-ink-900 px-3 py-2 text-sm font-medium text-ink-800 dark:text-ink-200 focus:border-brand-500 focus:outline-none"
+                    className="h-11 w-full min-w-0 rounded-lg border border-ink-300 bg-white px-3 text-sm font-medium text-ink-800 focus:border-brand-500 focus:outline-none dark:border-ink-700 dark:bg-ink-900 dark:text-ink-200 sm:h-9 sm:w-auto"
                   >
                     <option value="all">All clubs</option>
                     {clubOptions.map((c) => (
@@ -386,7 +386,7 @@ export function StatsPage() {
                 </div>
               )}
               {seasonOptions.length > 0 && (
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
                   <label
                     htmlFor="stats-season"
                     className="text-sm font-medium text-ink-600 dark:text-ink-400"
@@ -397,7 +397,7 @@ export function StatsPage() {
                     id="stats-season"
                     value={season}
                     onChange={(e) => setSeason(e.target.value)}
-                    className="rounded-lg border border-ink-300 dark:border-ink-700 bg-white dark:bg-ink-900 px-3 py-2 text-sm font-medium text-ink-800 dark:text-ink-200 focus:border-brand-500 focus:outline-none"
+                    className="h-11 w-full min-w-0 rounded-lg border border-ink-300 bg-white px-3 text-sm font-medium text-ink-800 focus:border-brand-500 focus:outline-none dark:border-ink-700 dark:bg-ink-900 dark:text-ink-200 sm:h-9 sm:w-auto"
                   >
                     <option value="all">All seasons</option>
                     {seasonOptions.map((s) => (
@@ -409,7 +409,7 @@ export function StatsPage() {
                 </div>
               )}
               {yearOptions.length > 0 && (
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
                   <label
                     htmlFor="stats-year"
                     className="text-sm font-medium text-ink-600 dark:text-ink-400"
@@ -420,7 +420,7 @@ export function StatsPage() {
                     id="stats-year"
                     value={year}
                     onChange={(e) => setYear(e.target.value)}
-                    className="rounded-lg border border-ink-300 dark:border-ink-700 bg-white dark:bg-ink-900 px-3 py-2 text-sm font-medium text-ink-800 dark:text-ink-200 focus:border-brand-500 focus:outline-none"
+                    className="h-11 w-full min-w-0 rounded-lg border border-ink-300 bg-white px-3 text-sm font-medium text-ink-800 focus:border-brand-500 focus:outline-none dark:border-ink-700 dark:bg-ink-900 dark:text-ink-200 sm:h-9 sm:w-auto"
                   >
                     <option value="all">All years</option>
                     {yearOptions.map((y) => (
@@ -442,7 +442,7 @@ export function StatsPage() {
             />
           </div>
 
-          <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="mb-6 grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
             <StatCard label="Runs scored" value={totals.runs} icon={<Activity size={20} />} tone="blue" />
             <StatCard label="Wickets taken" value={totals.wkts} icon={<Trophy size={20} />} tone="green" />
             <StatCard label="Sixes hit" value={totals.sixes} icon={<BarChart3 size={20} />} tone="amber" />
@@ -457,7 +457,7 @@ export function StatsPage() {
                 limit={5}
                 tone={3}
               />
-              <div className="rounded-xl border border-ink-100 dark:border-ink-800 bg-ink-50/60 p-4 text-sm text-ink-500 dark:text-ink-400">
+              <div className="rounded-xl border border-ink-100 bg-ink-50/60 p-4 text-sm text-ink-600 dark:border-ink-800 dark:bg-ink-800/40 dark:text-ink-300">
                 <div className="mb-1 font-semibold text-ink-700 dark:text-ink-300">
                   How impact is scored
                 </div>
@@ -477,7 +477,7 @@ export function StatsPage() {
                 limit={5}
                 tone={4}
               />
-              <div className="rounded-xl border border-ink-100 dark:border-ink-800 bg-ink-50/60 p-4 text-sm text-ink-500 dark:text-ink-400">
+              <div className="rounded-xl border border-ink-100 bg-ink-50/60 p-4 text-sm text-ink-600 dark:border-ink-800 dark:bg-ink-800/40 dark:text-ink-300">
                 <div className="mb-1 font-semibold text-ink-700 dark:text-ink-300">
                   How consistency is scored
                 </div>

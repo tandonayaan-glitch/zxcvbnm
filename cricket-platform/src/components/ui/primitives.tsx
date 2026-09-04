@@ -344,7 +344,7 @@ export function Spinner({
 
 export function PageLoader({ label = 'Loading…' }: { label?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-20 text-ink-500">
+    <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 py-12 text-ink-500 dark:text-ink-400">
       <Spinner size={32} />
       <p className="text-sm">{label}</p>
     </div>
@@ -450,16 +450,23 @@ export function StatCard({
     purple: 'border-purple-200 bg-purple-50 dark:border-purple-900 dark:bg-purple-900/20',
   }
   return (
-    <Card className={cn('p-4', cardTint[tone])}>
-      <div className="flex items-center gap-3">
+    <Card className={cn('p-3 sm:p-4', cardTint[tone])}>
+      <div className="flex items-center gap-2.5 sm:gap-3">
         {icon && (
-          <div className={cn('rounded-lg p-2.5 shadow-sm', bg[tone])}>{icon}</div>
+          <div className={cn('shrink-0 rounded-lg p-2 shadow-sm sm:p-2.5', bg[tone])}>
+            {icon}
+          </div>
         )}
-        <div>
-          <div className="text-2xl font-bold leading-tight text-ink-900 dark:text-ink-50">
+        {/* `min-w-0` lets the label shrink and wrap inside a narrow 2-up grid
+            cell instead of forcing the card wider than the column (the mobile
+            "Tournaments" squish). Long single words break as a last resort. */}
+        <div className="min-w-0">
+          <div className="text-xl font-bold leading-tight text-ink-900 dark:text-ink-50 sm:text-2xl">
             {value}
           </div>
-          <div className="text-sm text-ink-500 dark:text-ink-400">{label}</div>
+          <div className="text-[13px] leading-snug text-ink-500 [overflow-wrap:anywhere] dark:text-ink-400 sm:text-sm">
+            {label}
+          </div>
         </div>
       </div>
       {hint && <p className="mt-2 text-xs text-ink-400 dark:text-ink-500">{hint}</p>}

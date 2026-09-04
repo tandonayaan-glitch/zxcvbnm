@@ -30,7 +30,6 @@ import {
   Field,
   Input,
   Textarea,
-  PageLoader,
   EmptyState,
   Switch,
 } from '@/components/ui/primitives'
@@ -231,14 +230,14 @@ export function UserSettingsPage() {
                   key={t.key}
                   onClick={() => setPref('theme', t.key)}
                   className={cn(
-                    'flex items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-sm font-semibold',
+                    'flex min-h-[2.75rem] items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-sm font-semibold',
                     prefs.theme === t.key
-                      ? 'border-brand-500 bg-brand-50 text-brand-700'
+                      ? 'border-brand-500 bg-brand-50 text-brand-700 dark:border-brand-400 dark:bg-brand-500/15 dark:text-brand-200'
                       : 'border-ink-300 dark:border-ink-700 text-ink-600 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800',
                   )}
                 >
-                  {t.icon}
-                  {t.label}
+                  <span className="shrink-0">{t.icon}</span>
+                  <span className="truncate">{t.label}</span>
                 </button>
               ))}
             </div>
@@ -252,15 +251,15 @@ export function UserSettingsPage() {
             <div className="mb-2 flex items-center gap-2 text-sm font-medium text-ink-700 dark:text-ink-300">
               <Type size={15} /> Text size
             </div>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {scales.map((s) => (
                 <button
                   key={s.key}
                   onClick={() => setPref('textScale', s.key)}
                   className={cn(
-                    'rounded-lg border px-2 py-2 text-sm font-semibold',
+                    'flex min-h-[2.75rem] items-center justify-center rounded-lg border px-2 py-2 text-sm font-semibold',
                     prefs.textScale === s.key
-                      ? 'border-brand-500 bg-brand-50 text-brand-700'
+                      ? 'border-brand-500 bg-brand-50 text-brand-700 dark:border-brand-400 dark:bg-brand-500/15 dark:text-brand-200'
                       : 'border-ink-300 dark:border-ink-700 text-ink-600 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800',
                   )}
                 >
@@ -280,9 +279,9 @@ export function UserSettingsPage() {
                   key={d}
                   onClick={() => setPref('density', d)}
                   className={cn(
-                    'rounded-lg border px-2 py-2 text-sm font-semibold capitalize',
+                    'flex min-h-[2.75rem] items-center justify-center rounded-lg border px-2 py-2 text-sm font-semibold capitalize',
                     prefs.density === d
-                      ? 'border-brand-500 bg-brand-50 text-brand-700'
+                      ? 'border-brand-500 bg-brand-50 text-brand-700 dark:border-brand-400 dark:bg-brand-500/15 dark:text-brand-200'
                       : 'border-ink-300 dark:border-ink-700 text-ink-600 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800',
                   )}
                 >
@@ -321,7 +320,7 @@ export function UserSettingsPage() {
             onChange={(v) => setPref('betaFeatures', v)}
           />
 
-          <div className="flex items-center justify-between border-t border-ink-100 dark:border-ink-800 pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink-100 dark:border-ink-800 pt-4">
             <div className="text-sm text-ink-600 dark:text-ink-400">Background theme</div>
             <BackgroundControl />
           </div>
@@ -410,8 +409,8 @@ export function UserSettingsPage() {
               field above at any time if you'd rather not store one.
             </p>
           </div>
-          <div className="flex items-center justify-between border-t border-ink-100 dark:border-ink-800 pt-4">
-            <div>
+          <div className="flex flex-col gap-3 border-t border-ink-100 dark:border-ink-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <div className="text-sm font-medium text-ink-800 dark:text-ink-200">This session</div>
               <div className="text-xs text-ink-500 dark:text-ink-400">
                 Signed in {formatDateTime(lastSignInMs)}
@@ -440,22 +439,31 @@ export function UserSettingsPage() {
         />
         <CardBody className="p-0">
           {myActivity.loading ? (
-            <PageLoader />
+            <div className="divide-y divide-ink-100 dark:divide-ink-800">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="space-y-2 px-4 py-3">
+                  <div className="h-3.5 w-40 animate-pulse rounded bg-ink-100 dark:bg-ink-800" />
+                  <div className="h-3 w-28 animate-pulse rounded bg-ink-100 dark:bg-ink-800" />
+                </div>
+              ))}
+            </div>
           ) : (myActivity.data ?? []).length === 0 ? (
             <div className="p-5">
               <EmptyState title="No activity yet" />
             </div>
           ) : (
-            <div className="divide-y divide-ink-50 dark:divide-ink-800">
+            <div className="divide-y divide-ink-100 dark:divide-ink-800">
               {(myActivity.data ?? []).map((a) => (
                 <div key={a.id} className="px-4 py-3">
                   <div className="text-sm font-medium text-ink-900 dark:text-ink-50">
                     {a.action}
                   </div>
                   {a.details && (
-                    <div className="text-xs text-ink-500 dark:text-ink-400">{a.details}</div>
+                    <div className="mt-0.5 text-xs leading-snug text-ink-500 dark:text-ink-400">
+                      {a.details}
+                    </div>
                   )}
-                  <div className="mt-0.5 text-xs text-ink-400 dark:text-ink-500">
+                  <div className="mt-1 text-xs text-ink-400 dark:text-ink-500">
                     {formatDateTime(a.createdAt)}
                     {a.userAgent && (
                       <span title={a.userAgent}> · {briefUA(a.userAgent)}</span>
@@ -517,14 +525,16 @@ function ToggleRow({
   onChange: (v: boolean) => void
 }) {
   return (
-    <div className="flex items-center justify-between gap-4">
-      <div>
+    <div className="flex items-start justify-between gap-4">
+      <div className="min-w-0">
         <div className="flex items-center gap-2 text-sm font-medium text-ink-800 dark:text-ink-200">
-          {icon} {label}
+          <span className="shrink-0">{icon}</span> {label}
         </div>
-        <div className="text-xs text-ink-500 dark:text-ink-400">{hint}</div>
+        <div className="mt-0.5 text-xs leading-snug text-ink-500 dark:text-ink-400">{hint}</div>
       </div>
-      <Switch checked={value} onChange={onChange} label={label} />
+      <div className="shrink-0 pt-0.5">
+        <Switch checked={value} onChange={onChange} label={label} />
+      </div>
     </div>
   )
 }

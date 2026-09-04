@@ -29,8 +29,8 @@ export function WorkflowShell({
   const navigate = useNavigate()
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-3 border-b border-ink-200 bg-white/95 px-4 backdrop-blur dark:border-ink-800 dark:bg-ink-900/95">
+    <div className="flex min-h-dvh flex-col">
+      <header className="sticky top-0 z-40 flex min-h-14 items-center justify-between gap-3 border-b border-ink-200 bg-white/95 px-4 pt-safe backdrop-blur dark:border-ink-800 dark:bg-ink-900/95">
         <div className="flex min-w-0 items-center gap-2">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-pitch-500 text-white">
             <Trophy size={18} />
@@ -42,12 +42,12 @@ export function WorkflowShell({
         <button
           type="button"
           onClick={() => navigate(exitTo)}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-ink-300 px-3 py-1.5 text-sm font-semibold text-ink-700 hover:bg-ink-100 dark:border-ink-700 dark:text-ink-300 dark:hover:bg-ink-800"
+          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-ink-300 px-3 text-sm font-semibold text-ink-700 hover:bg-ink-100 dark:border-ink-700 dark:text-ink-300 dark:hover:bg-ink-800"
         >
           <X size={16} /> {exitLabel}
         </button>
       </header>
-      <main className="flex-1 px-4 py-6">
+      <main className="flex-1 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <ErrorBoundary>{children}</ErrorBoundary>
       </main>
     </div>

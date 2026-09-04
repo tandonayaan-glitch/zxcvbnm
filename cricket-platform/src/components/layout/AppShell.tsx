@@ -120,6 +120,29 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const profile = useAuthStore((s) => s.profile)
   const [mobileOpen, setMobileOpen] = useState(false)
 
+  // Close the drawer on any route change — tapping a nav item, a browser
+  // back/forward, or an in-page link all resolve here.
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [location.pathname])
+
+  // While the drawer is open it's a modal overlay: lock the page behind it so a
+  // touch-drag on the backdrop can't scroll the content underneath, and let Esc
+  // dismiss it.
+  useEffect(() => {
+    if (!mobileOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = prev
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [mobileOpen])
+
   // Master admin: show how many admin requests are awaiting a decision.
   const isMaster = profile?.role === 'MASTER_ADMIN'
   const [pendingRequests, setPendingRequests] = useState(0)
@@ -140,10 +163,13 @@ export function AppShell({ children }: { children?: ReactNode }) {
   })
 
   const SidebarInner = (
-    <div className="flex h-full flex-col">
+    // `min-h-0` lets the <nav> below actually scroll instead of the whole column
+    // growing past the viewport (matters on a short phone when the master admin's
+    // ~17 nav items don't all fit). `pt-safe` clears the iOS status bar/notch.
+    <div className="flex h-full min-h-0 flex-col pt-safe">
       <Link
         to="/dashboard"
-        className="flex items-center gap-2 px-5 py-5"
+        className="flex shrink-0 items-center gap-2 px-5 py-5"
         onClick={() => setMobileOpen(false)}
       >
         <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-pitch-500 text-white">
@@ -152,7 +178,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
         <span className="text-lg font-extrabold text-white">CricketHub</span>
       </Link>
 
-      <nav className="flex-1 space-y-1 px-3">
+      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3 pb-2">
         {items.map((n) => (
           <NavLink
             key={n.to}
@@ -161,6 +187,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
             className={({ isActive }) =>
               cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                'min-h-[2.75rem]', // comfortable touch row on a phone; harmless on desktop
                 isActive
                   ? 'bg-white/10 text-white'
                   : 'text-ink-300 hover:bg-white/5 hover:text-white',
@@ -178,10 +205,10 @@ export function AppShell({ children }: { children?: ReactNode }) {
         ))}
       </nav>
 
-      <div className="border-t border-white/10 p-3">
+      <div className="shrink-0 border-t border-white/10 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <Link
           to="/"
-          className="mb-1 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-300 hover:bg-white/5 hover:text-white"
+          className="mb-1 flex min-h-[2.75rem] items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-300 hover:bg-white/5 hover:text-white"
           onClick={() => setMobileOpen(false)}
         >
           <Globe size={18} />
@@ -193,7 +220,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
   )
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-dvh">
       <CommandPalette />
       <a
         href="#main"
@@ -206,14 +233,23 @@ export function AppShell({ children }: { children?: ReactNode }) {
         {SidebarInner}
       </aside>
 
-      {/* Mobile drawer */}
+      {/* Mobile drawer — a true overlay: `fixed` so the page underneath keeps its
+          own width (never squeezed), a backdrop that closes on tap and (with the
+          body-scroll lock in the effect above) blocks interaction, and a drawer
+          that's a sensible width with a strip of backdrop always visible. */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div
-            className="animate-fade-in-opacity absolute inset-0 bg-ink-950/60"
+            className="animate-fade-in-opacity absolute inset-0 bg-ink-950/70"
             onClick={() => setMobileOpen(false)}
+            aria-hidden
           />
-          <aside className="animate-slide-in-left absolute inset-y-0 left-0 w-64 bg-ink-900">
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-label="Main navigation"
+            className="animate-slide-in-left absolute inset-y-0 left-0 flex w-[min(18rem,calc(100vw-3rem))] flex-col bg-ink-900 shadow-2xl"
+          >
             {SidebarInner}
           </aside>
         </div>
@@ -221,14 +257,14 @@ export function AppShell({ children }: { children?: ReactNode }) {
 
       {/* Main column */}
       <div className="flex min-w-0 flex-1 flex-col lg:pl-60">
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-ink-200 bg-white/90 px-4 backdrop-blur dark:border-ink-800 dark:bg-ink-900/90">
+        <header className="sticky top-0 z-30 flex min-h-14 items-center justify-between border-b border-ink-200 bg-white/90 px-4 pt-safe backdrop-blur dark:border-ink-800 dark:bg-ink-900/90">
           <button
             aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'}
             aria-expanded={mobileOpen}
-            className="rounded-md p-2 text-ink-600 hover:bg-ink-100 lg:hidden dark:text-ink-300 dark:hover:bg-ink-800"
+            className="-ml-2 flex h-11 w-11 items-center justify-center rounded-md text-ink-600 hover:bg-ink-100 lg:hidden dark:text-ink-300 dark:hover:bg-ink-800"
             onClick={() => setMobileOpen((v) => !v)}
           >
-            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
           <div className="flex-1" />
           {/* gap tightens and the secondary controls drop away below `sm` so the
@@ -267,7 +303,10 @@ export function AppShell({ children }: { children?: ReactNode }) {
           </div>
         </header>
 
-        <main id="main" className="flex-1 px-4 py-6 sm:px-6">
+        <main
+          id="main"
+          className="flex-1 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6"
+        >
           <ErrorBoundary key={location.pathname}>
             {children ?? <Outlet />}
           </ErrorBoundary>

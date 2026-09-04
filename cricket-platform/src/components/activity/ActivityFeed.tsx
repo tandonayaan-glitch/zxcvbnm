@@ -18,6 +18,20 @@ import { cn } from '@/lib/cn'
 import type { ActivityLog } from '@/types'
 
 const TYPE_ICON: Record<ActivityLog['type'], ReactNode> = {
+  match_created: <Swords size={15} />,
+  match_started: <PlayCircle size={15} />,
+  match_completed: <CheckCircle2 size={15} />,
+  player_created: <Users size={15} />,
+  team_created: <Shield size={15} />,
+  tournament_created: <Trophy size={15} />,
+  club_created: <Building2 size={15} />,
+  century: <Star size={15} />,
+  half_century: <Award size={15} />,
+  five_wicket_haul: <Target size={15} />,
+}
+
+/** Smaller glyph for the inline filter chips. */
+const CHIP_ICON: Record<ActivityLog['type'], ReactNode> = {
   match_created: <Swords size={13} />,
   match_started: <PlayCircle size={13} />,
   match_completed: <CheckCircle2 size={13} />,
@@ -77,13 +91,13 @@ export function ActivityFeed({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {filterable && presentTypes.length > 1 && (
         <div className="flex flex-wrap gap-1.5">
           <button
             onClick={() => setActiveType('all')}
             className={cn(
-              'rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
+              'flex min-h-[2rem] shrink-0 items-center whitespace-nowrap rounded-full px-3 text-xs font-semibold transition-colors',
               activeType === 'all'
                 ? 'bg-brand-600 text-white'
                 : 'bg-ink-100 text-ink-600 hover:bg-ink-200 dark:bg-ink-800 dark:text-ink-300 dark:hover:bg-ink-700',
@@ -96,27 +110,31 @@ export function ActivityFeed({
               key={t}
               onClick={() => setActiveType(t)}
               className={cn(
-                'flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
+                'flex min-h-[2rem] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-xs font-semibold transition-colors',
                 activeType === t
                   ? 'bg-brand-600 text-white'
                   : 'bg-ink-100 text-ink-600 hover:bg-ink-200 dark:bg-ink-800 dark:text-ink-300 dark:hover:bg-ink-700',
               )}
             >
-              {TYPE_ICON[t]}
+              {CHIP_ICON[t]}
               {TYPE_LABEL[t]}
             </button>
           ))}
         </div>
       )}
-      <div className="space-y-1">
+      <div className="divide-y divide-ink-100 dark:divide-ink-800">
         {shown.map((a) => (
-          <div key={a.id} className="flex items-start gap-2.5 rounded-lg px-2 py-2">
-            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink-100 text-ink-500 dark:bg-ink-800 dark:text-ink-400">
+          <div key={a.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-100 text-ink-500 dark:bg-ink-800 dark:text-ink-300">
               {TYPE_ICON[a.type]}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm text-ink-800 dark:text-ink-200">{a.message}</p>
-              <p className="text-xs text-ink-400 dark:text-ink-500">{formatDateTime(a.createdAt)}</p>
+              <p className="text-sm font-medium leading-snug text-ink-800 dark:text-ink-100">
+                {a.message}
+              </p>
+              <p className="mt-1 text-xs text-ink-500 dark:text-ink-400">
+                {formatDateTime(a.createdAt)}
+              </p>
             </div>
           </div>
         ))}

@@ -656,22 +656,22 @@ export function ScoringPage() {
           <Radio size={14} className="text-red-500" /> Scoring live · auto-saved
           {busy && <Spinner size={14} />}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setScorecardOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
+            className="inline-flex min-h-[2.5rem] items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-2 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
           >
             <ClipboardList size={15} /> Scorecard
           </button>
           <button
             onClick={() => setConfirmAction('endInnings')}
-            className="rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-1.5 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
+            className="inline-flex min-h-[2.5rem] items-center rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-2 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
           >
             End innings
           </button>
           <button
             onClick={() => setConfirmAction('abandon')}
-            className="flex items-center gap-1.5 rounded-lg border border-red-300 dark:border-red-800 px-3 py-1.5 text-sm font-medium text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+            className="inline-flex min-h-[2.5rem] items-center gap-1.5 rounded-lg border border-red-300 dark:border-red-800 px-3 py-2 text-sm font-medium text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
           >
             <Ban size={14} /> Abandon match
           </button>
@@ -928,7 +928,7 @@ function ScoreHeader({
   const rrr = chasing ? requiredRate(need, ballsLeft, match.ballsPerOver) : 0
 
   return (
-    <Card className="sticky top-16 z-20 mb-3 overflow-hidden shadow-md">
+    <Card className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 mb-3 overflow-hidden shadow-md">
       <div className="bg-ink-900 px-4 py-3 text-white">
         <div className="flex items-center justify-between">
           <span className="text-sm text-ink-300">{match.title}</span>
@@ -1103,9 +1103,11 @@ function ScorePad({
             )}
           >
             {r}
-            <kbd className="absolute right-1.5 top-1.5 text-[10px] font-normal opacity-60">
-              {r}
-            </kbd>
+            {onShowShortcuts && (
+              <kbd className="absolute right-1.5 top-1.5 text-[10px] font-normal opacity-60">
+                {r}
+              </kbd>
+            )}
           </button>
         ))}
       </div>
@@ -1116,16 +1118,18 @@ function ScorePad({
             key={e.key}
             onClick={() => onToggleExtra(e.key)}
             className={cn(
-              'relative h-11 rounded-lg border text-sm font-semibold',
+              'relative h-11 rounded-lg border px-1 text-center text-[13px] font-semibold leading-tight sm:text-sm',
               activeExtra === e.key
-                ? 'border-amber-500 bg-amber-100 text-amber-800'
+                ? 'border-amber-500 bg-amber-100 text-amber-800 dark:border-amber-500 dark:bg-amber-500/20 dark:text-amber-200'
                 : 'border-ink-300 dark:border-ink-700 text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800',
             )}
           >
             {e.label}
-            <kbd className="absolute right-1 top-1 text-[9px] font-normal opacity-60">
-              {e.shortcut}
-            </kbd>
+            {onShowShortcuts && (
+              <kbd className="absolute right-1 top-1 text-[9px] font-normal opacity-60">
+                {e.shortcut}
+              </kbd>
+            )}
           </button>
         ))}
       </div>
@@ -1137,7 +1141,9 @@ function ScorePad({
           className="relative h-12 rounded-lg bg-red-600 font-bold text-white hover:bg-red-700 disabled:opacity-50"
         >
           Wicket
-          <kbd className="absolute right-1.5 top-1.5 text-[10px] font-normal opacity-70">W</kbd>
+          {onShowShortcuts && (
+            <kbd className="absolute right-1.5 top-1.5 text-[10px] font-normal opacity-70">W</kbd>
+          )}
         </button>
         <button
           onClick={onUndo}
@@ -1145,7 +1151,9 @@ function ScorePad({
           className="relative flex h-12 items-center justify-center gap-2 rounded-lg border border-ink-300 dark:border-ink-700 font-semibold text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800 disabled:opacity-40"
         >
           <Undo2 size={18} /> Undo
-          <kbd className="absolute right-1.5 top-1.5 text-[10px] font-normal opacity-60">U</kbd>
+          {onShowShortcuts && (
+            <kbd className="absolute right-1.5 top-1.5 text-[10px] font-normal opacity-60">U</kbd>
+          )}
         </button>
       </div>
     </Card>

@@ -92,7 +92,19 @@ body {
 }
 
 #root {
-  min-height: 100vh;
+  min-height: 100vh; /* fallback for browsers without dvh */
+  min-height: 100dvh; /* track the *visible* viewport on iOS Safari as the URL bar shows/hides */
+}
+
+/* ------------------------------------------------------------------ *
+ * Safe-area helpers (iOS notch / home indicator). `viewport-fit=cover`
+ * in index.html lets content fill the display; `.pt-safe` keeps sticky
+ * headers and the nav drawer clear of the status bar / notch. It no-ops
+ * to zero padding on every non-notched device. (Bottom edges use inline
+ * `pb-[max(1.5rem,env(safe-area-inset-bottom))]` at each call site.)
+ * ------------------------------------------------------------------ */
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
 }
 
 /* Custom scrollbar */

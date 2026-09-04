@@ -660,10 +660,12 @@ export function MatchSetupPage() {
         {STEPS.map((s, i) => (
           <div key={s.label} className="flex flex-1 items-center">
             <button
+              type="button"
               onClick={() => i < step && setStep(i)}
               className={cn(
-                'flex items-center gap-2',
-                i <= step ? 'text-brand-700' : 'text-ink-400 dark:text-ink-500',
+                '-my-1.5 flex items-center gap-2 py-1.5',
+                i <= step ? 'text-brand-700 dark:text-brand-300' : 'text-ink-400 dark:text-ink-500',
+                i < step ? 'cursor-pointer' : 'cursor-default',
               )}
             >
               <span
@@ -692,6 +694,12 @@ export function MatchSetupPage() {
             )}
           </div>
         ))}
+      </div>
+
+      {/* Current-step label — the per-step labels in the stepper are hidden on
+          small screens, so name the active step here for phone users. */}
+      <div className="mb-4 text-sm font-semibold text-brand-700 dark:text-brand-300 sm:hidden">
+        Step {step + 1} of {STEPS.length}: {STEPS[step].label}
       </div>
 
       <Card className="p-5">
@@ -1151,7 +1159,7 @@ function TeamPicker({
         <button
           type="button"
           onClick={onAddNew}
-          className="mt-1.5 text-xs font-medium text-brand-600 hover:underline dark:text-brand-400"
+          className="mt-2 inline-flex min-h-[2.25rem] items-center py-1 text-sm font-medium text-brand-600 hover:underline dark:text-brand-400"
         >
           + Add team
         </button>
@@ -1197,13 +1205,13 @@ function SquadPicker({
     return (
       <label
         key={p.id}
-        className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-ink-50 dark:hover:bg-ink-800"
+        className="flex min-h-[2.75rem] cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-ink-50 dark:hover:bg-ink-800"
       >
         <input
           type="checkbox"
           checked={selected.includes(p.id)}
           onChange={() => onToggle(p.id)}
-          className="h-4 w-4"
+          className="h-4 w-4 shrink-0"
         />
         <Avatar name={p.fullName} src={p.photoURL} size={26} />
         <span
@@ -1237,7 +1245,7 @@ function SquadPicker({
         <span className="font-semibold text-ink-900 dark:text-ink-50">{title}</span>
         <span className="text-sm text-ink-500 dark:text-ink-400">{selected.length} selected</span>
       </div>
-      <div className="max-h-72 space-y-1 overflow-y-auto rounded-lg border border-ink-200 dark:border-ink-800 p-2">
+      <div className="max-h-72 space-y-1 overflow-y-auto overscroll-contain rounded-lg border border-ink-200 dark:border-ink-800 p-2">
         {roster.length === 0 && guests.length === 0 && (
           <p className="px-2 py-3 text-sm text-ink-500 dark:text-ink-400">No players available.</p>
         )}
@@ -1258,7 +1266,7 @@ function SquadPicker({
         <button
           type="button"
           onClick={onAddPlayer}
-          className="mt-1.5 text-xs font-medium text-brand-600 hover:underline dark:text-brand-400"
+          className="mt-2 inline-flex min-h-[2.25rem] items-center py-1 text-sm font-medium text-brand-600 hover:underline dark:text-brand-400"
         >
           + Add player
         </button>
@@ -1339,12 +1347,14 @@ function ToggleRow({
   onChange: (v: boolean) => void
 }) {
   return (
-    <div className="flex items-center justify-between gap-4">
-      <div>
+    <div className="flex items-start justify-between gap-4">
+      <div className="min-w-0">
         <div className="text-sm font-medium text-ink-800 dark:text-ink-200">{label}</div>
-        <div className="text-xs text-ink-500 dark:text-ink-400">{hint}</div>
+        <div className="mt-0.5 text-xs leading-snug text-ink-500 dark:text-ink-400">{hint}</div>
       </div>
-      <Switch checked={value} onChange={onChange} label={label} />
+      <div className="shrink-0 pt-0.5">
+        <Switch checked={value} onChange={onChange} label={label} />
+      </div>
     </div>
   )
 }

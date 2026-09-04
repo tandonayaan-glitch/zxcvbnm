@@ -229,7 +229,12 @@ function StatsRoute() {
     </AppShell>
   ) : (
     <PublicLayout>
-      <StatsPage />
+      {/* AppShell's <main> supplies the page gutter for signed-in staff; the
+          public shell doesn't, so pad here or the stats content sits flush
+          against the phone's screen edge. */}
+      <div className="px-4 py-6 sm:px-6">
+        <StatsPage />
+      </div>
     </PublicLayout>
   )
 }

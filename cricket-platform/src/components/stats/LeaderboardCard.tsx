@@ -60,7 +60,7 @@ export function LeaderboardCard({
         </span>
         <h3 className="text-sm font-semibold text-ink-800 dark:text-ink-200">{board.title}</h3>
       </div>
-      <div className="divide-y divide-ink-50">
+      <div className="divide-y divide-ink-100 dark:divide-ink-800">
         {rows.length === 0 && (
           <p className="px-4 py-5 text-center text-sm text-ink-400 dark:text-ink-500">
             No data yet.
@@ -90,7 +90,7 @@ export function LeaderboardCard({
                   />
                 </div>
                 {r.sub && (
-                  <div className="mt-0.5 text-[11px] text-ink-400 dark:text-ink-500">{r.sub}</div>
+                  <div className="mt-1 text-xs text-ink-500 dark:text-ink-400">{r.sub}</div>
                 )}
               </div>
               <span className="text-base font-bold text-ink-900 dark:text-ink-50">

@@ -16,16 +16,16 @@ export function ThemeToggle() {
       aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
       title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
       onClick={() => set('theme', isDark ? 'light' : 'dark')}
-      className="relative inline-flex h-8 w-16 shrink-0 items-center rounded-full border border-ink-300 bg-ink-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 dark:border-ink-700 dark:bg-ink-800"
+      className="relative inline-flex h-8 w-16 shrink-0 items-center rounded-full border border-ink-300 bg-ink-100 transition-colors after:absolute after:-inset-2 after:content-[''] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 dark:border-ink-600 dark:bg-ink-700"
     >
       <span
         className={cn(
-          'inline-flex h-6 w-6 items-center justify-center rounded-full bg-white shadow transition-transform duration-200',
-          isDark ? 'translate-x-9 bg-ink-900' : 'translate-x-1',
+          'inline-flex h-6 w-6 items-center justify-center rounded-full bg-white shadow transition-transform duration-200 dark:bg-ink-100',
+          isDark ? 'translate-x-9' : 'translate-x-1',
         )}
       >
         {isDark ? (
-          <Moon size={13} className="text-brand-300" />
+          <Moon size={13} className="text-brand-600" />
         ) : (
           <Sun size={13} className="text-amber-500" />
         )}

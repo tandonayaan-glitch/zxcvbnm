@@ -27,7 +27,6 @@ import {
   CardBody,
   CardHeader,
   LiveBadge,
-  PageLoader,
   StatCard,
 } from '@/components/ui/primitives'
 import { useAsync } from '@/hooks/useAsync'
@@ -145,7 +144,7 @@ export function DashboardPage({ tournamentId }: { tournamentId?: string } = {}) 
     [all],
   )
 
-  if (loading) return <PageLoader />
+  if (loading) return <DashboardSkeleton />
   if (tournamentId && !tour) {
     return (
       <div className="mx-auto max-w-md py-20">
@@ -156,11 +155,11 @@ export function DashboardPage({ tournamentId }: { tournamentId?: string } = {}) 
 
   const widgets: Record<DashboardWidget, ReactNode> = {
     live: (
-      <Card className="border-red-200">
+      <Card className="border-red-200 dark:border-red-900/60">
         <CardHeader
-          className="bg-red-50"
+          className="bg-red-50 dark:bg-red-950/30"
           title={
-            <span className="flex items-center gap-2 text-red-700">
+            <span className="flex items-center gap-2 text-red-700 dark:text-red-300">
               <Radio size={18} className="text-red-500" /> Live matches
             </span>
           }
@@ -188,16 +187,23 @@ export function DashboardPage({ tournamentId }: { tournamentId?: string } = {}) 
                   <div className="truncate font-semibold text-ink-900 dark:text-ink-50">
                     {m.teamA.name} vs {m.teamB.name}
                   </div>
-                  <div className="text-sm text-ink-600 dark:text-ink-400">
+                  <div className="space-y-0.5 text-sm text-ink-600 dark:text-ink-400">
                     {m.innings.map((inn, i) => (
-                      <span key={i} className="mr-3 whitespace-nowrap">
-                        {inn.battingTeamId === m.teamA.id
-                          ? m.teamA.shortName
-                          : m.teamB.shortName}{' '}
-                        {inn.totalRuns}/{inn.wickets} (
-                        {ballsToOvers(inn.legalBalls, m.ballsPerOver)} · RR{' '}
-                        {formatRate(runRate(inn.totalRuns, inn.legalBalls, m.ballsPerOver))})
-                      </span>
+                      <div key={i} className="tabular-nums">
+                        <span className="font-medium text-ink-800 dark:text-ink-200">
+                          {inn.battingTeamId === m.teamA.id
+                            ? m.teamA.shortName
+                            : m.teamB.shortName}{' '}
+                          {inn.totalRuns}/{inn.wickets}
+                        </span>{' '}
+                        <span className="text-ink-400 dark:text-ink-500">
+                          ({ballsToOvers(inn.legalBalls, m.ballsPerOver)} · RR{' '}
+                          {formatRate(
+                            runRate(inn.totalRuns, inn.legalBalls, m.ballsPerOver),
+                          )}
+                          )
+                        </span>
+                      </div>
                     ))}
                     {m.innings.length === 0 && <span>Yet to get underway</span>}
                   </div>
@@ -220,10 +226,10 @@ export function DashboardPage({ tournamentId }: { tournamentId?: string } = {}) 
       </Card>
     ),
     recent: (
-      <Card className="border-pitch-200">
+      <Card className="border-pitch-200 dark:border-pitch-900/60">
         <CardHeader
-          className="bg-pitch-50"
-          title={<span className="text-pitch-800">Recent results</span>}
+          className="bg-pitch-50 dark:bg-pitch-950/30"
+          title={<span className="text-pitch-800 dark:text-pitch-300">Recent results</span>}
         />
         <CardBody className="space-y-2">
           {recent.length === 0 ? (
@@ -267,8 +273,11 @@ export function DashboardPage({ tournamentId }: { tournamentId?: string } = {}) 
       </Card>
     ),
     upcoming: (
-      <Card className="border-amber-200">
-        <CardHeader className="bg-amber-50" title={<span className="text-amber-800">Upcoming</span>} />
+      <Card className="border-amber-200 dark:border-amber-900/60">
+        <CardHeader
+          className="bg-amber-50 dark:bg-amber-950/30"
+          title={<span className="text-amber-800 dark:text-amber-300">Upcoming</span>}
+        />
         <CardBody className="space-y-2">
           {upcoming.length === 0 ? (
             <p className="py-3 text-center text-sm text-ink-500 dark:text-ink-400">
@@ -294,11 +303,11 @@ export function DashboardPage({ tournamentId }: { tournamentId?: string } = {}) 
       </Card>
     ),
     topRuns: (
-      <Card className="border-pitch-200">
+      <Card className="border-pitch-200 dark:border-pitch-900/60">
         <CardHeader
-          className="bg-pitch-50"
+          className="bg-pitch-50 dark:bg-pitch-950/30"
           title={
-            <span className="flex items-center gap-2 text-pitch-800">
+            <span className="flex items-center gap-2 text-pitch-800 dark:text-pitch-300">
               <TrendingUp size={18} className="text-pitch-600" /> Top run scorers
             </span>
           }
@@ -329,11 +338,11 @@ export function DashboardPage({ tournamentId }: { tournamentId?: string } = {}) 
       </Card>
     ),
     topWickets: (
-      <Card className="border-brand-200">
+      <Card className="border-brand-200 dark:border-brand-900/60">
         <CardHeader
-          className="bg-brand-50"
+          className="bg-brand-50 dark:bg-brand-950/30"
           title={
-            <span className="flex items-center gap-2 text-brand-800">
+            <span className="flex items-center gap-2 text-brand-800 dark:text-brand-300">
               <Activity size={18} className="text-brand-600" /> Top wicket takers
             </span>
           }
@@ -448,7 +457,7 @@ export function DashboardPage({ tournamentId }: { tournamentId?: string } = {}) 
       />
 
       {/* Stat cards */}
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
         {tour ? (
           <>
             <Link to="/teams" className="block transition-transform hover:-translate-y-0.5">
@@ -495,6 +504,39 @@ export function DashboardPage({ tournamentId }: { tournamentId?: string } = {}) 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">{renderColumn('left', layout.left)}</div>
         <div className="space-y-6">{renderColumn('right', layout.right)}</div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Dashboard-shaped loading placeholder. Renders the page's real skeleton — header
+ * bar, four stat tiles, two widget columns — so a cold load or a fresh sign-in
+ * shows structure immediately instead of a bare centred spinner on a blank page.
+ */
+function DashboardSkeleton() {
+  return (
+    <div className="mx-auto max-w-6xl animate-pulse">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
+          <div className="h-7 w-48 rounded bg-ink-200 dark:bg-ink-800" />
+          <div className="h-4 w-64 rounded bg-ink-100 dark:bg-ink-800/60" />
+        </div>
+        <div className="h-9 w-28 rounded-lg bg-ink-100 dark:bg-ink-800/60" />
+      </div>
+      <div className="mb-6 grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-[4.5rem] rounded-xl bg-ink-100 dark:bg-ink-800/60" />
+        ))}
+      </div>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          <div className="h-56 rounded-xl bg-ink-100 dark:bg-ink-800/60" />
+          <div className="h-56 rounded-xl bg-ink-100 dark:bg-ink-800/60" />
+        </div>
+        <div className="space-y-6">
+          <div className="h-56 rounded-xl bg-ink-100 dark:bg-ink-800/60" />
+        </div>
       </div>
     </div>
   )
