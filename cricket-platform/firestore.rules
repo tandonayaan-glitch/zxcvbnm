@@ -255,6 +255,68 @@ service cloud.firestore {
       }
     }
 
+    // ---- Live broadcast (media/broadcast engine) ---------------
+    // Doc id == matchId. Signaling subcollections are intentionally open to anonymous writers
+    // for the viewer side — the platform's Live Share explicitly promises spectators don't need
+    // an account, and a signaling doc only ever carries WebRTC SDP/ICE payloads (never cricket
+    // data), cleaned up when the viewer leaves.
+    match /broadcasts/{matchId} {
+      allow read: if true;
+      allow create: if isOwnerMasterOrDelegatedScorer(matchId)
+        && request.resource.data.broadcasterUid == request.auth.uid;
+      allow update: if isOwnerMasterOrDelegatedScorer(matchId);
+      allow delete: if isOwnerOrMaster(get(/databases/$(database)/documents/matches/$(matchId)).data.ownerId);
+
+      match /viewers/{connId} {
+        allow read: if true;
+        // A viewer creates their own offer; `answer`/`connectedAt` must start unset — only the
+        // broadcaster can fill those in (the `update` rule below), so a viewer can never forge
+        // a connection as already-answered.
+        allow create: if request.resource.data.answer == null
+          && request.resource.data.connectedAt == null
+          && request.resource.data.offer != null
+          && request.resource.data.keys().hasOnly(['id', 'viewerUid', 'offer', 'answer', 'createdAt', 'connectedAt']);
+        allow update: if isOwnerMasterOrDelegatedScorer(matchId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['answer', 'connectedAt']);
+        // Transient signaling only — either side may clear a connection doc (viewer leaving,
+        // or the broadcaster pruning a dropped peer).
+        allow delete: if true;
+
+        match /broadcasterCandidates/{cid} {
+          allow read: if true;
+          allow create: if isOwnerMasterOrDelegatedScorer(matchId);
+          allow update, delete: if false;
+        }
+        match /viewerCandidates/{cid} {
+          allow read: if true;
+          allow create: if true;
+          allow update, delete: if false;
+        }
+      }
+    }
+
+    // ---- Match videos + clips (media/broadcast engine) ---------
+    match /matchVideos/{id} {
+      // 'private' videos are only visible to their uploader or the master admin; 'public'/
+      // 'unlisted' read like the rest of this app's cricket data.
+      allow read: if resource.data.visibility != 'private'
+        || (isSignedIn() && (resource.data.createdBy == request.auth.uid || isMasterAdmin()));
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && isOwnerMasterOrDelegatedScorer(request.resource.data.matchId);
+      allow update, delete: if isSignedIn()
+        && (resource.data.createdBy == request.auth.uid
+            || isOwnerMasterOrDelegatedScorer(resource.data.matchId)
+            || isMasterAdmin());
+    }
+    match /clips/{id} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.createdBy == request.auth.uid;
+      // Clips are a saved time-range bookmark, not an editable record — immutable once created.
+      allow update: if false;
+      allow delete: if isSignedIn() && (resource.data.createdBy == request.auth.uid || isMasterAdmin());
+    }
+
     // ---- Cached stats -----------------------------------------
     match /playerStats/{id} {
       allow read: if true;
@@ -472,6 +534,62 @@ service cloud.firestore {
       allow update, delete: if isOwnerOrMaster(resource.data.ownerId);
     }
 
+    // ---- Looking For (discovery engine) -------------------------
+    match /lookingForPosts/{id} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if isSignedIn()
+        && (resource.data.createdBy == request.auth.uid || isMasterAdmin());
+    }
+    match /lookingForResponses/{id} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.responderId == request.auth.uid;
+      // The responder can withdraw; the referenced post's own creator (or master) can
+      // accept/decline.
+      allow update: if isSignedIn() && (
+        isMasterAdmin()
+        || get(/databases/$(database)/documents/lookingForPosts/$(resource.data.postId)).data.createdBy == request.auth.uid
+      );
+      allow delete: if isSignedIn() && (resource.data.responderId == request.auth.uid || isMasterAdmin());
+    }
+
+    // ---- Following (identity/reputation engine) ------------------
+    match /follows/{id} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.followerId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.followerId == request.auth.uid;
+      allow update: if false;
+    }
+
+    // ---- Community feed -------------------------------------------
+    match /communityPosts/{id} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.authorId == request.auth.uid;
+      allow update: if isSignedIn() && (
+        resource.data.createdBy == request.auth.uid
+        || isMasterAdmin()
+        // Anyone signed in may cast a poll vote — restricted to touching only the vote fields,
+        // never content/author/likeCount/etc.
+        || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pollOptions', 'pollVoterIds', 'updatedAt'])
+      );
+      allow delete: if isSignedIn() && (resource.data.createdBy == request.auth.uid || isMasterAdmin());
+    }
+    match /postLikes/{id} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow update: if false;
+    }
+
+    // ---- Moderation -------------------------------------------------
+    match /contentReports/{id} {
+      allow read: if isMasterAdmin() || (isSignedIn() && resource.data.reporterId == request.auth.uid);
+      allow create: if isSignedIn() && request.resource.data.reporterId == request.auth.uid;
+      allow update, delete: if isMasterAdmin();
+    }
+
     // ---- Subscriptions (ROADMAP_V5 Phase C — architecture only, no real billing yet) --------
     match /subscriptions/{uid} {
       // A user reads their own plan; the master admin reads any (support, manual grants).
@@ -509,6 +627,16 @@ service cloud.firestore {
       // Per-uploaded-image ownership/size record, used only by the Worker itself (to
       // attribute bytes correctly on delete) — nothing in the app's client code ever
       // needs to read this directly.
+      allow read, write: if false;
+    }
+    // Same shape as imageUsage/r2Objects above, but for the separate video-storage pool
+    // (match recordings/uploads) — kept as its own collection so video never eats into the
+    // small 100MB image allowance.
+    match /videoUsage/{uid} {
+      allow read: if isMasterAdmin() || (isSignedIn() && request.auth.uid == uid);
+      allow write: if false;
+    }
+    match /r2VideoObjects/{objectId} {
       allow read, write: if false;
     }
   }

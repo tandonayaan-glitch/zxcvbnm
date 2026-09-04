@@ -327,6 +327,10 @@ export interface BallMeta {
   /** Flagged for review (e.g. a wicket decision under dispute). Purely informational —
    *  doesn't gate or trigger anything on its own. */
   reviewed?: boolean
+  /** Ball-to-video link: seconds elapsed since the match's live recording started, captured
+   *  automatically at scoring time from a live `Broadcast.startedAt` — never hand-entered, so
+   *  this is always a real offset into a real recording or absent entirely. */
+  videoTimestampSec?: number
   createdAt: number
 }
 
@@ -892,4 +896,243 @@ export interface PremiumFeatureDef {
    *  comment on the registry entry instead, which can't leak into the UI. */
   description: string
   tier: Exclude<PlanTier, 'free'>
+}
+
+/* ==================================================================
+ * Media/Broadcast engine — live streaming, live recording, replay,
+ * uploaded match videos, clips, ball-to-video.
+ *
+ * Architecture (see CHANGELOG for the full writeup): the browser camera
+ * streams peer-to-peer over WebRTC directly to each connected spectator's
+ * browser, using Firestore only as the signaling channel (SDP offer/answer +
+ * ICE candidates) — there is no media server. This is genuinely live video,
+ * not a simulation, but it means: (a) it's a mesh, not a broadcast — the
+ * scorer's own device uploads one stream per connected viewer, which is
+ * fine for a spectator count in the tens, not thousands; (b) the live
+ * stream only exists while the broadcaster's tab stays open+connected —
+ * there is no server-side relay to fall back to without a paid media
+ * provider (Cloudflare Stream / WHIP-WHEP SFU etc.), which this project
+ * has no account for. The recording is captured client-side (MediaRecorder
+ * on the broadcaster's own outgoing stream) and uploaded once the broadcast
+ * ends, so it keeps recording through viewers coming and going — but it is
+ * NOT independent of the broadcaster's own device stalling before upload.
+ * ================================================================== */
+
+export type BroadcastStatus =
+  | 'not_started'
+  | 'starting'
+  | 'live'
+  | 'reconnecting'
+  | 'paused'
+  | 'ending'
+  | 'ended'
+  | 'failed'
+
+export type RecordingStatus =
+  | 'not_started'
+  | 'starting'
+  | 'recording'
+  | 'finalizing'
+  | 'processing'
+  | 'ready'
+  | 'failed'
+  | 'deleted'
+
+/** One broadcaster-controlled live session for a match. Doc id == matchId (one live broadcast
+ *  at a time per match). WebRTC signaling for each viewer lives in the `viewers` subcollection. */
+export interface Broadcast {
+  matchId: string
+  status: BroadcastStatus
+  broadcasterUid: string
+  broadcasterName: string
+  startedAt?: number | null
+  endedAt?: number | null
+  /** Count of viewer signaling docs currently connected — best-effort, derived from live
+   *  peer-connection state, never shown as a precise "analytics" figure. */
+  viewerCount: number
+  recording: {
+    status: RecordingStatus
+    /** Set once the finished recording has been uploaded and a MatchVideo doc created. */
+    videoId?: string | null
+    startedAt?: number | null
+    endedAt?: number | null
+    /** Seconds — only set once the recording Blob exists (finalizing/processing/ready). */
+    durationSec?: number | null
+    error?: string | null
+  }
+  error?: string | null
+  updatedAt: number
+}
+
+/** One signaling handshake between the broadcaster and a single connecting viewer.
+ *  Subcollection: `broadcasts/{matchId}/viewers/{viewerConnId}`. ICE candidates are exchanged
+ *  through the nested `broadcasterCandidates`/`viewerCandidates` subcollections. */
+export interface BroadcastViewerConn {
+  id: string
+  viewerUid?: string | null
+  offer: { type: string; sdp: string }
+  answer?: { type: string; sdp: string } | null
+  createdAt: number
+  connectedAt?: number | null
+}
+
+export type VideoKind = 'live_recording' | 'uploaded'
+export type VideoVisibility = 'public' | 'unlisted' | 'private'
+
+/** A playable video attached to a match — either finalized from a live broadcast's recording,
+ *  or directly uploaded after the fact. Never references a video whose file doesn't exist:
+ *  status stays out of 'ready' until the upload has actually completed. */
+export interface MatchVideo {
+  id: string
+  matchId: string
+  kind: VideoKind
+  status: RecordingStatus
+  url?: string | null
+  thumbnailURL?: string | null
+  durationSec?: number | null
+  visibility: VideoVisibility
+  broadcastId?: string | null // == matchId of the Broadcast this was recorded from, if any
+  title?: string
+  createdBy: string
+  createdAt: number
+  updatedAt: number
+  deletedAt?: number | null
+}
+
+/** A saved time-range bookmark into a `MatchVideo` — plays back by seeking the source video,
+ *  not a separately rendered/transcoded file (no server-side video processing exists in this
+ *  project without a paid provider, so this never fakes a "rendering" step). */
+export interface Clip {
+  id: string
+  matchId: string
+  videoId: string
+  title: string
+  startSec: number
+  endSec: number
+  /** Ball-to-video link: the delivery this clip was created from, if any. */
+  deliveryId?: string | null
+  createdBy: string
+  createdAt: number
+}
+
+/* ==================================================================
+ * Discovery + Looking For + Community engine
+ * ================================================================== */
+
+export type LookingForKind =
+  | 'player'
+  | 'team'
+  | 'opponent'
+  | 'umpire'
+  | 'scorer'
+
+export type LookingForStatus = 'open' | 'closed' | 'expired'
+
+/** A single "Looking For X" post — one unified shape for every kind listed above rather than
+ *  five separate collections, per the platform brief's explicit "don't build five unrelated
+ *  systems" instruction. */
+export interface LookingForPost {
+  id: string
+  kind: LookingForKind
+  title: string
+  description: string
+  location?: string
+  format?: MatchFormat | 'any'
+  skillLevel?: 'beginner' | 'intermediate' | 'advanced' | 'any'
+  date?: number | null
+  teamId?: string | null
+  teamName?: string | null
+  tournamentId?: string | null
+  tournamentName?: string | null
+  status: LookingForStatus
+  createdBy: string
+  createdByName: string
+  expiresAt: number
+  responseCount: number
+  createdAt: number
+  updatedAt: number
+  deletedAt?: number | null
+}
+
+export type LookingForResponseStatus = 'pending' | 'accepted' | 'declined'
+
+/** One respondent's interest in a `LookingForPost`. */
+export interface LookingForResponse {
+  id: string
+  postId: string
+  responderId: string
+  responderName: string
+  message?: string
+  status: LookingForResponseStatus
+  createdAt: number
+}
+
+export type FollowTargetType = 'player' | 'team' | 'club' | 'tournament'
+
+/** One user following one entity. Doc id is `${followerUid}_${targetType}_${targetId}` so a
+ *  duplicate follow is naturally idempotent (setDoc with that id, no query needed to check). */
+export interface Follow {
+  id: string
+  followerId: string
+  targetType: FollowTargetType
+  targetId: string
+  createdAt: number
+}
+
+export type PostKind = 'text' | 'match' | 'achievement' | 'announcement' | 'poll'
+
+export interface PollOption {
+  id: string
+  text: string
+  votes: number
+}
+
+/** One community feed post. Kept flat (no nested comment threads beyond the existing
+ *  match-scoped `comments` collection) to match the amateur/semi-pro scope of this platform. */
+export interface CommunityPost {
+  id: string
+  kind: PostKind
+  authorId: string
+  authorName: string
+  authorPhotoURL?: string | null
+  text: string
+  imageURL?: string | null
+  /** Set when kind == 'match' — links the post back to the match it's about. */
+  matchId?: string | null
+  matchTitle?: string | null
+  pollOptions?: PollOption[]
+  /** Doc id of each user who voted, when kind == 'poll' — prevents double-voting. */
+  pollVoterIds?: string[]
+  likeCount: number
+  commentCount: number
+  createdBy: string
+  createdAt: number
+  updatedAt: number
+  deletedAt?: number | null
+}
+
+/** One user's like on a `CommunityPost`. Doc id == `${postId}_${userId}`, same idempotent
+ *  pattern as `Follow`. */
+export interface PostLike {
+  id: string
+  postId: string
+  userId: string
+  createdAt: number
+}
+
+export type ReportTargetType = 'post' | 'comment' | 'user' | 'looking_for'
+
+export type ReportStatus = 'pending' | 'reviewed' | 'dismissed' | 'actioned'
+
+/** A user-submitted report against another piece of content, for master-admin moderation. */
+export interface ContentReport {
+  id: string
+  targetType: ReportTargetType
+  targetId: string
+  reason: string
+  reporterId: string
+  status: ReportStatus
+  createdAt: number
+  reviewedAt?: number | null
+  reviewedBy?: string | null
 }

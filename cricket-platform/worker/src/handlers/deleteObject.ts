@@ -2,8 +2,8 @@ import type { Env } from '../types'
 import { HttpError } from '../types'
 import { verifyFirebaseIdToken, bearerToken } from '../authToken'
 import { getCallerRole, canWriteFolder } from '../roles'
-import { isKnownFolderKey } from '../limits'
-import { getTrackedObject, releaseUsage } from '../usage'
+import { isKnownFolderKey, isVideoFolderKey } from '../limits'
+import { getTrackedObject, releaseUsage, type UsageScope } from '../usage'
 import { keyToObjectId } from '../keys'
 
 export async function handleDelete(request: Request, env: Env): Promise<Response> {
@@ -21,10 +21,11 @@ export async function handleDelete(request: Request, env: Env): Promise<Response
     throw new HttpError(403, 'Your account does not have permission to remove this.')
   }
 
+  const scope: UsageScope = isVideoFolderKey(key) ? 'video' : 'image'
   const objectId = keyToObjectId(key)
   // Look up who actually gets credited back BEFORE deleting — once the R2 object is gone
   // there's no way to recover its size from R2 itself.
-  const tracked = await getTrackedObject(env, objectId)
+  const tracked = await getTrackedObject(env, scope, objectId)
 
   // R2 delete first, counter release second — the opposite order from upload, and
   // deliberately so: for a delete, the safe-direction failure is "R2 is gone but the
@@ -37,7 +38,7 @@ export async function handleDelete(request: Request, env: Env): Promise<Response
   let counterWarning: string | undefined
   if (tracked) {
     try {
-      await releaseUsage(env, tracked.ownerId, objectId, tracked.size)
+      await releaseUsage(env, scope, tracked.ownerId, objectId, tracked.size)
     } catch (err) {
       // The file is genuinely gone; only the counter update failed. Don't report this
       // delete as failed to the caller — that would be actively misleading — but do

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Undo2,
@@ -40,6 +40,9 @@ import {
 } from '@/services/scoring.service'
 import { recomputeAllStats, recomputeTournamentStandings } from '@/services/stats.service'
 import { recordBallMeta, listBallMeta } from '@/services/ballMeta.service'
+import { subscribeBroadcast } from '@/services/broadcast.service'
+import { recordingElapsedSec, isBroadcastLive } from '@/domain/broadcast'
+import { LiveBroadcastPanel } from '@/components/broadcast/LiveBroadcastPanel'
 import { ShotDetailPrompt } from './ShotDetailPrompt'
 import { ScorecardView } from '@/features/scorecard/ScorecardView'
 import { ballsToOvers, runRate, requiredRate, formatRate } from '@/lib/format'
@@ -53,7 +56,7 @@ import {
   WicketModal,
   type WicketResult,
 } from './ScoringModals'
-import type { BallInput, BallMeta, Delivery, ExtraType, Match, Player } from '@/types'
+import type { BallInput, BallMeta, Broadcast, Delivery, ExtraType, Match, Player } from '@/types'
 
 export function ScoringPage() {
   const { id = '' } = useParams()
@@ -84,6 +87,12 @@ export function ScoringPage() {
   const [confirmAction, setConfirmAction] = useState<'endInnings' | 'abandon' | 'reopen' | null>(null)
   const [potmOpen, setPotmOpen] = useState(false)
   const [scorecardOpen, setScorecardOpen] = useState(false)
+  const [broadcastOpen, setBroadcastOpen] = useState(false)
+  const [broadcast, setBroadcast] = useState<Broadcast | null>(null)
+  // Ref mirror of `broadcast` state so the ball-to-video auto-tagging below (fired from inside
+  // `score`/`confirmWicket`, which close over stale state on every render) always reads the
+  // live recording status rather than whatever it was when those closures were created.
+  const broadcastRef = useRef<Broadcast | null>(null)
   // Touch-primary devices (phones/tablets) have no physical keyboard, so the shortcuts this
   // button leads to don't apply — hide the discovery affordance rather than resize it. The
   // underlying keydown handling in ScoringShortcuts is untouched, so a keyboard-attached device
@@ -117,6 +126,21 @@ export function ScoringPage() {
   useEffect(() => {
     refreshBallMeta()
   }, [refreshBallMeta, deliveries.length])
+
+  useEffect(() => {
+    return subscribeBroadcast(id, (b) => {
+      setBroadcast(b)
+      broadcastRef.current = b
+    })
+  }, [id])
+
+  /** Auto-tags a just-scored ball with how many seconds into the live recording it happened,
+   *  when (and only when) a broadcast is actually recording right now — never a guessed or
+   *  hand-entered timestamp. Best-effort: a failure here must never interrupt scoring. */
+  function tagVideoTimestamp(matchId: string, deliveryId: string) {
+    const ts = recordingElapsedSec(broadcastRef.current, Date.now())
+    if (ts != null) void recordBallMeta(matchId, deliveryId, { videoTimestampSec: ts }).catch(() => {})
+  }
 
   const setTone = useBgStore((s) => s.setTone)
   useEffect(() => {
@@ -180,6 +204,7 @@ export function ScoringPage() {
         scorerId: profile?.id,
       })
       setActiveExtra(null)
+      tagVideoTimestamp(m.id, delivery.id)
       setPendingMeta({
         deliveryId: delivery.id,
         showZone: extra !== 'wide',
@@ -206,6 +231,7 @@ export function ScoringPage() {
         sequence: nextSeq,
         scorerId: profile?.id,
       })
+      tagVideoTimestamp(m.id, delivery.id)
       setPendingMeta({
         deliveryId: delivery.id,
         showZone: r.type !== 'run_out',
@@ -658,6 +684,18 @@ export function ScoringPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <button
+            onClick={() => setBroadcastOpen(true)}
+            className={cn(
+              'inline-flex min-h-[2.5rem] items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium',
+              isBroadcastLive(broadcast?.status ?? 'not_started')
+                ? 'border-red-300 text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20'
+                : 'border-ink-300 text-ink-700 hover:bg-ink-50 dark:border-ink-700 dark:text-ink-300 dark:hover:bg-ink-800',
+            )}
+          >
+            <Radio size={15} />{' '}
+            {isBroadcastLive(broadcast?.status ?? 'not_started') ? 'Live' : 'Go live'}
+          </button>
+          <button
             onClick={() => setScorecardOpen(true)}
             className="inline-flex min-h-[2.5rem] items-center gap-1.5 rounded-lg border border-ink-300 dark:border-ink-700 px-3 py-2 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
           >
@@ -709,6 +747,17 @@ export function ScoringPage() {
         onConfirm={runConfirmAction}
         onClose={() => setConfirmAction(null)}
       />
+
+      <Modal
+        open={broadcastOpen}
+        onClose={() => setBroadcastOpen(false)}
+        title="Live broadcast"
+        size="lg"
+      >
+        <div className="p-4">
+          <LiveBroadcastPanel matchId={match.id} broadcasterName={profile?.displayName ?? 'Scorer'} />
+        </div>
+      </Modal>
 
       <Modal
         open={scorecardOpen}

@@ -2,6 +2,62 @@
 
 All notable changes to CricketHub. Newest first.
 
+## [Unreleased] — Media/Broadcast engine (live streaming, recording, replay, ball-to-video)
+
+First slice of the platform-build brief (`ROADMAP_V6_PLATFORM.md`): real, working live streaming
+and recording — not a simulation. Verified with `tsc` (app + worker) + `vite build` + `oxlint`; no
+`src/domain/scoring.ts` or `Delivery`/`BallInput` change.
+
+**Architecture — why WebRTC + client-side recording, not a managed provider.** This project has no
+Cloudflare Stream / Mux / WHIP-WHEP SFU account, so there is no media server. Instead: the
+broadcaster's browser (the scorer's own device) streams camera + mic directly to each connected
+spectator's browser over WebRTC, using Firestore purely as the signaling channel (SDP offer/answer
++ ICE candidates exchanged through `broadcasts/{matchId}` and its `viewers` subcollection). This is
+genuinely live peer-to-peer video, not a fake — but it's a mesh, not a broadcast: the scorer's
+device opens one outgoing connection per viewer (fine for tens of spectators, not built to scale to
+thousands), and the stream only exists while the broadcaster's tab stays open — there is no
+server-side relay to fall back to. The recording is captured client-side too (`MediaRecorder` on
+the broadcaster's own outgoing stream, independent of the WebRTC peer connections — it keeps
+recording through viewers coming and going, since it never touches them at all) and uploaded to R2
+once the broadcast stops. It is honestly NOT independent of the broadcaster's own device — a crash
+before `stop()` loses the in-progress recording, since there's no server-side capture without a paid
+provider. Every state shown to the user (`BroadcastStatus`/`RecordingStatus`) reflects what actually
+happened — "LIVE" only appears once a peer connection is truly connected, "Replay ready" only once
+the upload has actually completed.
+
+- **New types** (`types/index.ts`): `Broadcast`, `BroadcastViewerConn`, `MatchVideo`, `Clip`, plus
+  an optional `videoTimestampSec` on the existing sibling doc `BallMeta` (never on `Delivery`
+  itself) for ball-to-video.
+- **`domain/broadcast.ts`** (pure): state-machine helpers/labels, `recordingElapsedSec()` — the one
+  function allowed to produce a ball-to-video timestamp, and only from a real, currently-recording
+  broadcast's `startedAt`, never guessed.
+- **`services/broadcast.service.ts`**: WebRTC signaling for both broadcaster and viewer sides
+  (`startBroadcast`/`joinBroadcastAsViewer`), `MediaRecorder` capture (`startRecording`), and
+  `MatchVideo`/`Clip` CRUD.
+- **Worker (`worker/`)**: `/upload` now also accepts `video/webm`/`video/mp4` under
+  `matches/{id}/videos/...`, gated by a **separate** quota pool (`videoUsage`/`r2VideoObjects`
+  collections, 500MB/user, 20GB platform-wide — doesn't cannibalize the existing 100MB image
+  allowance) and a 90MB per-file cap (Cloudflare Workers' request-body ceiling on this plan — a
+  documented, real limitation: a long/high-bitrate live match recording won't fit through this
+  pipeline without a real media provider doing chunked ingest).
+- **`firestore.rules`**: `broadcasts` (+ `viewers`/`broadcasterCandidates`/`viewerCandidates`
+  signaling subcollections, deliberately open to anonymous viewer writes — Live Share promises
+  spectators don't need an account, and these docs only ever carry WebRTC payloads), `matchVideos`,
+  `clips`, `videoUsage`, `r2VideoObjects`.
+- **UI**: `LiveBroadcastPanel` (scorer control — camera/mic/switch-camera, go live, stop, wired into
+  `ScoringPage` behind a "Go live"/"Live" footer button), `LiveVideoPlayer` (spectator WebRTC
+  playback, real connection-state UI, never shows LIVE unless actually connected), `ReplayPlayer`
+  (plays a finalized `MatchVideo`), `MatchMediaSection` (wired into the public `MatchPage`: live
+  video when broadcasting, replay/uploaded-video tabs otherwise, clip list + creation, and a
+  "ball-to-video: key moments" list built from real `videoTimestampSec` tags, never fabricated).
+  Every scored ball is auto-tagged with its real elapsed-seconds-into-the-recording offset while a
+  broadcast is actively recording (`ScoringPage.tagVideoTimestamp`) — no manual timestamp entry.
+- **Not built in this slice** (see FINAL REPORT in the session write-up for the full 79-item
+  platform-brief audit): AI highlights/commentary/coaching (no AI API configured in this
+  environment), a managed streaming/SFU fallback for audiences beyond a mesh's practical size,
+  discovery/Looking For/community/rankings/reputation systems, tournament PDF reports, native
+  iOS/watchOS integrations, real billing.
+
 ## [Unreleased] — Platform / Analytics (ROADMAP_V5)
 
 ### Changed — phone & tablet UX pass (not yet deployed)

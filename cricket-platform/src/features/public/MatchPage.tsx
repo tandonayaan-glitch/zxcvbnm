@@ -42,6 +42,7 @@ import { ScorecardConfigModal } from '@/features/scorecard/ScorecardConfigModal'
 import { matchToCSV, matchToJSON, exportSlug } from '@/domain/matchExport'
 import { downloadBlob } from '@/lib/download'
 import { MatchGallery } from '@/components/media/MatchGallery'
+import { MatchMediaSection } from '@/components/broadcast/MatchMediaSection'
 import { CommentSection } from '@/components/media/CommentSection'
 import { MatchReactions } from '@/components/media/MatchReactions'
 import { ShareButton } from '@/components/ui/ShareButton'
@@ -497,6 +498,16 @@ export function MatchPage() {
           </button>
         </div>
       )}
+
+      <div id="match-media" className="mb-4 scroll-mt-4">
+        <MatchMediaSection
+          matchId={match.id}
+          matchStatus={match.status}
+          canManage={admin}
+          deliveries={deliveries}
+          ballMeta={ballMeta.data ?? []}
+        />
+      </div>
 
       {/* Scorecard */}
       <div id="match-scorecard" className="scroll-mt-4">

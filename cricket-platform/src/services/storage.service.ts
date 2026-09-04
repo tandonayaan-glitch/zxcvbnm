@@ -130,6 +130,43 @@ export async function getMyImageUsage(): Promise<{ usedBytes: number; limitBytes
   }
 }
 
+const MAX_VIDEO_BYTES = 90 * 1024 * 1024 // 90MB — mirrors worker/src/limits.ts's MAX_VIDEO_BYTES
+const ACCEPTED_VIDEO_TYPES = ['video/webm', 'video/mp4']
+
+export class VideoUploadError extends Error {}
+
+/** Uploads a match recording/video Blob to Cloudflare R2 through the crickethub-media Worker,
+ *  under `matches/{matchId}/videos/`, returning its public URL. Separate quota pool from
+ *  images — see worker/src/usage.ts. No client-side transcoding/compression happens here (the
+ *  Worker only accepts WebM/MP4 as-is); a 90MB cap means only shorter or lower-bitrate
+ *  recordings fit through this pipeline without a real media provider doing chunked ingest. */
+export async function uploadVideo(blob: Blob, matchId: string): Promise<string> {
+  const contentType = blob.type.split(';')[0]?.trim() || 'video/webm'
+  if (!ACCEPTED_VIDEO_TYPES.includes(contentType)) {
+    throw new VideoUploadError('Please provide a WebM or MP4 video.')
+  }
+  if (blob.size > MAX_VIDEO_BYTES) {
+    throw new VideoUploadError('Video is too large (max 90MB) — try a shorter recording.')
+  }
+  if (!R2_WORKER_URL) {
+    throw new VideoUploadError('Video uploads are not configured yet.')
+  }
+  const ext = contentType === 'video/mp4' ? 'mp4' : 'webm'
+  const key = `matches/${matchId}/videos/${genId('vid_')}.${ext}`
+  const token = await firebaseIdToken()
+  const res = await fetch(`${R2_WORKER_URL}/upload?key=${encodeURIComponent(key)}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': contentType },
+    body: blob,
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    throw new VideoUploadError((body as { error?: string } | null)?.error ?? 'Upload failed.')
+  }
+  const { url } = (await res.json()) as { url: string }
+  return url
+}
+
 export interface StoredImage {
   path: string
   url: string
