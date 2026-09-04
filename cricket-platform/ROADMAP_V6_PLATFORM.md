@@ -180,7 +180,7 @@ cannot supply) · **PRE-EXISTING** (already true before this session, unrelated 
 | 43 | AI tactical recommendations | BLOCKED | Needs real AI generation to avoid inventing advice; not attempted. |
 | 44 | AI post-match coaching | BLOCKED | Same reason. |
 | 45 | AI commentary | BLOCKED | Real AI generation required to avoid inventing events; not attempted. |
-| 46–50 | Advanced analytics / form / toss / comparisons | **PARTIAL, extended (Slice 2)** | `ROADMAP_V5_PLATFORM.md` already delivers win probability, expected score, batter-vs-bowler, partnerships, and recent-form charts (Current Form / Last Five Matches — already built pre-session, see `PlayerForm.tsx`). This slice adds real toss insights (`domain/tossInsights.ts`). Phase (powerplay/middle/death) analysis specifically still NOT BUILT — would need per-ball reads across many matches, deprioritized on performance grounds (§63) rather than built cheaply and wrong. |
+| 40, 46–50 | Phase analysis / advanced analytics / form / toss / comparisons | **PARTIAL, extended (Slice 2)** | `ROADMAP_V5_PLATFORM.md` already delivers win probability, expected score, batter-vs-bowler, partnerships, and recent-form charts (Current Form / Last Five Matches — already built pre-session, see `PlayerForm.tsx`). This slice adds real toss insights (`domain/tossInsights.ts`) and real powerplay/middle/death phase analysis (`domain/phaseAnalysis.ts` + `PhaseAnalysisCard` on `MatchPage`) — deliberately kept **match-scoped**, not platform-wide, since a platform-wide version would mean reading every completed match's full delivery subcollection with no pagination/aggregation infra to do that safely (§63). Pace-vs-spin specifically still NOT BUILT (no bowling-style-vs-outcome breakdown exists). |
 | 51 | Global search | PARTIAL (pre-existing) | Unchanged this slice — `SearchPage.tsx` covers players/teams/tournaments/matches/clubs; `DiscoverPage` (new) adds filtering on top for players/teams/clubs/tournaments specifically, but the two aren't merged into one surface. |
 | 52 | Venue discovery | NOT BUILT | No venue-as-an-entity model exists (`venue` today is a free-text field on `Match`/`Tournament`). |
 | 53 | Moderation | **BUILT for the surfaces that exist (Slice 2)** | Real `ContentReport` submit-and-review flow (`ModerationPage`) wired to the new community feed. Pre-existing content (comments, match reactions) still has no report path — only reachable content is covered, not retrofitted onto everything that predates this slice. |
@@ -338,10 +338,10 @@ warnings, and every new Firestore rule was hand-traced against its calling code.
 is that "no known bugs" here means no bugs found by static review and compilation, not by running
 the app.
 
-**Remaining incomplete features**: Stories (§9), venue discovery (§52), phase/pace-vs-spin analysis
-requiring per-ball reads across many matches (§40–41, deprioritized on the platform's own
-performance rules rather than built cheaply and wrong), match/achievement/announcement/quiz
-community post *composer* UI (the data model and read/like/report paths already support them),
-Live Share token enable/disable/revoke, a scrub-preview clip editor UI, an organizer dashboard that
+**Remaining incomplete features**: Stories (§9), venue discovery (§52), pace-vs-spin analysis (§41 —
+match-scoped phase analysis is now built; a bowling-style breakdown is not), achievement/
+announcement/quiz community post *composer* UI (match-sharing is now built; the data model and
+read/like/report paths already support the rest), Live Share token enable/disable/revoke, a
+scrub-preview clip editor UI, an organizer dashboard that
 unifies the several admin surfaces that already exist separately, and every AI/native-mobile/
 real-billing item listed as blocked above.

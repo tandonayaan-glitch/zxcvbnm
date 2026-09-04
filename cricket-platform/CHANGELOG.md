@@ -48,10 +48,15 @@ with `tsc` + `vite build` + `oxlint`; no `scoring.ts`/`Delivery`/`BallInput` cha
   had to `communityPosts`/`lookingForPosts`/`contentReports`, which lacked them. **Not verified
   against a live Firebase emulator** — no Firebase CLI is available in this environment; every
   rule was hand-traced against its actual calling code instead.
-- **Not built this slice**: Stories, venue discovery, phase/pace-vs-spin analysis (deprioritized on
-  performance grounds — would need per-ball reads across many matches), community post kinds
-  beyond text/poll, Live Share token management, a clip-editor scrub UI, a unified organizer
-  dashboard. See `ROADMAP_V6_PLATFORM.md` for the full audit.
+- **Phase analysis** (`domain/phaseAnalysis.ts` + `PhaseAnalysisCard`, added same slice): real
+  powerplay/middle/death breakdown per innings on `MatchPage`, deliberately match-scoped (not
+  platform-wide — that would mean reading every completed match's full delivery subcollection
+  with no pagination/aggregation infra to do it safely).
+- **Match-sharing community posts**: `PostComposer` gained a "Share a match" mode
+  (`CommunityPost.kind === 'match'`), linking back to the real match page.
+- **Not built this slice**: Stories, venue discovery, pace-vs-spin analysis, achievement/
+  announcement/quiz community post kinds, Live Share token management, a clip-editor scrub UI, a
+  unified organizer dashboard. See `ROADMAP_V6_PLATFORM.md` for the full audit.
 
 ## [Unreleased] — Media/Broadcast engine (live streaming, recording, replay, ball-to-video)
 

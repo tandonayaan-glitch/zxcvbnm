@@ -33,6 +33,7 @@ import { setPlayerOfTheMatch, subscribeDeliveries } from '@/services/scoring.ser
 import { ScorecardView } from '@/features/scorecard/ScorecardView'
 import { MatchGraphs } from '@/components/charts/MatchGraphs'
 import { MatchInsights } from '@/components/charts/MatchInsights'
+import { PhaseAnalysisCard } from '@/components/charts/PhaseAnalysisCard'
 import { WagonWheel } from '@/components/charts/WagonWheel'
 import { PitchMap } from '@/components/charts/PitchMap'
 import { listBallMeta } from '@/services/ballMeta.service'
@@ -447,6 +448,21 @@ export function MatchPage() {
       {deliveries.length > 0 && (
         <div className="mb-4">
           <MatchInsights match={match} deliveries={deliveries} name={name} />
+        </div>
+      )}
+
+      {/* Phase breakdown (powerplay/middle/death), one card per innings that has balls bowled */}
+      {deliveries.length > 0 && (
+        <div className="mb-4 grid gap-4 sm:grid-cols-2">
+          {match.innings.map((inn, idx) => (
+            <PhaseAnalysisCard
+              key={idx}
+              match={match}
+              deliveries={deliveries}
+              inningsIndex={idx}
+              teamName={inn.battingTeamId === match.teamA.id ? match.teamA.name : match.teamB.name}
+            />
+          ))}
         </div>
       )}
 

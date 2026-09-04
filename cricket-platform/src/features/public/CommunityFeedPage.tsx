@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Heart, MessageSquare, Flag, Trash2, Send } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { Card, PageLoader, EmptyState, Button, Avatar, Badge } from '@/components/ui/primitives'
+import { Card, PageLoader, EmptyState, Button, Avatar, Badge, Select } from '@/components/ui/primitives'
 import { useToast } from '@/components/ui/toast'
 import { useAuthStore } from '@/store/authStore'
+import { useAsync } from '@/hooks/useAsync'
 import { useDocumentMeta } from '@/hooks/useDocumentMeta'
+import { listAllMatches } from '@/services/matches.service'
 import {
   subscribeFeed,
   createPost,
@@ -84,6 +87,14 @@ export function CommunityFeedPage() {
                   {post.imageURL && (
                     <img src={post.imageURL} alt="" className="mt-2 max-h-80 w-full rounded-lg object-cover" />
                   )}
+                  {post.kind === 'match' && post.matchId && (
+                    <Link
+                      to={`/match/${post.matchId}`}
+                      className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-ink-200 px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-ink-50 dark:border-ink-800 dark:hover:bg-ink-800"
+                    >
+                      {post.matchTitle ?? 'View match'}
+                    </Link>
+                  )}
                   {post.kind === 'poll' && post.pollOptions && (
                     <div className="mt-2 space-y-1.5">
                       {post.pollOptions.map((o) => {
@@ -141,22 +152,37 @@ export function CommunityFeedPage() {
 
 function PostComposer() {
   const toast = useToast()
+  const matches = useAsync(listAllMatches, [])
   const [text, setText] = useState('')
   const [kind, setKind] = useState<PostKind>('text')
   const [pollOptions, setPollOptions] = useState(['', ''])
+  const [matchId, setMatchId] = useState('')
   const [posting, setPosting] = useState(false)
+
+  const recentMatches = (matches.data ?? [])
+    .filter((m) => !m.deletedAt)
+    .sort((a, b) => (b.completedAt ?? b.createdAt) - (a.completedAt ?? a.createdAt))
+    .slice(0, 30)
 
   async function submit() {
     if (!text.trim()) return
+    if (kind === 'match' && !matchId) {
+      toast.error('Pick a match to share.')
+      return
+    }
     setPosting(true)
     try {
+      const match = recentMatches.find((m) => m.id === matchId)
       await createPost({
         kind,
         text: text.trim(),
         pollOptions: kind === 'poll' ? pollOptions.map((o) => o.trim()).filter(Boolean) : undefined,
+        matchId: kind === 'match' ? matchId : undefined,
+        matchTitle: kind === 'match' ? match?.title : undefined,
       })
       setText('')
       setPollOptions(['', ''])
+      setMatchId('')
       setKind('text')
     } catch {
       toast.error('Could not post.')
@@ -197,13 +223,33 @@ function PostComposer() {
           </button>
         </div>
       )}
-      <div className="mt-2 flex items-center justify-between">
-        <button
-          onClick={() => setKind(kind === 'poll' ? 'text' : 'poll')}
-          className="text-xs font-semibold text-ink-500 hover:text-brand-600 dark:text-ink-400"
-        >
-          {kind === 'poll' ? 'Remove poll' : '+ Add poll'}
-        </button>
+      {kind === 'match' && (
+        <div className="mt-2">
+          <Select value={matchId} onChange={(e) => setMatchId(e.target.value)}>
+            <option value="">Pick a match…</option>
+            {recentMatches.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.title}
+              </option>
+            ))}
+          </Select>
+        </div>
+      )}
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex gap-3">
+          <button
+            onClick={() => setKind(kind === 'poll' ? 'text' : 'poll')}
+            className="text-xs font-semibold text-ink-500 hover:text-brand-600 dark:text-ink-400"
+          >
+            {kind === 'poll' ? 'Remove poll' : '+ Add poll'}
+          </button>
+          <button
+            onClick={() => setKind(kind === 'match' ? 'text' : 'match')}
+            className="text-xs font-semibold text-ink-500 hover:text-brand-600 dark:text-ink-400"
+          >
+            {kind === 'match' ? 'Remove match' : '+ Share a match'}
+          </button>
+        </div>
         <Button size="sm" onClick={submit} loading={posting} disabled={!text.trim()}>
           <Send size={14} /> Post
         </Button>
