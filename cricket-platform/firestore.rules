@@ -537,7 +537,10 @@ service cloud.firestore {
     // ---- Looking For (discovery engine) -------------------------
     match /lookingForPosts/{id} {
       allow read: if true;
-      allow create: if isSignedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.title is string && request.resource.data.title.size() > 0
+        && request.resource.data.description is string && request.resource.data.description.size() <= 2000;
       allow update, delete: if isSignedIn()
         && (resource.data.createdBy == request.auth.uid || isMasterAdmin());
     }
@@ -566,16 +569,36 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isSignedIn()
         && request.resource.data.createdBy == request.auth.uid
-        && request.resource.data.authorId == request.auth.uid;
+        && request.resource.data.authorId == request.auth.uid
+        // Same size cap as `comments` — defense in depth against a client writing an
+        // arbitrarily large text blob.
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 2000;
       allow update: if isSignedIn() && (
         resource.data.createdBy == request.auth.uid
         || isMasterAdmin()
         // Anyone signed in may cast a poll vote or like/unlike — restricted to touching only
-        // those fields, never content/author/etc. `likeCount` moves by exactly 1 per write
-        // (the client does read-then-increment, but the rule re-derives the same guarantee
+        // those fields, never content/author/etc, AND required to add exactly one new voter
+        // (themselves, not already present) rather than trusting the client to only ever bump
+        // one option's count by one — a signed-in user could otherwise rewrite `pollOptions` to
+        // arbitrary values in the same write as long as they stayed within the allowed keys.
+        // This doesn't verify vote *totals* stay internally consistent with `pollVoterIds`
+        // (that would need summing across options, which rules can't do), but it does close the
+        // "vote twice" / "vote without appearing as a voter" holes, which are the real abuse
+        // path for a low-stakes community poll. `likeCount` moves by exactly 1 per write (the
+        // client does read-then-increment, but the rule re-derives the same guarantee
         // server-side rather than trusting the client's arithmetic).
         || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pollOptions', 'pollVoterIds', 'updatedAt'])
-            )
+            // Existence-checked before reading, in that order — a plain text post has no
+            // `pollVoterIds` field at all, and reading a genuinely-missing map key before
+            // confirming it exists would error out this whole branch instead of just being
+            // false, which (being one operand of an `||`) would fail the entire `allow update`
+            // evaluation rather than safely falling through.
+            && 'pollVoterIds' in resource.data
+            && !(request.auth.uid in resource.data.pollVoterIds)
+            && request.auth.uid in request.resource.data.pollVoterIds
+            && request.resource.data.pollVoterIds.size() == resource.data.pollVoterIds.size() + 1)
         || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likeCount'])
             && request.resource.data.likeCount is int
             && (request.resource.data.likeCount == resource.data.likeCount + 1
@@ -593,7 +616,10 @@ service cloud.firestore {
     // ---- Moderation -------------------------------------------------
     match /contentReports/{id} {
       allow read: if isMasterAdmin() || (isSignedIn() && resource.data.reporterId == request.auth.uid);
-      allow create: if isSignedIn() && request.resource.data.reporterId == request.auth.uid;
+      allow create: if isSignedIn()
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() > 0 && request.resource.data.reason.size() <= 1000;
       allow update, delete: if isMasterAdmin();
     }
 

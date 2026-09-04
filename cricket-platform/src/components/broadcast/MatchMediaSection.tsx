@@ -5,6 +5,7 @@ import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/toast'
 import { LiveVideoPlayer } from './LiveVideoPlayer'
 import { ReplayPlayer, type ReplayPlayerHandle } from './ReplayPlayer'
+import { ScoreOverlay } from './ScoreOverlay'
 import {
   subscribeBroadcast,
   subscribeMatchVideos,
@@ -16,7 +17,7 @@ import {
 } from '@/services/broadcast.service'
 import { uploadVideo, VideoUploadError } from '@/services/storage.service'
 import { isBroadcastLive, isRecordingReady, formatDuration } from '@/domain/broadcast'
-import type { Broadcast, BallMeta, Clip, Delivery, MatchVideo } from '@/types'
+import type { Broadcast, BallMeta, Clip, Delivery, Match, MatchVideo } from '@/types'
 
 export function MatchMediaSection({
   matchId,
@@ -24,6 +25,8 @@ export function MatchMediaSection({
   canManage,
   deliveries,
   ballMeta,
+  match,
+  playerName,
 }: {
   matchId: string
   matchStatus: string
@@ -31,6 +34,11 @@ export function MatchMediaSection({
   canManage: boolean
   deliveries: Delivery[]
   ballMeta: BallMeta[]
+  /** Full match doc + a playerId->name resolver, used only to render the live broadcast-style
+   *  score overlay — optional so this component still works standalone (e.g. from a context
+   *  that hasn't loaded player names). */
+  match?: Match
+  playerName?: (id?: string | null) => string
 }) {
   const toast = useToast()
   const [broadcast, setBroadcast] = useState<Broadcast | null>(null)
@@ -99,7 +107,10 @@ export function MatchMediaSection({
       />
       <CardBody className="space-y-4">
         {live ? (
-          <LiveVideoPlayer matchId={matchId} />
+          <div className="relative">
+            <LiveVideoPlayer matchId={matchId} />
+            {match && playerName && <ScoreOverlay match={match} name={playerName} />}
+          </div>
         ) : activeVideo ? (
           <>
             <ReplayPlayer ref={playerRef} video={activeVideo} />

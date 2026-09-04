@@ -20,6 +20,7 @@ const CATEGORY_LABELS: Record<NotificationCategory, string> = {
   admin: 'Admin',
   account: 'Account',
   security: 'Security',
+  community: 'Community',
 }
 
 type ReadFilter = 'all' | 'unread'

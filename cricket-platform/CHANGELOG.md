@@ -2,6 +2,57 @@
 
 All notable changes to CricketHub. Newest first.
 
+## [Unreleased] — Discovery, Looking For, Community, Following, Reputation, Rankings
+
+Second slice of the platform-build brief (`ROADMAP_V6_PLATFORM.md`), following priorities 10–16
+(discovery, Looking For, social, rankings, scorer/umpire ecosystem, ratings/reputation). Verified
+with `tsc` + `vite build` + `oxlint`; no `scoring.ts`/`Delivery`/`BallInput` change.
+
+- **Discovery** (`domain/discovery.ts` + `DiscoverPage`): unified search+filter over players,
+  teams, clubs, tournaments — one engine, not five. `Player` gained two new optional, user-entered
+  fields (`location`, `skillLevel`) that power the filters; absent means excluded from a filter,
+  never guessed or defaulted.
+- **Looking For** (`services/lookingFor.service.ts` + `LookingForPage`): one unified post/response
+  model across player/team/opponent/umpire/scorer requests, with real expiry and accept/decline —
+  not five separate systems.
+- **Following** (`services/follow.service.ts` + `FollowToggle`): real Firestore-backed follow with
+  a live follower count, distinct from the pre-existing local-only favorites bookmark
+  (`FollowButton`/`favStore`, untouched). Wired into Player/Team/Club/Tournament pages.
+- **Community feed** (`services/community.service.ts` + `CommunityFeedPage`): text/poll posts,
+  likes (server-verified ±1 per write), one-vote-per-user polls (server-verified, not just
+  client-trusted), reporting.
+- **Moderation** (`services/moderation.service.ts` + admin `ModerationPage`): a real review queue
+  over submitted reports.
+- **Reputation** (`Rating`/`ReputationSummary` + `domain/reputation.ts` +
+  `services/ratings.service.ts` + `RatingWidget`): self-rating and duplicate-rating blocked by
+  `firestore.rules` itself (doc-id scheme + a `linkedUserId` cross-check for players), not just
+  the UI hiding the control. On `PlayerPage`, and on `UserProfilePage` for scorer-capable accounts
+  alongside a real "matches scored" count derived from `Match.scorerId`/`createdBy`.
+- **Rankings** (`domain/rankings.ts` + `RankingsPage`): reuses the existing, already-verified
+  `buildLeaderboards()` engine with format/location filters, plus a real scorer leaderboard from
+  actual match-scoring counts.
+- **Toss insights** (`domain/tossInsights.ts`): real win-rate-by-toss-decision data, explicitly
+  labeled correlation not causation, on the Stats page's Records tab.
+- **Tournament report** (`TournamentReportPage`): a clean print-to-PDF page — this project has no
+  server-side PDF pipeline, so the browser's own print-to-PDF is the honest way to produce a real
+  file, not a fabricated export button.
+- **Broadcast-style score overlay** (`components/broadcast/ScoreOverlay.tsx`): a real lower-third
+  graphic on the live video, reading the same live `Match`/`InningsState` the scoring engine
+  writes. A browser-side overlay, not composited into the video stream itself (that would need a
+  media provider this project doesn't have).
+- **Notifications**: new `community` category; best-effort `notify()` wired to new-follower
+  (player accounts), new Looking For response, and post-liked events.
+- **Security**: a self-review pass caught and fixed a real gap in the community poll-vote rule
+  (was "touches only these fields," now "adds exactly one new, previously-absent voter," guarded
+  against an evaluation error on non-poll posts) and added the text-length caps `comments` already
+  had to `communityPosts`/`lookingForPosts`/`contentReports`, which lacked them. **Not verified
+  against a live Firebase emulator** — no Firebase CLI is available in this environment; every
+  rule was hand-traced against its actual calling code instead.
+- **Not built this slice**: Stories, venue discovery, phase/pace-vs-spin analysis (deprioritized on
+  performance grounds — would need per-ball reads across many matches), community post kinds
+  beyond text/poll, Live Share token management, a clip-editor scrub UI, a unified organizer
+  dashboard. See `ROADMAP_V6_PLATFORM.md` for the full audit.
+
 ## [Unreleased] — Media/Broadcast engine (live streaming, recording, replay, ball-to-video)
 
 First slice of the platform-build brief (`ROADMAP_V6_PLATFORM.md`): real, working live streaming

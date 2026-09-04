@@ -506,6 +506,8 @@ export function MatchPage() {
           canManage={admin}
           deliveries={deliveries}
           ballMeta={ballMeta.data ?? []}
+          match={match}
+          playerName={name}
         />
       </div>
 

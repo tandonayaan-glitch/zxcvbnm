@@ -1,7 +1,8 @@
-import { collection, doc, setDoc, deleteDoc, onSnapshot, type Unsubscribe } from 'firebase/firestore'
+import { collection, doc, getDoc, setDoc, deleteDoc, onSnapshot, type Unsubscribe } from 'firebase/firestore'
 import { db, auth } from '@/lib/firebase'
 import { COL } from '@/lib/collections'
-import type { Follow, FollowTargetType } from '@/types'
+import { notify } from './notifications.service'
+import type { Follow, FollowTargetType, Player } from '@/types'
 
 function followsCol() {
   return collection(db, COL.follows)
@@ -17,6 +18,21 @@ export async function followEntity(targetType: FollowTargetType, targetId: strin
   const id = followId(uid, targetType, targetId)
   const follow: Follow = { id, followerId: uid, targetType, targetId, createdAt: Date.now() }
   await setDoc(doc(followsCol(), id), follow)
+
+  // Best-effort: notify a player being followed, when their account is linked (the only
+  // target type this app can currently resolve back to a real notifiable account — teams/
+  // clubs/tournaments don't have a single "owner account" that's always meaningful to page).
+  if (targetType === 'player') {
+    try {
+      const playerSnap = await getDoc(doc(db, COL.players, targetId))
+      const player = playerSnap.data() as Player | undefined
+      if (player?.linkedUserId && player.linkedUserId !== uid) {
+        await notify(player.linkedUserId, 'community', 'New follower', 'Someone started following you.', `/player/${targetId}`)
+      }
+    } catch {
+      /* best-effort */
+    }
+  }
 }
 
 export async function unfollowEntity(targetType: FollowTargetType, targetId: string): Promise<void> {

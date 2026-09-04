@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   setDoc,
   updateDoc,
@@ -10,6 +11,7 @@ import {
 } from 'firebase/firestore'
 import { db, auth } from '@/lib/firebase'
 import { COL, pruneUndefined } from '@/lib/collections'
+import { notify } from './notifications.service'
 import type { LookingForPost, LookingForResponse, LookingForKind } from '@/types'
 
 function postsCol() {
@@ -120,6 +122,21 @@ export async function respondToLookingForPost(postId: string, message?: string):
     await updateDoc(doc(postsCol(), postId), { updatedAt: Date.now() })
   } catch {
     /* non-fatal */
+  }
+  try {
+    const postSnap = await getDoc(doc(postsCol(), postId))
+    const post = postSnap.data() as LookingForPost | undefined
+    if (post && post.createdBy !== uid) {
+      await notify(
+        post.createdBy,
+        'community',
+        'New response to your post',
+        `${response.responderName} responded to "${post.title}".`,
+        '/looking-for',
+      )
+    }
+  } catch {
+    /* best-effort — never block the response itself */
   }
 }
 

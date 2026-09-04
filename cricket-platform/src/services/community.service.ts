@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore'
 import { db, auth } from '@/lib/firebase'
 import { COL, pruneUndefined } from '@/lib/collections'
+import { notify } from './notifications.service'
 import type { CommunityPost, PostKind, PollOption } from '@/types'
 
 function postsCol() {
@@ -108,6 +109,15 @@ export async function likePost(postId: string): Promise<void> {
   if (!uid) throw new Error('You must be signed in to like a post.')
   await setDoc(doc(likesCol(), likeId(postId, uid)), { id: likeId(postId, uid), postId, userId: uid, createdAt: Date.now() })
   await updateDoc(doc(postsCol(), postId), { likeCount: increment(1) }).catch(() => {})
+  try {
+    const postSnap = await getDoc(doc(postsCol(), postId))
+    const post = postSnap.data() as CommunityPost | undefined
+    if (post && post.createdBy !== uid) {
+      await notify(post.createdBy, 'community', 'Someone liked your post', post.text.slice(0, 80), '/feed')
+    }
+  } catch {
+    /* best-effort */
+  }
 }
 
 export async function unlikePost(postId: string): Promise<void> {

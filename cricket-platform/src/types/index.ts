@@ -610,6 +610,7 @@ export type NotificationCategory =
   | 'admin'
   | 'account'
   | 'security'
+  | 'community'
 
 /** In-app notification for one recipient. Written directly by whichever client
  * action triggers it (this app has no backend to dispatch these centrally). */
