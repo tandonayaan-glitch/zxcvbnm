@@ -131,6 +131,82 @@ partially, §48 (Toss Insights). Full writeup in `CHANGELOG.md`.
 
 ---
 
+## Slice 3 — Deterministic Intelligence layer, Smart Search/Scouting, AI architecture ✅ Built
+
+A follow-up master prompt (22 phases, its own numbering) asked to re-audit slices 1–2 against the
+actual code (not trust the prior report blindly), then finish the deterministic
+analytics/intelligence layer, Smart Matchups/Search/Scouting, Player Development, the AI provider
+architecture, then re-audit and re-verify. Re-audit confirmed slices 1–2 as reported — nothing
+found broken or overstated — plus discovered `domain/styleMatchups.ts`'s `bowlerVsBattingHand()`
+existed from a prior sibling commit but was never called from any UI (fixed in this slice).
+
+- **Performance Score** (`domain/performanceScore.ts`): explainable, reproducible — same fixed
+  weights as the pre-existing `stats.ts` `impactRating()` (one canonical scoring scheme), extended
+  with a per-match variant, a capped/labeled pressure-contribution bonus for narrow wins, and a
+  `factors` list naming every non-zero contribution. Not a fitted model.
+- **Career Intelligence** (`domain/careerIntelligence.ts`, new tab on `PlayerPage`): form trend
+  (recent-N vs prior-N innings, ≥15% swing threshold before calling it a real trend), consistency
+  (filtered from the existing platform-wide `computeBattingConsistency`), and a career-wide
+  batting phase split computed match-by-match so each match's own format/overs boundaries apply
+  correctly.
+- **Automatic Match Reports** (`domain/matchReport.ts`, `MatchReportCard` on `MatchPage`):
+  result, win-probability trajectory computed over-by-over through the actual chase (reusing the
+  existing `chaseWinProbability` heuristic), expected-vs-actual (projected from the real powerplay
+  trajectory, not a trivial end-of-innings tautology), top performers, a narrow/explainable
+  "starts that didn't convert" underperformer rule, fielding tallied from real dismissal records,
+  and per-innings plain-English summaries. Entirely deterministic.
+- **Deterministic Highlights** (`domain/highlights.ts`, `HighlightsPanel` replacing the old
+  video-gated-only list in `MatchMediaSection`): wickets/sixes/fours/milestones/big overs/
+  partnerships/turning points, each with a documented significance score, filterable by type,
+  shareable, and gaining a real "Watch" button only when a genuine ball-to-video timestamp exists
+  — the list itself never disappears just because no video exists (the old list did).
+- **Team Intelligence** (`domain/teamIntelligence.ts`, new card on `TeamPage`): real batting-order
+  and bowling-role breakdowns, chase-vs-set win rate, and a suggested XI explicitly documented and
+  UI-labeled as one data-driven reading of past Performance Score, never a claim of optimality.
+- **Competitive Intelligence**: confirmed already built pre-session and left alone
+  (`teamOpponentRecords`/`teamVenueRecords` on `TeamPage`); toss insights added last slice; phase/
+  pace-vs-spin trends now real at the player level (Career Intelligence, Smart Matchups).
+- **Smart Matchups completion**: `bowlerVsBattingHand()` was written but never wired to any UI —
+  now on `PlayerPage`'s "Matchups" tab (renamed from "vs Bowler") for any player who has bowled,
+  fixing a tab that was previously hidden entirely from pure bowlers.
+- **Smart Search** (`domain/smartSearch.ts`, wired into `SearchPage`): a deterministic
+  keyword-matched query architecture ("most runs", "best economy", "Team A vs Team B") answered
+  from data already aggregated cheaply — explicitly architected as the layer a future AI/NLP
+  front-end would translate free text INTO, never a shortcut that invents numbers itself.
+- **Player Scouting** (`DiscoverPage`): a real Performance Score badge and "sort by Performance
+  Score" toggle, using the exact same scoring function as Career Intelligence.
+- **Player Development** (`domain/playerDevelopment.ts`, section on the Career Intelligence tab):
+  data-driven strength/weakness detection (a real ≥20 SR-point phase or pace/spin gap, extreme
+  consistency variation, a regressing/improving form trend) paired with generic cricket-coaching
+  drill suggestions per weakness *type* — explicitly labeled as generic suggestions, never
+  personalized training claims (this platform has no training-log data to personalize from).
+- **AI Engine architecture** (`domain/ai.ts`, `services/ai.service.ts`, `worker/src/handlers/ai.ts`,
+  `AICoachPanel`): the complete provider-independent request/response contract, an authenticated
+  Worker endpoint that honestly reports `not_configured` (no key exists anywhere in this
+  environment) rather than faking a call, and the one real UI demonstration of the full lifecycle
+  — hidden behind a new `ai_coach` feature flag (off by default) so it can never ship as a visible
+  dead button.
+- **Security**: no new Firestore collections or rules this slice (everything above is derived
+  client-side from data already public/aggregated) — the only new server surface is the Worker's
+  `/ai` route, authenticated the same way as the existing `/usage` route. Reviewed and confirmed
+  no new privacy exposure: AI request context is exactly the aggregated stats already shown on the
+  same public player page.
+- **Responsive/dark-mode**: code-level review of every new component (grep for fixed-pixel widths,
+  missing `dark:` pairings, non-wrapping flex rows) found nothing new introduced; consistent with
+  the standing limitation that this environment cannot launch a browser for a live device sweep.
+- **Deployment**: confirmed genuinely blocked, not just previously reported as such — this
+  environment has no `firebase` CLI at all (`npx firebase` fails to resolve an executable) and
+  `wrangler` (available via `npx`) reports "You are not authenticated." Neither Firestore rules
+  nor the Worker's new `/ai` route are live anywhere.
+
+**Not built this slice, and why**: Stories, venue discovery, an organizer dashboard, Live Share
+token management, a clip-editor scrub UI, and the real AI provider call itself (architecture is
+complete and ready; no key exists to build the actual call against) — all unchanged from the
+Slice 2 report's own list, since this slice's scope was the deterministic intelligence layer and
+AI architecture specifically, not a second pass at Slice 2's own remaining gaps.
+
+---
+
 ## Full 79-section audit
 
 Legend: **BUILT** (working end-to-end, verified) · **PARTIAL** (real subset works) · **NOT BUILT**
@@ -171,16 +247,16 @@ cannot supply) · **PRE-EXISTING** (already true before this session, unrelated 
 | 33 | Video player | **BUILT (Slice 1)** | Standard HTML5 controls via `ReplayPlayer`. |
 | 34 | Clip editor | PARTIAL (Slice 1) | Save a time-range bookmark; no trim-preview scrubber UI yet (numeric start/end only). |
 | 35 | Ball-to-video | **BUILT (Slice 1)** | Auto-timestamped from a real recording; "key moments" list on `MatchPage`. |
-| 36–37 | Automatic/AI highlights | NOT BUILT / BLOCKED for the "AI" half | Candidate-moment data (wickets/boundaries + timestamp) now exists from Slice 1; auto-clip generation from it is unstarted; real AI ranking needs an AI API this environment doesn't have configured. |
-| 38 | AI past-match insights | BLOCKED | No AI API configured. `domain/insights.ts` already provides real, non-AI heuristic analysis. |
-| 39 | AI momentum | PARTIAL, non-AI | `winProbability.ts`/`insights.ts` already compute real momentum-adjacent heuristics; not framed as "AI". |
-| 40 | AI phase analysis | NOT BUILT | Real powerplay/middle/death splits are computable from existing ball data; not built yet. |
-| 41 | AI opponent analysis | NOT BUILT | `headToHead.ts` exists at team level only. |
-| 42 | AI live-match analysis | PARTIAL, non-AI | Win probability is live already; projected score/pressure framing not built. |
-| 43 | AI tactical recommendations | BLOCKED | Needs real AI generation to avoid inventing advice; not attempted. |
-| 44 | AI post-match coaching | BLOCKED | Same reason. |
-| 45 | AI commentary | BLOCKED | Real AI generation required to avoid inventing events; not attempted. |
-| 40, 46–50 | Phase analysis / advanced analytics / form / toss / comparisons | **PARTIAL, extended (Slice 2)** | `ROADMAP_V5_PLATFORM.md` already delivers win probability, expected score, batter-vs-bowler, partnerships, and recent-form charts (Current Form / Last Five Matches — already built pre-session, see `PlayerForm.tsx`). This slice adds real toss insights (`domain/tossInsights.ts`) and real powerplay/middle/death phase analysis (`domain/phaseAnalysis.ts` + `PhaseAnalysisCard` on `MatchPage`) — deliberately kept **match-scoped**, not platform-wide, since a platform-wide version would mean reading every completed match's full delivery subcollection with no pagination/aggregation infra to do that safely (§63). Pace-vs-spin specifically still NOT BUILT (no bowling-style-vs-outcome breakdown exists). |
+| 36–37 | Automatic/AI highlights | **DETERMINISTIC HALF BUILT (Slice 3)**, AI ranking BLOCKED | `domain/highlights.ts` + `HighlightsPanel` (Slice 3) auto-identify wickets/boundaries/milestones/turning points with a documented significance score — the real "candidate moment" system the brief asks for, just not AI-ranked. AI re-ranking on top of this needs an API this environment doesn't have configured. |
+| 38 | AI past-match insights | **DETERMINISTIC EQUIVALENT BUILT (Slice 3)**, AI narration BLOCKED | `domain/matchReport.ts` + `MatchReportCard` (Slice 3) is the real, non-AI post-match report: result, win-probability swing, expected-vs-actual, top/underperformers, fielding. No AI API configured for a narrated version on top. |
+| 39 | AI momentum | BUILT, non-AI (pre-existing + Slice 3) | `winProbability.ts`/`insights.ts` already compute real momentum-adjacent heuristics, now surfaced together in `MatchReportCard`'s biggest-swing section. Not framed as "AI" anywhere, correctly. |
+| 40 | AI phase analysis | **BUILT, non-AI (Slice 2 + 3)** | Real powerplay/middle/death splits: per-match (`domain/phaseAnalysis.ts`, Slice 2) and career-wide per-player (`domain/careerIntelligence.ts`, Slice 3). Deliberately kept scoped (match- or single-player-at-a-time) rather than a platform-wide scan with no pagination infra to do that safely (§63). |
+| 41 | AI opponent analysis | **PARTIAL, non-AI, extended (Slice 3)** | `headToHead.ts` (team level, pre-existing) + `batterVsBowler.ts`/`styleMatchups.ts` (player level, pre-existing, now both wired to UI via the Slice 3 "Matchups" tab fix) + `teamOpponentRecords`/`teamVenueRecords` (pre-existing). No AI narration layer on top. |
+| 42 | AI live-match analysis | PARTIAL, non-AI | Win probability is live already; projected score/pressure framing not built beyond the existing live panel. Unchanged this slice. |
+| 43 | AI tactical recommendations | **PARTIAL, non-AI equivalent (Slice 3)**, real-AI BLOCKED | `domain/teamIntelligence.ts`'s suggested XI (Slice 3) is a real, deterministic, explicitly-non-guaranteed tactical suggestion — not framed as "AI", so it doesn't fake the thing this item actually asks for (AI-generated recommendations), but it does deliver a real, data-driven suggestion where none existed. |
+| 44 | AI post-match coaching | **DETERMINISTIC EQUIVALENT BUILT (Slice 3)**, AI narration BLOCKED | `domain/playerDevelopment.ts` (Slice 3): real strength/weakness detection with evidence, paired with generic (not personalized) coaching-style drill suggestions per weakness type. No AI API configured for a personalized narrated version. |
+| 45 | AI commentary | BLOCKED | Real AI generation required to avoid inventing events; not attempted — no AI API configured. |
+| 46–50 | Advanced analytics / form / toss / comparisons | **BUILT/PARTIAL, extended (Slices 2-3)** | `ROADMAP_V5_PLATFORM.md` already delivers win probability, expected score, batter-vs-bowler, partnerships, and recent-form charts. Slice 2 added toss insights and match-scoped phase analysis. Slice 3 added career-wide phase splits, a Performance Score, and Player Development (Career Intelligence tab). Pace-vs-spin is real at the player level (`styleMatchups.ts`, now wired to UI); team-level pace-vs-spin trends are still NOT BUILT. |
 | 51 | Global search | PARTIAL (pre-existing) | Unchanged this slice — `SearchPage.tsx` covers players/teams/tournaments/matches/clubs; `DiscoverPage` (new) adds filtering on top for players/teams/clubs/tournaments specifically, but the two aren't merged into one surface. |
 | 52 | Venue discovery | NOT BUILT | No venue-as-an-entity model exists (`venue` today is a free-text field on `Match`/`Tournament`). |
 | 53 | Moderation | **BUILT for the surfaces that exist (Slice 2)** | Real `ContentReport` submit-and-review flow (`ModerationPage`) wired to the new community feed. Pre-existing content (comments, match reactions) still has no report path — only reachable content is covered, not retrofitted onto everything that predates this slice. |
@@ -198,7 +274,7 @@ cannot supply) · **PRE-EXISTING** (already true before this session, unrelated 
 | 67 | Real error handling | Followed for Slice 1 | Every new async path (camera permission, WebRTC connect, upload) has a distinct loading/failure state surfaced via toast or inline UI — no fake success. |
 | 68–74 | Testing (existing platform, new systems, production) | NOT DONE THIS SESSION | This remote environment has no way to launch a browser against a live Firebase project or grant camera/mic permissions — `tsc`+`build`+`lint` verified the code compiles and types are sound; the WebRTC/recording acceptance tests in §69–71 require a real two-browser manual run, which needs a human (or a follow-up session with browser automation + real Firebase credentials + camera permission). **This is the single most important caveat on Slice 1**: the code is real and unfaked, but it has not been observed working live end-to-end in this session. |
 | 75 | Feature priority order | Followed | Slice 1 = priorities 1–3 (live streaming, recording, ball-to-video). Slice 2 = priorities 10–16 (discovery, Looking For, social, rankings, scorer/umpire ecosystem, ratings/reputation) plus 18/21/22 opportunistically since they shared infrastructure already in hand. |
-| 76 | Shared systems (6 "engines") | Media/Broadcast + Discovery + Identity/Reputation + Community + Opportunity engines started | AI and Entitlement engines untouched — AI genuinely blocked (no model API configured); Entitlement architecture already exists from `ROADMAP_V5_PLATFORM.md` and wasn't extended to gate the new social features (deliberately — community/discovery is free-tier by design, not an oversight). |
+| 76 | Shared systems (6 "engines") | Media/Broadcast + Discovery + Identity/Reputation + Community + Opportunity + **AI (Slice 3, architecture-only)** engines built | AI Engine's architecture (`domain/ai.ts`/`services/ai.service.ts`/`worker/src/handlers/ai.ts`) is complete and provider-independent, but disabled (no model API configured anywhere in this environment) — see the Slice 3 write-up above. Entitlement engine untouched — already exists from `ROADMAP_V5_PLATFORM.md` and wasn't extended to gate the new social/intelligence features (deliberately — free-tier by design, not an oversight). |
 | 77 | No fake functionality | Followed | See per-item notes above; every BUILT item is real, every blocked item says exactly what's missing. |
 | 78 | Final feature audit | This table | |
 | 79 | Final report | See below | |
