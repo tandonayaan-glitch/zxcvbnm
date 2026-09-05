@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { Video, Upload, Scissors, Trash2, Play } from 'lucide-react'
-import { Card, CardHeader, CardBody, Button, Badge, EmptyState } from '@/components/ui/primitives'
+import { Card, CardHeader, CardBody, Button, EmptyState } from '@/components/ui/primitives'
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/toast'
 import { LiveVideoPlayer } from './LiveVideoPlayer'
 import { ReplayPlayer, type ReplayPlayerHandle } from './ReplayPlayer'
 import { ScoreOverlay } from './ScoreOverlay'
+import { HighlightsPanel } from './HighlightsPanel'
 import {
   subscribeBroadcast,
   subscribeMatchVideos,
@@ -57,10 +58,6 @@ export function MatchMediaSection({
   const activeVideo = readyVideos.find((v) => v.id === activeVideoId) ?? readyVideos[0] ?? null
   const live = isBroadcastLive(broadcast?.status ?? 'not_started')
 
-  const keyMoments = deliveries
-    .map((d) => ({ delivery: d, meta: ballMeta.find((m) => m.id === d.id) }))
-    .filter((x) => x.meta?.videoTimestampSec != null && (x.delivery.wicket || x.delivery.totalRuns >= 4))
-
   async function handleUploadFile(file: File) {
     setUploading(true)
     try {
@@ -77,6 +74,7 @@ export function MatchMediaSection({
   }
 
   return (
+    <>
     <Card>
       <CardHeader
         title={
@@ -182,35 +180,6 @@ export function MatchMediaSection({
           </Button>
         )}
 
-        {keyMoments.length > 0 && (
-          <div>
-            <p className="mb-2 text-sm font-semibold text-ink-700 dark:text-ink-200">
-              Ball-to-video: key moments
-            </p>
-            <div className="space-y-1.5">
-              {keyMoments.map(({ delivery, meta }) => (
-                <div
-                  key={delivery.id}
-                  className="flex items-center justify-between rounded-lg border border-ink-200 px-3 py-2 text-sm dark:border-ink-800"
-                >
-                  <span>
-                    <span className="font-mono text-ink-500">{delivery.displayOver}</span>{' '}
-                    {delivery.commentary}
-                    {delivery.wicket && <Badge tone="red" className="ml-2">Wicket</Badge>}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={!activeVideo || activeVideo.kind !== 'live_recording'}
-                    onClick={() => playerRef.current?.seekTo(meta!.videoTimestampSec!)}
-                  >
-                    <Play size={14} /> Watch
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </CardBody>
 
       {clipModal && activeVideo && (
@@ -222,6 +191,17 @@ export function MatchMediaSection({
         />
       )}
     </Card>
+    {match && playerName && (
+      <HighlightsPanel
+        match={match}
+        deliveries={deliveries}
+        ballMeta={ballMeta}
+        name={playerName}
+        activeVideo={activeVideo}
+        onSeek={(sec) => playerRef.current?.seekTo(sec)}
+      />
+    )}
+    </>
   )
 }
 

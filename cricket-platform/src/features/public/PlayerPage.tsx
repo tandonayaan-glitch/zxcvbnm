@@ -24,7 +24,7 @@ import { playerTournamentSplits, playerSeasonSplits } from '@/domain/playerSplit
 import { playerTimeline } from '@/domain/playerTimeline'
 import { aggregatePlayerStats } from '@/domain/stats'
 import { batterVsBowlerBreakdown } from '@/domain/batterVsBowler'
-import { batterVsPaceSpin } from '@/domain/styleMatchups'
+import { batterVsPaceSpin, bowlerVsBattingHand } from '@/domain/styleMatchups'
 import { wagonWheelData } from '@/domain/wagonWheel'
 import { pitchMapData } from '@/domain/pitchMap'
 import { playerToCSV, playerToJSON } from '@/domain/playerExport'
@@ -141,10 +141,17 @@ export function PlayerPage() {
 
   const vsBowlerDeliveries = useAsync(async () => {
     if (!vsBowlerOpened) return []
-    const battedMatchIds = (perfs.data ?? [])
-      .filter((p) => p.batting)
-      .map((p) => p.matchId)
-    const lists = await Promise.all(battedMatchIds.map((mid) => getDeliveries(mid)))
+    // Both batted and bowled matches — the batted half feeds vs-bowler/pace-vs-spin below,
+    // the bowled half feeds this player's own vs-batting-hand split just after it. One fetch
+    // covers both rather than gating a second heavy delivery load behind its own flag.
+    const relevantMatchIds = [
+      ...new Set(
+        (perfs.data ?? [])
+          .filter((p) => p.batting || p.bowling)
+          .map((p) => p.matchId),
+      ),
+    ]
+    const lists = await Promise.all(relevantMatchIds.map((mid) => getDeliveries(mid)))
     return lists.flat()
   }, [vsBowlerOpened, perfs.data])
   const vsBowlerRows = useMemo(
@@ -167,6 +174,25 @@ export function PlayerPage() {
     )
     return batterVsPaceSpin(vsBowlerDeliveries.data ?? [], styleById, id)
   }, [vsBowlerDeliveries.data, vsBowlerNames.data, id])
+
+  // This player's own bowling, split by the striker's batting hand — deliveries where THIS
+  // player is the bowler, from the same combined fetch above. Needs the batting hand of every
+  // striker faced, which vsBowlerNames (bowler docs) doesn't cover, so a second small lookup.
+  const bowledDeliveries = useMemo(
+    () => (vsBowlerDeliveries.data ?? []).filter((d) => d.bowlerId === id),
+    [vsBowlerDeliveries.data, id],
+  )
+  const facedBatterIds = useMemo(
+    () => [...new Set(bowledDeliveries.map((d) => d.strikerId))],
+    [bowledDeliveries],
+  )
+  const facedBatters = useAsync(() => getPlayersByIds(facedBatterIds), [facedBatterIds])
+  const bowlerHandSplit = useMemo(() => {
+    const handById = new Map(
+      (facedBatters.data ?? []).map((pl) => [pl.id, pl.battingStyle as string | undefined]),
+    )
+    return bowlerVsBattingHand(bowledDeliveries, handById, id)
+  }, [bowledDeliveries, facedBatters.data, id])
 
   // Career wagon wheel / bowling heat map — same lazy-load-on-tab-open reasoning
   // as vsBowler above, but heavier still (deliveries *and* ballMeta per match),
@@ -341,8 +367,8 @@ export function PlayerPage() {
             ? [{ key: 'timeline', label: 'Timeline' }]
             : []),
           { key: 'achievements', label: 'Achievements' },
-          ...((perfs.data ?? []).some((p) => p.batting)
-            ? [{ key: 'vsbowler', label: 'vs Bowler' }]
+          ...((perfs.data ?? []).some((p) => p.batting || p.bowling)
+            ? [{ key: 'vsbowler', label: 'Matchups' }]
             : []),
           ...((perfs.data ?? []).length > 0
             ? [{ key: 'analysis', label: 'Shot & Line Analysis' }]
@@ -393,13 +419,48 @@ export function PlayerPage() {
       {tab === 'vsbowler' &&
         (vsBowlerDeliveries.loading ? (
           <PageLoader />
-        ) : vsBowlerRows.length === 0 ? (
+        ) : vsBowlerRows.length === 0 && !bowlerHandSplit.hasData ? (
           <EmptyState
             title="No deliveries yet"
-            description="This player hasn't faced a ball in a completed match yet."
+            description="This player hasn't faced or bowled a ball in a completed match yet."
           />
         ) : (
           <div className="space-y-4">
+            {bowlerHandSplit.hasData && (
+              <Card className="p-4">
+                <h3 className="mb-1 text-sm font-semibold text-ink-900 dark:text-ink-50">
+                  Bowling vs right- and left-handers
+                </h3>
+                <p className="mb-3 text-xs text-ink-500 dark:text-ink-400">
+                  Split by the striker&rsquo;s declared batting hand, across every ball this
+                  player has bowled in a completed match.
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {([
+                    ['Vs right-hand', bowlerHandSplit.vsRight],
+                    ['Vs left-hand', bowlerHandSplit.vsLeft],
+                  ] as const).map(([label, h]) => (
+                    <div
+                      key={label}
+                      className="rounded-lg border border-ink-100 bg-ink-50 p-3 dark:border-ink-800 dark:bg-ink-800/50"
+                    >
+                      <div className="text-xs font-semibold uppercase tracking-wide text-ink-500 dark:text-ink-400">
+                        {label}
+                      </div>
+                      <div className="mt-1 text-lg font-bold text-ink-900 dark:text-ink-50">
+                        {h.wickets} <span className="text-sm font-medium text-ink-500">wkts</span>
+                      </div>
+                      <dl className="mt-1 space-y-0.5 text-xs text-ink-600 dark:text-ink-400">
+                        <div className="flex justify-between"><dt>Balls</dt><dd>{h.balls}</dd></div>
+                        <div className="flex justify-between"><dt>Runs</dt><dd>{h.runsConceded}</dd></div>
+                        <div className="flex justify-between"><dt>Economy</dt><dd>{h.economy.toFixed(2)}</dd></div>
+                        <div className="flex justify-between"><dt>Strike rate</dt><dd>{h.strikeRate == null ? '—' : h.strikeRate.toFixed(1)}</dd></div>
+                      </dl>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
             {paceSpinSplit.hasClassifiedData ? (
               <Card className="p-4">
                 <h3 className="mb-1 text-sm font-semibold text-ink-900 dark:text-ink-50">
@@ -443,6 +504,7 @@ export function PlayerPage() {
                 )}
               </Card>
             ) : null}
+            {vsBowlerRows.length > 0 && (
             <Card className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -488,6 +550,7 @@ export function PlayerPage() {
               </tbody>
             </table>
             </Card>
+            )}
           </div>
         ))}
 

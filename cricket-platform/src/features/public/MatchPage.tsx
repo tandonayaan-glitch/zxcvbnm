@@ -34,6 +34,7 @@ import { ScorecardView } from '@/features/scorecard/ScorecardView'
 import { MatchGraphs } from '@/components/charts/MatchGraphs'
 import { MatchInsights } from '@/components/charts/MatchInsights'
 import { PhaseAnalysisCard } from '@/components/charts/PhaseAnalysisCard'
+import { MatchReportCard } from '@/components/charts/MatchReportCard'
 import { WagonWheel } from '@/components/charts/WagonWheel'
 import { PitchMap } from '@/components/charts/PitchMap'
 import { listBallMeta } from '@/services/ballMeta.service'
@@ -436,6 +437,10 @@ export function MatchPage() {
       )}
 
       {/* Analytics graphs */}
+      {match.status === 'completed' && deliveries.length > 0 && (
+        <MatchReportCard match={match} deliveries={deliveries} name={name} />
+      )}
+
       {deliveries.length > 0 && (
         <div id="match-insights" className="mb-4 scroll-mt-4">
           <PremiumGate feature="performance_charts">
