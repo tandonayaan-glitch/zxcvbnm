@@ -2,6 +2,23 @@
 
 All notable changes to CricketHub. Newest first.
 
+## [Unreleased] — Pace vs spin matchups
+
+Closes the `ROADMAP_V6_PLATFORM.md` "pace-vs-spin: NOT BUILT" gap — it was never an
+external blocker, just unbuilt. Pure domain module + a thin card; verified at runtime.
+No `scoring.ts`/`Delivery`/`BallInput` change; rules/indexes unchanged.
+
+- **`domain/styleMatchups.ts`**: `classifyBowlingStyle` (pace / spin / unknown, tolerant of
+  the `BowlingStyle` enum *and* real-data synonyms like `offbreak`/`legbreak`/`seam`),
+  `batterVsPaceSpin` (a batter's runs / balls / SR / average / boundary% / dot% split by the
+  bowler's declared style, with an `unknown` bucket reported separately, never folded in), and
+  `bowlerVsBattingHand` (a bowler's economy / strike-rate vs right- and left-handers).
+- **`PlayerPage` → vs Bowler tab**: a "Pace vs spin" card above the existing batter-vs-bowler
+  table, reusing the deliveries + bowler docs that view already loads (no extra fetch). Shows
+  only when at least one classified ball exists; otherwise hidden. Runtime-verified against the
+  one completed seed match — Bravo Three 14(3) vs pace, Alpha Three 7(3)/1 dismissal vs spin,
+  both correct, no console errors.
+
 ## [Unreleased] — Media fallbacks, prompt dialog, tutorial-dismiss persistence
 
 Hardening pass over the shared image pipeline, the last native `window.prompt`, and the

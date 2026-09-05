@@ -24,6 +24,7 @@ import { playerTournamentSplits, playerSeasonSplits } from '@/domain/playerSplit
 import { playerTimeline } from '@/domain/playerTimeline'
 import { aggregatePlayerStats } from '@/domain/stats'
 import { batterVsBowlerBreakdown } from '@/domain/batterVsBowler'
+import { batterVsPaceSpin } from '@/domain/styleMatchups'
 import { wagonWheelData } from '@/domain/wagonWheel'
 import { pitchMapData } from '@/domain/pitchMap'
 import { playerToCSV, playerToJSON } from '@/domain/playerExport'
@@ -158,6 +159,14 @@ export function PlayerPage() {
     () => new Map((vsBowlerNames.data ?? []).map((pl) => [pl.id, pl.fullName])),
     [vsBowlerNames.data],
   )
+  // Pace vs spin: join each faced delivery to the bowler's declared style. Reuses the
+  // already-loaded deliveries + bowler docs from the vs-Bowler view, so no extra fetch.
+  const paceSpinSplit = useMemo(() => {
+    const styleById = new Map(
+      (vsBowlerNames.data ?? []).map((pl) => [pl.id, pl.bowlingStyle as string | undefined]),
+    )
+    return batterVsPaceSpin(vsBowlerDeliveries.data ?? [], styleById, id)
+  }, [vsBowlerDeliveries.data, vsBowlerNames.data, id])
 
   // Career wagon wheel / bowling heat map — same lazy-load-on-tab-open reasoning
   // as vsBowler above, but heavier still (deliveries *and* ballMeta per match),
@@ -390,7 +399,51 @@ export function PlayerPage() {
             description="This player hasn't faced a ball in a completed match yet."
           />
         ) : (
-          <Card className="overflow-x-auto">
+          <div className="space-y-4">
+            {paceSpinSplit.hasClassifiedData ? (
+              <Card className="p-4">
+                <h3 className="mb-1 text-sm font-semibold text-ink-900 dark:text-ink-50">
+                  Pace vs spin
+                </h3>
+                <p className="mb-3 text-xs text-ink-500 dark:text-ink-400">
+                  Split by each bowler&rsquo;s declared style across every ball faced in a completed
+                  match. Deterministic — computed from ball-by-ball data, not an estimate.
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {([
+                    ['Vs pace', paceSpinSplit.pace],
+                    ['Vs spin', paceSpinSplit.spin],
+                  ] as const).map(([label, s]) => (
+                    <div
+                      key={label}
+                      className="rounded-lg border border-ink-100 bg-ink-50 p-3 dark:border-ink-800 dark:bg-ink-800/50"
+                    >
+                      <div className="text-xs font-semibold uppercase tracking-wide text-ink-500 dark:text-ink-400">
+                        {label}
+                      </div>
+                      <div className="mt-1 text-lg font-bold text-ink-900 dark:text-ink-50">
+                        {s.runs} <span className="text-sm font-medium text-ink-500">runs</span>
+                      </div>
+                      <dl className="mt-1 space-y-0.5 text-xs text-ink-600 dark:text-ink-400">
+                        <div className="flex justify-between"><dt>Balls</dt><dd>{s.balls}</dd></div>
+                        <div className="flex justify-between"><dt>Strike rate</dt><dd>{s.strikeRate.toFixed(1)}</dd></div>
+                        <div className="flex justify-between"><dt>Average</dt><dd>{s.average == null ? '—' : s.average.toFixed(1)}</dd></div>
+                        <div className="flex justify-between"><dt>Dismissals</dt><dd>{s.dismissals}</dd></div>
+                        <div className="flex justify-between"><dt>Boundary %</dt><dd>{s.boundaryPct.toFixed(1)}</dd></div>
+                        <div className="flex justify-between"><dt>Dot %</dt><dd>{s.dotPct.toFixed(1)}</dd></div>
+                      </dl>
+                    </div>
+                  ))}
+                </div>
+                {paceSpinSplit.unknown.balls > 0 && (
+                  <p className="mt-2 text-[11px] text-ink-400 dark:text-ink-500">
+                    {paceSpinSplit.unknown.balls} ball{paceSpinSplit.unknown.balls === 1 ? '' : 's'} faced
+                    against a bowler with no declared style — excluded from the split above.
+                  </p>
+                )}
+              </Card>
+            ) : null}
+            <Card className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-800/60 text-left text-xs uppercase tracking-wide text-ink-500 dark:text-ink-400">
@@ -434,7 +487,8 @@ export function PlayerPage() {
                 ))}
               </tbody>
             </table>
-          </Card>
+            </Card>
+          </div>
         ))}
 
       {tab === 'analysis' &&
