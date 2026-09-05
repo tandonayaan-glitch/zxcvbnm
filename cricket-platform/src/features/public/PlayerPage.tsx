@@ -32,6 +32,7 @@ import {
   strongestAndWeakestPhase,
 } from '@/domain/careerIntelligence'
 import { careerPerformanceScore } from '@/domain/performanceScore'
+import { identifyDevelopmentAreas, suggestDrills } from '@/domain/playerDevelopment'
 import { wagonWheelData } from '@/domain/wagonWheel'
 import { pitchMapData } from '@/domain/pitchMap'
 import { playerToCSV, playerToJSON } from '@/domain/playerExport'
@@ -246,6 +247,11 @@ export function PlayerPage() {
     () => (stats.data ? careerPerformanceScore(stats.data) : null),
     [stats.data],
   )
+  const developmentAreas = useMemo(
+    () => identifyDevelopmentAreas({ phaseLines, paceSpin: paceSpinSplit, consistency: consistencyRow, formTrend }),
+    [phaseLines, paceSpinSplit, consistencyRow, formTrend],
+  )
+  const drillSuggestions = useMemo(() => suggestDrills(developmentAreas), [developmentAreas])
   const wagonZones = useMemo(
     () => wagonWheelData(analysisData.data?.deliveries ?? [], analysisData.data?.ballMeta ?? [], id),
     [analysisData.data, id],
@@ -521,6 +527,54 @@ export function PlayerPage() {
                 )}
               </Card>
             )
+          )}
+
+          {developmentAreas.length > 0 && (
+            <Card className="p-4">
+              <h3 className="mb-1 text-sm font-semibold text-ink-900 dark:text-ink-50">
+                Development — strengths &amp; weaknesses
+              </h3>
+              <p className="mb-3 text-xs text-ink-500 dark:text-ink-400">
+                Detected from real performance gaps (a strike-rate or consistency swing large
+                enough to matter), not a subjective read.
+              </p>
+              <ul className="space-y-1.5 text-sm">
+                {developmentAreas.map((a) => (
+                  <li key={a.key} className="flex items-start gap-2">
+                    <span
+                      className={
+                        a.kind === 'strength'
+                          ? 'mt-0.5 h-2 w-2 shrink-0 rounded-full bg-green-500'
+                          : 'mt-0.5 h-2 w-2 shrink-0 rounded-full bg-amber-500'
+                      }
+                    />
+                    <span>
+                      <span className="font-medium text-ink-900 dark:text-ink-50">{a.label}</span>{' '}
+                      <span className="text-ink-500 dark:text-ink-400">— {a.evidence}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {drillSuggestions.length > 0 && (
+                <div className="mt-3 border-t border-ink-100 pt-3 dark:border-ink-800">
+                  <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-500">
+                    General suggestions for these weakness types
+                  </h4>
+                  <p className="mb-2 text-[11px] text-ink-400">
+                    Generic cricket-coaching suggestions matched to the weakness type above — not
+                    personalized training advice (this platform has no training-log data).
+                  </p>
+                  <ul className="space-y-1.5 text-sm">
+                    {drillSuggestions.map((d) => (
+                      <li key={d.forAreaKey}>
+                        <span className="font-medium text-ink-900 dark:text-ink-50">{d.title}</span>
+                        <span className="text-ink-500 dark:text-ink-400"> — {d.description}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </Card>
           )}
 
           {!careerScore && !formTrend && !consistencyRow && phaseLines.length === 0 && !analysisData.loading && (
