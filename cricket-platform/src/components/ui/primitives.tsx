@@ -3,6 +3,7 @@ import {
   cloneElement,
   isValidElement,
   useId,
+  useState,
   type ButtonHTMLAttributes,
   type InputHTMLAttributes,
   type SelectHTMLAttributes,
@@ -389,7 +390,9 @@ export function Avatar({
   size?: number
   square?: boolean
 }) {
-  if (src) {
+  const [imgFailed, setImgFailed] = useState(false)
+
+  if (src && !imgFailed) {
     return (
       <img
         src={src}
@@ -398,9 +401,11 @@ export function Avatar({
         height={size}
         className={cn('object-cover', square ? 'rounded-md' : 'rounded-full')}
         style={{ width: size, height: size }}
+        onError={() => setImgFailed(true)}
       />
     )
   }
+  // No src, or the image failed to load — show initials rather than the browser's broken glyph.
   return (
     <div
       className={cn(

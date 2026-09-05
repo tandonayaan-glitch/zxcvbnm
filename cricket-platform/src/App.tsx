@@ -13,6 +13,7 @@ import { getSettings } from '@/services/settings.service'
 import { BackgroundLayer } from '@/components/background/BackgroundLayer'
 import { OfflineBanner } from '@/components/ui/OfflineBanner'
 import { ConfirmHost } from '@/components/ui/confirm'
+import { PromptHost } from '@/components/ui/prompt'
 import { PageLoader } from '@/components/ui/primitives'
 import type { MaintenanceConfig } from '@/types'
 
@@ -291,6 +292,7 @@ export default function App() {
       <BackgroundLayer />
       <OfflineBanner />
       <ConfirmHost />
+      <PromptHost />
       <Suspense fallback={<PageLoader />}>
         <Routes>
         {/* Embeds (chrome-free — meant to be iframed elsewhere, no app shell) */}

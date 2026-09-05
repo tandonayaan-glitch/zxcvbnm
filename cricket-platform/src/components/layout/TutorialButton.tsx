@@ -113,7 +113,7 @@ export function TutorialButton() {
 
   function close() {
     markTutorialSeen()
-    if (dontShow && !dismissed) setPref('tutorialDismissed', true)
+    if (dontShow) setPref('tutorialDismissed', true)
     setOpen(false)
     setStep(0)
     setDontShow(false)

@@ -94,12 +94,30 @@ export async function uploadImage(file: File, folder: string): Promise<string> {
  *  before (that capability isn't being removed — this migration doesn't touch existing
  *  Firebase Storage files or the ability to manage them, it only changes where NEW
  *  uploads go). Anything else (an external link) is left alone either way. */
+/** Recover the R2 object key from a stored image URL. Works off `VITE_R2_PUBLIC_URL` when it's
+ *  configured, and otherwise off the `*.r2.dev` host the Worker hands back by default — so a
+ *  deployment that never set `VITE_R2_PUBLIC_URL` still deletes R2 objects (and releases their
+ *  usage-counter reservation) rather than silently orphaning them. Returns `null` for anything
+ *  that isn't an R2 URL. */
+function r2KeyFromUrl(rawUrl: string): string | null {
+  try {
+    if (R2_PUBLIC_BASE_URL && rawUrl.startsWith(R2_PUBLIC_BASE_URL)) {
+      return rawUrl.slice(R2_PUBLIC_BASE_URL.length).replace(/^\/+/, '')
+    }
+    const u = new URL(rawUrl)
+    if (u.hostname.endsWith('.r2.dev')) return u.pathname.replace(/^\/+/, '')
+    return null
+  } catch {
+    return null
+  }
+}
+
 export async function deleteUploadedImage(url: string): Promise<void> {
   try {
-    if (R2_PUBLIC_BASE_URL && url.startsWith(R2_PUBLIC_BASE_URL)) {
-      const key = url.slice(R2_PUBLIC_BASE_URL.length + 1)
+    const r2Key = r2KeyFromUrl(url)
+    if (r2Key && R2_WORKER_URL) {
       const token = await firebaseIdToken()
-      await fetch(`${R2_WORKER_URL}/delete?key=${encodeURIComponent(key)}`, {
+      await fetch(`${R2_WORKER_URL}/delete?key=${encodeURIComponent(r2Key)}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       })

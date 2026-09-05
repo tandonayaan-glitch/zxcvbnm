@@ -2,6 +2,34 @@
 
 All notable changes to CricketHub. Newest first.
 
+## [Unreleased] — Media fallbacks, prompt dialog, tutorial-dismiss persistence
+
+Hardening pass over the shared image pipeline, the last native `window.prompt`, and the
+"Don't show this again" tutorial latch. Verified with `tsc` + `vite build` + `oxlint`; no
+`scoring.ts`/`Delivery`/`BallInput` change; Firestore rules/indexes unchanged.
+
+- **`SmartImage`** (`components/ui/SmartImage.tsx`): the shared `<img>` replacement that never
+  leaves the browser's broken-image glyph on screen — no `src` renders the branded unavailable
+  state with no request, a `src` that 404s/403s/CORS-fails swaps to it on the `error` event, the
+  fallback fills the caller-sized box so card layout never shifts, and a Retry re-requests with a
+  cache-busting param. Adopted in `EntityGallery`, `CommunityFeedPage` (post image),
+  `TournamentPage` (sponsor logo).
+- **`Avatar` fallback** (`components/ui/primitives.tsx`): an avatar/logo whose image fails now
+  falls back to the initials block instead of the broken glyph (previously only the no-`src`
+  case did).
+- **R2 delete robustness** (`services/storage.service.ts`): `deleteUploadedImage` now recovers
+  the object key from any `*.r2.dev` URL, not only when `VITE_R2_PUBLIC_URL` is set — a
+  deployment that never set that var no longer silently orphans R2 objects (and their
+  usage-counter reservation) on delete.
+- **`promptDialog`** (`components/ui/prompt.tsx` + `<PromptHost/>`): promise-based in-app
+  replacement for `window.prompt()`, same shape as the existing `confirmDialog`. Removes the
+  last native prompt (`SavedFiltersBar`'s "name this filter").
+- **Tutorial-dismiss latch** (`store/prefsStore.ts`, `components/layout/TutorialButton.tsx`):
+  `tutorialDismissed` is now a true one-way latch. `syncUser` OR-s a local `true` with the
+  remote value (and heals the remote doc) instead of letting a pre-field remote doc reset it to
+  `false`; the debounced remote write is flushed on `pagehide`/`visibilitychange:hidden` so
+  ticking the box and closing the tab within the debounce window no longer drops the choice.
+
 ## [Unreleased] — Discovery, Looking For, Community, Following, Reputation, Rankings
 
 Second slice of the platform-build brief (`ROADMAP_V6_PLATFORM.md`), following priorities 10–16

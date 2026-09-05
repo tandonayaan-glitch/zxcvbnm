@@ -28,6 +28,7 @@ import {
   PageLoader,
 } from '@/components/ui/primitives'
 import { Tabs } from '@/components/ui/Tabs'
+import { SmartImage } from '@/components/ui/SmartImage'
 import { ActivityFeed } from '@/components/activity/ActivityFeed'
 import { StandingsTable } from '@/components/stats/StandingsTable'
 import { EntityGallery } from '@/components/media/EntityGallery'
@@ -307,7 +308,13 @@ export function TournamentPage() {
                 className="flex flex-col items-center gap-1"
               >
                 {s.logoURL ? (
-                  <img src={s.logoURL} alt={s.name} className="h-10 max-w-[120px] object-contain" />
+                  <SmartImage
+                    src={s.logoURL}
+                    alt={s.name}
+                    className="flex h-10 w-[120px] items-center justify-center rounded object-contain"
+                    fallbackLabel={s.name}
+                    noRetry
+                  />
                 ) : (
                   <span className="text-sm font-semibold text-ink-700 dark:text-ink-300">
                     {s.name}

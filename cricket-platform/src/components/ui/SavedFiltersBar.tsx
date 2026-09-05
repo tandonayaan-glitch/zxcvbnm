@@ -1,5 +1,6 @@
 import { Bookmark, Plus, X } from 'lucide-react'
 import { useSavedFiltersStore } from '@/store/savedFiltersStore'
+import { promptDialog } from '@/components/ui/prompt'
 
 /**
  * Lets a user name and restore the current combination of filter dropdowns on a page
@@ -18,8 +19,14 @@ export function SavedFiltersBar({
   const saveFilter = useSavedFiltersStore((s) => s.saveFilter)
   const removeFilter = useSavedFiltersStore((s) => s.removeFilter)
 
-  function handleSave() {
-    const name = window.prompt('Name this filter (e.g. "My Club", "Current Season")')
+  async function handleSave() {
+    const name = await promptDialog({
+      title: 'Save current filter',
+      label: 'Filter name',
+      placeholder: 'e.g. My Club, Current Season',
+      confirmLabel: 'Save',
+      maxLength: 40,
+    })
     if (!name?.trim()) return
     saveFilter(pageKey, name.trim(), current)
   }

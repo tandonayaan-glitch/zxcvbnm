@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react'
 import { ImageIcon, Trash2, Upload, Loader2, X } from 'lucide-react'
 import { Card, CardHeader, CardBody } from '@/components/ui/primitives'
+import { SmartImage } from '@/components/ui/SmartImage'
 import { useToast } from '@/components/ui/toast'
 import { confirmDialog } from '@/components/ui/confirm'
 import { useAsync } from '@/hooks/useAsync'
@@ -135,7 +136,13 @@ export function EntityGallery({
                   className="block h-full w-full"
                   aria-label="View photo"
                 >
-                  <img src={img.url} alt="" className="h-full w-full object-cover" loading="lazy" />
+                  <SmartImage
+                    src={img.url}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                    noRetry
+                  />
                 </button>
                 {canManage && (
                   <button

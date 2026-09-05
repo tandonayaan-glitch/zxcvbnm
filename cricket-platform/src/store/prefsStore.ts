@@ -122,17 +122,46 @@ interface PrefsState {
 
 // Debounced remote write so rapid toggles don't hammer Firestore.
 let pushTimer: ReturnType<typeof setTimeout> | null = null
+let pendingPush: { uid: string; prefs: Prefs } | null = null
+
+function doPush(uid: string, prefs: Prefs) {
+  // Lazy import to avoid a store→service→firebase cycle at module load.
+  import('@/services/userPrefs.service')
+    .then((m) => m.saveRemotePrefs(uid, prefs))
+    .catch(() => {
+      /* offline / permission — local prefs still apply */
+    })
+}
+
 function schedulePush(uid: string, prefs: Prefs) {
+  pendingPush = { uid, prefs }
   if (pushTimer) clearTimeout(pushTimer)
   pushTimer = setTimeout(() => {
     pushTimer = null
-    // Lazy import to avoid a store→service→firebase cycle at module load.
-    import('@/services/userPrefs.service')
-      .then((m) => m.saveRemotePrefs(uid, prefs))
-      .catch(() => {
-        /* offline / permission — local prefs still apply */
-      })
+    const p = pendingPush
+    pendingPush = null
+    if (p) doPush(p.uid, p.prefs)
   }, 600)
+}
+
+/** Fire any debounced remote write immediately. Without this, ticking "Don't show this again"
+ *  and then closing the tab within 600ms would drop the write, so the choice never reaches
+ *  `userPrefs/{uid}` and the tutorial re-auto-opens on the next device / after a cache clear. */
+function flushPush() {
+  if (pushTimer) {
+    clearTimeout(pushTimer)
+    pushTimer = null
+  }
+  const p = pendingPush
+  pendingPush = null
+  if (p) doPush(p.uid, p.prefs)
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', flushPush)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushPush()
+  })
 }
 
 export const usePrefsStore = create<PrefsState>((setState, get) => ({
@@ -162,10 +191,20 @@ export const usePrefsStore = create<PrefsState>((setState, get) => ({
       )
       const remote = await getRemotePrefs(uid)
       if (remote) {
+        const local = get().prefs
         const prefs = { ...DEFAULT_PREFS, ...remote }
+        // `tutorialDismissed` is a one-way latch: once the user has dismissed the welcome
+        // tutorial on any device it must stay dismissed everywhere. A remote doc written
+        // before this field existed has it `undefined`, which would otherwise reset a
+        // local `true` back to `false` and make the tutorial re-appear. OR the two and
+        // heal the remote doc.
+        prefs.tutorialDismissed = Boolean(remote.tutorialDismissed) || local.tutorialDismissed
         save(prefs)
         applyPrefs(prefs)
         setState({ prefs })
+        if (prefs.tutorialDismissed && !remote.tutorialDismissed) {
+          saveRemotePrefs(uid, prefs).catch(() => {})
+        }
       } else {
         // First sign-in on this account — seed remote from what's on this device.
         await saveRemotePrefs(uid, get().prefs)

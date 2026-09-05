@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Heart, MessageSquare, Flag, Trash2, Send } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, PageLoader, EmptyState, Button, Avatar, Badge, Select } from '@/components/ui/primitives'
+import { SmartImage } from '@/components/ui/SmartImage'
 import { useToast } from '@/components/ui/toast'
 import { useAuthStore } from '@/store/authStore'
 import { useAsync } from '@/hooks/useAsync'
@@ -85,7 +86,12 @@ export function CommunityFeedPage() {
                   </div>
                   <p className="mt-1 whitespace-pre-wrap text-sm text-ink-700 dark:text-ink-200">{post.text}</p>
                   {post.imageURL && (
-                    <img src={post.imageURL} alt="" className="mt-2 max-h-80 w-full rounded-lg object-cover" />
+                    <SmartImage
+                      src={post.imageURL}
+                      alt=""
+                      className="mt-2 flex max-h-80 min-h-[8rem] w-full rounded-lg object-cover"
+                      fallbackLabel="Image unavailable"
+                    />
                   )}
                   {post.kind === 'match' && post.matchId && (
                     <Link
