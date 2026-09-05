@@ -39,6 +39,12 @@ import { TeamForm, type TeamFormPoint } from '@/components/charts/TeamForm'
 import { computeTeamHonours, hasTeamRecords } from '@/domain/teamRecords'
 import { teamOpponentRecords } from '@/domain/teamOpponents'
 import { teamVenueRecords } from '@/domain/teamVenues'
+import {
+  battingOrderAnalysis,
+  bowlingRoleAnalysis,
+  chasingVsSettingRecord,
+  suggestXI,
+} from '@/domain/teamIntelligence'
 import { PremiumGate } from '@/components/guards/PremiumGate'
 import { PLAYER_ROLE_LABELS, formatDate, ballsToOvers } from '@/lib/format'
 
@@ -124,6 +130,19 @@ export function TeamPage() {
   )
   const nameOf = (pid: string) =>
     (allPlayers.data ?? []).find((p) => p.id === pid)?.displayName ?? '—'
+
+  // Team Intelligence — all derived from teamMatches, already loaded above (no new fetch).
+  const battingOrder = useMemo(() => battingOrderAnalysis(teamMatches, id), [teamMatches, id])
+  const bowlingRoles = useMemo(() => bowlingRoleAnalysis(teamMatches, id), [teamMatches, id])
+  const chaseSetRecord = useMemo(() => chasingVsSettingRecord(teamMatches, id), [teamMatches, id])
+  const squadStatsById = useMemo(
+    () => aggregatePlayerStats(teamMatches.filter((m) => m.status === 'completed')),
+    [teamMatches],
+  )
+  const suggestedXI = useMemo(
+    () => (squad.data && squad.data.length > 0 ? suggestXI(squad.data, squadStatsById) : []),
+    [squad.data, squadStatsById],
+  )
   // Prefer the live tournament name for titles; fall back to the name
   // denormalised on the match (covers legacy/seed matches without one).
   const tournamentNameById = useMemo(
@@ -459,6 +478,112 @@ export function TeamPage() {
           </table>
         </Card>
         </PremiumGate>
+      )}
+
+      {(battingOrder.length > 0 || bowlingRoles.length > 0) && (
+        <Card className="mb-4">
+          <CardHeader title="Team Intelligence" />
+          <CardBody className="space-y-4">
+            {(chaseSetRecord.battingFirst.played > 0 || chaseSetRecord.battingSecond.played > 0) && (
+              <div className="grid grid-cols-2 gap-3 text-center text-sm">
+                <div className="rounded-lg border border-ink-100 p-2 dark:border-ink-800">
+                  <div className="text-lg font-bold text-ink-900 dark:text-ink-50">
+                    {chaseSetRecord.battingFirst.played > 0
+                      ? Math.round((chaseSetRecord.battingFirst.won / chaseSetRecord.battingFirst.played) * 100)
+                      : 0}
+                    %
+                  </div>
+                  <div className="text-xs text-ink-500">
+                    Win rate setting ({chaseSetRecord.battingFirst.won}/{chaseSetRecord.battingFirst.played})
+                  </div>
+                </div>
+                <div className="rounded-lg border border-ink-100 p-2 dark:border-ink-800">
+                  <div className="text-lg font-bold text-ink-900 dark:text-ink-50">
+                    {chaseSetRecord.battingSecond.played > 0
+                      ? Math.round((chaseSetRecord.battingSecond.won / chaseSetRecord.battingSecond.played) * 100)
+                      : 0}
+                    %
+                  </div>
+                  <div className="text-xs text-ink-500">
+                    Win rate chasing ({chaseSetRecord.battingSecond.won}/{chaseSetRecord.battingSecond.played})
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {battingOrder.length > 0 && (
+              <div>
+                <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-ink-500">
+                  Batting order performance
+                </h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-xs text-ink-400">
+                        <th className="py-1 pr-2">Pos</th>
+                        <th className="py-1 pr-2 text-right">Inn</th>
+                        <th className="py-1 pr-2 text-right">Avg</th>
+                        <th className="py-1 text-right">SR</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {battingOrder.map((r) => (
+                        <tr key={r.position} className="border-t border-ink-50 dark:border-ink-800">
+                          <td className="py-1 pr-2 font-medium">#{r.position}</td>
+                          <td className="py-1 pr-2 text-right text-ink-500">{r.innings}</td>
+                          <td className="py-1 pr-2 text-right">{r.average.toFixed(1)}</td>
+                          <td className="py-1 text-right">{r.strikeRate.toFixed(1)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {bowlingRoles.length > 0 && (
+              <div>
+                <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-ink-500">
+                  Bowling attack
+                </h4>
+                <div className="space-y-1 text-sm">
+                  {bowlingRoles.slice(0, 6).map((r) => (
+                    <div key={r.playerId} className="flex justify-between">
+                      <Link to={`/player/${r.playerId}`} className="text-brand-700 hover:underline">
+                        {nameOf(r.playerId)}
+                      </Link>
+                      <span className="text-ink-600 dark:text-ink-400">
+                        {r.wickets} wkts · {r.economy.toFixed(2)} econ
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {suggestedXI.length > 0 && (
+              <div>
+                <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-500">
+                  Suggested XI
+                </h4>
+                <p className="mb-1.5 text-xs text-ink-400">
+                  One data-driven reading of past performance — not a guaranteed-best XI. It knows
+                  nothing about current fitness, momentum, or matchup-specific tactics.
+                </p>
+                <ol className="list-inside list-decimal space-y-0.5 text-sm">
+                  {suggestedXI.map((slot) => (
+                    <li key={slot.playerId}>
+                      <Link to={`/player/${slot.playerId}`} className="text-brand-700 hover:underline">
+                        {nameOf(slot.playerId)}
+                      </Link>{' '}
+                      <span className="text-xs text-ink-400">— {slot.reason}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+          </CardBody>
+        </Card>
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">
