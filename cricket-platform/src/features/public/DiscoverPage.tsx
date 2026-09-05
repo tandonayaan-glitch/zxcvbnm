@@ -9,8 +9,11 @@ import { listPlayers } from '@/services/players.service'
 import { listTeams } from '@/services/teams.service'
 import { listClubs } from '@/services/clubs.service'
 import { listTournaments } from '@/services/tournaments.service'
+import { listAllMatches } from '@/services/matches.service'
 import { filterPlayers, filterTeams, filterClubs, filterTournaments } from '@/domain/discovery'
 import { knownLocations } from '@/domain/rankings'
+import { aggregatePlayerStats } from '@/domain/stats'
+import { careerPerformanceScore } from '@/domain/performanceScore'
 import type { Player } from '@/types'
 
 type Tab = 'players' | 'teams' | 'clubs' | 'tournaments'
@@ -25,19 +28,32 @@ export function DiscoverPage() {
   const teams = useAsync(listTeams, [])
   const clubs = useAsync(listClubs, [])
   const tournaments = useAsync(listTournaments, [])
+  const matches = useAsync(listAllMatches, [])
 
   const [tab, setTab] = useState<Tab>('players')
   const [query, setQuery] = useState('')
   const [location, setLocation] = useState('any')
   const [skillLevel, setSkillLevel] = useState<Player['skillLevel'] | 'any'>('any')
   const [role, setRole] = useState<Player['role'] | 'any'>('any')
+  const [sortByPerformance, setSortByPerformance] = useState(false)
 
   const locations = useMemo(() => knownLocations(players.data ?? []), [players.data])
 
-  const filteredPlayers = useMemo(
-    () => filterPlayers(players.data ?? [], { query, location, skillLevel, role }),
-    [players.data, query, location, skillLevel, role],
-  )
+  // Scouting: real Performance Score per player, from completed-match stats already loaded
+  // platform-wide — same domain function used on the player's own Career Intelligence tab, so
+  // the number shown here always agrees with the one on the player's own page.
+  const scoreByPlayerId = useMemo(() => {
+    const stats = aggregatePlayerStats(matches.data ?? [])
+    const map = new Map<string, number>()
+    for (const [pid, s] of stats) map.set(pid, careerPerformanceScore(s).total)
+    return map
+  }, [matches.data])
+
+  const filteredPlayers = useMemo(() => {
+    const base = filterPlayers(players.data ?? [], { query, location, skillLevel, role })
+    if (!sortByPerformance) return base
+    return [...base].sort((a, b) => (scoreByPlayerId.get(b.id) ?? 0) - (scoreByPlayerId.get(a.id) ?? 0))
+  }, [players.data, query, location, skillLevel, role, sortByPerformance, scoreByPlayerId])
   const filteredTeams = useMemo(() => filterTeams(teams.data ?? [], query), [teams.data, query])
   const filteredClubs = useMemo(() => filterClubs(clubs.data ?? [], query), [clubs.data, query])
   const filteredTournaments = useMemo(
@@ -110,6 +126,14 @@ export function DiscoverPage() {
               <option value="all_rounder">All-rounder</option>
               <option value="wicket_keeper">Wicket-keeper</option>
             </Select>
+            <label className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 px-3 py-1.5 text-sm dark:border-ink-700">
+              <input
+                type="checkbox"
+                checked={sortByPerformance}
+                onChange={(e) => setSortByPerformance(e.target.checked)}
+              />
+              Sort by Performance Score
+            </label>
           </div>
           {filteredPlayers.length === 0 ? (
             <EmptyState title="No players match" icon={<Users size={28} />} />
@@ -119,13 +143,18 @@ export function DiscoverPage() {
                 <Link key={p.id} to={`/player/${p.id}`}>
                   <Card className="flex items-center gap-3 p-3 hover:border-brand-300">
                     <Avatar name={p.displayName} src={p.photoURL} size={40} />
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="truncate font-medium text-ink-900 dark:text-ink-50">{p.displayName}</div>
                       <div className="truncate text-xs text-ink-500 dark:text-ink-400">
                         {p.role.replace('_', ' ')}
                         {p.location ? ` · ${p.location}` : ''}
                       </div>
                     </div>
+                    {(scoreByPlayerId.get(p.id) ?? 0) > 0 && (
+                      <span className="shrink-0 rounded-full bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">
+                        {scoreByPlayerId.get(p.id)}
+                      </span>
+                    )}
                   </Card>
                 </Link>
               ))}

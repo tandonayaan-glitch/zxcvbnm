@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Search, User, Shield, Trophy, Swords, Building2 } from 'lucide-react'
+import { Search, User, Shield, Trophy, Swords, Building2, Sparkles } from 'lucide-react'
 import {
   Avatar,
+  Card,
   EmptyState,
   PageLoader,
 } from '@/components/ui/primitives'
 import { globalSearch, type SearchResults } from '@/services/search.service'
+import { usePlatformStats } from '@/hooks/usePlatformStats'
+import { runSmartSearch, smartSearchExamples } from '@/domain/smartSearch'
 
 type SearchFilter = 'all' | 'players' | 'teams' | 'tournaments' | 'matches' | 'clubs'
 
@@ -46,6 +49,20 @@ export function SearchPage() {
       results.clubs.length
     : 0
 
+  // Smart Search — deterministic cricket-statistical queries ("most runs", "Team A vs Team B"),
+  // layered on top of the plain entity search above. See domain/smartSearch.ts.
+  const platformStats = usePlatformStats()
+  const smartResult = useMemo(() => {
+    if (!q.trim() || platformStats.loading) return null
+    return runSmartSearch(q, {
+      playerStats: platformStats.playerStats,
+      players: platformStats.players,
+      teams: platformStats.teams,
+      matches: platformStats.matches,
+    })
+  }, [q, platformStats])
+  const nameOf = (pid?: string) => (pid ? platformStats.playerMap.get(pid)?.displayName ?? pid : '')
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
       <form onSubmit={submit} className="mb-6">
@@ -67,15 +84,56 @@ export function SearchPage() {
       {loading ? (
         <PageLoader />
       ) : !results ? (
-        <EmptyState
-          icon={<Search size={40} />}
-          title="Search the platform"
-          description="Find any player, team, tournament or match."
-        />
-      ) : total === 0 ? (
+        <div>
+          <EmptyState
+            icon={<Search size={40} />}
+            title="Search the platform"
+            description="Find any player, team, tournament or match — or try a stat question."
+          />
+          <div className="mt-4 flex flex-wrap justify-center gap-1.5">
+            {smartSearchExamples().map((ex) => (
+              <button
+                key={ex}
+                onClick={() => setParams({ q: ex })}
+                className="rounded-full bg-ink-100 px-3 py-1 text-xs font-medium text-ink-600 hover:bg-ink-200 dark:bg-ink-800 dark:text-ink-300 dark:hover:bg-ink-700"
+              >
+                {ex}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : total === 0 && !smartResult ? (
         <EmptyState title={`No results for "${q}"`} />
       ) : (
         <div className="space-y-6">
+          {smartResult && (
+            <Card className="p-4">
+              <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-ink-500">
+                <Sparkles size={13} /> Smart Search — {smartResult.title}
+              </div>
+              <ol className="list-inside list-decimal space-y-1 text-sm">
+                {smartResult.rows.map((r, i) => (
+                  <li key={i}>
+                    {r.playerId ? (
+                      <>
+                        <Link to={`/player/${r.playerId}`} className="text-brand-700 hover:underline">
+                          {nameOf(r.playerId)}
+                        </Link>
+                        <span className="text-ink-500"> — {r.label}</span>
+                      </>
+                    ) : r.teamId ? (
+                      <Link to={`/team/${r.teamId}`} className="text-brand-700 hover:underline">
+                        {r.label}
+                      </Link>
+                    ) : (
+                      <span>{r.label}</span>
+                    )}
+                    {r.value && <span className="text-ink-400"> ({r.value})</span>}
+                  </li>
+                ))}
+              </ol>
+            </Card>
+          )}
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm text-ink-500 dark:text-ink-400">
               {total} result{total === 1 ? '' : 's'}
