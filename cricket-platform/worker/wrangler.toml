@@ -27,3 +27,8 @@ ALLOWED_ORIGINS = "https://cricket-platform-b03bc.web.app,https://cricket-platfo
 #   FIREBASE_CLIENT_EMAIL  - the `client_email` field from a Firebase service-account JSON key
 #   FIREBASE_PRIVATE_KEY   - the `private_key` field from the same JSON key (keep the \n's literal)
 # See worker/README.md for exactly how to generate and set these.
+#
+# Optional — AI Engine (Phase 18 of ROADMAP_V6_PLATFORM.md). Unset in every environment today;
+# /ai responds with { status: 'not_configured' } until both are set via `wrangler secret put`:
+#   AI_PROVIDER_API_KEY    - a real provider API key (none exists yet — do not invent one)
+#   AI_PROVIDER            - which provider the key belongs to, e.g. "anthropic"

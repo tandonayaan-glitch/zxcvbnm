@@ -4,6 +4,7 @@ import { handleUpload } from './handlers/upload'
 import { handleDelete } from './handlers/deleteObject'
 import { handleList } from './handlers/list'
 import { handleUsage } from './handlers/usage'
+import { handleAI } from './handlers/ai'
 
 function corsHeaders(request: Request, env: Env): Record<string, string> {
   const origin = request.headers.get('Origin') ?? ''
@@ -42,6 +43,8 @@ export default {
         response = await handleList(request, env)
       } else if (request.method === 'GET' && url.pathname === '/usage') {
         response = await handleUsage(request, env)
+      } else if (request.method === 'POST' && url.pathname === '/ai') {
+        response = await handleAI(request, env)
       } else {
         response = Response.json({ error: 'Not found.' }, { status: 404 })
       }

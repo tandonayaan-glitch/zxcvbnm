@@ -33,6 +33,7 @@ import {
 } from '@/domain/careerIntelligence'
 import { careerPerformanceScore } from '@/domain/performanceScore'
 import { identifyDevelopmentAreas, suggestDrills } from '@/domain/playerDevelopment'
+import { AICoachPanel } from '@/components/ai/AICoachPanel'
 import { wagonWheelData } from '@/domain/wagonWheel'
 import { pitchMapData } from '@/domain/pitchMap'
 import { playerToCSV, playerToJSON } from '@/domain/playerExport'
@@ -575,6 +576,10 @@ export function PlayerPage() {
                 </div>
               )}
             </Card>
+          )}
+
+          {careerScore && (
+            <AICoachPanel performanceScore={careerScore} formTrend={formTrend} developmentAreas={developmentAreas} />
           )}
 
           {!careerScore && !formTrend && !consistencyRow && phaseLines.length === 0 && !analysisData.loading && (
