@@ -25,6 +25,13 @@ import { playerTimeline } from '@/domain/playerTimeline'
 import { aggregatePlayerStats } from '@/domain/stats'
 import { batterVsBowlerBreakdown } from '@/domain/batterVsBowler'
 import { batterVsPaceSpin, bowlerVsBattingHand } from '@/domain/styleMatchups'
+import {
+  computeFormTrend,
+  playerConsistency,
+  careerPhasePerformance,
+  strongestAndWeakestPhase,
+} from '@/domain/careerIntelligence'
+import { careerPerformanceScore } from '@/domain/performanceScore'
 import { wagonWheelData } from '@/domain/wagonWheel'
 import { pitchMapData } from '@/domain/pitchMap'
 import { playerToCSV, playerToJSON } from '@/domain/playerExport'
@@ -36,7 +43,7 @@ import { WagonWheel } from '@/components/charts/WagonWheel'
 import { PitchMap } from '@/components/charts/PitchMap'
 import { playerRadarProfile } from '@/domain/radar'
 import { PremiumGate } from '@/components/guards/PremiumGate'
-import type { BallMeta, Delivery } from '@/types'
+import type { BallMeta, Delivery, Match } from '@/types'
 import {
   battingAverage,
   strikeRate,
@@ -202,10 +209,12 @@ export function PlayerPage() {
   // in (batted or bowled) feeds both charts.
   const [analysisOpened, setAnalysisOpened] = useState(false)
   const analysisData = useAsync(async () => {
-    if (!analysisOpened) return { deliveries: [] as Delivery[], ballMeta: [] as BallMeta[] }
+    if (!analysisOpened)
+      return { deliveries: [] as Delivery[], ballMeta: [] as BallMeta[], byMatch: [] as { matchId: string; deliveries: Delivery[] }[] }
     const matchIds = [...new Set((perfs.data ?? []).map((p) => p.matchId))]
     const pairs = await Promise.all(
       matchIds.map(async (mid) => ({
+        matchId: mid,
         deliveries: await getDeliveries(mid),
         ballMeta: await listBallMeta(mid),
       })),
@@ -213,8 +222,30 @@ export function PlayerPage() {
     return {
       deliveries: pairs.flatMap((p) => p.deliveries),
       ballMeta: pairs.flatMap((p) => p.ballMeta),
+      byMatch: pairs.map((p) => ({ matchId: p.matchId, deliveries: p.deliveries })),
     }
   }, [analysisOpened, perfs.data])
+  // Career Intelligence: reuses the exact same lazy delivery fetch above (no second heavy
+  // fetch) but keeps each match's own deliveries paired with its own Match doc, since phase
+  // boundaries (powerplay/death-over counts) depend on that match's own format/overs — lost
+  // once deliveries from many matches are flattened into one array, which is why
+  // careerPhasePerformance() needs the pairing rather than the flat `deliveries` above.
+  const matchByIdMap = useMemo(() => new Map((matches.data ?? []).map((m) => [m.id, m])), [matches.data])
+  const matchDeliveryPairs = useMemo(
+    () =>
+      (analysisData.data?.byMatch ?? [])
+        .map((p) => ({ match: matchByIdMap.get(p.matchId), deliveries: p.deliveries }))
+        .filter((p): p is { match: Match; deliveries: Delivery[] } => !!p.match),
+    [analysisData.data, matchByIdMap],
+  )
+  const phaseLines = useMemo(() => careerPhasePerformance(matchDeliveryPairs, id), [matchDeliveryPairs, id])
+  const phaseExtremes = useMemo(() => strongestAndWeakestPhase(phaseLines), [phaseLines])
+  const formTrend = useMemo(() => computeFormTrend(perfs.data ?? []), [perfs.data])
+  const consistencyRow = useMemo(() => playerConsistency(matches.data ?? [], id), [matches.data, id])
+  const careerScore = useMemo(
+    () => (stats.data ? careerPerformanceScore(stats.data) : null),
+    [stats.data],
+  )
   const wagonZones = useMemo(
     () => wagonWheelData(analysisData.data?.deliveries ?? [], analysisData.data?.ballMeta ?? [], id),
     [analysisData.data, id],
@@ -355,10 +386,13 @@ export function PlayerPage() {
         onChange={(k) => {
           setTab(k)
           if (k === 'vsbowler') setVsBowlerOpened(true)
-          if (k === 'analysis') setAnalysisOpened(true)
+          if (k === 'analysis' || k === 'career') setAnalysisOpened(true)
         }}
         tabs={[
           { key: 'overview', label: 'Overview' },
+          ...((perfs.data ?? []).length > 0
+            ? [{ key: 'career', label: 'Career Intelligence' }]
+            : []),
           ...(splits.length > 0
             ? [{ key: 'tournaments', label: 'By tournament' }]
             : []),
@@ -377,6 +411,123 @@ export function PlayerPage() {
           { key: 'activity', label: 'Activity' },
         ]}
       />
+
+      {tab === 'career' && (
+        <div className="space-y-4">
+          {careerScore && (
+            <Card className="p-4">
+              <h3 className="mb-1 text-sm font-semibold text-ink-900 dark:text-ink-50">
+                Performance Score
+              </h3>
+              <p className="mb-3 text-xs text-ink-500 dark:text-ink-400">
+                A documented, reproducible score — batting + bowling + fielding contributions,
+                weighted the same way across every player on this platform. Not a fitted model.
+              </p>
+              <div className="grid grid-cols-4 gap-2 text-center">
+                <div>
+                  <div className="text-xl font-bold text-ink-900 dark:text-ink-50">{careerScore.total}</div>
+                  <div className="text-[11px] text-ink-500">Total</div>
+                </div>
+                <div>
+                  <div className="text-lg font-semibold text-ink-800 dark:text-ink-200">{careerScore.battingScore}</div>
+                  <div className="text-[11px] text-ink-500">Batting</div>
+                </div>
+                <div>
+                  <div className="text-lg font-semibold text-ink-800 dark:text-ink-200">{careerScore.bowlingScore}</div>
+                  <div className="text-[11px] text-ink-500">Bowling</div>
+                </div>
+                <div>
+                  <div className="text-lg font-semibold text-ink-800 dark:text-ink-200">{careerScore.fieldingScore}</div>
+                  <div className="text-[11px] text-ink-500">Fielding</div>
+                </div>
+              </div>
+              {careerScore.factors.length > 0 && (
+                <ul className="mt-3 list-inside list-disc text-xs text-ink-600 dark:text-ink-400">
+                  {careerScore.factors.map((f, i) => (
+                    <li key={i}>{f}</li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          )}
+
+          {formTrend && (
+            <Card className="p-4">
+              <h3 className="mb-1 text-sm font-semibold text-ink-900 dark:text-ink-50">Form trend</h3>
+              <p className="text-sm text-ink-700 dark:text-ink-300">
+                Last {formTrend.recentInnings} innings averaging {formTrend.recentAverage}, vs{' '}
+                {formTrend.priorAverage} in the {formTrend.priorInnings} before that —{' '}
+                <span
+                  className={
+                    formTrend.direction === 'improving'
+                      ? 'font-semibold text-green-600'
+                      : formTrend.direction === 'regressing'
+                        ? 'font-semibold text-red-600'
+                        : 'font-semibold text-ink-500'
+                  }
+                >
+                  {formTrend.direction}
+                </span>
+                .
+              </p>
+            </Card>
+          )}
+
+          {consistencyRow && (
+            <Card className="p-4">
+              <h3 className="mb-1 text-sm font-semibold text-ink-900 dark:text-ink-50">Consistency</h3>
+              <p className="text-sm text-ink-700 dark:text-ink-300">
+                {consistencyRow.variation.toFixed(0)}% variation in runs per innings across{' '}
+                {consistencyRow.innings} innings (average {consistencyRow.average.toFixed(1)}) — lower
+                means more consistent.
+              </p>
+            </Card>
+          )}
+
+          {analysisOpened && analysisData.loading ? (
+            <PageLoader label="Loading phase data across every match…" />
+          ) : (
+            phaseLines.length > 0 && (
+              <Card className="p-4">
+                <h3 className="mb-1 text-sm font-semibold text-ink-900 dark:text-ink-50">
+                  Batting by phase (career)
+                </h3>
+                <p className="mb-3 text-xs text-ink-500 dark:text-ink-400">
+                  Across every completed match this player has batted in, using each match's own
+                  powerplay/death-over boundaries.
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {phaseLines.map((l) => (
+                    <div key={l.phase} className="rounded-lg border border-ink-100 p-2 text-center dark:border-ink-800">
+                      <div className="text-[11px] font-semibold uppercase tracking-wide text-ink-500">
+                        {l.phase}
+                      </div>
+                      <div className="text-sm font-bold text-ink-900 dark:text-ink-50">
+                        {l.runs} <span className="font-normal text-ink-500">({l.balls})</span>
+                      </div>
+                      <div className="text-[11px] text-ink-500">SR {l.strikeRate.toFixed(1)}</div>
+                    </div>
+                  ))}
+                </div>
+                {(phaseExtremes.strongest || phaseExtremes.weakest) && (
+                  <p className="mt-3 text-xs text-ink-600 dark:text-ink-400">
+                    {phaseExtremes.strongest && (
+                      <>Strongest: <span className="font-semibold capitalize">{phaseExtremes.strongest.phase}</span> (SR {phaseExtremes.strongest.strikeRate.toFixed(1)}). </>
+                    )}
+                    {phaseExtremes.weakest && (
+                      <>Weakest: <span className="font-semibold capitalize">{phaseExtremes.weakest.phase}</span> (SR {phaseExtremes.weakest.strikeRate.toFixed(1)}).</>
+                    )}
+                  </p>
+                )}
+              </Card>
+            )
+          )}
+
+          {!careerScore && !formTrend && !consistencyRow && phaseLines.length === 0 && !analysisData.loading && (
+            <EmptyState title="Not enough data yet" description="Play more completed matches to build career intelligence." />
+          )}
+        </div>
+      )}
 
       {tab === 'achievements' &&
         (stats.loading ? (
